@@ -1,0 +1,18 @@
+=== 3 cyclops retreat run 1 07:23:44
+[tibia-probe] finish: summoned
+[tibia-probe] start positions: knight 1932,1349,7 monsters 1933,1351,7 1931,1352,7 1932,1352,7
+[tibia-probe] cleared: ticks 1037 heals 16 strikes 1028 holds 1 retreats 8 cornered 545 gated 0 kills 3 health 216 lowest 81 experience +675
+[tibia-probe] adjacency: 187728 monster-ms adjacent, 79 landed hits, 0.421 landed hits per adjacent monster-second
+[tibia-probe] finish: cleared
+=== 3 cyclops retreat run 2 07:26:36
+[tibia-probe] finish: summoned
+[tibia-probe] start positions: knight 1932,1349,7 monsters 1933,1351,7 1931,1352,7 1932,1352,7
+[tibia-probe] cleared: ticks 972 heals 14 strikes 968 holds 1 retreats 3 cornered 534 gated 0 kills 3 health 204 lowest 99 experience +675
+[tibia-probe] adjacency: 176358 monster-ms adjacent, 71 landed hits, 0.403 landed hits per adjacent monster-second
+[tibia-probe] finish: cleared
+=== 3 cyclops retreat run 3 07:29:16
+[tibia-probe] finish: summoned
+[tibia-probe] start positions: knight 1932,1349,7 monsters 1930,1352,7 1931,1352,7 1932,1352,7
+[tibia-probe] cleared: ticks 987 heals 13 strikes 975 holds 1 retreats 11 cornered 500 gated 2 kills 3 health 250 lowest 89 experience +675
+[tibia-probe] adjacency: 166907 monster-ms adjacent, 71 landed hits, 0.425 landed hits per adjacent monster-second
+[tibia-probe] finish: cleared

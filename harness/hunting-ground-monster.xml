@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<monsters>
+	<monster centerx="1958" centery="1336" centerz="7" radius="1">
+		<monster name="Cyclops" x="0" y="0" z="7" spawntime="60" />
+	</monster>
+	<monster centerx="1957" centery="1346" centerz="7" radius="1">
+		<monster name="Cyclops" x="0" y="0" z="7" spawntime="60" />
+	</monster>
+	<monster centerx="1943" centery="1334" centerz="7" radius="1">
+		<monster name="Troll" x="0" y="0" z="7" spawntime="60" />
+	</monster>
+	<monster centerx="1950" centery="1345" centerz="7" radius="1">
+		<monster name="Troll" x="0" y="0" z="7" spawntime="60" />
+	</monster>
+	<monster centerx="1953" centery="1355" centerz="7" radius="1">
+		<monster name="Troll" x="0" y="0" z="7" spawntime="60" />
+	</monster>
+	<monster centerx="1941" centery="1354" centerz="7" radius="1">
+		<monster name="Troll" x="0" y="0" z="7" spawntime="60" />
+	</monster>
+</monsters>

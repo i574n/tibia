@@ -1,0 +1,48 @@
+=== PC-2 run 1 18:51:07
+[tibia-probe] finish: summoned
+[tibia-probe] path t=10690 ms monster at 1950,1338,7 distance 7 step 0
+[tibia-probe] path t=11145 ms monster at 1949,1338,7 distance 6 step 1
+[tibia-probe] path t=11602 ms monster at 1948,1338,7 distance 5 step 2
+[tibia-probe] path t=12055 ms monster at 1947,1338,7 distance 4 step 3
+[tibia-probe] path t=12514 ms monster at 1946,1338,7 distance 3 step 4
+[tibia-probe] path t=12968 ms monster at 1945,1338,7 distance 2 step 5
+[tibia-probe] path t=13425 ms monster at 1944,1338,7 distance 1 step 6
+[tibia-probe] arrived at 13425 ms after 6 steps, knight at 1943,1338,7
+[tibia-probe] finish: arrived
+=== PC-2 run 2 18:52:32
+[tibia-probe] finish: summoned
+[tibia-probe] path t=10578 ms monster at 1950,1337,7 distance 7 step 0
+[tibia-probe] path t=11032 ms monster at 1949,1337,7 distance 6 step 1
+[tibia-probe] path t=11487 ms monster at 1948,1337,7 distance 5 step 2
+[tibia-probe] path t=11942 ms monster at 1947,1337,7 distance 4 step 3
+[tibia-probe] path t=12397 ms monster at 1946,1337,7 distance 3 step 4
+[tibia-probe] path t=12851 ms monster at 1945,1337,7 distance 2 step 5
+[tibia-probe] path t=13306 ms monster at 1944,1337,7 distance 1 step 6
+[tibia-probe] arrived at 13306 ms after 6 steps, knight at 1943,1338,7
+[tibia-probe] finish: arrived
+=== PC-2 run 3 18:53:41
+[tibia-probe] finish: summoned
+[tibia-probe] path t=10842 ms monster at 1950,1337,7 distance 7 step 0
+[tibia-probe] path t=11292 ms monster at 1949,1337,7 distance 6 step 1
+[tibia-probe] path t=11746 ms monster at 1948,1337,7 distance 5 step 2
+[tibia-probe] path t=12201 ms monster at 1947,1337,7 distance 4 step 3
+[tibia-probe] path t=12654 ms monster at 1946,1337,7 distance 3 step 4
+[tibia-probe] path t=13112 ms monster at 1945,1337,7 distance 2 step 5
+[tibia-probe] path t=13516 ms monster at 1944,1337,7 distance 1 step 6
+[tibia-probe] arrived at 13516 ms after 6 steps, knight at 1943,1338,7
+[tibia-probe] finish: arrived
+=== PC-2 run 4 18:55:06
+[tibia-probe] finish: summoned
+[tibia-probe] not arrived after 30025 ms, 0 steps
+[tibia-probe] finish: not arrived
+=== PC-2 run 5 18:56:35
+[tibia-probe] finish: summoned
+[tibia-probe] path t=10359 ms monster at 1950,1337,7 distance 7 step 0
+[tibia-probe] path t=10811 ms monster at 1949,1337,7 distance 6 step 1
+[tibia-probe] path t=11265 ms monster at 1948,1337,7 distance 5 step 2
+[tibia-probe] path t=11718 ms monster at 1947,1337,7 distance 4 step 3
+[tibia-probe] path t=12171 ms monster at 1946,1337,7 distance 3 step 4
+[tibia-probe] path t=12621 ms monster at 1945,1337,7 distance 2 step 5
+[tibia-probe] path t=13075 ms monster at 1944,1337,7 distance 1 step 6
+[tibia-probe] arrived at 13075 ms after 6 steps, knight at 1943,1338,7
+[tibia-probe] finish: arrived

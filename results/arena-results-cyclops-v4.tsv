@@ -1,0 +1,13 @@
+timestamp	competitor	run	monster	count	experience	cleared_ms	lowest_health	actions_allowed	actions_dropped	potions	gold	deaths
+2026-10-13T14:49:36	spiral-policy	1	cyclops	3	675	80981	108	25	6	15	13	0
+2026-10-13T14:53:22	vbot	1	cyclops	3	675	90006	175	26	5	15	21	0
+2026-10-13T14:55:58	spiral-policy	2	cyclops	3	675	76409	126	20	13	11	80	0
+2026-10-13T14:59:49	vbot	2	cyclops	3	675	80006	167	20	3	11	122	0
+2026-10-13T15:02:18	spiral-policy	3	cyclops	3	675	71573	111	22	17	12	0	0
+2026-10-13T15:06:05	vbot	3	cyclops	3	675	100005	261	25	2	18	83	0
+2026-10-13T15:08:49	spiral-policy	4	cyclops	3	675	89187	100	24	16	14	40	0
+2026-10-13T15:12:37	vbot	4	cyclops	3	675	80040	182	21	2	13	72	0
+2026-10-13T15:15:41	spiral-policy	5	cyclops	3	675	107869	105	28	12	18	5	0
+2026-10-13T15:19:30	vbot	5	cyclops	3	675	100054	194	26	8	15	59	0
+2026-10-13T15:22:30	spiral-policy	6	cyclops	3	675	101366	97	26	9	18	25	0
+2026-10-13T15:26:05	vbot	6	cyclops	3	675	90008	171	25	6	17	53	0
