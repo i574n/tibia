@@ -58,95 +58,98 @@ $env:LUA_PATH = $null
 $env:LUA_CPATH = $null
 [IO.File]::WriteAllText($worldLog, '')
 Start-Process (Join-Path $canaryDir 'canary.exe') -WorkingDirectory $canaryDir -RedirectStandardOutput $worldLog -RedirectStandardError (Join-Path $canaryDir 'world.err') -WindowStyle Hidden | Out-Null
-$deadline = (Get-Date).AddSeconds(120)
-while (-not (Select-String -Path $worldLog -Pattern 'server online!' -Quiet -ErrorAction SilentlyContinue)) {
-    if ((Get-Date) -gt $deadline) { throw 'canary did not come online in 120 s' }
-    Start-Sleep -Seconds 1
-}
-$clientHome = Join-Path $env:APPDATA 'otcr\otclient\otclient'
-$keptBot = switch ($Bot) { 'vBot' { 'vBot_4.8' } 'nExBot' { 'nExBot' } default { '' } }
-$botNode = if ($keptBot) { "bot:`n  Knight Sample_1511:`n    enabled: true`n    config: $keptBot" } else { "bot:`n  Knight Sample_1511:`n    enabled: false" }
-$configOtml = Join-Path $clientHome 'config.otml'
-if (Test-Path $configOtml) {
-    $settingsText = [regex]::Replace([IO.File]::ReadAllText($configOtml), '(?m)^bot:\r?\n(?:[ \t]+.*(?:\r?\n|$))*', '')
-    [IO.File]::WriteAllText($configOtml, $settingsText.TrimEnd() + "`n" + $botNode + "`n")
-}
-foreach ($installed in @(Get-ChildItem (Join-Path $clientHome 'bot') -Directory -ErrorAction SilentlyContinue)) {
-    if ($installed.Name -ne $keptBot) { Remove-Item $installed.FullName -Recurse -Force }
-}
-"== client bot setting: $(if ($keptBot) { $keptBot } else { 'disabled, no bot folders' })"
-if ($Bot -eq 'vBot') {
-    $botDir = Join-Path $env:APPDATA 'otcr\otclient\otclient\bot\vBot_4.8'
-    if (Test-Path $botDir) { Remove-Item $botDir -Recurse -Force }
-    Copy-Item (Join-Path $root 'otclient-src\mods\game_bot\default_configs\vBot_4.8') $botDir -Recurse
-    New-Item -ItemType Directory -Force (Join-Path $botDir 'targetbot_configs'), (Join-Path $botDir 'storage') | Out-Null
-    $targeting = [IO.File]::ReadAllText((Join-Path $TibiaLive 'vbot-arena.json')).Replace('"name":"troll"', "`"name`":`"$($kinds[0])`"").Replace('"regex":"^troll$"', "`"regex`":`"^($($kinds -join '|'))`$`"")
-    [IO.File]::WriteAllText((Join-Path $botDir 'targetbot_configs\arena.json'), $targeting)
-    $profileSettings = { param($enabled) [ordered]@{ enabled = $enabled; spellTable = @(); itemTable = @(if ($enabled) { [ordered]@{ index = 1; item = 266; sign = '<'; origin = 'HP'; value = $HealBelow; enabled = $true } }); name = 'Profile #1'; Visible = $false; Cooldown = $true; Interval = $true; Conditions = $true; Delay = $true; MessageDelay = $false } }
-    $healBot = [ordered]@{ currentHealBotProfile = 1; healbot = @((& $profileSettings $true), (& $profileSettings $false), (& $profileSettings $false), (& $profileSettings $false), (& $profileSettings $false)) } | ConvertTo-Json -Depth 6
-    foreach ($profileIndex in 0, 1) { $profileDir = Join-Path $botDir "vBot_configs\profile_$profileIndex"; New-Item -ItemType Directory -Force $profileDir | Out-Null; [IO.File]::WriteAllText((Join-Path $profileDir 'HealBot.json'), $healBot) }
-    Set-Content (Join-Path $botDir 'storage\profile_1.json') '{"_configs":{"targetbot_configs":{"enabled":true,"selected":"arena"}}}' -NoNewline
-    "== vBot seeded: TargetBot arena ($Monster, chase), HealBot potion below $HealBelow hp"
-}
-if ($Bot -eq 'nExBot') {
-    $botDir = Join-Path $env:APPDATA 'otcr\otclient\otclient\bot\nExBot'
-    if (Test-Path $botDir) { Remove-Item $botDir -Recurse -Force }
-    Copy-Item (Join-Path $root 'bots\nExBot-19632d4') $botDir -Recurse
-    $loader = Join-Path $botDir '_Loader.lua'
-    $luaDofile = if ($env:TIBIA_NEXBOT_LUA_DOFILE -ne '0') { [IO.File]::ReadAllText((Join-Path $TibiaLive 'bot-lua-dofile.lua')) + "`n" } else { '' }
-    if ($luaDofile) { Set-Content (Join-Path $botDir 'bot_env_probe.lua') 'return getfenv and getfenv(1) or _G' -NoNewline }
-    [IO.File]::WriteAllText($loader, [IO.File]::ReadAllText((Join-Path $TibiaLive 'bot-network-sandbox.lua')) + "`n" + $luaDofile + [IO.File]::ReadAllText($loader))
-    $shimmed = 0
-    foreach ($script in Get-ChildItem $botDir -Recurse -Filter '*.lua') {
-        $source = [IO.File]::ReadAllText($script.FullName)
-        if ($source.Contains('pcall(dofile, ')) {
-            [IO.File]::WriteAllText($script.FullName, $source.Replace('pcall(dofile, ', 'pcall(function(path) return dofile(path) end, '))
-            $shimmed++
-        }
+try {
+    $deadline = (Get-Date).AddSeconds(120)
+    while (-not (Select-String -Path $worldLog -Pattern 'server online!' -Quiet -ErrorAction SilentlyContinue)) {
+        if ((Get-Date) -gt $deadline) { throw 'canary did not come online in 120 s' }
+        Start-Sleep -Seconds 1
     }
-    "== nExBot: pcall(dofile, ...) wrapped in a Lua function in $shimmed files (the client's native dofile crashes when pcall calls it directly)"
-    if ($env:TIBIA_NEXBOT_TRACE -eq '1') {
-        $traceFunction = 'function nexbotTrace(message) pcall(function() local path = "/nexbot-trace.log"; local previous = g_resources.fileExists(path) and g_resources.readFileContents(path) or ""; g_resources.writeFileContents(path, previous .. tostring(os.clock()) .. " " .. message .. "\n") end) end' + "`n" + 'nexbotTrace("loader start")' + "`n"
-        $traced = [IO.File]::ReadAllText($loader).Replace('  local scriptStart = os.clock()', '  nexbotTrace("load " .. tostring(basePath) .. tostring(name))' + "`n" + '  local scriptStart = os.clock()').Replace('  local elapsed = math.floor((os.clock() - scriptStart) * 1000)', '  nexbotTrace("done " .. tostring(name) .. " " .. tostring(status))' + "`n" + '  local elapsed = math.floor((os.clock() - scriptStart) * 1000)')
-        [IO.File]::WriteAllText($loader, $traceFunction + $traced + "`n" + 'nexbotTrace("loader end")' + "`n")
-        if ($env:TIBIA_NEXBOT_SKIP_FLOOR -eq '1') {
-            foreach ($nestedFile in @(Get-ChildItem $botDir -Recurse -Filter '*.lua' | Where-Object { (Get-Content $_.FullName -Raw).Contains('floor_items.lua")') })) {
-                $nestedPath = $nestedFile.FullName
-                $nestedSource = [IO.File]::ReadAllText($nestedPath)
-                $nestedSource = [regex]::Replace($nestedSource, 'local ok, fi = pcall\([^\n]*floor_items\.lua"\)', 'local ok, fi = false, nil')
-                $nestedSource = [regex]::Replace($nestedSource, '(?m)^(\s*)ok, fi = pcall\([^\n]*floor_items\.lua"\)', '$1ok, fi = false, nil')
-                [IO.File]::WriteAllText($nestedPath, $nestedSource)
+    $clientHome = Join-Path $env:APPDATA 'otcr\otclient\otclient'
+    $keptBot = switch ($Bot) { 'vBot' { 'vBot_4.8' } 'nExBot' { 'nExBot' } default { '' } }
+    $botNode = if ($keptBot) { "bot:`n  Knight Sample_1511:`n    enabled: true`n    config: $keptBot" } else { "bot:`n  Knight Sample_1511:`n    enabled: false" }
+    $configOtml = Join-Path $clientHome 'config.otml'
+    if (Test-Path $configOtml) {
+        $settingsText = [regex]::Replace([IO.File]::ReadAllText($configOtml), '(?m)^bot:\r?\n(?:[ \t]+.*(?:\r?\n|$))*', '')
+        [IO.File]::WriteAllText($configOtml, $settingsText.TrimEnd() + "`n" + $botNode + "`n")
+    }
+    foreach ($installed in @(Get-ChildItem (Join-Path $clientHome 'bot') -Directory -ErrorAction SilentlyContinue)) {
+        if ($installed.Name -ne $keptBot) { Remove-Item $installed.FullName -Recurse -Force }
+    }
+    "== client bot setting: $(if ($keptBot) { $keptBot } else { 'disabled, no bot folders' })"
+    if ($Bot -eq 'vBot') {
+        $botDir = Join-Path $env:APPDATA 'otcr\otclient\otclient\bot\vBot_4.8'
+        if (Test-Path $botDir) { Remove-Item $botDir -Recurse -Force }
+        Copy-Item (Join-Path $root 'otclient-src\mods\game_bot\default_configs\vBot_4.8') $botDir -Recurse
+        New-Item -ItemType Directory -Force (Join-Path $botDir 'targetbot_configs'), (Join-Path $botDir 'storage') | Out-Null
+        $targeting = [IO.File]::ReadAllText((Join-Path $TibiaLive 'vbot-arena.json')).Replace('"name":"troll"', "`"name`":`"$($kinds[0])`"").Replace('"regex":"^troll$"', "`"regex`":`"^($($kinds -join '|'))`$`"")
+        [IO.File]::WriteAllText((Join-Path $botDir 'targetbot_configs\arena.json'), $targeting)
+        $profileSettings = { param($enabled) [ordered]@{ enabled = $enabled; spellTable = @(); itemTable = @(if ($enabled) { [ordered]@{ index = 1; item = 266; sign = '<'; origin = 'HP'; value = $HealBelow; enabled = $true } }); name = 'Profile #1'; Visible = $false; Cooldown = $true; Interval = $true; Conditions = $true; Delay = $true; MessageDelay = $false } }
+        $healBot = [ordered]@{ currentHealBotProfile = 1; healbot = @((& $profileSettings $true), (& $profileSettings $false), (& $profileSettings $false), (& $profileSettings $false), (& $profileSettings $false)) } | ConvertTo-Json -Depth 6
+        foreach ($profileIndex in 0, 1) { $profileDir = Join-Path $botDir "vBot_configs\profile_$profileIndex"; New-Item -ItemType Directory -Force $profileDir | Out-Null; [IO.File]::WriteAllText((Join-Path $profileDir 'HealBot.json'), $healBot) }
+        Set-Content (Join-Path $botDir 'storage\profile_1.json') '{"_configs":{"targetbot_configs":{"enabled":true,"selected":"arena"}}}' -NoNewline
+        "== vBot seeded: TargetBot arena ($Monster, chase), HealBot potion below $HealBelow hp"
+    }
+    if ($Bot -eq 'nExBot') {
+        $botDir = Join-Path $env:APPDATA 'otcr\otclient\otclient\bot\nExBot'
+        if (Test-Path $botDir) { Remove-Item $botDir -Recurse -Force }
+        Copy-Item (Join-Path $root 'bots\nExBot-19632d4') $botDir -Recurse
+        $loader = Join-Path $botDir '_Loader.lua'
+        $luaDofile = if ($env:TIBIA_NEXBOT_LUA_DOFILE -ne '0') { [IO.File]::ReadAllText((Join-Path $TibiaLive 'bot-lua-dofile.lua')) + "`n" } else { '' }
+        if ($luaDofile) { Set-Content (Join-Path $botDir 'bot_env_probe.lua') 'return getfenv and getfenv(1) or _G' -NoNewline }
+        [IO.File]::WriteAllText($loader, [IO.File]::ReadAllText((Join-Path $TibiaLive 'bot-network-sandbox.lua')) + "`n" + $luaDofile + [IO.File]::ReadAllText($loader))
+        $shimmed = 0
+        foreach ($script in Get-ChildItem $botDir -Recurse -Filter '*.lua') {
+            $source = [IO.File]::ReadAllText($script.FullName)
+            if ($source.Contains('pcall(dofile, ')) {
+                [IO.File]::WriteAllText($script.FullName, $source.Replace('pcall(dofile, ', 'pcall(function(path) return dofile(path) end, '))
+                $shimmed++
             }
-            "== nExBot diagnostic: nested floor_items dofile skipped"
         }
-        $pathUtils = Join-Path $botDir 'utils\path_utils.lua'
-        $pathLines = [System.Collections.Generic.List[string]]::new([string[]](Get-Content $pathUtils))
-        foreach ($lineNumber in @(500, 482, 452, 316, 184, 163, 125, 120, 111, 76, 66, 36, 30)) { $pathLines.Insert($lineNumber - 1, "nexbotTrace('path_utils line $lineNumber')") }
-        [IO.File]::WriteAllLines($pathUtils, $pathLines)
-        $traceFile = Join-Path $clientHome 'nexbot-trace.log'
-        if (Test-Path $traceFile) { Remove-Item $traceFile -Force }
-        "== nExBot load tracing on ($traceFile)"
+        "== nExBot: pcall(dofile, ...) wrapped in a Lua function in $shimmed files (the client's native dofile crashes when pcall calls it directly)"
+        if ($env:TIBIA_NEXBOT_TRACE -eq '1') {
+            $traceFunction = 'function nexbotTrace(message) pcall(function() local path = "/nexbot-trace.log"; local previous = g_resources.fileExists(path) and g_resources.readFileContents(path) or ""; g_resources.writeFileContents(path, previous .. tostring(os.clock()) .. " " .. message .. "\n") end) end' + "`n" + 'nexbotTrace("loader start")' + "`n"
+            $traced = [IO.File]::ReadAllText($loader).Replace('  local scriptStart = os.clock()', '  nexbotTrace("load " .. tostring(basePath) .. tostring(name))' + "`n" + '  local scriptStart = os.clock()').Replace('  local elapsed = math.floor((os.clock() - scriptStart) * 1000)', '  nexbotTrace("done " .. tostring(name) .. " " .. tostring(status))' + "`n" + '  local elapsed = math.floor((os.clock() - scriptStart) * 1000)')
+            [IO.File]::WriteAllText($loader, $traceFunction + $traced + "`n" + 'nexbotTrace("loader end")' + "`n")
+            if ($env:TIBIA_NEXBOT_SKIP_FLOOR -eq '1') {
+                foreach ($nestedFile in @(Get-ChildItem $botDir -Recurse -Filter '*.lua' | Where-Object { (Get-Content $_.FullName -Raw).Contains('floor_items.lua")') })) {
+                    $nestedPath = $nestedFile.FullName
+                    $nestedSource = [IO.File]::ReadAllText($nestedPath)
+                    $nestedSource = [regex]::Replace($nestedSource, 'local ok, fi = pcall\([^\n]*floor_items\.lua"\)', 'local ok, fi = false, nil')
+                    $nestedSource = [regex]::Replace($nestedSource, '(?m)^(\s*)ok, fi = pcall\([^\n]*floor_items\.lua"\)', '$1ok, fi = false, nil')
+                    [IO.File]::WriteAllText($nestedPath, $nestedSource)
+                }
+                "== nExBot diagnostic: nested floor_items dofile skipped"
+            }
+            $pathUtils = Join-Path $botDir 'utils\path_utils.lua'
+            $pathLines = [System.Collections.Generic.List[string]]::new([string[]](Get-Content $pathUtils))
+            foreach ($lineNumber in @(500, 482, 452, 316, 184, 163, 125, 120, 111, 76, 66, 36, 30)) { $pathLines.Insert($lineNumber - 1, "nexbotTrace('path_utils line $lineNumber')") }
+            [IO.File]::WriteAllLines($pathUtils, $pathLines)
+            $traceFile = Join-Path $clientHome 'nexbot-trace.log'
+            if (Test-Path $traceFile) { Remove-Item $traceFile -Force }
+            "== nExBot load tracing on ($traceFile)"
+        }
+        New-Item -ItemType Directory -Force (Join-Path $botDir 'targetbot_configs'), (Join-Path $botDir 'storage') | Out-Null
+        $targeting = [IO.File]::ReadAllText((Join-Path $TibiaLive 'vbot-arena.json')).Replace('"name":"troll"', "`"name`":`"$($kinds[0])`"").Replace('"regex":"^troll$"', "`"regex`":`"^($($kinds -join '|'))`$`"")
+        [IO.File]::WriteAllText((Join-Path $botDir 'targetbot_configs\arena.json'), $targeting)
+        $healPercent = [int]([Math]::Floor($HealBelow * 100 / $healthMax) - 1)
+        $effectiveBelow = [Math]::Ceiling(($healPercent + 1) * $healthMax / 100)
+        $profileSettings = { param($enabled) [ordered]@{ enabled = $enabled; spellTable = @(); itemTable = @(if ($enabled) { [ordered]@{ index = 1; item = 266; sign = '<'; origin = 'HP%'; value = $healPercent; enabled = $true } }); name = 'Profile #1'; Visible = $false; Cooldown = $true; Interval = $true; Conditions = $true; Delay = $true; MessageDelay = $false } }
+        $healBot = [ordered]@{ currentHealBotProfile = 1; healbot = @((& $profileSettings $true), (& $profileSettings $false), (& $profileSettings $false), (& $profileSettings $false), (& $profileSettings $false)) } | ConvertTo-Json -Depth 6
+        foreach ($profileIndex in 0, 1) { $profileDir = Join-Path $botDir "nExBot_configs\profile_$profileIndex"; New-Item -ItemType Directory -Force $profileDir | Out-Null; [IO.File]::WriteAllText((Join-Path $profileDir 'HealBot.json'), $healBot) }
+        Set-Content (Join-Path $botDir 'storage\profile_1.json') '{"_configs":{"targetbot_configs":{"enabled":true,"selected":"arena"}}}' -NoNewline
+        $characterDir = Join-Path $botDir 'nExBot_configs\characters\knight sample'
+        New-Item -ItemType Directory -Force $characterDir | Out-Null
+        Set-Content (Join-Path $characterDir 'UnifiedStorage.json') '{"version":1,"characterName":"Knight Sample","targetbot":{"enabled":true,"selectedConfig":"arena"},"healbot":{"enabled":true}}' -NoNewline
+        "== nExBot seeded: TargetBot arena ($Monster, chase), HealBot potion at hp% <= $healPercent (health below $effectiveBelow of $healthMax), network calls stubbed"
     }
-    New-Item -ItemType Directory -Force (Join-Path $botDir 'targetbot_configs'), (Join-Path $botDir 'storage') | Out-Null
-    $targeting = [IO.File]::ReadAllText((Join-Path $TibiaLive 'vbot-arena.json')).Replace('"name":"troll"', "`"name`":`"$($kinds[0])`"").Replace('"regex":"^troll$"', "`"regex`":`"^($($kinds -join '|'))`$`"")
-    [IO.File]::WriteAllText((Join-Path $botDir 'targetbot_configs\arena.json'), $targeting)
-    $healPercent = [int]([Math]::Floor($HealBelow * 100 / $healthMax) - 1)
-    $effectiveBelow = [Math]::Ceiling(($healPercent + 1) * $healthMax / 100)
-    $profileSettings = { param($enabled) [ordered]@{ enabled = $enabled; spellTable = @(); itemTable = @(if ($enabled) { [ordered]@{ index = 1; item = 266; sign = '<'; origin = 'HP%'; value = $healPercent; enabled = $true } }); name = 'Profile #1'; Visible = $false; Cooldown = $true; Interval = $true; Conditions = $true; Delay = $true; MessageDelay = $false } }
-    $healBot = [ordered]@{ currentHealBotProfile = 1; healbot = @((& $profileSettings $true), (& $profileSettings $false), (& $profileSettings $false), (& $profileSettings $false), (& $profileSettings $false)) } | ConvertTo-Json -Depth 6
-    foreach ($profileIndex in 0, 1) { $profileDir = Join-Path $botDir "nExBot_configs\profile_$profileIndex"; New-Item -ItemType Directory -Force $profileDir | Out-Null; [IO.File]::WriteAllText((Join-Path $profileDir 'HealBot.json'), $healBot) }
-    Set-Content (Join-Path $botDir 'storage\profile_1.json') '{"_configs":{"targetbot_configs":{"enabled":true,"selected":"arena"}}}' -NoNewline
-    $characterDir = Join-Path $botDir 'nExBot_configs\characters\knight sample'
-    New-Item -ItemType Directory -Force $characterDir | Out-Null
-    Set-Content (Join-Path $characterDir 'UnifiedStorage.json') '{"version":1,"characterName":"Knight Sample","targetbot":{"enabled":true,"selectedConfig":"arena"},"healbot":{"enabled":true}}' -NoNewline
-    "== nExBot seeded: TargetBot arena ($Monster, chase), HealBot potion at hp% <= $healPercent (health below $effectiveBelow of $healthMax), network calls stubbed"
+    "== world online, knight level $Level ($healthMax hp), axe skill $AxeSkill, $MonsterCount x $Monster, heal below $HealBelow"
+    & (Join-Path $TibiaLive 'run-probe.ps1') -Script $summon -TimeoutSeconds 60 | Select-Object -Last 2
+    '== policy'
+    & (Join-Path $TibiaLive 'run-probe.ps1') -Script $probe -TimeoutSeconds $TimeoutSeconds
+    Start-Sleep -Seconds 5
+} finally {
+    Copy-Item (Join-Path $root 'otclient-src\otclientrc.lua.orig') (Join-Path $root 'otclient-src\otclientrc.lua') -Force -ErrorAction SilentlyContinue
+    Get-Process canary -ErrorAction SilentlyContinue | Stop-Process -Force
 }
-"== world online, knight level $Level ($healthMax hp), axe skill $AxeSkill, $MonsterCount x $Monster, heal below $HealBelow"
-& (Join-Path $TibiaLive 'run-probe.ps1') -Script $summon -TimeoutSeconds 60 | Select-Object -Last 2
-'== policy'
-& (Join-Path $TibiaLive 'run-probe.ps1') -Script $probe -TimeoutSeconds $TimeoutSeconds
-Copy-Item (Join-Path $root 'otclient-src\otclientrc.lua.orig') (Join-Path $root 'otclient-src\otclientrc.lua') -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 5
-Get-Process canary -ErrorAction SilentlyContinue | Stop-Process -Force
 & $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary canary -e "select level, experience, health, skill_axe from players where name = 'Knight Sample'"
 '== world stopped'

@@ -10,6 +10,14 @@ inl after (ms : i32) (f : () -> ()) : () = $'scheduleEvent(!f, !ms)' : ()
 
 inl now_ms () : i32 = $'g_clock.millis()' : i32
 
+inl env_i32 (name : string) (fallback : i32) : i32 = $'tonumber(os.getenv(!name) or "") or (!fallback)' : i32
+
+inl env_text (name : string) (fallback : string) : string = $'os.getenv(!name) or (!fallback)' : string
+
+inl seed_random_from_clock () : () = $'math.randomseed(os.time())' : ()
+
+inl env_is (name : string) (value : string) : bool = $'os.getenv(!name) == (!value)' : bool
+
 inl spot_of (p : native_position) : spot = {x = $'!p.x' : i32; y = $'!p.y' : i32; z = $'!p.z' : i32}
 
 inl player_spot () : spot = spot_of ($'g_game.getLocalPlayer():getPosition()' : native_position)
@@ -23,6 +31,8 @@ inl player_name () : string = $'g_game.getLocalPlayer():getName()' : string
 inl player_health () : i32 = $'g_game.getLocalPlayer():getHealth()' : i32
 
 inl player_max_health () : i32 = $'g_game.getLocalPlayer():getMaxHealth()' : i32
+
+inl player_shield_skill () : i32 = $'g_game.getLocalPlayer():getSkillLevel(Skill.Shielding)' : i32
 
 inl player_mana () : i32 = $'g_game.getLocalPlayer():getMana()' : i32
 
@@ -69,6 +79,9 @@ inl attacking () : creature = $'g_game.getAttackingCreature()' : creature
 
 inl attacking_anyone () : bool = $'g_game.isAttacking()' : bool
 
+inl attacking_short () : string =
+    $'(function() local a = g_game.getAttackingCreature(); if not a then return "nothing" end; return a:getName() .. " " .. a:getHealthPercent() .. "%" end)()' : string
+
 inl attacking_described () : string =
     $'(function() local a = g_game.getAttackingCreature(); if not a then return "nothing" end; local p = a:getPosition(); return a:getName() .. " " .. a:getHealthPercent() .. "% at " .. string.format("%d,%d,%d", p.x, p.y, p.z) end)()' : string
 
@@ -80,6 +93,8 @@ inl chasing (on : bool) : () =
     $'(function(mode) if g_game.getChaseMode() ~= mode then g_game.setChaseMode(mode) end end)((!on) and ChaseOpponent or DontChase)' : ()
 
 inl fight_balanced () : () = $'g_game.setFightMode(FightBalanced)' : ()
+
+inl fight_mode_text () : string = $'tostring(g_game.getFightMode())' : string
 
 inl drink (item : i32) : bool = $'g_game.useInventoryItemWith(!item, g_game.getLocalPlayer()) ~= false' : bool
 
@@ -93,6 +108,10 @@ inl disable_client_bot (character_key : string) : () =
 
 inl enable_client_bot (character_key : string) (config : string) : () =
     $'(function(key, config) local s = g_settings.getNode("bot") or {}; s[key] = { enabled = true, config = config }; g_settings.setNode("bot", s); g_settings.save() end)(!character_key, !config)' : ()
+
+inl start_client_bot (character_key : string) (config : string) : () =
+    enable_client_bot character_key config
+    $'modules.game_bot.refresh()' : ()
 
 inl instrument_game_calls () : lua.native_table =
     $'(function() local s = { attack = 0, cancel = 0, guarded = 0, other = {} }; local nativeAttack, nativeCancel, nativeCancelAndFollow, nativeCancelFollow = g_game.attack, g_game.cancelAttack, g_game.cancelAttackAndFollow, g_game.cancelFollow; g_game.attack = function(...) s.attack = s.attack + 1 return nativeAttack(...) end; if nativeCancel then g_game.cancelAttack = function(...) s.cancel = s.cancel + 1 return nativeCancel(...) end end; if nativeCancelAndFollow then g_game.cancelAttackAndFollow = function(...) s.cancel = s.cancel + 1 return nativeCancelAndFollow(...) end end; g_game.cancelFollow = function(...) if not g_game.getFollowingCreature() then s.guarded = s.guarded + 1 return end return nativeCancelFollow(...) end; for _, name in ipairs({ "stop", "walk", "autoWalk", "forceWalk", "turn", "follow", "cancelFollow", "setChaseMode", "setFightMode", "useInventoryItemWith", "useWith", "move", "look", "talk", "equipItem" }) do local native = g_game[name]; if native then g_game[name] = function(...) s.other[name] = (s.other[name] or 0) + 1 return native(...) end end end; return s end)()' : lua.native_table
@@ -140,7 +159,7 @@ inl log_out () : () = $'g_game.safeLogout()' : ()
 
 inl exit_client () : () = $'g_app.exit()' : ()
 
-inl hidden_requested () : bool = $'os.getenv("TIBIA_PROBE_HIDDEN") == "1"' : bool
+inl hidden_requested () : bool = env_is "TIBIA_PROBE_HIDDEN" "1"
 
 inl hide_window () : () =
     $'g_window.move({ x = -32000, y = -32000 })' : ()

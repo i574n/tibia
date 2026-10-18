@@ -8,12 +8,6 @@ inl joined (a : string) (b : string) : string = $'(!a) .. (!b)' : string
 
 inl shown (n : i32) : string = $'tostring(!n)' : string
 
-inl env_i32 (name : string) (fallback : i32) : i32 = $'tonumber(os.getenv(!name) or "") or (!fallback)' : i32
-
-inl env_text (name : string) (fallback : string) : string = $'os.getenv(!name) or (!fallback)' : string
-
-inl seed_random_from_clock () : () = $'math.randomseed(os.time())' : ()
-
 inl random_between (low : i32) (high : i32) : i32 = $'math.random(!low, !high)' : i32
 
 inl new_table () : native_table = $'{}' : native_table

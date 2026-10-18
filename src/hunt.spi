@@ -30,6 +30,21 @@ test kill_pays_bounty =
     inl outcome = attack damage (geometry.position 100 100 7) (geometry.position 100 99 7) (vitality.spawn 100)
     loot outcome 250 (coins.purse 80 0 0) |> coins.total_gold |> _assert_eq 330i32
 
+///> c
+test loot_conserves_gold_and_pays_in_fewest_coins_over_1600_purses_and_bounties =
+    inl ~limit = 40i32
+    let rec check (i : i32) (broken : i32) : i32 =
+        if i >= limit * limit then broken
+        else
+            inl held = coins.purse (i % limit * 37) (i / limit * 3) (i % 7)
+            inl bounty = i * 53 % 997
+            inl slain = loot (vitality.strike 500 (vitality.spawn 100)) bounty held
+            inl kept = loot (vitality.strike 1 (vitality.spawn 100)) bounty held
+            inl conserved = coins.total_gold slain = coins.total_gold held + bounty && coins.total_gold kept = coins.total_gold held
+            inl fewest = slain.gold < 100 && slain.platinum < 100
+            check (i + 1) (if conserved && fewest then broken else broken + 1)
+    check 0 0 |> _assert_eq 0i32
+
 ///> wgsl
 test kill_pays_bounty_on_gpu =
     inl ~damage = 150i32

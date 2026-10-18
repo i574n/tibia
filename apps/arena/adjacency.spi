@@ -2,7 +2,7 @@ type meter = {enabled : bool; adjacent_ms : lua.native_table; hits : lua.native_
 
 inl from_environment () : meter =
     {
-        enabled = $'os.getenv("TIBIA_ARENA_ADJACENCY") == "1"' : bool
+        enabled = client.env_is "TIBIA_ARENA_ADJACENCY" "1"
         adjacent_ms = lua.new_cell 0
         hits = lua.new_cell 0
         last_tick = lua.new_cell (0 - 1)

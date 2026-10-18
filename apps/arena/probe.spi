@@ -49,6 +49,10 @@ inl keep_hidden () : () =
 
 inl ignore_text (mode : string) (text : string) : () = ()
 
+inl start_delay_ms () : i32 = 2500
+
+inl settle_ms () : i32 = 1000
+
 inl knight () : string = "Knight Sample"
 
 inl game_master () : string = "GOD"

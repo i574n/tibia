@@ -29,9 +29,6 @@ inl watch_every_tick (w : watch) : () =
             if clear_if_full w health (client.now_ms () - w.started_at) = false then client.after (watch_ms ()) go
     go ()
 
-inl attacking_short () : string =
-    $'(function() local a = g_game.getAttackingCreature(); if not a then return "nothing" end; return a:getName() .. " " .. a:getHealthPercent() .. "%" end)()' : string
-
 inl observe (b : bot) (w : watch) : () =
     let rec go () : () =
         if lua.cell_value w.done = 0 then
@@ -41,7 +38,7 @@ inl observe (b : bot) (w : watch) : () =
                 note_lowest w health
                 inl elapsed = client.now_ms () - w.started_at
                 if clear_if_full w health elapsed = false then
-                    inl seconds, plus, lowest, attacking, at = elapsed / 1000, gained w, lua.cell_value w.lowest, attacking_short (), probe.described (client.player_spot ())
+                    inl seconds, plus, lowest, attacking, at = elapsed / 1000, gained w, lua.cell_value w.lowest, client.attacking_short (), probe.described (client.player_spot ())
                     probe.note ($'string.format("t=%ds experience +%d health %d lowest %d attacking %s at %s", !seconds, !plus, !health, !lowest, !attacking, !at)' : string)
                     inl diagnostics = b.diagnostics ()
                     if $'(!diagnostics) ~= ""' : bool then probe.note diagnostics
@@ -55,7 +52,7 @@ inl run (b : bot) : () =
     inl done = lua.new_cell 0
     inl lowest = lua.new_cell 999
     inl cleared = lua.new_cell 0
-    inl full_experience = lua.env_i32 "TIBIA_ARENA_FULL_EXPERIENCE" 90
+    inl full_experience = client.env_i32 "TIBIA_ARENA_FULL_EXPERIENCE" 90
     inl on_text (mode : string) (text : string) : () =
         if lua.cell_value done = 1 && lua.contains text "health potion" then
             probe.note ($'string.format("server text after finish (potion not counted) [%s]", !mode)' : string)
@@ -63,11 +60,12 @@ inl run (b : bot) : () =
     inl ready () =
         inl name, health, banner = client.player_name (), client.player_health (), b.banner
         probe.note ($'string.format("in game as %s health %d %s", !name, !health, !banner)' : string)
-        client.after 1000 (fun () =>
+        client.after (probe.start_delay_ms ()) (fun () =>
             client.fight_balanced ()
+            client.start_client_bot "Knight Sample_1511" b.config
             inl w : watch = {start_experience = client.player_experience (); started_at = client.now_ms (); full_experience = full_experience; lowest = lowest; cleared = cleared; done = done}
             watch_every_tick w
             observe b w
             )
-    client.enable_client_bot "Knight Sample_1511" b.config
+    client.disable_client_bot "Knight Sample_1511"
     probe.started_as (probe.knight ()) on_text ready 200000 (fun () => probe.finish_once done "timeout")

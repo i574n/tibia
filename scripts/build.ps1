@@ -19,7 +19,7 @@ $wgslRun = @($env:SPIRAL_WGSL_RUN, "../target/wgsl-run/release/spiral-wgsl$(_exe
     Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 if ($wgslRun) { $env:SPIRAL_WGSL_RUN = (Resolve-Path $wgslRun).Path }
 if ($IsWindows -and $env:SPIRAL_WGSL_RUN -and (Test-Path (Join-Path (Split-Path $env:SPIRAL_WGSL_RUN) 'dxcompiler.dll'))) { $env:WGPU_DX12_COMPILER = 'dxc' }
-if ($IsWindows -and $env:CI -and (Test-Path ../target/mesa/x64/lvp_icd.x86_64.json)) { $env:WGPU_BACKEND = 'vulkan'; $env:WGPU_ADAPTER_NAME = 'llvmpipe' }
+if ($IsWindows -and $env:CI -and (Test-Path ../target/wgsl-run/mesa/x64/lvp_icd.x86_64.json)) { $env:WGPU_BACKEND = 'vulkan'; $env:WGPU_ADAPTER_NAME = 'llvmpipe' }
 Write-Output "build.ps1 / wgsl runner: $($env:SPIRAL_WGSL_RUN ?? 'none') / dx12 compiler: $($env:WGPU_DX12_COMPILER ?? 'default') / adapter: $($env:WGPU_ADAPTER_NAME ?? 'default')"
 
 $metrics = (New-Item -ItemType Directory -Force "../target/ci-metrics").FullName

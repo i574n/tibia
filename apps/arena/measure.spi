@@ -66,7 +66,7 @@ inl main () =
             hits = lua.new_table (); taken = lua.new_table (); misses = lua.new_cell 0; kills = lua.new_cell 0; potions = lua.new_cell 0
             pending_hit = lua.new_cell 0; target = client.new_creature_slot (); start_experience = lua.new_cell 0; started_at = lua.new_cell 0; done = lua.new_cell 0
         }
-    inl potion_below = lua.env_i32 "TIBIA_MEASURE_POTION_BELOW" 90
+    inl potion_below = client.env_i32 "TIBIA_MEASURE_POTION_BELOW" 90
     inl on_text (mode : string) (text : string) : () =
         inl amount = lua.matched_number text "loses (%d+) hitpoints? due to your"
         inl lost = lua.matched_number text "You lose (%d+) hitpoints? due to an attack"
@@ -86,7 +86,7 @@ inl main () =
         client.after 1000 (fun () =>
             client.chasing false
             client.fight_balanced ()
-            inl mode, at = ($'tostring(g_game.getFightMode())' : string), probe.described (client.player_spot ())
+            inl mode, at = client.fight_mode_text (), probe.described (client.player_spot ())
             probe.note ($'string.format("fight mode %s at %s", !mode, !at)' : string)
             lua.set_cell b.start_experience (client.player_experience ())
             lua.set_cell b.started_at (client.now_ms ())

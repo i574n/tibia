@@ -21,7 +21,7 @@ inl summary (p : pace) (t : tally) : string =
 inl due_for_summary (t : tally) : bool = t.ticks % summary_every () = 0
 
 inl pace_from_environment (start_experience : i32) (started_at : lua.native_table) : pace =
-    {start_experience = start_experience; started_at = started_at; full_experience = lua.env_i32 "TIBIA_ARENA_FULL_EXPERIENCE" 90}
+    {start_experience = start_experience; started_at = started_at; full_experience = client.env_i32 "TIBIA_ARENA_FULL_EXPERIENCE" 90}
 
 inl finish_or_continue (p : pace) (t : tally) (on_cleared : () -> ()) (continue : () -> ()) : () =
     if elapsed p > run_ms () then

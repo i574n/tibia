@@ -3,6 +3,7 @@ modules:
     geometry
     terrain
     vitality
+    experience
     coins
     quantity
     rng

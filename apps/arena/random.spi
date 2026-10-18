@@ -74,7 +74,7 @@ inl tick (a : arena) (first : scoreboard.tally) : () =
     go first 0
 
 inl main () =
-    lua.seed_random_from_clock ()
+    client.seed_random_from_clock ()
     inl started_at = lua.new_cell 0
     inl engaged = lua.new_table ()
     inl on_text (mode : string) (text : string) : () =

@@ -73,6 +73,27 @@ inl moved_diagonally (from : position) (to : position) : bool = from.x <> to.x &
 inl step_cost (straight_ms : i32) (from : position) (to : position) : i32 = if moved_diagonally from to then straight_ms * diagonal_step_factor () else straight_ms
 inl step_away (threat : position) (from : position) : position = straight_step -1 threat from
 
+union up_ramp =
+    | RampNorth
+    | RampSouth
+    | RampEast
+    | RampWest
+    | RampSouthAlt
+    | RampEastAlt
+
+inl up_ramp_offset (ramp : up_ramp) : i32 * i32 =
+    match ramp with
+    | RampNorth => 0, -1
+    | RampSouth => 0, 1
+    | RampEast => 1, 0
+    | RampWest => -1, 0
+    | RampSouthAlt => 0, 2
+    | RampEastAlt => 2, 0
+
+inl climbed (ramp : up_ramp) (onto : position) : position =
+    inl dx, dy = up_ramp_offset ramp
+    {x = onto.x + dx; y = onto.y + dy; z = onto.z - 1}
+
 ///> c
 test step_north_decrements_y =
     inl moved = position 100 100 7 |> step North
@@ -137,6 +158,21 @@ test diagonal_steps_match_canary_walk_probe_2026_10_12 =
     south_west.y |> _assert_eq 1353i32
     north_west.x |> _assert_eq start.x
     north_west.y |> _assert_eq start.y
+
+///> c
+test stepping_onto_the_south_ramp_matches_the_live_floor_change_2026_10_15 =
+    inl ~ramp = position 1940 1372 7
+    inl landed = climbed RampSouth ramp
+    (landed.x, landed.y, landed.z, chebyshev_distance ramp landed, same_floor ramp landed) |> _assert_eq (1940i32, 1373i32, 6i32, 1, false)
+
+///> c
+test every_up_ramp_climbs_one_floor_and_shifts_like_canary_query_destination =
+    inl ~onto = position 100 100 7
+    inl shifted r =
+        inl p = climbed r onto
+        p.x - onto.x, p.y - onto.y, p.z
+    (shifted RampNorth, shifted RampEast, shifted RampWest, shifted RampSouthAlt, shifted RampEastAlt)
+    |> _assert_eq ((0i32, -1i32, 6i32), (1i32, 0i32, 6i32), (-1i32, 0i32, 6i32), (0i32, 2i32, 6i32), (2i32, 0i32, 6i32))
 
 ///> c
 test range_needs_same_floor =

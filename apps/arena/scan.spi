@@ -25,7 +25,7 @@ inl scan (marks_unloaded : bool) (radius : i32) : () =
 
 inl main () =
     inl ~radius = 12i32
-    inl marks_unloaded = $'os.getenv("TIBIA_SCAN_MARKS_UNLOADED") == "1"' : bool
+    inl marks_unloaded = client.env_is "TIBIA_SCAN_MARKS_UNLOADED" "1"
     inl scan_then_finish () =
         scan marks_unloaded radius
         probe.finish "scanned"

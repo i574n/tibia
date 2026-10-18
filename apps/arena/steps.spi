@@ -41,7 +41,7 @@ inl walk_away () : () =
     go ()
 
 inl main () =
-    inl chasing = $'os.getenv("TIBIA_STEPS_CHASE") == "1"' : bool
+    inl chasing = client.env_is "TIBIA_STEPS_CHASE" "1"
     inl stamps, intervals = lua.new_table (), lua.new_table ()
     client.on_position_change (record chasing stamps intervals)
     inl on_text (mode : string) (text : string) : () = probe.note ($'string.format("server text [%s]: %s", !mode, !text)' : string)

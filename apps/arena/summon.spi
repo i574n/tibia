@@ -11,14 +11,14 @@ inl list_creatures () : () =
     let rec each (index : i32) : () =
         if index <= size then
             inl c = client.member people index
-            inl name, monster, at = client.creature_name c, ($'tostring((!c):isMonster())' : string), probe.described (client.creature_spot c)
+            inl name, monster, at = client.creature_name c, (if client.creature_is_monster c then "true" else "false"), probe.described (client.creature_spot c)
             probe.note ($'string.format("sees %s monster=%s at %s", !name, !monster, !at)' : string)
             each (index + 1)
     each 1
 
 inl main () =
-    inl summon_at = lua.env_text "TIBIA_SUMMON_AT" "1932, 1352"
-    inl orders = orders_of (lua.env_text "TIBIA_SUMMON_ORDERS" "green frog,3,,2")
+    inl summon_at = client.env_text "TIBIA_SUMMON_AT" "1932, 1352"
+    inl orders = orders_of (client.env_text "TIBIA_SUMMON_ORDERS" "green frog,3,,2")
     inl on_text (mode : string) (text : string) : () = probe.note (lua.joined "server text: " text)
     inl ready () =
         probe.note (lua.joined "in game as " (client.player_name ()))

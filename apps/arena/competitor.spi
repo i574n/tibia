@@ -15,11 +15,11 @@ type sighting = {found : bool; index : i32; distance : i32}
 
 inl plan_from_environment () : plan =
     {
-        heal_below = lua.env_i32 "TIBIA_ARENA_HEAL_BELOW" 120
-        strike_above = lua.env_i32 "TIBIA_ARENA_STRIKE_ABOVE" 40
-        retreat_at = lua.env_i32 "TIBIA_ARENA_RETREAT_AT" 0
-        kite_at = lua.env_i32 "TIBIA_ARENA_KITE_AT" 0
-        reach_first = $'os.getenv("TIBIA_ARENA_TARGETING") == "reach"' : bool
+        heal_below = client.env_i32 "TIBIA_ARENA_HEAL_BELOW" 120
+        strike_above = client.env_i32 "TIBIA_ARENA_STRIKE_ABOVE" 40
+        retreat_at = client.env_i32 "TIBIA_ARENA_RETREAT_AT" 0
+        kite_at = client.env_i32 "TIBIA_ARENA_KITE_AT" 0
+        reach_first = client.env_is "TIBIA_ARENA_TARGETING" "reach"
     }
 
 inl finish (reason : string) : () = probe.finish_reporting_parity reason
@@ -223,22 +223,27 @@ inl main () =
     inl last_swing = lua.new_cell (0 - swing_ms ())
     inl engaged = lua.new_table ()
     inl meter = adjacency.from_environment ()
+    inl shield_seen = lua.new_cell 0
     inl on_text (mode : string) (text : string) : () =
         if lua.contains text "due to your" then lua.set_cell last_swing (client.now_ms ())
         inl t = client.now_ms () - lua.cell_value started_at
         probe.note ($'string.format("server text [%s]: %s @@t+%d", !mode, !text, !t)' : string)
+        inl shield = client.player_shield_skill ()
+        if shield <> lua.cell_value shield_seen then
+            lua.set_cell shield_seen shield
+            probe.note ($'string.format("shield skill %d @@t+%d", !shield, !t)' : string)
         adjacency.on_text meter t text
     inl ready () =
         inl name, health, mana = client.player_name (), client.player_health (), client.player_mana ()
         probe.note ($'string.format("in game as %s health %d mana %d", !name, !health, !mana)' : string)
-        client.after 1500 (fun () =>
+        client.after (probe.start_delay_ms () - probe.settle_ms ()) (fun () =>
             inl start_experience = client.player_experience ()
             client.chasing false
             client.fight_balanced ()
-            client.after 1000 (fun () =>
+            client.after (probe.settle_ms ()) (fun () =>
                 inl at = probe.described (client.player_spot ())
                 inl heal_below, strike_above, kite_at, retreat_at = p.heal_below, p.strike_above, p.kite_at, p.retreat_at
-                inl targeting = lua.env_text "TIBIA_ARENA_TARGETING" "current"
+                inl targeting = client.env_text "TIBIA_ARENA_TARGETING" "current"
                 probe.note ($'string.format("policy starts at %s thresholds heal<%d strike>=%d kite at %d retreat at %d targeting %s", !at, !heal_below, !strike_above, !kite_at, !retreat_at, !targeting)' : string)
                 lua.set_cell started_at (client.now_ms ())
                 inl a : arena = {plan = p; pace = scoreboard.pace_from_environment start_experience started_at; engaged = engaged; last_swing = last_swing; meter = meter}
