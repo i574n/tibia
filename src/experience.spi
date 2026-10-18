@@ -6,7 +6,9 @@ type standing = {level : i32; experience : i32}
 inl experience_for_level (level : i32) : i32 =
     (((level - 6) * level + 17) * level - 12) / 6 * 100
 
-inl unblessed_death_loss_below_level_24 (experience : i32) : i32 = experience / 10
+inl unblessed_death_loss_below_level_24 (experience : i32) : i32 = (experience + 9) / 10
+
+inl last_level_without_experience_loss () : i32 = 7
 
 inl level_of (experience : i32) (from_level : i32) : i32 =
     let rec down (level : i32) : i32 =
@@ -14,7 +16,7 @@ inl level_of (experience : i32) (from_level : i32) : i32 =
     down from_level
 
 inl after_unblessed_death (s : standing) : standing =
-    inl left = s.experience - unblessed_death_loss_below_level_24 s.experience
+    inl left = if s.level > last_level_without_experience_loss () then s.experience - unblessed_death_loss_below_level_24 s.experience else s.experience
     {level = level_of left s.level; experience = left}
 
 ///> c
@@ -34,6 +36,13 @@ test a_death_mid_level_keeps_the_level_when_the_loss_stays_above_its_floor =
     inl ~experience = 9000i32
     inl after = after_unblessed_death {level = 9; experience = experience}
     (after.level, after.experience, level_of 2599 8, level_of 0 5) |> _assert_eq (9i32, 8100i32, 6i32, 1i32)
+
+///> c
+test the_loss_rounds_up_like_canary_ceil_and_spares_levels_up_to_7 =
+    inl ~experience = 4205i32
+    inl odd = after_unblessed_death {level = 8; experience = experience}
+    inl young = after_unblessed_death {level = 7; experience = 2600}
+    (odd.level, odd.experience, young.level, young.experience, unblessed_death_loss_below_level_24 1, unblessed_death_loss_below_level_24 0) |> _assert_eq (7i32, 3784i32, 7i32, 2600i32, 1i32, 0i32)
 
 ///> wgsl
 test death_penalty_on_gpu =

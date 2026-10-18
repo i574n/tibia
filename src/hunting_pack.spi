@@ -27,6 +27,7 @@ inl purpose_creature_hit () : u32 = 13
 inl purpose_loot () : u32 = 14
 inl purpose_random_control () : u32 = 15
 inl purpose_wander () : u32 = 16
+inl purpose_creature_shot () : u32 = 17
 
 type foe =
     {
@@ -104,6 +105,7 @@ inl offense_against (kind : creatures.arena_creature) : offense =
     open creatures
     match kind with
     | Cyclops => {level = 30; weapon_attack = 21; weapon_skill = 60; step_ms = knight_sample_step_ms (); heal_low = 125; heal_high = 175}
+    | Hunter => {level = 30; weapon_attack = 21; weapon_skill = 60; step_ms = knight_sample_step_ms (); heal_low = 125; heal_high = 175}
     | _ => {level = 8; weapon_attack = 20; weapon_skill = 30; step_ms = knight_sample_step_ms (); heal_low = 30; heal_high = 60}
 
 inl never () : i32 = 2147483647
@@ -285,6 +287,19 @@ inl creature_hits_hunter (camp : camp) (seed : u32) (tick : i32) (index : i32) (
     inl hurt = combat.creature_hit stats.melee_max (combat.knight_sample_gear ()) shielded (key seed tick index (purpose_creature_hit ()))
     with_slot index struck (p |> with_hunter {h with health = quantity.minus h.health (quantity.hp hurt); block_charges = if shielded then h.block_charges - 1 else h.block_charges; hits_taken = if hurt > 0 then h.hits_taken + 1 else h.hits_taken; damage_taken = quantity.plus h.damage_taken (quantity.hp hurt)})
 
+inl hunter_takes_arrow (arrow : combat.ranged_attack) (seed : u32) (tick : i32) (index : i32) (p : pack) : pack =
+    inl h = p.hunter
+    inl hurt, charges = combat.ranged_hit_spending_a_charge arrow (combat.knight_sample_gear ()) h.block_charges (key seed tick index (purpose_creature_shot ()))
+    p |> with_hunter {h with health = quantity.minus h.health (quantity.hp hurt); block_charges = charges; hits_taken = if hurt > 0 then h.hits_taken + 1 else h.hits_taken; damage_taken = quantity.plus h.damage_taken (quantity.hp hurt)}
+
+inl creature_shoots (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (arrow : combat.ranged_attack) (g : foe) (p : pack) : pack =
+    inl distance = distance_to g p
+    if g.strikes_at > now || combat.ranged_in_reach arrow distance (geometry.sight_line_clear (terrain.blocked camp.layout) g.at p.hunter.at) = false then p
+    else
+        inl timed = {g with strikes_at = now + arrow.every_ms}
+        inl meleed = if distance <= 1 then creature_hits_hunter camp seed tick index timed p else with_slot index timed p
+        if combat.ranged_fires arrow (key seed tick (index + 100) (purpose_creature_shot ())) then hunter_takes_arrow arrow seed tick index meleed else meleed
+
 inl creature_think_phase_ms (seed : u32) (index : i32) : i32 = conv ((seed + conv index * 7u32) % 10u32) * tick_ms ()
 
 inl cardinal_step (k : i32) (from : geometry.position) : geometry.position =
@@ -317,6 +332,11 @@ inl foe_turn (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (
                 inl h = p.hunter
                 {reset with escapes = p.escapes + 1; hunter = {h with target = if h.target = index then -1 else h.target}}
             else with_slot index fled p
+        elif stats.target_distance > 1 && distance_to f p <= stats.target_distance && geometry.sees f.at p.hunter.at then
+            if distance_to f p < stats.target_distance then
+                inl away = terrain.step_away camp.layout (taken_by_others index p) p.hunter.at f.at
+                with_slot index {f with at = away; met_target = true; next_step_at = now + geometry.step_cost (terrain.on_ground_at camp.layout f.at stats.step_ms) f.at away} p
+            else with_slot index {f with met_target = true} p
         elif distance_to f p <= 1 then with_slot index {f with met_target = true} p
         elif geometry.sees f.at p.hunter.at = false then p
         else
@@ -328,6 +348,7 @@ inl foe_turn (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (
             if h.target = index then chased |> with_hunter {h with timers = swing_after_target_moves camp now h.timers} else chased
     inl g = slot index moved
     if vitality.health g.life < stats.run_health then moved
+    elif creatures.is_ranged kind then creature_shoots camp seed tick now index (creatures.ranged_attack_of kind) g moved
     else
         match camp.melee with
         | MeleeWhenReady =>
@@ -861,7 +882,7 @@ nominal held_out = ()
 
 type seed_range = {first : u32; count : i32}
 
-union seed_block role =
+union private seed_block role =
     | TrainingBlock :: seed_range -> seed_block training
     | HeldOutBlock :: seed_range -> seed_block held_out
 
@@ -872,6 +893,7 @@ inl range_of forall role. (b : seed_block role) : seed_range =
 
 inl training_block () : seed_block training = TrainingBlock {first = training_first (); count = training_count ()}
 inl held_out_block () : seed_block held_out = HeldOutBlock {first = held_out_first (); count = held_out_count ()}
+inl held_out_slice (count : i32) : seed_block held_out = HeldOutBlock {first = held_out_first (); count = if count < held_out_count () then count else held_out_count ()}
 
 inl shaped_cavebot_heal_tuned_on forall unit. (o : objective unit) (shape : tactic -> tactic) (camp : camp) (b : seed_block training) : i32 =
     inl r = range_of b

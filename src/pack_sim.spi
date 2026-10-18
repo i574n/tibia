@@ -286,15 +286,25 @@ test typed_seed_blocks_give_the_same_numbers_as_raw_ranges =
     inl ~first = 1001u32
     inl spot = uniform_camp Cyclops |> on_layout (open terrain in ArenaSpot)
     inl t = cavebot_with_heal 160
-    inl typed = clears_judged_on spot t (HeldOutBlock {first = first; count = 3})
+    inl typed = clears_judged_on spot t (held_out_slice 3)
     inl raw = clear_ledger_of spot t first 3
-    (typed.clear_potions = raw.clear_potions, typed.clear_ms = raw.clear_ms, quantity.value_of (judged_on Kills spot t (HeldOutBlock {first = first; count = 1})) = score spot t first 1) |> _assert_eq (true, true, true)
+    (typed.clear_potions = raw.clear_potions, typed.clear_ms = raw.clear_ms, quantity.value_of (judged_on Kills spot t (held_out_slice 1)) = score spot t first 1) |> _assert_eq (true, true, true)
 
 ///> c
 test tuning_on_held_out_seeds_does_not_compile fails "Unification failure" =
     open hunting_pack
     open creatures
     cavebot_heal_tuned_on Profit (uniform_camp Cyclops) (held_out_block ())
+
+///> c
+test a_held_out_block_cannot_be_forged_from_training_seeds fails "The module does not have the key: HeldOutBlock" =
+    open hunting_pack
+    open creatures
+    judged_on Profit (uniform_camp Cyclops) (cavebot_with_heal 160) (hunting_pack.HeldOutBlock {first = 1u32; count = 3})
+
+///> c
+test a_strike_proof_cannot_be_forged_outside_readiness fails "The module does not have the key: AttackReady" =
+    readiness.Strike (readiness.AttackReady (quantity.ms 0))
 
 ///> c
 test judging_on_training_seeds_does_not_compile fails "Unification failure" =

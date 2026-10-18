@@ -6,7 +6,7 @@ nominal attack_group = ()
 nominal healing_group = ()
 nominal action_slot = ()
 
-union ready group =
+union private ready group =
     | AttackReady :: quantity.amount quantity.milliseconds -> ready attack_group
     | HealingReady :: quantity.amount quantity.milliseconds -> ready healing_group
     | ActionReady :: quantity.amount quantity.milliseconds -> ready action_slot

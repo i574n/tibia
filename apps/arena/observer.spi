@@ -53,16 +53,21 @@ inl run (b : bot) : () =
     inl lowest = lua.new_cell 999
     inl cleared = lua.new_cell 0
     inl full_experience = client.env_i32 "TIBIA_ARENA_FULL_EXPERIENCE" 90
+    inl logged_in_at = lua.new_cell 0
     inl on_text (mode : string) (text : string) : () =
+        inl t = client.now_ms () - lua.cell_value logged_in_at
         if lua.cell_value done = 1 && lua.contains text "health potion" then
-            probe.note ($'string.format("server text after finish (potion not counted) [%s]", !mode)' : string)
-        else probe.note ($'string.format("server text [%s]: %s", !mode, !text)' : string)
+            probe.note ($'string.format("server text after finish (potion not counted) [%s] @@t+%d", !mode, !t)' : string)
+        else probe.note ($'string.format("server text [%s]: %s @@t+%d", !mode, !text, !t)' : string)
     inl ready () =
         inl name, health, banner = client.player_name (), client.player_health (), b.banner
         probe.note ($'string.format("in game as %s health %d %s", !name, !health, !banner)' : string)
+        lua.set_cell logged_in_at (client.now_ms ())
         client.after (probe.start_delay_ms ()) (fun () =>
             client.fight_balanced ()
             client.start_client_bot "Knight Sample_1511" b.config
+            inl t = client.now_ms () - lua.cell_value logged_in_at
+            probe.note ($'string.format("client bot starts @@t+%d", !t)' : string)
             inl w : watch = {start_experience = client.player_experience (); started_at = client.now_ms (); full_experience = full_experience; lowest = lowest; cleared = cleared; done = done}
             watch_every_tick w
             observe b w

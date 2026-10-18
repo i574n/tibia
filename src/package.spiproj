@@ -4,6 +4,8 @@ modules:
     terrain
     vitality
     experience
+    skills
+    blessings
     coins
     quantity
     rng
