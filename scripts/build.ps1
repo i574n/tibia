@@ -9,6 +9,8 @@ $ErrorActionPreference = "Stop"
 $Files = @($Files | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 
 
+& ../apps/arena/build.ps1
+
 $runNotebook = (Resolve-Path "../deps/spiral/apps/cells/spi/run_notebook.ps1").Path
 $wgslRun = @($env:SPIRAL_WGSL_RUN, "../target/wgsl-run/release/spiral-wgsl$(_exe)") |
     Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
@@ -39,6 +41,9 @@ foreach ($source in $sources) {
     if ($s.failed -or $s.unsupported -or $s.skipped -or $s.not_run -or $missing -or $s.passed -ne $s.executed) {
         $failedTests = ($lines | Select-String 'spiral-tests file (\{.*\})' | ForEach-Object { ($_.Matches[0].Groups[1].Value | ConvertFrom-Json).failed_tests }) -join ', '
         $problems += "${name}: failed $($s.failed), unsupported $($s.unsupported), skipped $($s.skipped), not run $($s.not_run), not executed $missing ($failedTests)"
+        $lines | Select-String -Pattern 'wgsl error|error|failed|assert|panic|timeout|timed out|exit code' |
+            Where-Object { $_.Line -notmatch '^spiral-tests ' } | Select-Object -First 40 |
+            ForEach-Object { Write-Output "build.ps1 / $name / detail / $($_.Line)" }
     }
 }
 

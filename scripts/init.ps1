@@ -29,6 +29,8 @@ EnsureSymbolicLink -Path "../deps/spiral" -Target "../../spiral"
 { apt-get update } | Invoke-Block -Linux -Distro ubuntu -OnError Continue
 { sudo apt install -y mesa-vulkan-drivers } | Invoke-Block -Linux -Distro ubuntu -OnError Continue
 { apt install -y mesa-vulkan-drivers } | Invoke-Block -Linux -Distro ubuntu -OnError Continue
+{ sudo apt install -y lua5.1 } | Invoke-Block -Linux -Distro ubuntu -OnError Continue
+{ apt install -y lua5.1 } | Invoke-Block -Linux -Distro ubuntu -OnError Continue
 
 $wgslRun = "../target/wgsl-run/release/spiral-wgsl$(_exe)"
 if (!$fast -or !(Test-Path $wgslRun)) {

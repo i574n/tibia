@@ -18,7 +18,7 @@ where a test needs the training host.
 
 ## Findings so far
 
-Correction 2026-10-14: every live `spiral-*` run from 2026-10-13 11:48 until the fix ran with vBot's HealBot and TargetBot active alongside our policy (a bot setting the vBot probe left enabled; BENCHMARK.md, PR-1). The findings below come from the re-measurement on the fixed harness (PR-4, 30 runs per competitor, every run checked for foreign actions); the earlier live claims are withdrawn.
+Correction 2026-10-14: every live `spiral-*` run from 2026-10-13 11:48 until the fix ran with vBot's HealBot and TargetBot active alongside our policy (a bot setting the vBot probe left enabled; BENCHMARK.md, PR-1). The findings below come from the re-measurement on the fixed arena (PR-4, 30 runs per competitor, every run checked for foreign actions); the earlier live claims are withdrawn.
 
 1. **The simulator predicts live clear times and, mostly, potion use.** Clear times matched in every live check.
    Potions took four corrections, each measured live or read from Canary's source: login protection keeps monsters off
@@ -41,7 +41,7 @@ Correction 2026-10-14: every live `spiral-*` run from 2026-10-13 11:48 until the
    14.8 potions, no difference shown (t -0.6), identical hits (69.1 vs 69.2). Our three policies drink alike live (rules
    12.5, ReachFirst 12.3, retreat 12.2). Against nExBot the retreat policy was narrowly better (12.2 vs 14.6 potions,
    PR-3a, t -2.14), but about half of that is the same login rule (nExBot talks right after login); a fair re-test is
-   open. nExBot runs only with three harness shims (BENCHMARK.md PR-3a).
+   open. nExBot runs only with three arena shims (BENCHMARK.md PR-3a).
 4. **Learning wins little at this level of detail.** In every scenario tried (open field, corridor, room,
    arena spot, mixed cyclops and trolls, potion budgets, respawning hunts) tuned threshold rules match or beat neural
    and scored learned policies. On a respawning hunting ground the rule that sweeps to the next spawn due beats every fixed
@@ -82,7 +82,7 @@ Against pooled live means (in-sample, these data shaped the rules): 3 cyclops ru
 12.62; 2 cyclops rules 4.83 vs 4.85, retreat 5.09 vs 5.45; every clear time within 2 s. The 3-cyclops ranking of retreat vs
 rules is still off by about 1.4 potions (borderline). Under this model a lower heal threshold or a better standing tile saves
 at most 0.3 potions per clear, so no live-runnable change to the rules policy is predicted to show live.
-The 10 s wake and the idle walk describe the harness before 2026-10-15 14:17, when our probe kept the login protection. Since then the parity layer ends the protection for every competitor at login, so the matching scenario is `mirroring_the_live_arena |> waking_at 0` (no wake, so no idle walk); its first prediction (rules 15.6 potions, 72 hits) ran about 5% high (PR-11: 14.4, 69).
+The 10 s wake and the idle walk describe the arena before 2026-10-15 14:17, when our probe kept the login protection. Since then the parity layer ends the protection for every competitor at login, so the matching scenario is `mirroring_the_live_arena |> waking_at 0` (no wake, so no idle walk); its first prediction (rules 15.6 potions, 72 hits) ran about 5% high (PR-11: 14.4, 69).
 
 The multi-creature simulator is bit-exact on WGSL too (`gpu_sim.spi`: a full troll hunt, five arena-spot cyclops
 clears, and a five-minute hunting-ground hunt with the shortest-path router and its scratch arrays). With parallel lanes (one seed per GPU thread, 2026-10-14) every lane matches C exactly; a launch costs about 4 s of fixed setup, then about 0.23 ms per arena clear against 1.6 ms on one C core, so the GPU pays off from about 4000 clears per launch. Large lane counts now run in chunks of 1024 (the 16384-lane hang, WGSL-LANES-LARGE-DISPATCH-HANG, is fixed in the pack-1e compiler).
@@ -140,9 +140,9 @@ Profit books gold looted, 50 gp per potion and 14000 gp per death. The control i
 
 ## Live arena
 
-PR-4 (2026-10-14, fixed harness): cyclops clear, BENCHMARK pack v1, full gear restored before every run, the same 250 ms
+PR-4 (2026-10-14, fixed arena): cyclops clear, BENCHMARK pack v1, full gear restored before every run, the same 250 ms
 action gate and 100 ms decision tick for every competitor, heal below 160, 30 runs each, alternating, every run cleared,
-no deaths, no harness failures. These runs predate the login-protection fix: vBot ended its protection at login and our probes did not, so the vBot row carries about 7 extra hits per clear (BENCHMARK.md PR-9 addendum; level on the fixed harness, PR-11).
+no deaths, no arena failures. These runs predate the login-protection fix: vBot ended its protection at login and our probes did not, so the vBot row carries about 7 extra hits per clear (BENCHMARK.md PR-9 addendum; level on the fixed arena, PR-11).
 
 | Competitor | Potions | Clear time | Damage taken |
 | --- | --- | --- | --- |
@@ -153,7 +153,7 @@ no deaths, no harness failures. These runs predate the login-protection fix: vBo
 Pre-registered tests: retreat vs vBot, no difference shown (t -1.45); retreat vs rules, no difference shown (t 1.82).
 Rules vs vBot, pre-registered as a fresh replication (PR-8, 30 runs each): 12.9 vs 14.2 potions, no difference shown (t -1.47); PR-4's 11.5 for the rules did not replicate. Rules vs vBot with 50 runs each (PR-9, 2026-10-15): 12.5 vs 14.7 potions, significant (t -3.80), clear time 88.7 vs 87.9 s, damage taken 2145 vs 2479; the whole difference comes from vBot ending its login protection in the first 10 s (BENCHMARK.md PR-9 addendum). With the protection ended for both (PR-11, 50 runs each): 14.4 vs 14.8 potions, no difference shown (t -0.58). Retreat vs nExBot 4.0.4 (PR-3a, 20 runs each, 2026-10-15): 12.2 vs 14.6 potions, significant (t -2.14), clear time 90.9 vs 88.4 s, damage taken 2030 vs 2421 (16 and 18 of 20 logs matched), no deaths. The random control (PR-5, 10 runs: drink, engage, random step or stand with equal odds) clears in 102.7 s with 94.1 potions, far below every competitor.
 
-The earlier table, kept as a record of the faulty harness:
+The earlier table, kept as a record of the faulty arena:
 Measured with vBot's HealBot and TargetBot running alongside every `spiral-*` competitor (see the correction above); kept as a record until PR-4 replaces it. Cyclops clear, BENCHMARK pack v1: full gear restored before every run, the same 250 ms action gate and 100 ms decision
 tick for every competitor, heal below 160 unless stated, no deaths in any round below.
 
@@ -168,12 +168,12 @@ tick for every competitor, heal below 160 unless stated, no deaths in any round 
 The first retreat-vs-vBot round alone looked significant (t -2.14); later rounds regressed toward a tie, which is why
 comparisons are now pre-registered with a fixed run count.
 
-Rounds before these measured harness faults rather than policies (and these rounds themselves carry the last one found, vBot left enabled during our runs): the forge inflating every monster, gear dropped on
+Rounds before these measured arena faults rather than policies (and these rounds themselves carry the last one found, vBot left enabled during our runs): the forge inflating every monster, gear dropped on
 deaths and never restored, vBot's HealBot ignoring a closed backpack, our probe deciding every 250 ms, the probe
 leaving chase mode on during retreats, and the vBot probe sampling only every 10 s, which rounded vBot's clear times up
 by about 5 s.
 
-The probes and arena scripts are in `harness/`; the live world they drive (Canary 3.6.1, OTClient Redemption 4.1, run
+The probes and arena scripts are in `live/`; the live world they drive (Canary 3.6.1, OTClient Redemption 4.1, run
 off-screen and muted) stays in a local folder outside the repo (see Running).
 
 ## Repository
@@ -182,7 +182,8 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 | --- | --- |
 | `src/` | The Spiral package (`package.spiproj` and its modules): rules, typed domain, simulators and their test blocks |
 | `docs/` | The plan, the benchmark with every pre-registration, the modeling notes, prior art and the workflow |
-| `harness/` | The live arena: OTClient probes, the parity layer, bot shims and configs, run, check and analysis scripts, the map tool |
+| `apps/arena/` | OTClient probes written in Spiral and compiled with the Lua backend: typed client bindings (`client.spi`), the shared probe lifecycle (`probe.spi`), one module per probe (`scan.spi` so far); `build.ps1` writes `target/arena/<probe>.lua`, which the arena takes as `-ProbeBody` |
+| `live/` | The live arena: OTClient probes, the parity layer, bot shims and configs, run, check and analysis scripts, the map tool |
 | `results/` | Result tables and diagnostics that BENCHMARK.md cites |
 | `scripts/` | `init.ps1`, `build.ps1`, `publish.ps1`, `workflow.ps1`, as in the sibling repos |
 | `.github/workflows/gh-pages.yml` | CI on Ubuntu and Windows: every test file through Spiral's cells runner, then the published tree |
@@ -195,9 +196,9 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 - Test: `pwsh scripts/build.ps1` runs every `src/*.spi` file with tests through `deps/spiral/apps/cells/spi/run_notebook.ps1`
   and fails unless every test executed and passed (no failed, unsupported, skipped or missing rows); `-Files geometry,views`
   runs a subset. Notebook outputs go to `notebooks/` (ignored by git, published by `scripts/publish.ps1`).
-- Live arena: the harness needs a local world outside the repo: Canary, MariaDB, OTClient, logs (default
+- Live arena: the arena needs a local world outside the repo: Canary, MariaDB, OTClient, logs (default
   `~/tibia-local`, or `TIBIA_WORLD`; MariaDB binaries from `TIBIA_MARIADB_BIN`, default scoop's). For example
-  `pwsh harness/run-arena.ps1 -Runs 1 -Monster cyclops -MonsterCount 3 -Level 30 -AxeSkill 60 -HealBelow 160
+  `pwsh live/run-arena.ps1 -Runs 1 -Monster cyclops -MonsterCount 3 -Level 30 -AxeSkill 60 -HealBelow 160
   -StrikeAbove 0 -FullExperience 675 -Competitors spiral-policy,vbot -Out results/arena-results-try.tsv`. nExBot is not
   part of the repo (no license); `-Competitors nexbot` expects it under the world's `bots/`.
 

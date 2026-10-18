@@ -46,6 +46,13 @@ jobs:
       - run: pwsh scripts/workflow.ps1
 
       - uses: actions/upload-artifact@v5.0.0
+        if: failure()
+        with:
+          name: notebooks-${{ matrix.os }}
+          path: notebooks
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v5.0.0
         if: contains(matrix.os, 'ubuntu')
         with:
           name: gh-pages

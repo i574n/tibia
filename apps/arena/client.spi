@@ -1,0 +1,48 @@
+nominal native_position = $'any'
+
+type spot = {x : i32; y : i32; z : i32}
+
+inl joined (a : string) (b : string) : string = $'(!a) .. (!b)' : string
+
+inl shown (n : i32) : string = $'tostring(!n)' : string
+
+inl after (ms : i32) (f : () -> ()) : () = $'scheduleEvent(!f, !ms)' : ()
+
+inl spot_of (p : native_position) : spot = {x = $'!p.x' : i32; y = $'!p.y' : i32; z = $'!p.z' : i32}
+
+inl player_spot () : spot = spot_of ($'g_game.getLocalPlayer():getPosition()' : native_position)
+
+inl walkable_at (s : spot) : bool =
+    inl x, y, z = s.x, s.y, s.z
+    $'(function() local tile = g_map.getTile({ x = !x, y = !y, z = !z }); return tile ~= nil and tile:isWalkable(true) end)()' : bool
+
+inl online () : bool = $'g_game.isOnline()' : bool
+
+inl log_out () : () = $'g_game.safeLogout()' : ()
+
+inl exit_client () : () = $'g_app.exit()' : ()
+
+inl hidden_requested () : bool = $'os.getenv("TIBIA_PROBE_HIDDEN") == "1"' : bool
+
+inl hide_window () : () =
+    $'g_window.move({ x = -32000, y = -32000 })' : ()
+    $'g_window.hide()' : ()
+
+inl mute () : () =
+    $'g_settings.set("enableAudio", false)' : ()
+    $'if g_sounds then g_sounds.setAudioEnabled(false); g_sounds.stopAll() end' : ()
+
+inl write_log_line (line : string) : () =
+    $'TibiaProbeLog = TibiaProbeLog or {}' : ()
+    $'table.insert(TibiaProbeLog, !line)' : ()
+    $'g_logger.info(!line)' : ()
+    $'g_resources.writeFileContents("/tibia-probe.log", table.concat(TibiaProbeLog, string.char(10)) .. string.char(10))' : ()
+
+inl log_in (on_start : () -> ()) (on_error : string -> ()) : () =
+    $'g_game.setClientVersion(1511)' : ()
+    $'g_game.setProtocolVersion(g_game.getClientProtocolVersion(1511))' : ()
+    $'g_game.chooseRsa("127.0.0.1")' : ()
+    $'connect(g_game, { onGameStart = !on_start, onLoginError = function(message) (!on_error)(tostring(message)) end })' : ()
+    inl account = "@god"
+    inl session = "@god\ngod"
+    $'g_game.loginWorld(!account, "god", "OTServBR-Global", "127.0.0.1", 7172, "Knight Sample", "", !session)' : ()

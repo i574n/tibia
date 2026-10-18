@@ -21,7 +21,7 @@ function Get-OneSample([double[]] $values, [double] $predicted) {
 $rows = @(Import-Csv $Results -Delimiter "`t" | Where-Object competitor -eq $Competitor)
 if ($ExcludeForeign) {
     $foreignRows = @($rows | Where-Object { ($_.foreign_potions -and [int]$_.foreign_potions -gt 0) -or ($_.foreign_actions -and [int]$_.foreign_actions -gt 0) })
-    "excluded for foreign activity (harness failures): $($foreignRows.Count)" + $(if ($foreignRows.Count) { ' -> ' + (($foreignRows | ForEach-Object { "$($_.competitor) $($_.timestamp)" }) -join ', ') } else { '' })
+    "excluded for foreign activity (arena failures): $($foreignRows.Count)" + $(if ($foreignRows.Count) { ' -> ' + (($foreignRows | ForEach-Object { "$($_.competitor) $($_.timestamp)" }) -join ', ') } else { '' })
     $rows = @($rows | Where-Object { $foreignRows -notcontains $_ })
 }
 "$Label analysis of $Results"

@@ -9,7 +9,7 @@ $snapshot = Join-Path $env:TEMP ('tibia-arena-' + (Get-Date -Format 'yyyyMMdd-HH
 New-Item -ItemType Directory -Force $snapshot | Out-Null; Copy-Item (Join-Path $TibiaSource '*') $snapshot -Include '*.spi', 'package.spiproj'
 "policy source snapshot: $snapshot"
 if (-not (Test-Path $Out)) { "timestamp`tcompetitor`trun`tmonster`tcount`texperience`tcleared_ms`tlowest_health`tactions_allowed`tactions_dropped`tpotions`tgold`tdeaths`tforeign_potions`tforeign_actions" | Set-Content $Out }
-. (Join-Path $root 'harness-check.ps1')
+. (Join-Path $root 'arena-check.ps1')
 
 function Read-Number([string[]] $lines, [string] $pattern) {
     $found = ''

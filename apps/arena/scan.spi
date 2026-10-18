@@ -1,0 +1,25 @@
+inl scan_row (centre : client.spot) (radius : i32) (dy : i32) : string =
+    let rec cells (dx : i32) (row : string) : string =
+        if dx > radius then row
+        else
+            inl cell = if dx = 0 && dy = 0 then "K" elif client.walkable_at {centre with x = centre.x + dx; y = centre.y + dy} then "." else "#"
+            cells (dx + 1) (client.joined row cell)
+    cells (0 - radius) ""
+
+inl scan (radius : i32) : () =
+    inl centre = client.player_spot ()
+    probe.note (client.joined (client.joined "scan around " (probe.described centre)) " (# wall or blocked, . walkable, K knight)")
+    let rec rows (dy : i32) : () =
+        if dy <= radius then
+            inl row = scan_row centre radius dy
+            probe.note ($'string.format("%+3d %s", !dy, !row)' : string)
+            rows (dy + 1)
+    rows (0 - radius)
+
+inl main () =
+    inl ~radius = 12i32
+    inl scan_then_finish () =
+        scan radius
+        probe.finish "scanned"
+    probe.started (fun () => client.after 2500 scan_then_finish) 40000
+    0i32

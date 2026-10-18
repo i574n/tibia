@@ -20,15 +20,16 @@ if (Test-Path $frozenPolicy) {
 }
 $probe = Join-Path $root 'probe-policy.lua'
 $policySource = [IO.File]::ReadAllText($policyLua)
-$body = [IO.File]::ReadAllText((Join-Path $TibiaHarness $ProbeBody))
-$parity = if ($NoParity) { '' } else { [IO.File]::ReadAllText((Join-Path $TibiaHarness 'parity.lua')) + "`n" }
+$bodyPath = if ([IO.Path]::IsPathRooted($ProbeBody)) { $ProbeBody } else { Join-Path $TibiaLive $ProbeBody }
+$body = [IO.File]::ReadAllText($bodyPath)
+$parity = if ($NoParity) { '' } else { [IO.File]::ReadAllText((Join-Path $TibiaLive 'parity.lua')) + "`n" }
 [IO.File]::WriteAllText($probe, "SpiralPolicy = (function()`n$policySource`nend)()`n$parity$body")
 $syntax = lua -e "local f, e = loadfile([[$probe]]); if not f then print(e); os.exit(1) end"
 if ($LASTEXITCODE -ne 0) { throw "probe does not parse: $syntax" }
 $summon = Join-Path $root 'probe-summon-scenario.lua'
 $mix = @(if ($Monster -match ':') { $Monster -split ',' | ForEach-Object { $name, $count = $_ -split ':'; [pscustomobject]@{ Name = $name.Trim(); Count = [int]$count } } } else { [pscustomobject]@{ Name = $Monster; Count = $MonsterCount } })
 $summonCalls = for ($i = 0; $i -lt $mix.Count; $i++) { "scheduleEvent(function() g_game.talk('/m {0},{1},,{2}') end, {3})" -f $mix[$i].Name, $mix[$i].Count, $SpawnRadius, (1200 + 500 * $i) }
-$summonTemplate = [IO.File]::ReadAllText((Join-Path $TibiaHarness 'probe-summon.lua'))
+$summonTemplate = [IO.File]::ReadAllText((Join-Path $TibiaLive 'probe-summon.lua'))
 $summonX, $summonY = $SummonAt -split ','
 $knightX, $knightY = $KnightAt -split ','
 [IO.File]::WriteAllText($summon, $summonTemplate.Replace("g_game.talk('/pos 1932, 1352, 7')", "g_game.talk('/pos $summonX, $summonY, 7')").Replace("scheduleEvent(function() g_game.talk('/m green frog,3,,2') end, 1200)", ($summonCalls -join "`n                ")))
@@ -79,7 +80,7 @@ if ($Bot -eq 'vBot') {
     if (Test-Path $botDir) { Remove-Item $botDir -Recurse -Force }
     Copy-Item (Join-Path $root 'otclient-src\mods\game_bot\default_configs\vBot_4.8') $botDir -Recurse
     New-Item -ItemType Directory -Force (Join-Path $botDir 'targetbot_configs'), (Join-Path $botDir 'storage') | Out-Null
-    $targeting = [IO.File]::ReadAllText((Join-Path $TibiaHarness 'vbot-arena.json')).Replace('"name":"troll"', "`"name`":`"$($kinds[0])`"").Replace('"regex":"^troll$"', "`"regex`":`"^($($kinds -join '|'))`$`"")
+    $targeting = [IO.File]::ReadAllText((Join-Path $TibiaLive 'vbot-arena.json')).Replace('"name":"troll"', "`"name`":`"$($kinds[0])`"").Replace('"regex":"^troll$"', "`"regex`":`"^($($kinds -join '|'))`$`"")
     [IO.File]::WriteAllText((Join-Path $botDir 'targetbot_configs\arena.json'), $targeting)
     $profileSettings = { param($enabled) [ordered]@{ enabled = $enabled; spellTable = @(); itemTable = @(if ($enabled) { [ordered]@{ index = 1; item = 266; sign = '<'; origin = 'HP'; value = $HealBelow; enabled = $true } }); name = 'Profile #1'; Visible = $false; Cooldown = $true; Interval = $true; Conditions = $true; Delay = $true; MessageDelay = $false } }
     $healBot = [ordered]@{ currentHealBotProfile = 1; healbot = @((& $profileSettings $true), (& $profileSettings $false), (& $profileSettings $false), (& $profileSettings $false), (& $profileSettings $false)) } | ConvertTo-Json -Depth 6
@@ -92,9 +93,9 @@ if ($Bot -eq 'nExBot') {
     if (Test-Path $botDir) { Remove-Item $botDir -Recurse -Force }
     Copy-Item (Join-Path $root 'bots\nExBot-19632d4') $botDir -Recurse
     $loader = Join-Path $botDir '_Loader.lua'
-    $luaDofile = if ($env:TIBIA_NEXBOT_LUA_DOFILE -ne '0') { [IO.File]::ReadAllText((Join-Path $TibiaHarness 'bot-lua-dofile.lua')) + "`n" } else { '' }
+    $luaDofile = if ($env:TIBIA_NEXBOT_LUA_DOFILE -ne '0') { [IO.File]::ReadAllText((Join-Path $TibiaLive 'bot-lua-dofile.lua')) + "`n" } else { '' }
     if ($luaDofile) { Set-Content (Join-Path $botDir 'bot_env_probe.lua') 'return getfenv and getfenv(1) or _G' -NoNewline }
-    [IO.File]::WriteAllText($loader, [IO.File]::ReadAllText((Join-Path $TibiaHarness 'bot-network-sandbox.lua')) + "`n" + $luaDofile + [IO.File]::ReadAllText($loader))
+    [IO.File]::WriteAllText($loader, [IO.File]::ReadAllText((Join-Path $TibiaLive 'bot-network-sandbox.lua')) + "`n" + $luaDofile + [IO.File]::ReadAllText($loader))
     $shimmed = 0
     foreach ($script in Get-ChildItem $botDir -Recurse -Filter '*.lua') {
         $source = [IO.File]::ReadAllText($script.FullName)
@@ -127,7 +128,7 @@ if ($Bot -eq 'nExBot') {
         "== nExBot load tracing on ($traceFile)"
     }
     New-Item -ItemType Directory -Force (Join-Path $botDir 'targetbot_configs'), (Join-Path $botDir 'storage') | Out-Null
-    $targeting = [IO.File]::ReadAllText((Join-Path $TibiaHarness 'vbot-arena.json')).Replace('"name":"troll"', "`"name`":`"$($kinds[0])`"").Replace('"regex":"^troll$"', "`"regex`":`"^($($kinds -join '|'))`$`"")
+    $targeting = [IO.File]::ReadAllText((Join-Path $TibiaLive 'vbot-arena.json')).Replace('"name":"troll"', "`"name`":`"$($kinds[0])`"").Replace('"regex":"^troll$"', "`"regex`":`"^($($kinds -join '|'))`$`"")
     [IO.File]::WriteAllText((Join-Path $botDir 'targetbot_configs\arena.json'), $targeting)
     $healPercent = [int]([Math]::Floor($HealBelow * 100 / $healthMax) - 1)
     $effectiveBelow = [Math]::Ceiling(($healPercent + 1) * $healthMax / 100)
@@ -141,9 +142,9 @@ if ($Bot -eq 'nExBot') {
     "== nExBot seeded: TargetBot arena ($Monster, chase), HealBot potion at hp% <= $healPercent (health below $effectiveBelow of $healthMax), network calls stubbed"
 }
 "== world online, knight level $Level ($healthMax hp), axe skill $AxeSkill, $MonsterCount x $Monster, heal below $HealBelow"
-& (Join-Path $TibiaHarness 'run-probe.ps1') -Script $summon -TimeoutSeconds 60 | Select-Object -Last 2
+& (Join-Path $TibiaLive 'run-probe.ps1') -Script $summon -TimeoutSeconds 60 | Select-Object -Last 2
 '== policy'
-& (Join-Path $TibiaHarness 'run-probe.ps1') -Script $probe -TimeoutSeconds $TimeoutSeconds
+& (Join-Path $TibiaLive 'run-probe.ps1') -Script $probe -TimeoutSeconds $TimeoutSeconds
 Copy-Item (Join-Path $root 'otclient-src\otclientrc.lua.orig') (Join-Path $root 'otclient-src\otclientrc.lua') -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 5
 Get-Process canary -ErrorAction SilentlyContinue | Stop-Process -Force

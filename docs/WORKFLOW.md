@@ -9,7 +9,7 @@ where the road is clean. Every friction found becomes an eoie backlog item befor
 | --- | --- | --- |
 | Unit | `samples/<name>/` folder: `package.spiproj`, `main.spi`, emitted outputs next to it | One `.spi` per module with `test name [static] [print_code] [ignore] =` blocks |
 | Negatives | One `negative_*` folder per forgery (Brzozowski: 31) | Not expressible yet |
-| Expectations | Cache-only `EXPECTED.tsv`, per-backend lists in `tests/harness.psd1` | Exit code only: a test passes when every `///>` target exits 0 |
+| Expectations | Cache-only `EXPECTED.tsv`, per-backend lists in `tests/arena.psd1` | Exit code only: a test passes when every `///>` target exits 0 |
 | Runner | `spiral/apps/compiler/tmp/scripts/test.ps1` | `spiral/apps/cells/spi/run_notebook.ps1 --path x.spi [--test name]`, report lines `spiral-tests file/total {json}` |
 | Editor | none | Zed tasks "run test at cursor" / "run file tests" (`spiral/apps/zed/tasks/test-at-row.ps1`) |
 | Backlog | prose and TSVs | `eoie agile` on `i574n.github/docs/backlog` |

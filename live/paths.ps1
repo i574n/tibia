@@ -1,4 +1,4 @@
-$TibiaHarness = $PSScriptRoot
+$TibiaLive = $PSScriptRoot
 $TibiaRepo = Split-Path $PSScriptRoot -Parent
 $TibiaSource = Join-Path $TibiaRepo 'src'
 $TibiaResults = Join-Path $TibiaRepo 'results'
