@@ -1,0 +1,70 @@
+inl watch_ms () : i32 = 100
+inl observe_ms () : i32 = 10000
+inl run_ms () : i32 = 150000
+
+type watch = {start_experience : i32; started_at : i32; full_experience : i32; lowest : client.native_table; cleared : client.native_table; done : client.native_table}
+
+inl gained (w : watch) : i32 = client.player_experience () - w.start_experience
+
+inl note_lowest (w : watch) (health : i32) : () =
+    if health < client.cell_value w.lowest then client.set_cell w.lowest health
+
+inl clear_if_full (w : watch) (health : i32) (at : i32) : bool =
+    if client.cell_value w.cleared = 0 && gained w >= w.full_experience then
+        client.set_cell w.cleared 1
+        inl plus, lowest = gained w, client.cell_value w.lowest
+        probe.note ($'string.format("cleared at %d ms", !at)' : string)
+        probe.note ($'string.format("cleared: experience +%d health %d lowest health %d", !plus, !health, !lowest)' : string)
+        probe.finish_once w.done "cleared"
+        true
+    else false
+
+inl watch_every_tick (w : watch) : () =
+    let rec go () : () =
+        if client.cell_value w.done = 0 && client.player_present () then
+            inl health = client.player_health ()
+            note_lowest w health
+            if clear_if_full w health (client.now_ms () - w.started_at) = false then client.after (watch_ms ()) go
+    go ()
+
+inl attacking_short () : string =
+    $'(function() local a = g_game.getAttackingCreature(); if not a then return "nothing" end; return a:getName() .. " " .. a:getHealthPercent() .. "%" end)()' : string
+
+inl observe (w : watch) : () =
+    let rec go () : () =
+        if client.cell_value w.done = 0 then
+            if client.player_present () = false then probe.finish_once w.done "offline"
+            else
+                inl health = client.player_health ()
+                note_lowest w health
+                inl elapsed = client.now_ms () - w.started_at
+                if clear_if_full w health elapsed = false then
+                    inl seconds, plus, lowest, attacking, at = elapsed / 1000, gained w, client.cell_value w.lowest, attacking_short (), probe.described (client.player_spot ())
+                    probe.note ($'string.format("t=%ds experience +%d health %d lowest %d attacking %s at %s", !seconds, !plus, !health, !lowest, !attacking, !at)' : string)
+                    if elapsed > run_ms () then
+                        probe.note ($'string.format("end: experience +%d lowest health %d", !plus, !lowest)' : string)
+                        probe.finish_once w.done "run complete"
+                    else client.after (observe_ms ()) go
+    go ()
+
+inl main () =
+    inl done = client.new_cell 0
+    inl lowest = client.new_cell 999
+    inl cleared = client.new_cell 0
+    inl full_experience = client.env_i32 "TIBIA_ARENA_FULL_EXPERIENCE" 90
+    inl on_text (mode : string) (text : string) : () =
+        if client.cell_value done = 1 && $'string.find(!text, "health potion", 1, true) ~= nil' : bool then
+            probe.note ($'string.format("server text after finish (potion not counted) [%s]", !mode)' : string)
+        else probe.note ($'string.format("server text [%s]: %s", !mode, !text)' : string)
+    inl ready () =
+        inl name, health = client.player_name (), client.player_health ()
+        probe.note ($'string.format("in game as %s health %d (vBot_4.8 TargetBot arena config)", !name, !health)' : string)
+        client.after 1000 (fun () =>
+            client.fight_balanced ()
+            inl w : watch = {start_experience = client.player_experience (); started_at = client.now_ms (); full_experience = full_experience; lowest = lowest; cleared = cleared; done = done}
+            watch_every_tick w
+            observe w
+            )
+    client.enable_client_bot "Knight Sample_1511" "vBot_4.8"
+    probe.started_as (probe.knight ()) on_text ready 200000 (fun () => probe.finish_once done "timeout")
+    0i32

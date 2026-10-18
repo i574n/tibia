@@ -1,0 +1,268 @@
+inl health_potion () : i32 = 266
+inl heal_cooldown_ms () : i32 = 1000
+inl swing_ms () : i32 = 2000
+inl step_ms () : i32 = 650
+inl tick_ms () : i32 = 100
+inl run_ms () : i32 = 150000
+inl summary_every () : i32 = 100
+inl cornered_report_every () : i32 = 50
+
+type plan = {heal_below : i32; strike_above : i32; retreat_at : i32; kite_at : i32; reach_first : bool; full_experience : i32}
+
+type tally = {ticks : i32; heals : i32; strikes : i32; holds : i32; kills : i32; retreats : i32; cornered : i32; gated : i32; lowest : i32}
+
+type clocks = {last_heal_at : i32; next_step_at : i32}
+
+type arena = {plan : plan; start_experience : i32; started_at : client.native_table; engaged : client.native_table; last_swing : client.native_table}
+
+type sighting = {found : bool; index : i32; distance : i32}
+
+inl plan_from_environment () : plan =
+    {
+        heal_below = client.env_i32 "TIBIA_ARENA_HEAL_BELOW" 120
+        strike_above = client.env_i32 "TIBIA_ARENA_STRIKE_ABOVE" 40
+        retreat_at = client.env_i32 "TIBIA_ARENA_RETREAT_AT" 0
+        kite_at = client.env_i32 "TIBIA_ARENA_KITE_AT" 0
+        reach_first = $'os.getenv("TIBIA_ARENA_TARGETING") == "reach"' : bool
+        full_experience = client.env_i32 "TIBIA_ARENA_FULL_EXPERIENCE" 90
+    }
+
+inl elapsed (a : arena) : i32 = client.now_ms () - client.cell_value a.started_at
+
+inl summary (a : arena) (t : tally) : string =
+    inl ticks, heals, strikes, holds, retreats, cornered, gated, kills, lowest = t.ticks, t.heals, t.strikes, t.holds, t.retreats, t.cornered, t.gated, t.kills, t.lowest
+    inl health = client.player_health ()
+    inl gained = client.player_experience () - a.start_experience
+    $'string.format("ticks %d heals %d strikes %d holds %d retreats %d cornered %d gated %d kills %d health %d lowest %d experience +%d", !ticks, !heals, !strikes, !holds, !retreats, !cornered, !gated, !kills, !health, !lowest, !gained)' : string
+
+inl finish (reason : string) : () = probe.finish_reporting_parity reason
+
+
+inl candidate_of (current : client.creature) (c : client.creature) (distance : i32) : policy.candidate =
+    {is_current = client.same_creature c current; distance = distance; health_percent = client.creature_health_percent c}
+
+inl sight (a : arena) (here : client.spot) (people : client.crowd) : sighting =
+    inl current = client.attacking ()
+    inl prefers = if a.plan.reach_first then policy.prefers_by (open policy in ReachFirst) else policy.prefers_by (open policy in CurrentFirst)
+    inl size = client.crowd_size people
+    let rec scan (index : i32) (best : sighting) : sighting =
+        if index > size then best
+        else
+            inl c = client.member people index
+            if client.live_monster c then
+                inl d = probe.chebyshev (client.creature_spot c) here
+                inl better =
+                    if best.found = false then true
+                    else prefers (candidate_of current c d) (candidate_of current (client.member people best.index) best.distance)
+                scan (index + 1) (if better then {found = true; index = index; distance = d} else best)
+            else scan (index + 1) best
+    scan 1 {found = false; index = 0; distance = 999}
+
+type threat = {attackers : i32; found : bool; index : i32}
+
+inl threat_rank (s : client.spot) : i32 = s.x * 100000 + s.y
+
+inl threats (here : client.spot) (people : client.crowd) : threat =
+    inl size = client.crowd_size people
+    let rec scan (index : i32) (t : threat) : threat =
+        if index > size then t
+        else
+            inl c = client.member people index
+            if client.live_monster c && probe.chebyshev (client.creature_spot c) here <= 1 then
+                inl closer = t.found = false || threat_rank (client.creature_spot c) < threat_rank (client.creature_spot (client.member people t.index))
+                scan (index + 1) {attackers = t.attackers + 1; found = true; index = if closer then index else t.index}
+            else scan (index + 1) t
+    scan 1 {attackers = 0; found = false; index = 0}
+
+inl direction_of (n : i32) : i32 = if n > 0 then 1 elif n < 0 then -1 else 0
+
+type offset = {dx : i32; dy : i32; present : bool}
+
+inl candidate_step (sx : i32) (sy : i32) (slot : i32) : offset =
+    if slot = 0 then {dx = sx; dy = sy; present = true}
+    elif slot = 1 then {dx = sx; dy = 0; present = true}
+    elif slot = 2 then {dx = 0; dy = sy; present = true}
+    elif slot = 3 then {dx = 1; dy = sy; present = sx = 0}
+    elif slot = 4 then {dx = -1; dy = sy; present = sx = 0}
+    elif slot = 5 then {dx = sx; dy = 1; present = sy = 0}
+    else {dx = sx; dy = -1; present = sy = 0}
+
+inl usable (o : offset) : bool = o.present && (o.dx <> 0 || o.dy <> 0)
+
+inl footing_label (f : client.footing) : string =
+    match f with
+    | Free => "walk"
+    | Ramp => "walk"
+    | Occupied => "creature"
+    | Blocked => "blocked"
+    | Unknown => "none"
+
+inl slots () : i32 = 7
+
+union retreat =
+    | Stepped
+    | Gated
+    | Cornered
+
+inl step_away (a : arena) (here : client.spot) (danger : client.spot) (people : client.crowd) (cornered_so_far : i32) : retreat * i32 =
+    client.chasing false
+    inl sx = direction_of (here.x - danger.x)
+    inl sy = direction_of (here.y - danger.y)
+    inl now = client.now_ms ()
+    let rec attempt (slot : i32) : retreat * i32 =
+        if slot >= slots () then Cornered, 0
+        else
+            inl o = candidate_step sx sy slot
+            if usable o && (match client.footing_at {here with x = here.x + o.dx; y = here.y + o.dy} with Free => true | _ => false) then
+                if client.step o.dx o.dy then
+                    inl dx, dy, t = o.dx, o.dy, elapsed a
+                    inl from = probe.described here
+                    probe.note ($'string.format("step away from %s by %d,%d @@t+%d", !from, !dx, !dy, !t)' : string)
+                    Stepped, now + step_ms () * (if o.dx <> 0 && o.dy <> 0 then 3 else 1)
+                else Gated, 0
+            else attempt (slot + 1)
+    inl outcome, next_step_at = attempt 0
+    match outcome with
+    | Cornered =>
+        if (cornered_so_far + 1) % cornered_report_every () = 1 then
+            inl size = client.crowd_size people
+            let rec around (index : i32) (text : string) : string =
+                if index > size then text
+                else
+                    inl c = client.member people index
+                    if client.positioned_monster c && probe.chebyshev (client.creature_spot c) here <= 1 then
+                        around (index + 1) (if $'(!text) == ""' : bool then probe.described (client.creature_spot c) else client.joined (client.joined text " ") (probe.described (client.creature_spot c)))
+                    else around (index + 1) text
+            let rec rejected (slot : i32) (text : string) : string =
+                if slot >= slots () then text
+                else
+                    inl o = candidate_step sx sy slot
+                    if usable o then
+                        inl dx, dy = o.dx, o.dy
+                        inl label = footing_label (client.footing_at {here with x = here.x + o.dx; y = here.y + o.dy})
+                        inl item = $'string.format("%d,%d:%s", !dx, !dy, !label)' : string
+                        rejected (slot + 1) (if $'(!text) == ""' : bool then item else client.joined (client.joined text " ") item)
+                    else rejected (slot + 1) text
+            inl at, from, adjacent, candidates = probe.described here, probe.described danger, around 1 "", rejected 0 ""
+            probe.note ($'string.format("cornered at %s threat %s adjacent [%s] candidates [%s]", !at, !from, !adjacent, !candidates)' : string)
+        outcome, next_step_at
+    | _ => outcome, next_step_at
+
+inl network_code (p : plan) (health : i32) (attackers : i32) (target_health : i32) (target_distance : i32) (heal_ready : bool) (strike_ready : bool) : i32 =
+    inl max_health = client.player_max_health ()
+    inl healer = network.threshold_healer (network.fraction_below p.heal_below max_health)
+    inl w = if p.kite_at > 0 then network.with_kiting p.kite_at healer else healer
+    inl x = network.inputs_of (health * network.one () / max_health) attackers (target_health * network.one () / 100) target_distance heal_ready strike_ready false
+    inl d = network.decide w x
+    (if d.heal then 1 else 0) + (if d.engage then 2 else 0) + (if d.retreat then 4 else 0)
+
+inl tick (a : arena) (first : tally) (first_clocks : clocks) : () =
+    let rec go (t : tally) (k : clocks) : () =
+        if client.player_present () = false then finish "offline"
+        else
+            inl now = client.now_ms ()
+            inl health = client.player_health ()
+            inl t = {t with ticks = t.ticks + 1; lowest = if health < t.lowest then health else t.lowest}
+            if health <= 0 then
+                probe.note (client.joined "dead: " (summary a t))
+                finish "death"
+            else
+                inl t = {t with kills = t.kills + client.forget_dead a.engaged}
+                inl here = client.player_spot ()
+                inl people = client.spectators here
+                inl seen = sight a here people
+                inl target_code : i32 = if seen.found = false then 0 elif seen.distance <= 1 then 1 else 2
+                inl heal_ready = now - k.last_heal_at >= heal_cooldown_ms ()
+                inl drink (t : tally) (k : clocks) : tally * clocks =
+                    if client.drink (health_potion ()) then
+                        probe.note ($'string.format("heal (potion) at health %d", !health)' : string)
+                        {t with heals = t.heals + 1}, {k with last_heal_at = now}
+                    else
+                        probe.note ($'string.format("heal dropped by the action gate at health %d", !health)' : string)
+                        t, k
+                inl engage (chasing : bool) (t : tally) : tally =
+                    client.chasing chasing
+                    inl target = client.member people seen.index
+                    if client.same_creature (client.attacking ()) target = false then
+                        client.attack target
+                        client.remember a.engaged target
+                        inl verb, name, at, from = (if chasing then "approach" else "strike"), client.creature_name target, probe.described (client.creature_spot target), probe.described here
+                        probe.note ($'string.format("%s %s at %s from %s health %d", !verb, !name, !at, !from, !health)' : string)
+                    {t with strikes = t.strikes + 1}
+                inl hold (t : tally) : tally =
+                    if client.attacking_anyone () && target_code = 1 then
+                        client.cancel_attack ()
+                        probe.note ($'string.format("hold at health %d", !health)' : string)
+                    {t with holds = t.holds + 1}
+                inl danger = threats here people
+                inl can_step = danger.found && now >= k.next_step_at && client.player_walking () = false
+                inl retreat_now (t : tally) (k : clocks) : bool * tally * clocks =
+                    inl outcome, next_step_at = step_away a here (client.creature_spot (client.member people danger.index)) people t.cornered
+                    match outcome with
+                    | Stepped => true, {t with retreats = t.retreats + 1}, {k with next_step_at = next_step_at}
+                    | Gated => false, {t with gated = t.gated + 1}, k
+                    | Cornered => false, {t with cornered = t.cornered + 1}, k
+                inl t, k =
+                    if a.plan.kite_at > 0 then
+                        inl strike_ready = now - client.cell_value a.last_swing >= swing_ms ()
+                        inl target_health = if seen.found then client.creature_health_percent (client.member people seen.index) else 0
+                        inl code = network_code a.plan health danger.attackers target_health (if seen.found then seen.distance else 0) heal_ready strike_ready
+                        inl t, k = if code % 2 = 1 && heal_ready then drink t k else t, k
+                        inl retreated, t, k = if (code / 4) % 2 = 1 && can_step then retreat_now t k else false, t, k
+                        if retreated then t, k
+                        elif (code / 2) % 2 = 1 && seen.found then engage (target_code = 2) t, k
+                        else hold t, k
+                    else
+                        inl thresholds : policy.thresholds = {heal_below = a.plan.heal_below; strike_above = a.plan.strike_above}
+                        inl reach = if target_code = 1 then open policy in InReach elif target_code = 2 then open policy in OutOfReach else open policy in NoTarget
+                        inl seen_by_policy : policy.observation = {health = health; heal_ready = heal_ready; strike_ready = true; target = reach}
+                        inl t, k = if policy.heals thresholds seen_by_policy then drink t k else t, k
+                        inl adaptive : policy.adaptive = {heal_base = 0; heal_per_attacker = 0; strike_above = 0; retreat_at = a.plan.retreat_at}
+                        inl retreated, t, k = if a.plan.retreat_at > 0 && policy.retreats adaptive danger.attackers && can_step then retreat_now t k else false, t, k
+                        if retreated then t, k
+                        else
+                            inl decision = policy.engagement_code (policy.engages thresholds seen_by_policy)
+                            if decision = 1 || decision = 2 then engage (decision = 2) t, k else hold t, k
+                if t.ticks % summary_every () = 0 then
+                    inl attacking, at, zone = client.attacking_described (), probe.described (client.player_spot ()), client.player_zone ()
+                    probe.note (client.joined (summary a t) ($'string.format(" attacking %s player at %s pz %s", !attacking, !at, !zone)' : string))
+                if elapsed a > run_ms () then
+                    probe.note (client.joined "end: " (summary a t))
+                    finish "run complete"
+                elif client.player_experience () - a.start_experience >= a.plan.full_experience then
+                    inl at = elapsed a
+                    probe.note ($'string.format("cleared at %d ms", !at)' : string)
+                    probe.note (client.joined "cleared: " (summary a t))
+                    finish "cleared"
+                else client.after (tick_ms ()) (fun () => go t k)
+    go first first_clocks
+
+inl main () =
+    inl p = plan_from_environment ()
+    inl started_at = client.new_cell 0
+    inl last_swing = client.new_cell (0 - swing_ms ())
+    inl engaged = client.new_table ()
+    inl on_text (mode : string) (text : string) : () =
+        if $'string.find(!text, "due to your", 1, true) ~= nil' : bool then client.set_cell last_swing (client.now_ms ())
+        inl t = client.now_ms () - client.cell_value started_at
+        probe.note ($'string.format("server text [%s]: %s @@t+%d", !mode, !text, !t)' : string)
+    inl ready () =
+        inl name, health, mana = client.player_name (), client.player_health (), client.player_mana ()
+        probe.note ($'string.format("in game as %s health %d mana %d", !name, !health, !mana)' : string)
+        client.after 1500 (fun () =>
+            inl start_experience = client.player_experience ()
+            client.chasing false
+            client.fight_balanced ()
+            client.after 1000 (fun () =>
+                inl at = probe.described (client.player_spot ())
+                inl heal_below, strike_above, kite_at, retreat_at = p.heal_below, p.strike_above, p.kite_at, p.retreat_at
+                inl targeting = client.env_text "TIBIA_ARENA_TARGETING" "current"
+                probe.note ($'string.format("policy starts at %s thresholds heal<%d strike>=%d kite at %d retreat at %d targeting %s", !at, !heal_below, !strike_above, !kite_at, !retreat_at, !targeting)' : string)
+                client.set_cell started_at (client.now_ms ())
+                inl a : arena = {plan = p; start_experience = start_experience; started_at = started_at; engaged = engaged; last_swing = last_swing}
+                tick a {ticks = 0; heals = 0; strikes = 0; holds = 0; kills = 0; retreats = 0; cornered = 0; gated = 0; lowest = 999} {last_heal_at = 0 - heal_cooldown_ms (); next_step_at = 0}
+                )
+            )
+    client.disable_client_bot "Knight Sample_1511"
+    probe.started_as (probe.knight ()) on_text ready 200000 (fun () => finish "timeout")
+    0i32

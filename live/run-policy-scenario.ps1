@@ -26,13 +26,13 @@ $parity = if ($NoParity) { '' } else { [IO.File]::ReadAllText((Join-Path $TibiaL
 [IO.File]::WriteAllText($probe, "SpiralPolicy = (function()`n$policySource`nend)()`n$parity$body")
 $syntax = lua -e "local f, e = loadfile([[$probe]]); if not f then print(e); os.exit(1) end"
 if ($LASTEXITCODE -ne 0) { throw "probe does not parse: $syntax" }
-$summon = Join-Path $root 'probe-summon-scenario.lua'
 $mix = @(if ($Monster -match ':') { $Monster -split ',' | ForEach-Object { $name, $count = $_ -split ':'; [pscustomobject]@{ Name = $name.Trim(); Count = [int]$count } } } else { [pscustomobject]@{ Name = $Monster; Count = $MonsterCount } })
-$summonCalls = for ($i = 0; $i -lt $mix.Count; $i++) { "scheduleEvent(function() g_game.talk('/m {0},{1},,{2}') end, {3})" -f $mix[$i].Name, $mix[$i].Count, $SpawnRadius, (1200 + 500 * $i) }
-$summonTemplate = [IO.File]::ReadAllText((Join-Path $TibiaLive 'probe-summon.lua'))
 $summonX, $summonY = $SummonAt -split ','
 $knightX, $knightY = $KnightAt -split ','
-[IO.File]::WriteAllText($summon, $summonTemplate.Replace("g_game.talk('/pos 1932, 1352, 7')", "g_game.talk('/pos $summonX, $summonY, 7')").Replace("scheduleEvent(function() g_game.talk('/m green frog,3,,2') end, 1200)", ($summonCalls -join "`n                ")))
+$env:TIBIA_SUMMON_AT = "$summonX, $summonY"
+$env:TIBIA_SUMMON_ORDERS = ($mix | ForEach-Object { '{0},{1},,{2}' -f $_.Name, $_.Count, $SpawnRadius }) -join ';'
+Update-ArenaProbes
+$summon = Join-Path $TibiaArenaTarget 'summon.lua'
 $kinds = @($mix | ForEach-Object { $_.Name })
 $MonsterCount = ($mix | Measure-Object -Property Count -Sum).Sum
 

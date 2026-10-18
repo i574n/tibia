@@ -1,5 +1,11 @@
 nominal native_position = $'any'
 
+nominal creature = $'any'
+
+nominal crowd = $'any'
+
+nominal native_table = $'any'
+
 type spot = {x : i32; y : i32; z : i32}
 
 inl joined (a : string) (b : string) : string = $'(!a) .. (!b)' : string
@@ -8,13 +14,112 @@ inl shown (n : i32) : string = $'tostring(!n)' : string
 
 inl after (ms : i32) (f : () -> ()) : () = $'scheduleEvent(!f, !ms)' : ()
 
+inl now_ms () : i32 = $'g_clock.millis()' : i32
+
+inl env_i32 (name : string) (fallback : i32) : i32 = $'tonumber(os.getenv(!name) or "") or (!fallback)' : i32
+
+inl env_text (name : string) (fallback : string) : string = $'os.getenv(!name) or (!fallback)' : string
+
 inl spot_of (p : native_position) : spot = {x = $'!p.x' : i32; y = $'!p.y' : i32; z = $'!p.z' : i32}
 
 inl player_spot () : spot = spot_of ($'g_game.getLocalPlayer():getPosition()' : native_position)
 
+inl player_present () : bool = $'g_game.getLocalPlayer() ~= nil and g_game.isOnline()' : bool
+
+inl player_name () : string = $'g_game.getLocalPlayer():getName()' : string
+
+inl player_health () : i32 = $'g_game.getLocalPlayer():getHealth()' : i32
+
+inl player_max_health () : i32 = $'g_game.getLocalPlayer():getMaxHealth()' : i32
+
+inl player_mana () : i32 = $'g_game.getLocalPlayer():getMana()' : i32
+
+inl player_experience () : i32 = $'g_game.getLocalPlayer():getExperience()' : i32
+
+inl player_walking () : bool = $'g_game.getLocalPlayer():isWalking()' : bool
+
+inl player_zone () : string =
+    $'(function() local p = g_game.getLocalPlayer(); return tostring(p.isInProtectionZone and p:isInProtectionZone() or "?") end)()' : string
+
 inl walkable_at (s : spot) : bool =
     inl x, y, z = s.x, s.y, s.z
     $'(function() local tile = g_map.getTile({ x = !x, y = !y, z = !z }); return tile ~= nil and tile:isWalkable(true) end)()' : bool
+
+union footing =
+    | Free
+    | Ramp
+    | Occupied
+    | Blocked
+    | Unknown
+
+inl footing_at (s : spot) : footing =
+    inl x, y, z = s.x, s.y, s.z
+    inl code = $'(function() local tile = g_map.getTile({ x = !x, y = !y, z = !z }); if not tile then return 4 elseif tile:isWalkable() and not tile:hasFloorChange() then return 0 elseif tile:isWalkable() then return 1 elseif tile:isWalkable(true) then return 2 else return 3 end end)()' : i32
+    if code = 0 then Free elif code = 1 then Ramp elif code = 2 then Occupied elif code = 3 then Blocked else Unknown
+
+inl spectators (s : spot) : crowd =
+    inl x, y, z = s.x, s.y, s.z
+    $'g_map.getSpectators({ x = !x, y = !y, z = !z }, false)' : crowd
+
+inl crowd_size (c : crowd) : i32 = $'##(!c)' : i32
+
+inl member (c : crowd) (index : i32) : creature = $'(!c)[!index]' : creature
+
+inl positioned_monster (c : creature) : bool = $'(!c):isMonster() and (!c):getPosition() ~= nil' : bool
+
+inl live_monster (c : creature) : bool = $'(!c):isMonster() and not (!c):isDead() and (!c):getPosition() ~= nil' : bool
+
+inl creature_spot (c : creature) : spot = spot_of ($'(!c):getPosition()' : native_position)
+
+inl creature_name (c : creature) : string = $'(!c):getName()' : string
+
+inl creature_health_percent (c : creature) : i32 = $'(!c):getHealthPercent()' : i32
+
+inl same_creature (a : creature) (b : creature) : bool = $'(!a) == (!b)' : bool
+
+inl attacking () : creature = $'g_game.getAttackingCreature()' : creature
+
+inl attacking_anyone () : bool = $'g_game.isAttacking()' : bool
+
+inl attacking_described () : string =
+    $'(function() local a = g_game.getAttackingCreature(); if not a then return "nothing" end; local p = a:getPosition(); return a:getName() .. " " .. a:getHealthPercent() .. "% at " .. string.format("%d,%d,%d", p.x, p.y, p.z) end)()' : string
+
+inl attack (c : creature) : () = $'g_game.attack(!c)' : ()
+
+inl cancel_attack () : () = $'g_game.cancelAttack()' : ()
+
+inl chasing (on : bool) : () =
+    $'do (function(mode) if g_game.getChaseMode() ~= mode then g_game.setChaseMode(mode) end end)((!on) and ChaseOpponent or DontChase) end' : ()
+
+inl fight_balanced () : () = $'g_game.setFightMode(FightBalanced)' : ()
+
+inl drink (item : i32) : bool = $'g_game.useInventoryItemWith(!item, g_game.getLocalPlayer()) ~= false' : bool
+
+inl step (dx : i32) (dy : i32) : bool =
+    $'g_game.walk(({ ["0,-1"] = North, ["1,0"] = East, ["0,1"] = South, ["-1,0"] = West, ["1,-1"] = NorthEast, ["1,1"] = SouthEast, ["-1,1"] = SouthWest, ["-1,-1"] = NorthWest })[(!dx) .. "," .. (!dy)]) ~= false' : bool
+
+inl talk (text : string) : () = $'g_game.talk(!text)' : ()
+
+inl disable_client_bot (character_key : string) : () =
+    $'do (function(key) local s = g_settings.getNode("bot") or {}; s[key] = { enabled = false }; g_settings.setNode("bot", s); g_settings.save() end)(!character_key) end' : ()
+
+inl enable_client_bot (character_key : string) (config : string) : () =
+    $'do (function(key, config) local s = g_settings.getNode("bot") or {}; s[key] = { enabled = true, config = config }; g_settings.setNode("bot", s); g_settings.save() end)(!character_key, !config) end' : ()
+
+inl parity_summary () : string = $'ArenaParity and ArenaParity.summary() or ""' : string
+
+inl new_table () : native_table = $'{}' : native_table
+
+inl remember (t : native_table) (c : creature) : () = $'do (!t)[(!c):getId()] = (!c) end' : ()
+
+inl forget_dead (t : native_table) : i32 =
+    $'(function(t) local n = 0; for id, c in pairs(t) do if c:isDead() then n = n + 1; t[id] = nil end end; return n end)(!t)' : i32
+
+inl new_cell (initial : i32) : native_table = $'{ value = !initial }' : native_table
+
+inl cell_value (c : native_table) : i32 = $'(!c).value' : i32
+
+inl set_cell (c : native_table) (v : i32) : () = $'do (!c).value = (!v) end' : ()
 
 inl online () : bool = $'g_game.isOnline()' : bool
 
@@ -38,11 +143,14 @@ inl write_log_line (line : string) : () =
     $'g_logger.info(!line)' : ()
     $'g_resources.writeFileContents("/tibia-probe.log", table.concat(TibiaProbeLog, string.char(10)) .. string.char(10))' : ()
 
-inl log_in (on_start : () -> ()) (on_error : string -> ()) : () =
+type session = {character : string; on_start : () -> (); on_error : string -> (); on_text : string -> string -> ()}
+
+inl log_in (s : session) : () =
+    inl on_start, on_error, on_text, character = s.on_start, s.on_error, s.on_text, s.character
     $'g_game.setClientVersion(1511)' : ()
     $'g_game.setProtocolVersion(g_game.getClientProtocolVersion(1511))' : ()
     $'g_game.chooseRsa("127.0.0.1")' : ()
-    $'connect(g_game, { onGameStart = !on_start, onLoginError = function(message) (!on_error)(tostring(message)) end })' : ()
+    $'connect(g_game, { onGameStart = !on_start, onLoginError = function(message) (!on_error)(tostring(message)) end, onTextMessage = function(mode, text) (!on_text)(tostring(mode))(tostring(text)) end })' : ()
     inl account = "@god"
-    inl session = "@god\ngod"
-    $'g_game.loginWorld(!account, "god", "OTServBR-Global", "127.0.0.1", 7172, "Knight Sample", "", !session)' : ()
+    inl session_key = "@god\ngod"
+    $'g_game.loginWorld(!account, "god", "OTServBR-Global", "127.0.0.1", 7172, !character, "", !session_key)' : ()

@@ -4,23 +4,50 @@ inl described (s : client.spot) : string =
     inl x, y, z = s.x, s.y, s.z
     $'string.format("%d,%d,%d", !x, !y, !z)' : string
 
+inl chebyshev (a : client.spot) (b : client.spot) : i32 =
+    inl dx = if a.x > b.x then a.x - b.x else b.x - a.x
+    inl dy = if a.y > b.y then a.y - b.y else b.y - a.y
+    if dx > dy then dx else dy
+
 inl finish (reason : string) : () =
     note (client.joined "finish: " reason)
     if client.online () then client.log_out ()
     client.after 2000 client.exit_client
 
+inl finish_reporting_parity (reason : string) : () =
+    inl parity = client.parity_summary ()
+    if $'(!parity) ~= ""' : bool then note parity
+    finish reason
+
+inl finish_once (done : client.native_table) (reason : string) : () =
+    if client.cell_value done = 0 then
+        client.set_cell done 1
+        finish_reporting_parity reason
+
 inl keep_hidden () : () =
     if client.hidden_requested () then client.hide_window ()
     client.mute ()
 
-inl started (ready : () -> ()) (timeout_ms : i32) : () =
+inl ignore_text (mode : string) (text : string) : () = ()
+
+inl knight () : string = "Knight Sample"
+
+inl game_master () : string = "GOD"
+
+inl started_as (character : string) (on_text : string -> string -> ()) (ready : () -> ()) (timeout_ms : i32) (on_timeout : () -> ()) : () =
     keep_hidden ()
     client.after 200 keep_hidden
     client.after 1000 keep_hidden
     client.after 3000 (fun () =>
-        client.log_in ready (fun message =>
-            note (client.joined "game login error: " message)
-            finish "game login error"
-            )
+        client.log_in {
+            character = character
+            on_start = ready
+            on_error = fun message =>
+                note (client.joined "game login error: " message)
+                finish "game login error"
+            on_text = on_text
+            }
         )
-    client.after timeout_ms (fun () => finish "timeout")
+    client.after timeout_ms on_timeout
+
+inl started (ready : () -> ()) (timeout_ms : i32) : () = started_as (knight ()) ignore_text ready timeout_ms (fun () => finish "timeout")
