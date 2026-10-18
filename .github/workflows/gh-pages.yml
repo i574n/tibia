@@ -65,6 +65,7 @@ jobs:
         run: pwsh scripts/build.ps1 -Files gpu_sim,hunt_sim -Label long-gpu
 
       - run: pwsh scripts/publish.ps1
+        if: ${{ !cancelled() && contains(matrix.os, 'ubuntu') }}
 
       - uses: actions/upload-artifact@v5.0.0
         if: failure()
@@ -81,7 +82,7 @@ jobs:
           retention-days: 30
 
       - uses: actions/upload-artifact@v5.0.0
-        if: contains(matrix.os, 'ubuntu')
+        if: ${{ !cancelled() && contains(matrix.os, 'ubuntu') }}
         with:
           name: gh-pages
           path: dist
@@ -89,7 +90,7 @@ jobs:
 
   push:
     needs: build
-    if: github.event_name == 'push'
+    if: ${{ !cancelled() && github.event_name == 'push' }}
     timeout-minutes: 180
     runs-on: ubuntu-24.04
     permissions:
