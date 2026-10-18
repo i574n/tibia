@@ -6,6 +6,8 @@ Set-Location $ScriptDir
 $ErrorActionPreference = "Stop"
 . ../deps/polyglot/scripts/core.ps1
 
+$Files = @($Files | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+
 
 $runNotebook = (Resolve-Path "../deps/spiral/apps/cells/spi/run_notebook.ps1").Path
 $wgslRun = @($env:SPIRAL_WGSL_RUN, "../target/wgsl-run/release/spiral-wgsl$(_exe)") |
@@ -14,7 +16,7 @@ if ($wgslRun) { $env:SPIRAL_WGSL_RUN = (Resolve-Path $wgslRun).Path }
 Write-Output "build.ps1 / wgsl runner: $($env:SPIRAL_WGSL_RUN ?? 'none')"
 
 $notebooks = (New-Item -ItemType Directory -Force "../notebooks").FullName
-$sources = Get-ChildItem .. -File -Filter "*.spi" |
+$sources = Get-ChildItem ../src -File -Filter "*.spi" |
     Where-Object { !$Files -or $_.BaseName -in $Files } |
     Where-Object { Select-String -Path $_.FullName -Pattern '^test ' -Quiet } |
     Sort-Object Name

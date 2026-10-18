@@ -180,7 +180,8 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 
 | Path | Contents |
 | --- | --- |
-| `*.spi`, `package.spiproj` | The Spiral package: rules, typed domain, simulators and their test blocks |
+| `src/` | The Spiral package (`package.spiproj` and its modules): rules, typed domain, simulators and their test blocks |
+| `docs/` | The plan, the benchmark with every pre-registration, the modeling notes, prior art and the workflow |
 | `harness/` | The live arena: OTClient probes, the parity layer, bot shims and configs, run, check and analysis scripts, the map tool |
 | `results/` | Result tables and diagnostics that BENCHMARK.md cites |
 | `scripts/` | `init.ps1`, `build.ps1`, `publish.ps1`, `workflow.ps1`, as in the sibling repos |
@@ -191,7 +192,7 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 - Set up: `pwsh scripts/init.ps1` clones polyglot (which brings spiral) next to this repo, links both under `deps/`,
   installs Mesa's software Vulkan on Ubuntu, and builds the WGSL runner into `target/`. `-fast 1` only links and
   builds what is missing.
-- Test: `pwsh scripts/build.ps1` runs every `.spi` file with tests through `deps/spiral/apps/cells/spi/run_notebook.ps1`
+- Test: `pwsh scripts/build.ps1` runs every `src/*.spi` file with tests through `deps/spiral/apps/cells/spi/run_notebook.ps1`
   and fails unless every test executed and passed (no failed, unsupported, skipped or missing rows); `-Files geometry,views`
   runs a subset. Notebook outputs go to `notebooks/` (ignored by git, published by `scripts/publish.ps1`).
 - Live arena: the harness needs a local world outside the repo: Canary, MariaDB, OTClient, logs (default
@@ -202,11 +203,11 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 
 ## Documents
 
-- [PLAN.md](PLAN.md): phases, exit criteria, stop rules, costs.
-- [BENCHMARK.md](BENCHMARK.md): the OT Agent Arena (fidelity, baselines, scenarios, metrics, pre-registrations, publication).
-- [MODELING.md](MODELING.md): the game-domain types and what each one rules out, compiler gaps.
-- [PRIOR_ART.md](PRIOR_ART.md): what mrakgr's poker work, TritCritNet and the other candidates taught us, with sources.
-- [WORKFLOW.md](WORKFLOW.md): the source-first workflow Tibia dogfoods, and the gates before Tibia work starts.
+- [PLAN.md](docs/PLAN.md): phases, exit criteria, stop rules, costs.
+- [BENCHMARK.md](docs/BENCHMARK.md): the OT Agent Arena (fidelity, baselines, scenarios, metrics, pre-registrations, publication).
+- [MODELING.md](docs/MODELING.md): the game-domain types and what each one rules out, compiler gaps.
+- [PRIOR_ART.md](docs/PRIOR_ART.md): what mrakgr's poker work, TritCritNet and the other candidates taught us, with sources.
+- [WORKFLOW.md](docs/WORKFLOW.md): the source-first workflow Tibia dogfoods, and the gates before Tibia work starts.
 
 ## Ground rules
 

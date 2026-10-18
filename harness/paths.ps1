@@ -1,5 +1,6 @@
 $TibiaHarness = $PSScriptRoot
 $TibiaRepo = Split-Path $PSScriptRoot -Parent
+$TibiaSource = Join-Path $TibiaRepo 'src'
 $TibiaResults = Join-Path $TibiaRepo 'results'
 $TibiaWorld = if ($env:TIBIA_WORLD) { $env:TIBIA_WORLD } else { Join-Path $HOME 'tibia-local' }
 $TibiaLogs = Join-Path $TibiaWorld 'arena-logs'
