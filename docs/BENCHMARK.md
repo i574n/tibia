@@ -238,6 +238,20 @@ Pack v1, scenario "cyclops clear" (live through `live/run-arena.ps1`, simulated 
 | Expectation, stated now | A smaller difference than PR-3a, likely not significant at this size |
 | Secondary (descriptive only) | Clear time, deaths, damage taken, hits in the first 10 s, floor changes (any `,6` position) |
 | Decision | Significant and negative: retreat uses fewer potions than nExBot. Significant and positive: nExBot uses fewer. Otherwise: no difference shown. No runs are added; no interim looks at potions |
+| Amendment (2026-10-18 15:29, before any PR-12 run) | Both competitors start at login + 2.5 s (TIBIA-START-SYNC: the client bot is kept disabled at login and enabled by the probe at the same moment the policy starts; the observer's clock starts there too). The runs go in chunks across days into the same TSV; chunk boundaries are logged; still no interim looks at potions |
+| Chunk 1 (2026-10-18 15:42-16:39) | 10 `spiral-retreat` + 10 `nexbot`, alternating, TSV rows 1-20; 30 per competitor to go |
+### Pre-registration PR-13, ranged hunters on the arena spot (written 2026-10-18 17:04, before any hunter run)
+
+| Item | Value |
+| --- | --- |
+| Question | Does the model's ranged-creature rule set predict a clear it has never been compared with? New since the last live check: hunters (`creatures.Hunter`: 150 hp, speed 105, keep 4 tiles away, arrow 0-100 at 50% every 2 s within 7 tiles with a clear sight line, melee 0-20), Canary's keep-distance slow-down (a straight step costs x2 while the target was within 1 tile; `Monster::getDistanceStep`, `WALK_TARGET_NEARBY_EXTRA_COST`), the ported `Map::checkSightLine`, and arrows that skip the shield but spend a block charge |
+| Scenario | Pack v1 with three hunters instead of three cyclops (`-Monster hunter -MonsterCount 3`, GM at 1932,1352, radius 2), knight level 30 axe 60, end at 675 experience (three kills at 225, hunters give 150 like cyclops) or 200 s |
+| Competitor | `spiral-policy` (rules heal below 160, CurrentFirst, never retreats; live.spi compile of the current tree, chase mode on to approach) |
+| Prediction (model, 100 held-out clears, `uniform_camp Hunter` on the arena spot under `mirroring_the_live_arena`) | 2.67 potions per clear (sd 1.89), 63.6 s with the 200 s cap (sd about 18; 99 of 100 clear, one hunter escaped the corner), 16.8 hits taken, no deaths |
+| Alternatives, same model | Retreat at 2 (heal 160): 2.85 potions (sd 1.73), 64.7 s. Without login protection: 3.87 potions (sd 1.52), 60.4 s. Without the keep-distance slow-down the knight never catches a hunter in open ground and kills one in five arena runs (lab `hunter_chase_probe.spi`), so a live clear rate near 100% already favours the rule |
+| Runs | 10, one block, into `results/arena-results-hunter-pr13.tsv`; a crash is rerun once, then missing |
+| Test | One-sample t on potions per run and on clear time against the prediction (critical 2.26 at 9 df); clear rate reported |
+| Decision | The rule set holds when both t are within 2.26 and at least 9 of 10 runs clear. It fails on either t beyond 2.26 or 3 or more uncleared runs; in between it is inconclusive. No runs are added after a look |
 ### Pre-registration PR-11, rules vs vBot without the login-protection artifact (written 2026-10-15 14:21, before any PR-11 run)
 
 | Item | Value |

@@ -58,7 +58,9 @@ foreach ($source in $sources) {
     Remove-Item $env:SPIRAL_WGSL_TIMING_LOG -ErrorAction Ignore
     $clock = [Diagnostics.Stopwatch]::StartNew()
     $output = Join-Path $metrics "$name.out"
-    $notebookRun = Start-Process pwsh -ArgumentList (@('-NoProfile', '-File', $runNotebook, '--path', $source.FullName, '--output-path', $notebook, '--no-spi') | ForEach-Object { "`"$_`"" }) `
+    $cellsMetrics = Join-Path $metrics "cells-$name"
+    Remove-Item $cellsMetrics -Recurse -Force -ErrorAction Ignore
+    $notebookRun = Start-Process pwsh -ArgumentList (@('-NoProfile', '-File', $runNotebook, '--path', $source.FullName, '--output-path', $notebook, '--no-spi', '--metrics', $cellsMetrics) | ForEach-Object { "`"$_`"" }) `
         -NoNewWindow -PassThru -RedirectStandardOutput $output -RedirectStandardError "$output.err"
     $null = $notebookRun.Handle
     while (!$notebookRun.WaitForExit(60000)) { Write-Output "build.ps1 / $name / running $([int]$clock.Elapsed.TotalSeconds) s / $(Get-Load)" }
@@ -66,11 +68,8 @@ foreach ($source in $sources) {
     $lines = @(Get-Content $output, "$output.err" -ErrorAction Ignore)
     Write-Output "build.ps1 / $name / done in $([int]$clock.Elapsed.TotalSeconds) s / $(Get-Load)"
     $fileRows.Add([pscustomobject]@{ File = $name; Seconds = [math]::Round($clock.Elapsed.TotalSeconds, 1); ExitCode = $exitCode })
-    $tests = if (Test-Path $notebook) { Get-Content $notebook -Raw | ConvertFrom-Json -Depth 64 } else { $null }
-    foreach ($test in @($tests.metadata.spiral_tests.tests | Where-Object { $_.mode -eq 'test' })) {
-        foreach ($target in @($test.targets)) {
-            $testRows.Add([pscustomobject]@{ File = $name; Test = $test.name; Target = $target.target; Status = $target.status; Ms = $target.ms; Memo = $test.memo ?? '' })
-        }
+    foreach ($row in @(Import-Csv (Join-Path $cellsMetrics 'tests.tsv') -Delimiter "`t" -ErrorAction Ignore)) {
+        $testRows.Add([pscustomobject]@{ File = $name; Test = $row.Test; Target = $row.Target; Status = $row.Status; Ms = [int]$row.Ms; Memo = $row.Memo })
     }
     foreach ($line in @(Get-Content $env:SPIRAL_WGSL_TIMING_LOG -ErrorAction Ignore)) {
         $shader, $bytes, $compile, $run, $adapter = $line -split "`t", 5

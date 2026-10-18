@@ -29,6 +29,8 @@ inl purpose_random_control () : u32 = 15
 inl purpose_wander () : u32 = 16
 inl purpose_creature_shot () : u32 = 17
 
+inl target_nearby_step_factor () : i32 = 2
+
 type foe =
     {
         at : geometry.position
@@ -38,6 +40,7 @@ type foe =
         next_step_at : i32
         met_target : bool
         returns_at : i32
+        nearby : i32
     }
 
 type hunter =
@@ -111,7 +114,7 @@ inl offense_against (kind : creatures.arena_creature) : offense =
 inl never () : i32 = 2147483647
 
 inl fresh_foe (kind : creatures.arena_creature) (spawn : geometry.position) : foe =
-    {at = spawn; spawn = spawn; life = vitality.spawn (creatures.stats_of kind).max_health; strikes_at = 0; next_step_at = 0; met_target = false; returns_at = never ()}
+    {at = spawn; spawn = spawn; life = vitality.spawn (creatures.stats_of kind).max_health; strikes_at = 0; next_step_at = 0; met_target = false; returns_at = never (); nearby = 0}
 
 inl buried_foe (kind : creatures.arena_creature) : foe =
     inl grave = fresh_foe kind (geometry.position 0 0 15)
@@ -139,19 +142,18 @@ union melee_timing =
     | MeleeWhenReadyEvery : i32
     | MeleeEveryOnceTargeted : i32
 
-type camp = {kinds : views.band creatures.arena_creature; size : i32; hunter_level : i32; rule : respawn_rule; layout : terrain.layout; potion_budget : i32; party : i32; wakes_at : i32; swing : swing_after_step; melee : melee_timing; idle : idle_behavior; placement : knight_placement}
+type camp = {kinds : views.band creatures.arena_creature; size : i32; hunter_level : i32; rule : respawn_rule; layout : terrain.layout; potion_budget : i32; party : i32; wakes_at : i32; swing : swing_after_step; melee : melee_timing; idle : idle_behavior; placement : knight_placement; ranged : bool}
 
 inl unlimited_potions () : i32 = 1000000
 
 inl hardest_kind (kinds : views.band creatures.arena_creature) (size : i32) : creatures.arena_creature =
-    open creatures
-    inl tough kind = match kind with Cyclops => true | _ => false
-    let rec any (i : i32) : bool = if i >= size then false elif tough (views.band_at i kinds) then true else any (i + 1)
-    if any 0 then Cyclops else Troll
+    inl harder (a : creatures.arena_creature) (b : creatures.arena_creature) = if (offense_against b).level > (offense_against a).level then b else a
+    let rec pick (i : i32) (best : creatures.arena_creature) : creatures.arena_creature = if i >= size then best else pick (i + 1) (harder best (views.band_at i kinds))
+    pick 1 (views.band_at 0 kinds)
 
 inl default_hunter_level (kinds : views.band creatures.arena_creature) (size : i32) : i32 = (offense_against (hardest_kind kinds size)).level
 
-inl uniform_camp (kind : creatures.arena_creature) : camp = {kinds = views.band_of kind; size = 3; hunter_level = default_hunter_level (views.band_of kind) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime; melee = MeleeWhenReady; idle = StandsStill; placement = AtLayoutStart}
+inl uniform_camp (kind : creatures.arena_creature) : camp = {kinds = views.band_of kind; size = 3; hunter_level = default_hunter_level (views.band_of kind) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime; melee = MeleeWhenReady; idle = StandsStill; placement = AtLayoutStart; ranged = creatures.is_ranged kind}
 
 inl with_hunter_level (level : i32) (c : camp) : camp = {c with hunter_level = level}
 
@@ -212,7 +214,7 @@ inl spawns_of (c : camp) : geometry.position * geometry.position * geometry.posi
 inl camp_of_entries (entries : catalog.entry * catalog.entry * catalog.entry) : camp =
     inl a, b, c = entries
     inl first, second, third = catalog.entry_creature a, catalog.entry_creature b, catalog.entry_creature c
-    {kinds = views.band (first, second, third, first, first, first); size = 3; hunter_level = default_hunter_level (views.band (first, second, third, first, first, first)) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime; melee = MeleeWhenReady; idle = StandsStill; placement = AtLayoutStart}
+    {kinds = views.band (first, second, third, first, first, first); size = 3; hunter_level = default_hunter_level (views.band (first, second, third, first, first, first)) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime; melee = MeleeWhenReady; idle = StandsStill; placement = AtLayoutStart; ranged = creatures.is_ranged first || creatures.is_ranged second || creatures.is_ranged third}
 
 inl hunter_of (c : camp) : offense =
     inl base = offense_against (hardest_kind c.kinds c.size)
@@ -332,10 +334,13 @@ inl foe_turn (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (
                 inl h = p.hunter
                 {reset with escapes = p.escapes + 1; hunter = {h with target = if h.target = index then -1 else h.target}}
             else with_slot index fled p
-        elif stats.target_distance > 1 && distance_to f p <= stats.target_distance && geometry.sees f.at p.hunter.at then
+        elif camp.ranged && stats.target_distance > 1 && distance_to f p <= stats.target_distance && geometry.sees f.at p.hunter.at then
             if distance_to f p < stats.target_distance then
+                inl counted = if geometry.chebyshev_distance f.at p.hunter.at <= 1 then (if f.nearby < 2 then f.nearby + 1 else 2) elif f.nearby > 0 then f.nearby - 1 else 0
                 inl away = terrain.step_away camp.layout (taken_by_others index p) p.hunter.at f.at
-                with_slot index {f with at = away; met_target = true; next_step_at = now + geometry.step_cost (terrain.on_ground_at camp.layout f.at stats.step_ms) f.at away} p
+                inl cost = geometry.step_cost (terrain.on_ground_at camp.layout f.at stats.step_ms) f.at away
+                inl slowed = if geometry.moved_diagonally f.at away = false && counted >= 1 then cost * target_nearby_step_factor () else cost
+                with_slot index {f with at = away; met_target = true; nearby = counted; next_step_at = now + slowed} p
             else with_slot index {f with met_target = true} p
         elif distance_to f p <= 1 then with_slot index {f with met_target = true} p
         elif geometry.sees f.at p.hunter.at = false then p
@@ -348,7 +353,7 @@ inl foe_turn (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (
             if h.target = index then chased |> with_hunter {h with timers = swing_after_target_moves camp now h.timers} else chased
     inl g = slot index moved
     if vitality.health g.life < stats.run_health then moved
-    elif creatures.is_ranged kind then creature_shoots camp seed tick now index (creatures.ranged_attack_of kind) g moved
+    elif camp.ranged && creatures.is_ranged kind then creature_shoots camp seed tick now index (creatures.ranged_attack_of kind) g moved
     else
         match camp.melee with
         | MeleeWhenReady =>
@@ -844,7 +849,7 @@ inl against_standing_only (g : search.genome) : search.vector = temperate_genes 
 inl arena_hunt () : camp =
     open creatures
     inl kinds = views.band (Cyclops, Cyclops, Troll, Troll, Troll, Troll)
-    {kinds = kinds; size = 6; hunter_level = default_hunter_level kinds 6; rule = RespawningAfter 60000; layout = open terrain in ArenaHunt; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime; melee = MeleeWhenReady; idle = StandsStill; placement = AtLayoutStart}
+    {kinds = kinds; size = 6; hunter_level = default_hunter_level kinds 6; rule = RespawningAfter 60000; layout = open terrain in ArenaHunt; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime; melee = MeleeWhenReady; idle = StandsStill; placement = AtLayoutStart; ranged = views.counted creatures.is_ranged kinds > 0}
 
 inl cyclops_hunting_ground () : camp =
     inl ground = arena_hunt ()
