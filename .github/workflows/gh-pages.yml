@@ -21,6 +21,17 @@ jobs:
           channel: "nightly-2025-05-09"
           components: "clippy,rust-src,rustfmt"
           targets: "wasm32-unknown-unknown"
+          cache: false
+
+      - uses: actions/cache@v6.1.0
+        with:
+          path: |
+            ~/.cargo/bin/trunk*
+            ~/.cargo/bin/cargo-outdated*
+            ~/.cargo/bin/cargo-binstall*
+            ~/.cargo/bin/sccache*
+            ~/.cargo/bin/.patched-crates
+          key: cargo-tools-${{ runner.os }}-trunk-0.21.14-outdated-0.19.0
 
       - uses: erlef/setup-beam@v1.24.1
         with:
@@ -43,7 +54,17 @@ jobs:
         with:
           python-version: "3.12.10"
 
-      - run: pwsh scripts/workflow.ps1
+      - id: init
+        run: pwsh scripts/init.ps1
+
+      - id: short
+        run: pwsh scripts/build.ps1 -Exclude gpu_sim,hunt_sim -Label short
+
+      - id: long-gpu
+        if: ${{ !cancelled() && steps.init.outcome == 'success' }}
+        run: pwsh scripts/build.ps1 -Files gpu_sim,hunt_sim -Label long-gpu
+
+      - run: pwsh scripts/publish.ps1
 
       - uses: actions/upload-artifact@v5.0.0
         if: failure()
@@ -51,6 +72,13 @@ jobs:
           name: notebooks-${{ matrix.os }}
           path: notebooks
           retention-days: 14
+
+      - uses: actions/upload-artifact@v5.0.0
+        if: always()
+        with:
+          name: ci-metrics-${{ matrix.os }}
+          path: target/ci-metrics
+          retention-days: 30
 
       - uses: actions/upload-artifact@v5.0.0
         if: contains(matrix.os, 'ubuntu')

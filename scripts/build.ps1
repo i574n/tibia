@@ -1,5 +1,7 @@
 param(
     [string[]] $Files = @(),
+    [string[]] $Exclude = @(),
+    [string] $Label = 'all',
     $ScriptDir = $PSScriptRoot
 )
 Set-Location $ScriptDir
@@ -7,6 +9,7 @@ $ErrorActionPreference = "Stop"
 . ../deps/polyglot/scripts/core.ps1
 
 $Files = @($Files | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+$Exclude = @($Exclude | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 
 
 & ../apps/arena/build.ps1
@@ -19,17 +22,60 @@ if ($IsWindows -and $env:SPIRAL_WGSL_RUN -and (Test-Path (Join-Path (Split-Path 
 if ($IsWindows -and $env:CI -and (Test-Path ../target/mesa/x64/lvp_icd.x86_64.json)) { $env:WGPU_BACKEND = 'vulkan'; $env:WGPU_ADAPTER_NAME = 'llvmpipe' }
 Write-Output "build.ps1 / wgsl runner: $($env:SPIRAL_WGSL_RUN ?? 'none') / dx12 compiler: $($env:WGPU_DX12_COMPILER ?? 'default') / adapter: $($env:WGPU_ADAPTER_NAME ?? 'default')"
 
+$metrics = (New-Item -ItemType Directory -Force "../target/ci-metrics").FullName
+$machine = if ($IsWindows) {
+    $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
+    [pscustomobject]@{ Cpu = $cpu.Name.Trim(); Memory = (Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory }
+} else {
+    [pscustomobject]@{ Cpu = ((Get-Content /proc/cpuinfo | Select-String '^model name\s*:\s*(.*)' | Select-Object -First 1).Matches[0].Groups[1].Value); Memory = [long]((Get-Content /proc/meminfo | Select-String '^MemTotal:\s*(\d+)').Matches[0].Groups[1].Value) * 1024 }
+}
+$platform = "$([Runtime.InteropServices.RuntimeInformation]::OSDescription)".Trim()
+"platform`tcpu`tlogical_cores`tmemory_gib`twgsl_runner`tdx12_compiler`tadapter_request`n$platform`t$($machine.Cpu)`t$([Environment]::ProcessorCount)`t$([math]::Round($machine.Memory / 1GB, 1))`t$($env:SPIRAL_WGSL_RUN ?? '')`t$($env:WGPU_DX12_COMPILER ?? '')`t$($env:WGPU_ADAPTER_NAME ?? '')" |
+    Set-Content (Join-Path $metrics 'machine.tsv')
+Write-Output "build.ps1 / machine / $platform / $($machine.Cpu) / $([Environment]::ProcessorCount) logical cores / $([math]::Round($machine.Memory / 1GB, 1)) GiB"
+function Get-Load {
+    $free = if ($IsWindows) { (Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory * 1KB } else { [long]((Get-Content /proc/meminfo | Select-String '^MemAvailable:\s*(\d+)').Matches[0].Groups[1].Value) * 1KB }
+    $top = Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 5 | ForEach-Object { "$($_.ProcessName) $([math]::Round($_.WorkingSet64 / 1MB)) MB" }
+    "free $([math]::Round($free / 1GB, 1)) GiB / $($top -join ', ')"
+}
+$fileRows = [Collections.Generic.List[object]]::new()
+$testRows = [Collections.Generic.List[object]]::new()
+$wgslRows = [Collections.Generic.List[object]]::new()
+
 $notebooks = (New-Item -ItemType Directory -Force "../notebooks").FullName
 $sources = Get-ChildItem ../src, ../apps/arena -File -Filter "*.spi" |
     Where-Object { !$Files -or $_.BaseName -in $Files } |
     Where-Object { Select-String -Path $_.FullName -Pattern '^test ' -Quiet } |
+    Where-Object { $_.BaseName -notin $Exclude } |
     Sort-Object Name
+$labelSuffix = if ($Label -eq 'all') { '' } else { "-$Label" }
 
 $problems = @()
 foreach ($source in $sources) {
     $name = $source.BaseName
-    $lines = pwsh -NoProfile -File $runNotebook --path $source.FullName --output-path (Join-Path $notebooks "$name.spi.ipynb") --no-spi 2>&1
-    $exitCode = $LASTEXITCODE
+    $notebook = Join-Path $notebooks "$name.spi.ipynb"
+    $env:SPIRAL_WGSL_TIMING_LOG = Join-Path $metrics "wgsl-$name.log"
+    Remove-Item $env:SPIRAL_WGSL_TIMING_LOG -ErrorAction Ignore
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    $output = Join-Path $metrics "$name.out"
+    $notebookRun = Start-Process pwsh -ArgumentList (@('-NoProfile', '-File', $runNotebook, '--path', $source.FullName, '--output-path', $notebook, '--no-spi') | ForEach-Object { "`"$_`"" }) `
+        -NoNewWindow -PassThru -RedirectStandardOutput $output -RedirectStandardError "$output.err"
+    $null = $notebookRun.Handle
+    while (!$notebookRun.WaitForExit(60000)) { Write-Output "build.ps1 / $name / running $([int]$clock.Elapsed.TotalSeconds) s / $(Get-Load)" }
+    $exitCode = $notebookRun.ExitCode
+    $lines = @(Get-Content $output, "$output.err" -ErrorAction Ignore)
+    Write-Output "build.ps1 / $name / done in $([int]$clock.Elapsed.TotalSeconds) s / $(Get-Load)"
+    $fileRows.Add([pscustomobject]@{ File = $name; Seconds = [math]::Round($clock.Elapsed.TotalSeconds, 1); ExitCode = $exitCode })
+    $tests = if (Test-Path $notebook) { Get-Content $notebook -Raw | ConvertFrom-Json -Depth 64 } else { $null }
+    foreach ($test in @($tests.metadata.spiral_tests.tests | Where-Object { $_.mode -eq 'test' })) {
+        foreach ($target in @($test.targets)) {
+            $testRows.Add([pscustomobject]@{ File = $name; Test = $test.name; Target = $target.target; Status = $target.status; Ms = $target.ms; Memo = $test.memo ?? '' })
+        }
+    }
+    foreach ($line in @(Get-Content $env:SPIRAL_WGSL_TIMING_LOG -ErrorAction Ignore)) {
+        $shader, $bytes, $compile, $run, $adapter = $line -split "`t", 5
+        $wgslRows.Add([pscustomobject]@{ File = $name; Shader = Split-Path $shader -Leaf; Bytes = $bytes; CompileMs = $compile; RunMs = $run; Adapter = $adapter })
+    }
     $total = $lines | Select-String 'spiral-tests total (\{.*\})' | Select-Object -Last 1
     if (!$total) {
         $lines | Select-Object -Last 20 | ForEach-Object { Write-Output "build.ps1 / $name / $_" }
@@ -47,6 +93,22 @@ foreach ($source in $sources) {
             Where-Object { $_.Line -notmatch '^spiral-tests ' } | Select-Object -First 40 |
             ForEach-Object { Write-Output "build.ps1 / $name / detail / $($_.Line)" }
     }
+}
+
+$fileRows | ConvertTo-Csv -Delimiter "`t" -UseQuotes Never | Set-Content (Join-Path $metrics "files$labelSuffix.tsv")
+$testRows | ConvertTo-Csv -Delimiter "`t" -UseQuotes Never | Set-Content (Join-Path $metrics "tests$labelSuffix.tsv")
+$wgslRows | ConvertTo-Csv -Delimiter "`t" -UseQuotes Never | Set-Content (Join-Path $metrics "wgsl$labelSuffix.tsv")
+foreach ($row in $wgslRows) { Write-Output "build.ps1 / wgsl / $($row.File) / $($row.Shader) $($row.Bytes) bytes / compile $($row.CompileMs) ms / run $($row.RunMs) ms / $($row.Adapter)" }
+if ($env:GITHUB_STEP_SUMMARY) {
+    $summary = @("### $Label tests on $platform", "", "$($machine.Cpu), $([Environment]::ProcessorCount) logical cores, $([math]::Round($machine.Memory / 1GB, 1)) GiB, $(@($fileRows).Count) files in $([math]::Round(($fileRows | Measure-Object Seconds -Sum).Sum / 60, 1)) min", "", "| slowest file | s |", "|---|---|")
+    $summary += $fileRows | Sort-Object Seconds -Descending | Select-Object -First 8 | ForEach-Object { "| $($_.File) | $($_.Seconds) |" }
+    $summary += "", "| slowest test | target | status | s |", "|---|---|---|---|"
+    $summary += $testRows | Sort-Object Ms -Descending | Select-Object -First 12 | ForEach-Object { "| $($_.File) / $($_.Test) | $($_.Target) | $($_.Status) | $([math]::Round($_.Ms / 1000, 1)) |" }
+    if ($wgslRows) {
+        $summary += "", "| wgsl shader | bytes | compile s | run s | adapter |", "|---|---|---|---|---|"
+        $summary += $wgslRows | ForEach-Object { "| $($_.File) / $($_.Shader) | $($_.Bytes) | $([math]::Round([int]$_.CompileMs / 1000, 1)) | $([math]::Round([int]$_.RunMs / 1000, 1)) | $($_.Adapter) |" }
+    }
+    $summary | Add-Content $env:GITHUB_STEP_SUMMARY
 }
 
 if (!$sources) { throw "build.ps1 / no test files matched $($Files -join ', ')" }
