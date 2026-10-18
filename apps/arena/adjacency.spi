@@ -1,0 +1,56 @@
+type meter = {enabled : bool; adjacent_ms : lua.native_table; hits : lua.native_table; last_tick : lua.native_table; ms_by_count : lua.native_table}
+
+inl from_environment () : meter =
+    {
+        enabled = $'os.getenv("TIBIA_ARENA_ADJACENCY") == "1"' : bool
+        adjacent_ms = lua.new_cell 0
+        hits = lua.new_cell 0
+        last_tick = lua.new_cell (0 - 1)
+        ms_by_count = lua.new_table ()
+    }
+
+inl adjacent_monsters (here : client.spot) (people : client.crowd) : i32 =
+    inl size = client.crowd_size people
+    let rec count (index : i32) (n : i32) : i32 =
+        if index > size then n
+        else
+            inl c = client.member people index
+            count (index + 1) (if client.live_monster c && probe.chebyshev (client.creature_spot c) here <= 1 then n + 1 else n)
+    count 1 0
+
+inl start_positions (here : client.spot) (people : client.crowd) : string =
+    inl size = client.crowd_size people
+    let rec seen (index : i32) (text : string) : string =
+        if index > size then text
+        else
+            inl c = client.member people index
+            if client.positioned_monster c then
+                inl at = probe.described (client.creature_spot c)
+                seen (index + 1) (if $'(!text) == ""' : bool then at else lua.joined (lua.joined text " ") at)
+            else seen (index + 1) text
+    lua.joined (lua.joined (lua.joined "start positions: knight " (probe.described here)) " monsters ") (seen 1 "")
+
+inl on_tick (m : meter) (now : i32) (here : client.spot) (people : client.crowd) : () =
+    if m.enabled then
+        inl last = lua.cell_value m.last_tick
+        if last < 0 then probe.note (start_positions here people)
+        else
+            inl adjacent = adjacent_monsters here people
+            lua.set_cell m.adjacent_ms (lua.cell_value m.adjacent_ms + adjacent * (now - last))
+            lua.add_to m.ms_by_count (if adjacent > 3 then 3 else adjacent) (now - last)
+        lua.set_cell m.last_tick now
+
+inl on_text (m : meter) (elapsed : i32) (text : string) : () =
+    if m.enabled && lua.contains text "due to an attack" then
+        lua.set_cell m.hits (lua.cell_value m.hits + 1)
+        if client.player_present () then
+            inl here = client.player_spot ()
+            inl adjacent = adjacent_monsters here (client.spectators here)
+            probe.note ($'string.format("hit at %d ms with %d adjacent", !elapsed, !adjacent)' : string)
+
+inl on_cleared (m : meter) () : () =
+    if m.enabled then
+        inl adjacent_ms, hits = lua.cell_value m.adjacent_ms, lua.cell_value m.hits
+        probe.note ($'string.format("adjacency: %d monster-ms adjacent, %d landed hits, %.3f landed hits per adjacent monster-second", !adjacent_ms, !hits, !hits * 1000 / math.max(1, !adjacent_ms))' : string)
+        inl none, one, two, three = lua.amount_at m.ms_by_count 0, lua.amount_at m.ms_by_count 1, lua.amount_at m.ms_by_count 2, lua.amount_at m.ms_by_count 3
+        probe.note ($'string.format("adjacent time by count: 0 %d 1 %d 2 %d 3 %d ms", !none, !one, !two, !three)' : string)

@@ -173,7 +173,7 @@ inl meleeing_every (ms : i32) (c : camp) : camp = {c with melee = MeleeWhenReady
 
 inl meleeing_every_once_targeted (ms : i32) (c : camp) : camp = {c with melee = MeleeEveryOnceTargeted ms}
 
-inl mirroring_the_live_arena (c : camp) : camp = c |> waking_at (live_wake_ms ()) |> wandering_while_idle |> meleeing_every (live_creature_strike_ms ()) |> swinging_like_canary
+inl mirroring_the_live_arena (c : camp) : camp = c |> waking_at (live_wake_ms ()) |> wandering_while_idle |> meleeing_every_once_targeted (live_creature_strike_ms ()) |> swinging_like_canary
 
 inl player_think_ms () : i32 = 1000
 
@@ -225,7 +225,7 @@ inl knight_start (camp : camp) (sign : i32) : geometry.position =
     inl first = match camp.placement with AtLayoutStart => terrain.player_start camp.layout | StandsAt at => at
     if sign = 0 then first else geometry.position (first.x + 1) first.y first.z
 
-inl start (camp : camp) : pack =
+let start (camp : camp) : pack =
     inl a, b, c = spawns_of camp
     inl d, e, g = terrain.more_spawn_points camp.layout
     inl placed (i : i32) (at : geometry.position) : foe = if i < camp.size then fresh_foe (kind_of i camp) at else buried_foe (kind_of i camp)

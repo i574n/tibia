@@ -1,4 +1,4 @@
-param([int] $TimeoutSeconds = 240, [int] $AxeSkill = 30, [string] $Monster = 'troll', [int] $MonsterCount = 3, [string] $ProbeBody = 'probe-policy-body.lua', [int] $SpawnRadius = 2, [ValidateSet('none', 'vBot', 'nExBot')] [string] $Bot = 'none', [switch] $NoParity, [string] $TibiaDir = (Join-Path (Split-Path $PSScriptRoot -Parent) 'src'), [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [string] $SummonAt = '1932,1352', [string] $KnightAt = '1932,1349')
+param([int] $TimeoutSeconds = 240, [int] $AxeSkill = 30, [string] $Monster = 'troll', [int] $MonsterCount = 3, [string] $ProbeBody = 'competitor', [int] $SpawnRadius = 2, [ValidateSet('none', 'vBot', 'nExBot')] [string] $Bot = 'none', [switch] $NoParity, [string] $TibiaDir = (Join-Path (Split-Path $PSScriptRoot -Parent) 'src'), [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [string] $SummonAt = '1932,1352', [string] $KnightAt = '1932,1349')
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'paths.ps1')
 $root = $TibiaWorld
@@ -20,7 +20,8 @@ if (Test-Path $frozenPolicy) {
 }
 $probe = Join-Path $root 'probe-policy.lua'
 $policySource = [IO.File]::ReadAllText($policyLua)
-$bodyPath = if ([IO.Path]::IsPathRooted($ProbeBody)) { $ProbeBody } else { Join-Path $TibiaLive $ProbeBody }
+Update-ArenaProbes
+$bodyPath = if ([IO.Path]::IsPathRooted($ProbeBody)) { $ProbeBody } elseif (Test-Path (Join-Path $TibiaArena "$ProbeBody.spi")) { Join-Path $TibiaArenaTarget "$ProbeBody.lua" } else { Join-Path $TibiaLive $ProbeBody }
 $body = [IO.File]::ReadAllText($bodyPath)
 $parity = if ($NoParity) { '' } else { [IO.File]::ReadAllText((Join-Path $TibiaLive 'parity.lua')) + "`n" }
 [IO.File]::WriteAllText($probe, "SpiralPolicy = (function()`n$policySource`nend)()`n$parity$body")
@@ -31,7 +32,6 @@ $summonX, $summonY = $SummonAt -split ','
 $knightX, $knightY = $KnightAt -split ','
 $env:TIBIA_SUMMON_AT = "$summonX, $summonY"
 $env:TIBIA_SUMMON_ORDERS = ($mix | ForEach-Object { '{0},{1},,{2}' -f $_.Name, $_.Count, $SpawnRadius }) -join ';'
-Update-ArenaProbes
 $summon = Join-Path $TibiaArenaTarget 'summon.lua'
 $kinds = @($mix | ForEach-Object { $_.Name })
 $MonsterCount = ($mix | Measure-Object -Property Count -Sum).Sum

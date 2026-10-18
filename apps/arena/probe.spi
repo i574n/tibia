@@ -1,4 +1,4 @@
-inl note (message : string) : () = client.write_log_line (client.joined "[tibia-probe] " message)
+inl note (message : string) : () = client.write_log_line (lua.joined "[tibia-probe] " message)
 
 inl described (s : client.spot) : string =
     inl x, y, z = s.x, s.y, s.z
@@ -10,7 +10,7 @@ inl chebyshev (a : client.spot) (b : client.spot) : i32 =
     if dx > dy then dx else dy
 
 inl finish (reason : string) : () =
-    note (client.joined "finish: " reason)
+    note (lua.joined "finish: " reason)
     if client.online () then client.log_out ()
     client.after 2000 client.exit_client
 
@@ -19,10 +19,29 @@ inl finish_reporting_parity (reason : string) : () =
     if $'(!parity) ~= ""' : bool then note parity
     finish reason
 
-inl finish_once (done : client.native_table) (reason : string) : () =
-    if client.cell_value done = 0 then
-        client.set_cell done 1
+inl finish_once (done : lua.native_table) (reason : string) : () =
+    if lua.cell_value done = 0 then
+        lua.set_cell done 1
         finish_reporting_parity reason
+
+inl finish_once_without_parity (done : lua.native_table) (reason : string) : () =
+    if lua.cell_value done = 0 then
+        lua.set_cell done 1
+        finish reason
+
+type nearest = {found : bool; index : i32; distance : i32}
+
+inl nearest_monster (here : client.spot) (people : client.crowd) : nearest =
+    inl size = client.crowd_size people
+    let rec scan (index : i32) (best : nearest) : nearest =
+        if index > size then best
+        else
+            inl c = client.member people index
+            if client.live_monster c then
+                inl d = chebyshev (client.creature_spot c) here
+                scan (index + 1) (if d < best.distance then {found = true; index = index; distance = d} else best)
+            else scan (index + 1) best
+    scan 1 {found = false; index = 0; distance = 999}
 
 inl keep_hidden () : () =
     if client.hidden_requested () then client.hide_window ()
@@ -43,7 +62,7 @@ inl started_as (character : string) (on_text : string -> string -> ()) (ready : 
             character = character
             on_start = ready
             on_error = fun message =>
-                note (client.joined "game login error: " message)
+                note (lua.joined "game login error: " message)
                 finish "game login error"
             on_text = on_text
             }

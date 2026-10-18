@@ -1,9 +1,9 @@
-inl orders_of (text : string) : client.native_table =
-    $'(function(s) local t = {}; for part in string.gmatch(s, "[^;]+") do table.insert(t, part) end; return t end)(!text)' : client.native_table
+inl orders_of (text : string) : lua.native_table =
+    $'(function(s) local t = {}; for part in string.gmatch(s, "[^;]+") do table.insert(t, part) end; return t end)(!text)' : lua.native_table
 
-inl order_count (t : client.native_table) : i32 = $'##(!t)' : i32
+inl order_count (t : lua.native_table) : i32 = $'##(!t)' : i32
 
-inl order_at (t : client.native_table) (index : i32) : string = $'(!t)[!index]' : string
+inl order_at (t : lua.native_table) (index : i32) : string = $'(!t)[!index]' : string
 
 inl list_creatures () : () =
     inl people = client.spectators (client.player_spot ())
@@ -17,19 +17,19 @@ inl list_creatures () : () =
     each 1
 
 inl main () =
-    inl summon_at = client.env_text "TIBIA_SUMMON_AT" "1932, 1352"
-    inl orders = orders_of (client.env_text "TIBIA_SUMMON_ORDERS" "green frog,3,,2")
-    inl on_text (mode : string) (text : string) : () = probe.note (client.joined "server text: " text)
+    inl summon_at = lua.env_text "TIBIA_SUMMON_AT" "1932, 1352"
+    inl orders = orders_of (lua.env_text "TIBIA_SUMMON_ORDERS" "green frog,3,,2")
+    inl on_text (mode : string) (text : string) : () = probe.note (lua.joined "server text: " text)
     inl ready () =
-        probe.note (client.joined "in game as " (client.player_name ()))
+        probe.note (lua.joined "in game as " (client.player_name ()))
         client.after 1500 (fun () =>
-            probe.note (client.joined "at " (probe.described (client.player_spot ())))
-            client.talk (client.joined (client.joined "/pos " summon_at) ", 7")
+            probe.note (lua.joined "at " (probe.described (client.player_spot ())))
+            client.talk (lua.joined (lua.joined "/pos " summon_at) ", 7")
             inl count = order_count orders
             let rec schedule (index : i32) : () =
                 if index <= count then
                     inl order = order_at orders index
-                    client.after (1200 + 500 * (index - 1)) (fun () => client.talk (client.joined "/m " order))
+                    client.after (1200 + 500 * (index - 1)) (fun () => client.talk (lua.joined "/m " order))
                     schedule (index + 1)
             schedule 1
             client.after 4000 (fun () =>

@@ -1,0 +1,93 @@
+///- --package .
+test lua static =
+    open testing
+
+nominal native_table = $'any'
+
+inl joined (a : string) (b : string) : string = $'(!a) .. (!b)' : string
+
+inl shown (n : i32) : string = $'tostring(!n)' : string
+
+inl env_i32 (name : string) (fallback : i32) : i32 = $'tonumber(os.getenv(!name) or "") or (!fallback)' : i32
+
+inl env_text (name : string) (fallback : string) : string = $'os.getenv(!name) or (!fallback)' : string
+
+inl seed_random_from_clock () : () = $'math.randomseed(os.time())' : ()
+
+inl random_between (low : i32) (high : i32) : i32 = $'math.random(!low, !high)' : i32
+
+inl new_table () : native_table = $'{}' : native_table
+
+inl sample (samples : native_table) (value : i32) : () = $'table.insert(!samples, !value)' : ()
+
+inl sample_count (samples : native_table) : i32 = $'##(!samples)' : i32
+
+inl sample_total (samples : native_table) : i32 = $'(function(s) local n = 0; for _, v in ipairs(s) do n = n + v end; return n end)(!samples)' : i32
+
+inl sample_max (samples : native_table) : i32 = $'(function(s) local n = 0; for _, v in ipairs(s) do if v > n then n = v end end; return n end)(!samples)' : i32
+
+inl sample_median (samples : native_table) : i32 =
+    $'(function(s) local sorted = {}; for i, v in ipairs(s) do sorted[i] = v end; table.sort(sorted); return ##sorted > 0 and sorted[math.floor((##sorted + 1) / 2)] or 0 end)(!samples)' : i32
+
+inl samples_joined (samples : native_table) : string = $'table.concat(!samples, ",")' : string
+
+inl labeled_sample (samples : native_table) (label : string) (value : i32) : () =
+    $'(function(s, label, value) s[label] = s[label] or {}; table.insert(s[label], value) end)(!samples, !label, !value)' : ()
+
+inl labeled_summary (samples : native_table) : string =
+    $'(function(s) local parts = {}; for label, values in pairs(s) do local sorted = {}; for i, v in ipairs(values) do sorted[i] = v end; table.sort(sorted); if ##sorted == 0 then table.insert(parts, label .. " none") else table.insert(parts, string.format("%s n=%d median %d min %d max %d", label, ##sorted, sorted[math.floor((##sorted + 1) / 2)], sorted[1], sorted[##sorted])) end end; table.sort(parts); return table.concat(parts, "; ") end)(!samples)' : string
+
+inl stamp_at (stamps : native_table) (id : i32) : i32 = $'(function(s, id) local p = s[id]; return p and p.at or -1 end)(!stamps, !id)' : i32
+
+inl stamp_kind (stamps : native_table) (id : i32) : string = $'(function(s, id) local p = s[id]; return p and p.kind or "" end)(!stamps, !id)' : string
+
+inl stamp (stamps : native_table) (id : i32) (at : i32) (kind : string) : () = $'(!stamps)[!id] = { at = !at, kind = !kind }' : ()
+
+inl matched_number (text : string) (pattern : string) : i32 = $'tonumber(string.match(!text, !pattern)) or -1' : i32
+
+inl contains (text : string) (needle : string) : bool = $'string.find(!text, !needle, 1, true) ~= nil' : bool
+
+inl add_to (counts : native_table) (key : i32) (amount : i32) : () = $'(!counts)[!key] = ((!counts)[!key] or 0) + (!amount)' : ()
+
+inl amount_at (counts : native_table) (key : i32) : i32 = $'(!counts)[!key] or 0' : i32
+
+inl new_cell (initial : i32) : native_table = $'{ value = !initial }' : native_table
+
+inl cell_value (c : native_table) : i32 = $'(!c).value' : i32
+
+inl set_cell (c : native_table) (v : i32) : () = $'(!c).value = (!v)' : ()
+
+///> lua
+test samples_report_count_total_max_median_and_joined =
+    inl s = new_table ()
+    sample s 5
+    sample s 1
+    sample s 9
+    sample s 7
+    (sample_count s, sample_total s, sample_max s, sample_median s, samples_joined s) |> _assert_eq (4i32, 22i32, 9i32, 5i32, "5,1,9,7")
+
+///> lua
+test labeled_samples_summarize_each_label_in_order =
+    inl s = new_table ()
+    labeled_sample s "b" 3
+    labeled_sample s "a" 2
+    labeled_sample s "b" 1
+    labeled_summary s |> _assert_eq "a n=1 median 2 min 2 max 2; b n=2 median 1 min 1 max 3"
+
+///> lua
+test stamps_remember_the_last_time_and_kind_per_key =
+    inl s = new_table ()
+    inl before = stamp_at s 7
+    stamp s 7 100 "straight"
+    (before, stamp_at s 7, stamp_kind s 7, stamp_kind s 8) |> _assert_eq (-1i32, 100i32, "straight", "")
+
+///> lua
+test text_matching_reads_numbers_and_needles =
+    inl text = "A troll loses 12 hitpoints due to your attack."
+    (matched_number text "loses (%d+) hitpoints? due to your", matched_number text "You lose (%d+) hitpoints?", contains text "due to your", contains text "critical") |> _assert_eq (12i32, -1i32, true, false)
+
+///> lua
+test cells_hold_a_value_between_calls =
+    inl c = new_cell 3
+    set_cell c (cell_value c + 4)
+    (cell_value c, joined "a" "b") |> _assert_eq (7i32, "ab")

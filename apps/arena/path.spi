@@ -1,0 +1,43 @@
+inl watch_ms () : i32 = 30000
+inl sample_ms () : i32 = 50
+
+inl watch (done : lua.native_table) (started_at : i32) : () =
+    let rec go (has_last : bool) (last : client.spot) (steps : i32) : () =
+        if client.player_present () = false then probe.finish_once_without_parity done "offline"
+        else
+            inl elapsed = client.now_ms () - started_at
+            inl here = client.player_spot ()
+            inl people = client.spectators here
+            inl seen = probe.nearest_monster here people
+            inl arrived, has_last, last, steps =
+                if seen.found then
+                    inl at = client.creature_spot (client.member people seen.index)
+                    inl moved = has_last = false || at.x <> last.x || at.y <> last.y
+                    inl steps = if moved && has_last then steps + 1 else steps
+                    if moved then
+                        inl from, distance = probe.described at, seen.distance
+                        probe.note ($'string.format("path t=%d ms monster at %s distance %d step %d", !elapsed, !from, !distance, !steps)' : string)
+                    seen.distance <= 1, true, (if moved then at else last), steps
+                else false, has_last, last, steps
+            if arrived then
+                inl knight = probe.described here
+                probe.note ($'string.format("arrived at %d ms after %d steps, knight at %s", !elapsed, !steps, !knight)' : string)
+                probe.finish_once_without_parity done "arrived"
+            elif elapsed > watch_ms () then
+                probe.note ($'string.format("not arrived after %d ms, %d steps", !elapsed, !steps)' : string)
+                probe.finish_once_without_parity done "not arrived"
+            else client.after (sample_ms ()) (fun () => go has_last last steps)
+    go false {x = 0; y = 0; z = 0} 0
+
+inl main () =
+    inl done = lua.new_cell 0
+    inl on_text (mode : string) (text : string) : () = probe.note ($'string.format("server text [%s]: %s", !mode, !text)' : string)
+    inl ready () =
+        client.after 1500 (fun () =>
+            inl name, at = client.player_name (), probe.described (client.player_spot ())
+            probe.note ($'string.format("in game as %s at %s (path check, standing, no attack)", !name, !at)' : string)
+            watch done (client.now_ms ())
+            )
+    client.disable_client_bot "Knight Sample_1511"
+    probe.started_as (probe.knight ()) on_text ready 60000 (fun () => probe.finish_once_without_parity done "timeout")
+    0i32

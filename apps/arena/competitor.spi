@@ -3,37 +3,24 @@ inl heal_cooldown_ms () : i32 = 1000
 inl swing_ms () : i32 = 2000
 inl step_ms () : i32 = 650
 inl tick_ms () : i32 = 100
-inl run_ms () : i32 = 150000
-inl summary_every () : i32 = 100
 inl cornered_report_every () : i32 = 50
 
-type plan = {heal_below : i32; strike_above : i32; retreat_at : i32; kite_at : i32; reach_first : bool; full_experience : i32}
-
-type tally = {ticks : i32; heals : i32; strikes : i32; holds : i32; kills : i32; retreats : i32; cornered : i32; gated : i32; lowest : i32}
+type plan = {heal_below : i32; strike_above : i32; retreat_at : i32; kite_at : i32; reach_first : bool}
 
 type clocks = {last_heal_at : i32; next_step_at : i32}
 
-type arena = {plan : plan; start_experience : i32; started_at : client.native_table; engaged : client.native_table; last_swing : client.native_table}
+type arena = {plan : plan; pace : scoreboard.pace; engaged : lua.native_table; last_swing : lua.native_table; meter : adjacency.meter}
 
 type sighting = {found : bool; index : i32; distance : i32}
 
 inl plan_from_environment () : plan =
     {
-        heal_below = client.env_i32 "TIBIA_ARENA_HEAL_BELOW" 120
-        strike_above = client.env_i32 "TIBIA_ARENA_STRIKE_ABOVE" 40
-        retreat_at = client.env_i32 "TIBIA_ARENA_RETREAT_AT" 0
-        kite_at = client.env_i32 "TIBIA_ARENA_KITE_AT" 0
+        heal_below = lua.env_i32 "TIBIA_ARENA_HEAL_BELOW" 120
+        strike_above = lua.env_i32 "TIBIA_ARENA_STRIKE_ABOVE" 40
+        retreat_at = lua.env_i32 "TIBIA_ARENA_RETREAT_AT" 0
+        kite_at = lua.env_i32 "TIBIA_ARENA_KITE_AT" 0
         reach_first = $'os.getenv("TIBIA_ARENA_TARGETING") == "reach"' : bool
-        full_experience = client.env_i32 "TIBIA_ARENA_FULL_EXPERIENCE" 90
     }
-
-inl elapsed (a : arena) : i32 = client.now_ms () - client.cell_value a.started_at
-
-inl summary (a : arena) (t : tally) : string =
-    inl ticks, heals, strikes, holds, retreats, cornered, gated, kills, lowest = t.ticks, t.heals, t.strikes, t.holds, t.retreats, t.cornered, t.gated, t.kills, t.lowest
-    inl health = client.player_health ()
-    inl gained = client.player_experience () - a.start_experience
-    $'string.format("ticks %d heals %d strikes %d holds %d retreats %d cornered %d gated %d kills %d health %d lowest %d experience +%d", !ticks, !heals, !strikes, !holds, !retreats, !cornered, !gated, !kills, !health, !lowest, !gained)' : string
 
 inl finish (reason : string) : () = probe.finish_reporting_parity reason
 
@@ -43,7 +30,7 @@ inl candidate_of (current : client.creature) (c : client.creature) (distance : i
 
 inl sight (a : arena) (here : client.spot) (people : client.crowd) : sighting =
     inl current = client.attacking ()
-    inl prefers = if a.plan.reach_first then policy.prefers_by (open policy in ReachFirst) else policy.prefers_by (open policy in CurrentFirst)
+    inl prefers (x : policy.candidate) (y : policy.candidate) : bool = if a.plan.reach_first then policy.prefers_by (open policy in ReachFirst) x y else policy.prefers_by (open policy in CurrentFirst) x y
     inl size = client.crowd_size people
     let rec scan (index : i32) (best : sighting) : sighting =
         if index > size then best
@@ -115,7 +102,7 @@ inl step_away (a : arena) (here : client.spot) (danger : client.spot) (people : 
             inl o = candidate_step sx sy slot
             if usable o && (match client.footing_at {here with x = here.x + o.dx; y = here.y + o.dy} with Free => true | _ => false) then
                 if client.step o.dx o.dy then
-                    inl dx, dy, t = o.dx, o.dy, elapsed a
+                    inl dx, dy, t = o.dx, o.dy, scoreboard.elapsed a.pace
                     inl from = probe.described here
                     probe.note ($'string.format("step away from %s by %d,%d @@t+%d", !from, !dx, !dy, !t)' : string)
                     Stepped, now + step_ms () * (if o.dx <> 0 && o.dy <> 0 then 3 else 1)
@@ -131,7 +118,7 @@ inl step_away (a : arena) (here : client.spot) (danger : client.spot) (people : 
                 else
                     inl c = client.member people index
                     if client.positioned_monster c && probe.chebyshev (client.creature_spot c) here <= 1 then
-                        around (index + 1) (if $'(!text) == ""' : bool then probe.described (client.creature_spot c) else client.joined (client.joined text " ") (probe.described (client.creature_spot c)))
+                        around (index + 1) (if $'(!text) == ""' : bool then probe.described (client.creature_spot c) else lua.joined (lua.joined text " ") (probe.described (client.creature_spot c)))
                     else around (index + 1) text
             let rec rejected (slot : i32) (text : string) : string =
                 if slot >= slots () then text
@@ -141,7 +128,7 @@ inl step_away (a : arena) (here : client.spot) (danger : client.spot) (people : 
                         inl dx, dy = o.dx, o.dy
                         inl label = footing_label (client.footing_at {here with x = here.x + o.dx; y = here.y + o.dy})
                         inl item = $'string.format("%d,%d:%s", !dx, !dy, !label)' : string
-                        rejected (slot + 1) (if $'(!text) == ""' : bool then item else client.joined (client.joined text " ") item)
+                        rejected (slot + 1) (if $'(!text) == ""' : bool then item else lua.joined (lua.joined text " ") item)
                     else rejected (slot + 1) text
             inl at, from, adjacent, candidates = probe.described here, probe.described danger, around 1 "", rejected 0 ""
             probe.note ($'string.format("cornered at %s threat %s adjacent [%s] candidates [%s]", !at, !from, !adjacent, !candidates)' : string)
@@ -156,31 +143,32 @@ inl network_code (p : plan) (health : i32) (attackers : i32) (target_health : i3
     inl d = network.decide w x
     (if d.heal then 1 else 0) + (if d.engage then 2 else 0) + (if d.retreat then 4 else 0)
 
-inl tick (a : arena) (first : tally) (first_clocks : clocks) : () =
-    let rec go (t : tally) (k : clocks) : () =
+inl tick (a : arena) (first : scoreboard.tally) (first_clocks : clocks) : () =
+    let rec go (t : scoreboard.tally) (k : clocks) : () =
         if client.player_present () = false then finish "offline"
         else
             inl now = client.now_ms ()
             inl health = client.player_health ()
-            inl t = {t with ticks = t.ticks + 1; lowest = if health < t.lowest then health else t.lowest}
+            inl t = scoreboard.counted health t
             if health <= 0 then
-                probe.note (client.joined "dead: " (summary a t))
+                probe.note (lua.joined "dead: " (scoreboard.summary a.pace t))
                 finish "death"
             else
                 inl t = {t with kills = t.kills + client.forget_dead a.engaged}
                 inl here = client.player_spot ()
                 inl people = client.spectators here
+                adjacency.on_tick a.meter now here people
                 inl seen = sight a here people
                 inl target_code : i32 = if seen.found = false then 0 elif seen.distance <= 1 then 1 else 2
                 inl heal_ready = now - k.last_heal_at >= heal_cooldown_ms ()
-                inl drink (t : tally) (k : clocks) : tally * clocks =
+                inl drink (t : scoreboard.tally) (k : clocks) : scoreboard.tally * clocks =
                     if client.drink (health_potion ()) then
                         probe.note ($'string.format("heal (potion) at health %d", !health)' : string)
                         {t with heals = t.heals + 1}, {k with last_heal_at = now}
                     else
                         probe.note ($'string.format("heal dropped by the action gate at health %d", !health)' : string)
                         t, k
-                inl engage (chasing : bool) (t : tally) : tally =
+                inl engage (chasing : bool) (t : scoreboard.tally) : scoreboard.tally =
                     client.chasing chasing
                     inl target = client.member people seen.index
                     if client.same_creature (client.attacking ()) target = false then
@@ -189,14 +177,14 @@ inl tick (a : arena) (first : tally) (first_clocks : clocks) : () =
                         inl verb, name, at, from = (if chasing then "approach" else "strike"), client.creature_name target, probe.described (client.creature_spot target), probe.described here
                         probe.note ($'string.format("%s %s at %s from %s health %d", !verb, !name, !at, !from, !health)' : string)
                     {t with strikes = t.strikes + 1}
-                inl hold (t : tally) : tally =
+                inl hold (t : scoreboard.tally) : scoreboard.tally =
                     if client.attacking_anyone () && target_code = 1 then
                         client.cancel_attack ()
                         probe.note ($'string.format("hold at health %d", !health)' : string)
                     {t with holds = t.holds + 1}
                 inl danger = threats here people
                 inl can_step = danger.found && now >= k.next_step_at && client.player_walking () = false
-                inl retreat_now (t : tally) (k : clocks) : bool * tally * clocks =
+                inl retreat_now (t : scoreboard.tally) (k : clocks) : bool * scoreboard.tally * clocks =
                     inl outcome, next_step_at = step_away a here (client.creature_spot (client.member people danger.index)) people t.cornered
                     match outcome with
                     | Stepped => true, {t with retreats = t.retreats + 1}, {k with next_step_at = next_step_at}
@@ -204,7 +192,7 @@ inl tick (a : arena) (first : tally) (first_clocks : clocks) : () =
                     | Cornered => false, {t with cornered = t.cornered + 1}, k
                 inl t, k =
                     if a.plan.kite_at > 0 then
-                        inl strike_ready = now - client.cell_value a.last_swing >= swing_ms ()
+                        inl strike_ready = now - lua.cell_value a.last_swing >= swing_ms ()
                         inl target_health = if seen.found then client.creature_health_percent (client.member people seen.index) else 0
                         inl code = network_code a.plan health danger.attackers target_health (if seen.found then seen.distance else 0) heal_ready strike_ready
                         inl t, k = if code % 2 = 1 && heal_ready then drink t k else t, k
@@ -223,29 +211,23 @@ inl tick (a : arena) (first : tally) (first_clocks : clocks) : () =
                         else
                             inl decision = policy.engagement_code (policy.engages thresholds seen_by_policy)
                             if decision = 1 || decision = 2 then engage (decision = 2) t, k else hold t, k
-                if t.ticks % summary_every () = 0 then
+                if scoreboard.due_for_summary t then
                     inl attacking, at, zone = client.attacking_described (), probe.described (client.player_spot ()), client.player_zone ()
-                    probe.note (client.joined (summary a t) ($'string.format(" attacking %s player at %s pz %s", !attacking, !at, !zone)' : string))
-                if elapsed a > run_ms () then
-                    probe.note (client.joined "end: " (summary a t))
-                    finish "run complete"
-                elif client.player_experience () - a.start_experience >= a.plan.full_experience then
-                    inl at = elapsed a
-                    probe.note ($'string.format("cleared at %d ms", !at)' : string)
-                    probe.note (client.joined "cleared: " (summary a t))
-                    finish "cleared"
-                else client.after (tick_ms ()) (fun () => go t k)
+                    probe.note (lua.joined (scoreboard.summary a.pace t) ($'string.format(" attacking %s player at %s pz %s", !attacking, !at, !zone)' : string))
+                scoreboard.finish_or_continue a.pace t (adjacency.on_cleared a.meter) (fun () => client.after (tick_ms ()) (fun () => go t k))
     go first first_clocks
 
 inl main () =
     inl p = plan_from_environment ()
-    inl started_at = client.new_cell 0
-    inl last_swing = client.new_cell (0 - swing_ms ())
-    inl engaged = client.new_table ()
+    inl started_at = lua.new_cell 0
+    inl last_swing = lua.new_cell (0 - swing_ms ())
+    inl engaged = lua.new_table ()
+    inl meter = adjacency.from_environment ()
     inl on_text (mode : string) (text : string) : () =
-        if $'string.find(!text, "due to your", 1, true) ~= nil' : bool then client.set_cell last_swing (client.now_ms ())
-        inl t = client.now_ms () - client.cell_value started_at
+        if lua.contains text "due to your" then lua.set_cell last_swing (client.now_ms ())
+        inl t = client.now_ms () - lua.cell_value started_at
         probe.note ($'string.format("server text [%s]: %s @@t+%d", !mode, !text, !t)' : string)
+        adjacency.on_text meter t text
     inl ready () =
         inl name, health, mana = client.player_name (), client.player_health (), client.player_mana ()
         probe.note ($'string.format("in game as %s health %d mana %d", !name, !health, !mana)' : string)
@@ -256,11 +238,11 @@ inl main () =
             client.after 1000 (fun () =>
                 inl at = probe.described (client.player_spot ())
                 inl heal_below, strike_above, kite_at, retreat_at = p.heal_below, p.strike_above, p.kite_at, p.retreat_at
-                inl targeting = client.env_text "TIBIA_ARENA_TARGETING" "current"
+                inl targeting = lua.env_text "TIBIA_ARENA_TARGETING" "current"
                 probe.note ($'string.format("policy starts at %s thresholds heal<%d strike>=%d kite at %d retreat at %d targeting %s", !at, !heal_below, !strike_above, !kite_at, !retreat_at, !targeting)' : string)
-                client.set_cell started_at (client.now_ms ())
-                inl a : arena = {plan = p; start_experience = start_experience; started_at = started_at; engaged = engaged; last_swing = last_swing}
-                tick a {ticks = 0; heals = 0; strikes = 0; holds = 0; kills = 0; retreats = 0; cornered = 0; gated = 0; lowest = 999} {last_heal_at = 0 - heal_cooldown_ms (); next_step_at = 0}
+                lua.set_cell started_at (client.now_ms ())
+                inl a : arena = {plan = p; pace = scoreboard.pace_from_environment start_experience started_at; engaged = engaged; last_swing = last_swing; meter = meter}
+                tick a (scoreboard.empty ()) {last_heal_at = 0 - heal_cooldown_ms (); next_step_at = 0}
                 )
             )
     client.disable_client_bot "Knight Sample_1511"

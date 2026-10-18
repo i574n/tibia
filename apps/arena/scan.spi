@@ -1,25 +1,33 @@
-inl scan_row (centre : client.spot) (radius : i32) (dy : i32) : string =
+inl mark_of (marks_unloaded : bool) (f : client.footing) : string =
+    match f with
+    | Unknown => if marks_unloaded then "?" else "#"
+    | Blocked => "#"
+    | _ => "."
+
+inl scan_row (marks_unloaded : bool) (centre : client.spot) (radius : i32) (dy : i32) : string =
     let rec cells (dx : i32) (row : string) : string =
         if dx > radius then row
         else
-            inl cell = if dx = 0 && dy = 0 then "K" elif client.walkable_at {centre with x = centre.x + dx; y = centre.y + dy} then "." else "#"
-            cells (dx + 1) (client.joined row cell)
+            inl cell = if dx = 0 && dy = 0 then "K" else mark_of marks_unloaded (client.footing_at {centre with x = centre.x + dx; y = centre.y + dy})
+            cells (dx + 1) (lua.joined row cell)
     cells (0 - radius) ""
 
-inl scan (radius : i32) : () =
+inl scan (marks_unloaded : bool) (radius : i32) : () =
     inl centre = client.player_spot ()
-    probe.note (client.joined (client.joined "scan around " (probe.described centre)) " (# wall or blocked, . walkable, K knight)")
+    inl legend = if marks_unloaded then " (# wall or blocked, . walkable, ? not loaded by the client, K knight)" else " (# wall or blocked, . walkable, K knight)"
+    probe.note (lua.joined (lua.joined "scan around " (probe.described centre)) legend)
     let rec rows (dy : i32) : () =
         if dy <= radius then
-            inl row = scan_row centre radius dy
+            inl row = scan_row marks_unloaded centre radius dy
             probe.note ($'string.format("%+3d %s", !dy, !row)' : string)
             rows (dy + 1)
     rows (0 - radius)
 
 inl main () =
     inl ~radius = 12i32
+    inl marks_unloaded = $'os.getenv("TIBIA_SCAN_MARKS_UNLOADED") == "1"' : bool
     inl scan_then_finish () =
-        scan radius
+        scan marks_unloaded radius
         probe.finish "scanned"
     probe.started (fun () => client.after 2500 scan_then_finish) 40000
     0i32

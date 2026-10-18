@@ -73,14 +73,14 @@ Every mechanic comes from Canary's source or a live measurement, and the model i
 | Knight swing after a step | `swinging_like_canary`: a step cancels the pending swing; it resumes at the next think or the next knight or target move once due | Canary `Player::onWalk`, `hasExtraSwing`; PC-3: 31 of 36 swing gaps spanning a step come late, mostly by 150-200 ms |
 | Monster first swing | `meleeing_every_once_targeted`: a cyclops's first swing waits one swing period after it can target the knight | Canary: a monster's `attackTicks` starts at 0 when it acquires a target; live, the first hit lands about 3.4 s after login, simulated before at 0.2 s. Scored best against the six live potion means (sum of squared t 13.5 vs 16.7, none beyond 2) |
 
-Live-mirroring model (2026-10-15): `mirroring_the_live_arena` turns on the four rules above that only matter live (wake,
-idle walk, swing period, swing after a step), and `live_retreat_tactic` steps exactly like the live probe. Before it, every
+Live-mirroring model (2026-10-15, first swing folded in 2026-10-18): `mirroring_the_live_arena` turns on the five rules above that only matter live (wake,
+idle walk, swing period, first swing after targeting, swing after a step), and `live_retreat_tactic` steps exactly like the live probe. Before it, every
 seed replayed one geometry (fixed spawns, monsters frozen while the knight is protected), and the simulated knight escaped
 along the corridor that the live knight rarely reaches; live, the retreating knight sits cornered in the dead-end pocket at
 1936,1349 for 43% of the clear. Healing was never the gap: potions per 1000 hp of damage are about 5.8 live and simulated.
-Against pooled live means (in-sample, these data shaped the rules): 3 cyclops rules 12.74 vs 12.22 potions, retreat 11.77 vs
-12.62; 2 cyclops rules 4.83 vs 4.85, retreat 5.09 vs 5.45; every clear time within 2 s. The 3-cyclops ranking of retreat vs
-rules is still off by about 1.4 potions (borderline). Under this model a lower heal threshold or a better standing tile saves
+Against pooled live means (in-sample, these data shaped the rules): 3 cyclops rules 12.47 vs 12.22 potions, retreat 11.75 vs
+12.62; 2 cyclops rules 4.65 vs 4.85, retreat 4.74 vs 5.45. Folding in the first swing moved the simulated clear times by at most 0.6 s. The 3-cyclops ranking of retreat vs
+rules is still off by about 1.1 potions (borderline). Under this model a lower heal threshold or a better standing tile saves
 at most 0.3 potions per clear, so no live-runnable change to the rules policy is predicted to show live.
 The 10 s wake and the idle walk describe the arena before 2026-10-15 14:17, when our probe kept the login protection. Since then the parity layer ends the protection for every competitor at login, so the matching scenario is `mirroring_the_live_arena |> waking_at 0` (no wake, so no idle walk); its first prediction (rules 15.6 potions, 72 hits) ran about 5% high (PR-11: 14.4, 69).
 
@@ -182,8 +182,8 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 | --- | --- |
 | `src/` | The Spiral package (`package.spiproj` and its modules): rules, typed domain, simulators and their test blocks |
 | `docs/` | The plan, the benchmark with every pre-registration, the modeling notes, prior art and the workflow |
-| `apps/arena/` | OTClient probes written in Spiral and compiled with the Lua backend: typed client bindings (`client.spi`), the shared probe lifecycle (`probe.spi`), one module per probe (`scan.spi` so far); `build.ps1` writes `target/arena/<probe>.lua`, which the arena takes as `-ProbeBody` |
-| `live/` | The live arena: OTClient probes, the parity layer, bot shims and configs, run, check and analysis scripts, the map tool |
+| `apps/arena/` | Every OTClient probe, written in Spiral and compiled with the Lua backend. Layers: generic Lua-side state (`lua.spi`), typed client bindings (`client.spi`), the shared probe lifecycle (`probe.spi`), shared run modules (`scoreboard`, `observer`, `adjacency`), and one entry per probe: competitor, random, vbot, nexbot, summon, scan, path, measure, steps. `build.ps1` writes `target/arena/<probe>.lua`; `-ProbeBody <probe>` picks one and rebuilds stale outputs |
+| `live/` | The live arena: the parity layer, bot shims and configs, run, check and analysis scripts, the map tool |
 | `results/` | Result tables and diagnostics that BENCHMARK.md cites |
 | `scripts/` | `init.ps1`, `build.ps1`, `publish.ps1`, `workflow.ps1`, as in the sibling repos |
 | `.github/workflows/gh-pages.yml` | CI on Ubuntu and Windows: every test file through Spiral's cells runner, then the published tree |

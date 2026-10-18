@@ -15,10 +15,12 @@ $runNotebook = (Resolve-Path "../deps/spiral/apps/cells/spi/run_notebook.ps1").P
 $wgslRun = @($env:SPIRAL_WGSL_RUN, "../target/wgsl-run/release/spiral-wgsl$(_exe)") |
     Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 if ($wgslRun) { $env:SPIRAL_WGSL_RUN = (Resolve-Path $wgslRun).Path }
-Write-Output "build.ps1 / wgsl runner: $($env:SPIRAL_WGSL_RUN ?? 'none')"
+if ($IsWindows -and $env:SPIRAL_WGSL_RUN -and (Test-Path (Join-Path (Split-Path $env:SPIRAL_WGSL_RUN) 'dxcompiler.dll'))) { $env:WGPU_DX12_COMPILER = 'dxc' }
+if ($IsWindows -and $env:CI -and (Test-Path ../target/mesa/x64/lvp_icd.x86_64.json)) { $env:WGPU_BACKEND = 'vulkan'; $env:WGPU_ADAPTER_NAME = 'llvmpipe' }
+Write-Output "build.ps1 / wgsl runner: $($env:SPIRAL_WGSL_RUN ?? 'none') / dx12 compiler: $($env:WGPU_DX12_COMPILER ?? 'default') / adapter: $($env:WGPU_ADAPTER_NAME ?? 'default')"
 
 $notebooks = (New-Item -ItemType Directory -Force "../notebooks").FullName
-$sources = Get-ChildItem ../src -File -Filter "*.spi" |
+$sources = Get-ChildItem ../src, ../apps/arena -File -Filter "*.spi" |
     Where-Object { !$Files -or $_.BaseName -in $Files } |
     Where-Object { Select-String -Path $_.FullName -Pattern '^test ' -Quiet } |
     Sort-Object Name

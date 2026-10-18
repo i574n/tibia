@@ -4,25 +4,17 @@ nominal creature = $'any'
 
 nominal crowd = $'any'
 
-nominal native_table = $'any'
-
 type spot = {x : i32; y : i32; z : i32}
-
-inl joined (a : string) (b : string) : string = $'(!a) .. (!b)' : string
-
-inl shown (n : i32) : string = $'tostring(!n)' : string
 
 inl after (ms : i32) (f : () -> ()) : () = $'scheduleEvent(!f, !ms)' : ()
 
 inl now_ms () : i32 = $'g_clock.millis()' : i32
 
-inl env_i32 (name : string) (fallback : i32) : i32 = $'tonumber(os.getenv(!name) or "") or (!fallback)' : i32
-
-inl env_text (name : string) (fallback : string) : string = $'os.getenv(!name) or (!fallback)' : string
-
 inl spot_of (p : native_position) : spot = {x = $'!p.x' : i32; y = $'!p.y' : i32; z = $'!p.z' : i32}
 
 inl player_spot () : spot = spot_of ($'g_game.getLocalPlayer():getPosition()' : native_position)
+
+inl player_positioned () : bool = $'g_game.getLocalPlayer():getPosition() ~= nil' : bool
 
 inl player_present () : bool = $'g_game.getLocalPlayer() ~= nil and g_game.isOnline()' : bool
 
@@ -40,10 +32,6 @@ inl player_walking () : bool = $'g_game.getLocalPlayer():isWalking()' : bool
 
 inl player_zone () : string =
     $'(function() local p = g_game.getLocalPlayer(); return tostring(p.isInProtectionZone and p:isInProtectionZone() or "?") end)()' : string
-
-inl walkable_at (s : spot) : bool =
-    inl x, y, z = s.x, s.y, s.z
-    $'(function() local tile = g_map.getTile({ x = !x, y = !y, z = !z }); return tile ~= nil and tile:isWalkable(true) end)()' : bool
 
 union footing =
     | Free
@@ -89,7 +77,7 @@ inl attack (c : creature) : () = $'g_game.attack(!c)' : ()
 inl cancel_attack () : () = $'g_game.cancelAttack()' : ()
 
 inl chasing (on : bool) : () =
-    $'do (function(mode) if g_game.getChaseMode() ~= mode then g_game.setChaseMode(mode) end end)((!on) and ChaseOpponent or DontChase) end' : ()
+    $'(function(mode) if g_game.getChaseMode() ~= mode then g_game.setChaseMode(mode) end end)((!on) and ChaseOpponent or DontChase)' : ()
 
 inl fight_balanced () : () = $'g_game.setFightMode(FightBalanced)' : ()
 
@@ -101,25 +89,50 @@ inl step (dx : i32) (dy : i32) : bool =
 inl talk (text : string) : () = $'g_game.talk(!text)' : ()
 
 inl disable_client_bot (character_key : string) : () =
-    $'do (function(key) local s = g_settings.getNode("bot") or {}; s[key] = { enabled = false }; g_settings.setNode("bot", s); g_settings.save() end)(!character_key) end' : ()
+    $'(function(key) local s = g_settings.getNode("bot") or {}; s[key] = { enabled = false }; g_settings.setNode("bot", s); g_settings.save() end)(!character_key)' : ()
 
 inl enable_client_bot (character_key : string) (config : string) : () =
-    $'do (function(key, config) local s = g_settings.getNode("bot") or {}; s[key] = { enabled = true, config = config }; g_settings.setNode("bot", s); g_settings.save() end)(!character_key, !config) end' : ()
+    $'(function(key, config) local s = g_settings.getNode("bot") or {}; s[key] = { enabled = true, config = config }; g_settings.setNode("bot", s); g_settings.save() end)(!character_key, !config)' : ()
+
+inl instrument_game_calls () : lua.native_table =
+    $'(function() local s = { attack = 0, cancel = 0, guarded = 0, other = {} }; local nativeAttack, nativeCancel, nativeCancelAndFollow, nativeCancelFollow = g_game.attack, g_game.cancelAttack, g_game.cancelAttackAndFollow, g_game.cancelFollow; g_game.attack = function(...) s.attack = s.attack + 1 return nativeAttack(...) end; if nativeCancel then g_game.cancelAttack = function(...) s.cancel = s.cancel + 1 return nativeCancel(...) end end; if nativeCancelAndFollow then g_game.cancelAttackAndFollow = function(...) s.cancel = s.cancel + 1 return nativeCancelAndFollow(...) end end; g_game.cancelFollow = function(...) if not g_game.getFollowingCreature() then s.guarded = s.guarded + 1 return end return nativeCancelFollow(...) end; for _, name in ipairs({ "stop", "walk", "autoWalk", "forceWalk", "turn", "follow", "cancelFollow", "setChaseMode", "setFightMode", "useInventoryItemWith", "useWith", "move", "look", "talk", "equipItem" }) do local native = g_game[name]; if native then g_game[name] = function(...) s.other[name] = (s.other[name] or 0) + 1 return native(...) end end end; return s end)()' : lua.native_table
+
+inl game_call_report (s : lua.native_table) : string =
+    $'(function(s) local p = g_game.getLocalPlayer(); local function idAt(slot) local item = p:getInventoryItem(slot); return item and tostring(item:getId()) or "-" end; local a = g_game.getAttackingCreature(); local parts = {}; for name, count in pairs(s.other) do table.insert(parts, name .. "=" .. count) end; table.sort(parts); local d = "-"; if a then local q, r = a:getPosition(), p:getPosition(); d = tostring(math.max(math.abs(q.x - r.x), math.abs(q.y - r.y))) end; return string.format("diag attack calls %d cancels %d hands %s target distance %s chase %s fight %s", s.attack, s.cancel, idAt(InventorySlotLeft) .. "/" .. idAt(InventorySlotRight), d, tostring(g_game.getChaseMode()), tostring(g_game.getFightMode())) .. " calls " .. table.concat(parts, " ") .. " guarded cancelFollow " .. s.guarded end)(!s)' : string
 
 inl parity_summary () : string = $'ArenaParity and ArenaParity.summary() or ""' : string
 
-inl new_table () : native_table = $'{}' : native_table
+inl remember (t : lua.native_table) (c : creature) : () = $'(!t)[(!c):getId()] = (!c)' : ()
 
-inl remember (t : native_table) (c : creature) : () = $'do (!t)[(!c):getId()] = (!c) end' : ()
-
-inl forget_dead (t : native_table) : i32 =
+inl forget_dead (t : lua.native_table) : i32 =
     $'(function(t) local n = 0; for id, c in pairs(t) do if c:isDead() then n = n + 1; t[id] = nil end end; return n end)(!t)' : i32
 
-inl new_cell (initial : i32) : native_table = $'{ value = !initial }' : native_table
+inl new_creature_slot () : lua.native_table = $'{}' : lua.native_table
 
-inl cell_value (c : native_table) : i32 = $'(!c).value' : i32
+inl slot_occupied (slot : lua.native_table) : bool = $'(!slot).creature ~= nil' : bool
 
-inl set_cell (c : native_table) (v : i32) : () = $'do (!c).value = (!v) end' : ()
+inl slot_creature (slot : lua.native_table) : creature = $'(!slot).creature' : creature
+
+inl occupy_slot (slot : lua.native_table) (c : creature) : () = $'(!slot).creature = !c' : ()
+
+inl empty_slot (slot : lua.native_table) : () = $'(!slot).creature = nil' : ()
+
+inl creature_id (c : creature) : i32 = $'(!c):getId()' : i32
+
+inl creature_is_monster (c : creature) : bool = $'(!c):isMonster()' : bool
+
+inl creature_is_local_player (c : creature) : bool = $'(!c):isLocalPlayer()' : bool
+
+inl creature_positioned (c : creature) : bool = $'(!c):getPosition() ~= nil' : bool
+
+inl creature_dead (c : creature) : bool = $'(!c):isDead()' : bool
+
+inl position_known (p : native_position) : bool = $'(!p) ~= nil' : bool
+
+inl player_speed () : string = $'tostring(g_game.getLocalPlayer():getSpeed())' : string
+
+inl on_position_change (f : creature -> native_position -> native_position -> ()) : () =
+    $'connect(Creature, { onPositionChange = function(c, n, o) (!f)(c)(n)(o) end })' : ()
 
 inl online () : bool = $'g_game.isOnline()' : bool
 

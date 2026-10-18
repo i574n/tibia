@@ -1,0 +1,57 @@
+inl walk_away_ms () : i32 = 1300
+inl measure_ms () : i32 = 45000
+
+inl step_kind (chasing : bool) (is_knight : bool) (diagonal : bool) (near : bool) : string =
+    inl base = lua.joined (if is_knight then "knight-" else "") (if diagonal then "diagonal" else "straight")
+    if chasing && is_knight = false then lua.joined base (if near then "-adjacent" else "-chasing") else base
+
+inl record (chasing : bool) (stamps : lua.native_table) (intervals : lua.native_table) (c : client.creature) (new_position : client.native_position) (old_position : client.native_position) : () =
+    if client.position_known new_position && client.position_known old_position then
+        inl is_knight = client.creature_is_local_player c
+        if client.creature_is_monster c || is_knight then
+            inl n, o = client.spot_of new_position, client.spot_of old_position
+            inl dx = if n.x > o.x then n.x - o.x else o.x - n.x
+            inl dy = if n.y > o.y then n.y - o.y else o.y - n.y
+            if n.z = o.z && dx + dy <> 0 && dx <= 1 && dy <= 1 then
+                inl now = client.now_ms ()
+                inl id = client.creature_id c
+                inl near = client.player_present () && probe.chebyshev n (client.player_spot ()) <= 1
+                inl kind = step_kind chasing is_knight (dx = 1 && dy = 1) near
+                inl previous_at, measured = lua.stamp_at stamps id, lua.stamp_kind stamps id
+                lua.stamp stamps id now kind
+                if previous_at >= 0 then
+                    inl interval = now - previous_at
+                    lua.labeled_sample intervals measured interval
+                    inl name, from, to = client.creature_name c, probe.described o, probe.described n
+                    probe.note ($'string.format("%s %d %s step %s -> %s; interval after its %s step %d ms", !name, !id, !kind, !from, !to, !measured, !interval)' : string)
+
+inl direction_of (n : i32) : i32 = if n > 0 then 1 elif n < 0 then -1 else 0
+
+inl walk_away () : () =
+    let rec go () : () =
+        if client.player_present () then
+            inl here = client.player_spot ()
+            inl people = client.spectators here
+            inl seen = probe.nearest_monster here people
+            if seen.found && seen.distance <= 2 && client.player_walking () = false then
+                inl there = client.creature_spot (client.member people seen.index)
+                inl sx, sy = direction_of (here.x - there.x), direction_of (here.y - there.y)
+                if sx <> 0 || sy <> 0 then client.step sx sy |> ignore
+            client.after (walk_away_ms ()) go
+    go ()
+
+inl main () =
+    inl chasing = $'os.getenv("TIBIA_STEPS_CHASE") == "1"' : bool
+    inl stamps, intervals = lua.new_table (), lua.new_table ()
+    client.on_position_change (record chasing stamps intervals)
+    inl on_text (mode : string) (text : string) : () = probe.note ($'string.format("server text [%s]: %s", !mode, !text)' : string)
+    inl ready () =
+        inl name, at, speed = client.player_name (), (if client.player_positioned () then probe.described (client.player_spot ()) else "nil"), client.player_speed ()
+        probe.note ($'string.format("in game as %s at %s speed %s", !name, !at, !speed)' : string)
+        if chasing then client.after 2000 walk_away
+        client.after (measure_ms ()) (fun () =>
+            probe.note (lua.joined "end: " (lua.labeled_summary intervals))
+            probe.finish "steps measured"
+            )
+    probe.started_as (probe.knight ()) on_text ready 90000 (fun () => probe.finish "timeout")
+    0i32

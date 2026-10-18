@@ -30,9 +30,9 @@ foreach ($run in 1..$Runs) {
         $env:TIBIA_ARENA_RETREAT_AT = $competitorRetreatAt
         $env:TIBIA_ARENA_TARGETING = $competitorTargeting
         $scenarioArgs = @('-NoProfile', '-File', $scenario, '-Monster', $Monster, '-MonsterCount', $MonsterCount, '-AxeSkill', $AxeSkill, '-TimeoutSeconds', $TimeoutSeconds, '-TibiaDir', $snapshot, '-Level', $Level, '-HealBelow', $HealBelow, '-StrikeAbove', $StrikeAbove)
-        if ($competitor -eq 'vbot') { $scenarioArgs += @('-ProbeBody', 'probe-vbot-body.lua', '-Bot', 'vBot') }
-        if ($competitor -eq 'nexbot') { $scenarioArgs += @('-ProbeBody', 'probe-nexbot-body.lua', '-Bot', 'nExBot') }
-        if ($competitor -eq 'random-control') { $scenarioArgs += @('-ProbeBody', 'probe-random-body.lua') }
+        if ($competitor -eq 'vbot') { $scenarioArgs += @('-ProbeBody', 'vbot', '-Bot', 'vBot') }
+        if ($competitor -eq 'nexbot') { $scenarioArgs += @('-ProbeBody', 'nexbot', '-Bot', 'nExBot') }
+        if ($competitor -eq 'random-control') { $scenarioArgs += @('-ProbeBody', 'random') }
         $lines = @(pwsh @scenarioArgs 2>&1 | ForEach-Object { "$_" })
         $logDir = $TibiaLogs
         New-Item -ItemType Directory -Force $logDir | Out-Null
