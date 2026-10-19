@@ -85,6 +85,10 @@ inl attacking_short () : string =
 inl attacking_described () : string =
     $'(function() local a = g_game.getAttackingCreature(); if not a then return "nothing" end; local p = a:getPosition(); return a:getName() .. " " .. a:getHealthPercent() .. "% at " .. string.format("%d,%d,%d", p.x, p.y, p.z) end)()' : string
 
+inl monsters_described (s : spot) : string =
+    inl x, y, z = s.x, s.y, s.z
+    $'(function() local parts = {}; for _, c in ipairs(g_map.getSpectators({ x = !x, y = !y, z = !z }, false)) do if c:isMonster() and not c:isDead() and c:getPosition() ~= nil then local p = c:getPosition(); table.insert(parts, string.format("%s %d%% %d,%d", c:getName(), c:getHealthPercent(), p.x, p.y)) end end; if ##parts == 0 then return "none" end; return table.concat(parts, "; ") end)()' : string
+
 inl attack (c : creature) : () = $'g_game.attack(!c)' : ()
 
 inl cancel_attack () : () = $'g_game.cancelAttack()' : ()

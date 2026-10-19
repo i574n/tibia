@@ -211,6 +211,10 @@ inl tick (a : arena) (first : scoreboard.tally) (first_clocks : clocks) : () =
                         else
                             inl decision = policy.engagement_code (policy.engages thresholds seen_by_policy)
                             if decision = 1 || decision = 2 then engage (decision = 2) t, k else hold t, k
+                if scoreboard.due_for_trace t then
+                    inl spot = client.player_spot ()
+                    inl sx, sy = spot.x, spot.y
+                    probe.note (lua.joined ($'string.format("seen at %d,%d: ", !sx, !sy)' : string) (client.monsters_described spot))
                 if scoreboard.due_for_summary t then
                     inl attacking, at, zone = client.attacking_described (), probe.described (client.player_spot ()), client.player_zone ()
                     probe.note (lua.joined (scoreboard.summary a.pace t) ($'string.format(" attacking %s player at %s pz %s", !attacking, !at, !zone)' : string))

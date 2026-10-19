@@ -15,8 +15,12 @@ $compiler = Join-Path $env:LOCALAPPDATA 'spiral-bin/bin/single-flight/SpiralComp
 & $dotnet $compiler --backend Rust (Join-Path $ScriptDir 'map.spi') (Join-Path $out 'map.rs')
 if ($LASTEXITCODE -ne 0) { throw "map / spiral compile failed ($LASTEXITCODE)" }
 $exe = Join-Path $out "map$(if ($IsWindows) { '.exe' })"
+Push-Location $repo
 rustc --edition 2024 -O -A warnings -o $exe (Join-Path $out 'map.rs')
-if ($LASTEXITCODE -ne 0) { throw "map / rustc failed ($LASTEXITCODE)" }
+$rustcExit = $LASTEXITCODE
+Pop-Location
+if ($rustcExit -ne 0) { throw "map / rustc failed ($rustcExit)" }
+"map / $(Push-Location $repo; rustc --version; Pop-Location)"
 
 $canary = Join-Path $TibiaWorld 'canary'
 $env:TIBIA_MAP_APPEARANCES = Join-Path $canary 'data/items/appearances.dat'
