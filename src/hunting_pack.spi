@@ -304,6 +304,8 @@ inl creature_shoots (camp : camp) (seed : u32) (tick : i32) (now : i32) (index :
 
 inl creature_think_phase_ms (seed : u32) (index : i32) : i32 = conv ((seed + conv index * 7u32) % 10u32) * tick_ms ()
 
+inl thinks_now (seed : u32) (index : i32) (now : i32) : bool = now % player_think_ms () = creature_think_phase_ms seed index
+
 inl cardinal_step (k : i32) (from : geometry.position) : geometry.position =
     if k = 0 then terrain.shifted 0 -1 from elif k = 1 then terrain.shifted -1 0 from elif k = 2 then terrain.shifted 1 0 from else terrain.shifted 0 1 from
 
@@ -311,7 +313,7 @@ inl wanders (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p
     inl f = slot index p
     inl open_step k = terrain.free camp.layout (taken_by_others index p) (cardinal_step k f.at)
     inl count_open : i32 = (if open_step 0 then 1 else 0) + (if open_step 1 then 1 else 0) + (if open_step 2 then 1 else 0) + (if open_step 3 then 1 else 0)
-    if f.next_step_at >= never () || now % player_think_ms () <> creature_think_phase_ms seed index || now < f.next_step_at || count_open = 0 then p
+    if f.next_step_at >= never () || thinks_now seed index now = false || now < f.next_step_at || count_open = 0 then p
     else
         inl pick : i32 = conv (rng.roll_between 1 (conv count_open) (key seed tick index (purpose_wander ())))
         let rec nth (k : i32) (left : i32) : i32 = if open_step k then (if left = 1 then k else nth (k + 1) (left - 1)) else nth (k + 1) left
@@ -344,6 +346,7 @@ inl foe_turn (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (
             else with_slot index {f with met_target = true} p
         elif distance_to f p <= 1 then with_slot index {f with met_target = true} p
         elif geometry.sees f.at p.hunter.at = false then p
+        elif camp.ranged && stats.target_distance > 1 && thinks_now seed index now = false then p
         else
             inl toward = terrain.step_toward camp.layout (taken_by_others index p) p.hunter.at f.at
             inl base = terrain.on_ground_at camp.layout f.at stats.step_ms

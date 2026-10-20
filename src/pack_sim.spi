@@ -424,5 +424,19 @@ test a_hunter_that_keeps_four_tiles_away_only_falls_where_walls_corner_it_and_wa
         each 0 0 0
     inl open_kills, open_hits = kills_within (open terrain in OpenField)
     inl arena_kills, arena_hits = kills_within (open terrain in ArenaSpot)
-    (open_kills, open_hits, arena_kills, arena_hits) |> _assert_eq (0i32, 286i32, 15i32, 121i32)
+    (open_kills, open_hits, arena_kills, arena_hits) |> _assert_eq (0i32, 173i32, 15i32, 135i32)
     (open_kills = 0, arena_kills > 0) |> _assert_eq (true, true)
+
+///> c
+test a_hunter_beyond_four_tiles_closes_one_tile_per_think_like_canarys_follow_replanning =
+    open hunting_pack
+    open creatures
+    inl camp = clearing (uniform_camp Hunter |> on_layout (open terrain in OpenField))
+    inl begun = start camp
+    inl knight_at = begun.hunter.at
+    inl f = slot 0 begun
+    inl ~gap = 8i32
+    inl placed = with_slot 0 {f with at = {knight_at with x = knight_at.x + gap}} begun
+    let rec turns (tick : i32) (p : pack) : pack = if tick >= 10 then p else turns (tick + 1) (foe_turn camp 1001u32 tick (tick * tick_ms ()) 0 p)
+    inl second_later = turns 0 placed
+    (geometry.chebyshev_distance (slot 0 second_later).at (slot 0 placed).at, (creatures.stats_of Hunter).step_ms < 1000) |> _assert_eq (1i32, true)

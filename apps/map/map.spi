@@ -1,4 +1,4 @@
-type bytes = a i32 u8
+type bytes = array u8
 
 inl otbm_node_start () : u8 = 254u8
 inl otbm_node_end () : u8 = 255u8
@@ -38,8 +38,8 @@ inl (++) (a : string) (b : string) : string = sm'.(++#) a b
 
 inl byte (b : bytes) (i : i32) : i32 = conv (index b i)
 
-inl filled forall t. (count : i32) (value : t) : a i32 t =
-    inl x : a i32 t = create count
+inl filled forall t. (count : i32) (value : t) : array t =
+    inl x : array t = create count
     let rec fill (i : i32) : () =
         if i < count then
             set x i value
@@ -73,7 +73,7 @@ inl fold_fields forall state. (b : bytes) (start : i32) (stop : i32) (initial : 
             else failwith "map: appearances.dat has an unknown protobuf wire type"
     next start initial
 
-type item_kinds = {unpassable : a i32 bool; ground : a i32 bool; speed : a i32 i32; height : a i32 bool}
+type item_kinds = {unpassable : array bool; ground : array bool; speed : array i32; height : array bool}
 
 inl item_kinds_of (b : bytes) : item_kinds =
     inl kinds = {unpassable = filled (item_id_limit ()) false; ground = filled (item_id_limit ()) false; speed = filled (item_id_limit ()) 0; height = filled (item_id_limit ()) false}
@@ -104,7 +104,7 @@ inl item_kinds_of (b : bytes) : item_kinds =
 
 inl word_byte (c : u8) : bool = (c >= 48u8 && c <= 57u8) || (c >= 65u8 && c <= 90u8) || (c >= 97u8 && c <= 122u8) || c = 95u8
 
-inl floor_change_ids (text : bytes) : a i32 bool =
+inl floor_change_ids (text : bytes) : array bool =
     inl exits = filled (item_id_limit ()) false
     inl size = length text
     inl item_open = sm'.utf8_get_bytes "<item"
@@ -172,9 +172,9 @@ inl floor_change_ids (text : bytes) : a i32 bool =
     items 0
     exits
 
-type grid = {blocked : a i32 bool; road : a i32 bool; walkable : a i32 bool; floor_change : a i32 bool; climbable : a i32 bool}
+type grid = {blocked : array bool; road : array bool; walkable : array bool; floor_change : array bool; climbable : array bool}
 
-inl walk_tiles (b : bytes) (kinds : item_kinds) (exits : a i32 bool) : grid =
+inl walk_tiles (b : bytes) (kinds : item_kinds) (exits : array bool) : grid =
     inl side = spot_side ()
     inl radius = spot_radius ()
     inl blocked = filled (side * side) true
@@ -182,20 +182,20 @@ inl walk_tiles (b : bytes) (kinds : item_kinds) (exits : a i32 bool) : grid =
     inl walkable_cells = filled (side * side) false
     inl floor_change_cells = filled (side * side) false
     inl climbable_cells = filled (side * side) false
-    inl tile_height_items : a i32 i32 = filled (node_depth_limit ()) 0
+    inl tile_height_items : array i32 = filled (node_depth_limit ()) 0
     inl height_kinds = kinds.height
     inl depths = node_depth_limit ()
-    inl node_kind : a i32 i32 = filled depths 0
-    inl area_x : a i32 i32 = filled depths 0
-    inl area_y : a i32 i32 = filled depths 0
-    inl area_z : a i32 i32 = filled depths 0
-    inl tile_cell : a i32 i32 = filled depths (-1)
-    inl tile_ground : a i32 bool = filled depths false
-    inl tile_unpassable : a i32 bool = filled depths false
-    inl tile_exit : a i32 bool = filled depths false
-    inl tile_attribute_speed : a i32 i32 = filled depths 0
-    inl tile_child_speed : a i32 i32 = filled depths 0
-    inl item_id : a i32 i32 = filled depths (-1)
+    inl node_kind : array i32 = filled depths 0
+    inl area_x : array i32 = filled depths 0
+    inl area_y : array i32 = filled depths 0
+    inl area_z : array i32 = filled depths 0
+    inl tile_cell : array i32 = filled depths (-1)
+    inl tile_ground : array bool = filled depths false
+    inl tile_unpassable : array bool = filled depths false
+    inl tile_exit : array bool = filled depths false
+    inl tile_attribute_speed : array i32 = filled depths 0
+    inl tile_child_speed : array i32 = filled depths 0
+    inl item_id : array i32 = filled depths (-1)
     inl ground_kinds = kinds.ground
     inl unpassable_kinds = kinds.unpassable
     inl speeds = kinds.speed
@@ -297,7 +297,7 @@ inl walk_tiles (b : bytes) (kinds : item_kinds) (exits : a i32 bool) : grid =
     walk (otbm_identifier_bytes ()) (-1)
     {blocked = blocked; road = road; walkable = walkable_cells; floor_change = floor_change_cells; climbable = climbable_cells}
 
-inl row_words (cells : a i32 bool) (row : i32) : u32 * u32 =
+inl row_words (cells : array bool) (row : i32) : u32 * u32 =
     inl side = spot_side ()
     let rec bits (bit : i32) (low : u32) (high : u32) : u32 * u32 =
         if bit >= side then low, high
@@ -307,21 +307,21 @@ inl row_words (cells : a i32 bool) (row : i32) : u32 * u32 =
         else bits (bit + 1) low high
     bits 0 0u32 0u32
 
-let rec chain (words : a i32 u32) (lo : i32) (hi : i32) : string =
+let rec chain (words : array u32) (lo : i32) (hi : i32) : string =
     if lo = hi then sm'.obj_to_string (index words lo) ++ "u32"
     else
         inl mid = (lo + hi) / 2
         "if row <= " ++ sm'.obj_to_string mid ++ " then " ++ chain words lo mid ++ " else " ++ chain words (mid + 1) hi
 
-inl definition (name : string) (words : a i32 u32) (outside : u32) : () =
+inl definition (name : string) (words : array u32) (outside : u32) : () =
     inl last = spot_side () - 1
     console.write_line ("let " ++ name ++ " (row : i32) : u32 =")
     console.write_line ("    if row < 0 || row > " ++ sm'.obj_to_string last ++ " then " ++ sm'.obj_to_string outside ++ "u32 else " ++ chain words 0 last)
 
-inl emit (prefix : string) (cells : a i32 bool) (outside_low : u32) (outside_high : u32) : () =
+inl emit (prefix : string) (cells : array bool) (outside_low : u32) (outside_high : u32) : () =
     inl side = spot_side ()
-    inl lows : a i32 u32 = filled side 0u32
-    inl highs : a i32 u32 = filled side 0u32
+    inl lows : array u32 = filled side 0u32
+    inl highs : array u32 = filled side 0u32
     let rec rows (row : i32) : () =
         if row < side then
             inl low, high = row_words cells row
@@ -337,7 +337,7 @@ inl signed_label (n : i32) : string =
     let rec pad (text : string) : string = if (sm'.length text : i32) >= 4 then text else pad (" " ++ text)
     pad digits
 
-inl walk_dump (cells : a i32 bool) : () =
+inl walk_dump (cells : array bool) : () =
     inl side = spot_side ()
     inl radius = spot_radius ()
     console.write_line ("walkability around " ++ sm'.obj_to_string (spot_x ()) ++ "," ++ sm'.obj_to_string (spot_y ()) ++ "," ++ sm'.obj_to_string (spot_z ()) ++ " radius " ++ sm'.obj_to_string radius ++ " (# blocked, . walkable)")
@@ -350,7 +350,7 @@ inl walk_dump (cells : a i32 bool) : () =
             rows (row + 1)
     rows 0
 
-inl listed (cells : a i32 bool) (label : string) : () =
+inl listed (cells : array bool) (label : string) : () =
     inl side = spot_side ()
     inl radius = spot_radius ()
     let rec columns (column : i32) : () =
@@ -363,10 +363,10 @@ inl listed (cells : a i32 bool) (label : string) : () =
             columns (column + 1)
     columns 0
 
-inl floor_change_listing (g : grid) (exits : a i32 bool) : () =
+inl floor_change_listing (g : grid) (exits : array bool) : () =
     let rec counted (identity : i32) (total : i32) : i32 = if identity >= item_id_limit () then total else counted (identity + 1) (if index exits identity then total + 1 else total)
     console.write_line ("floor-change tiles on floor " ++ sm'.obj_to_string (spot_z ()) ++ " within radius " ++ sm'.obj_to_string (spot_radius ()) ++ " of " ++ sm'.obj_to_string (spot_x ()) ++ "," ++ sm'.obj_to_string (spot_y ()) ++ " (from " ++ sm'.obj_to_string (counted 0 0) ++ " floorchange item ids)")
-    inl any (cells : a i32 bool) : bool =
+    inl any (cells : array bool) : bool =
         let rec scan (i : i32) : bool = if i >= length cells then false elif index cells i then true else scan (i + 1)
         scan 0
     listed g.floor_change "floorchange"
