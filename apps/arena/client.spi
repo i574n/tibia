@@ -1,3 +1,7 @@
+///- --package .
+test client static =
+    open testing
+
 nominal native_position = $'any'
 
 nominal creature = $'any'
@@ -55,12 +59,15 @@ union footing =
     | Blocked
     | Unknown
 
+inl footing_of_code (code : i32) : footing =
+    if code = 0 then Free elif code = 1 then Ramp elif code = 2 then Occupied elif code = 3 then Blocked else Unknown
+
 inl footing_at (s : spot) : footing =
     inl x, y, z = s.x, s.y, s.z
     inl code = $'(function() local tile = g_map.getTile({ x = !x, y = !y, z = !z }); if not tile then return 4 elseif \
         tile:isWalkable() and not tile:hasFloorChange() then return 0 elseif tile:isWalkable() then return 1 elseif \
         tile:isWalkable(true) then return 2 else return 3 end end)()' : i32
-    if code = 0 then Free elif code = 1 then Ramp elif code = 2 then Occupied elif code = 3 then Blocked else Unknown
+    footing_of_code code
 
 inl spectators (s : spot) : crowd =
     inl x, y, z = s.x, s.y, s.z
@@ -231,3 +238,16 @@ inl log_in (s : session) : () =
     inl account = "@god"
     inl session_key = "@god\ngod"
     $'g_game.loginWorld(!account, "god", "OTServBR-Global", "127.0.0.1", 7172, !character, "", !session_key)' : ()
+
+///> lua
+///> c
+test footing_codes_follow_the_host_tile_checks =
+    (
+        footing_of_code 0,
+        footing_of_code 1,
+        footing_of_code 2,
+        footing_of_code 3,
+        footing_of_code 4,
+        footing_of_code (0 - 1)
+    )
+    |> _assert_eq (Free, Ramp, Occupied, Blocked, Unknown, Unknown)

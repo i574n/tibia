@@ -1,8 +1,13 @@
+///- --package .
+test probe static =
+    open testing
+
+open sm'_operators
 inl note (message : string) : () = client.write_log_line (lua.joined "[tibia-probe] " message)
 
 inl described (s : client.spot) : string =
     inl x, y, z = s.x, s.y, s.z
-    $'string.format("%d,%d,%d", !x, !y, !z)' : string
+    ("" ++#? x ++# "," ++#? y ++# "," ++#? z)
 
 inl chebyshev (a : client.spot) (b : client.spot) : i32 =
     inl dx = if a.x > b.x then a.x - b.x else b.x - a.x
@@ -16,7 +21,7 @@ inl finish (reason : string) : () =
 
 inl finish_reporting_parity (reason : string) : () =
     inl parity = client.parity_summary ()
-    if $'(!parity) ~= ""' : bool then note parity
+    if (parity <> "") then note parity
     finish reason
 
 inl finish_once (done : lua.native_table) (reason : string) : () =
@@ -55,7 +60,7 @@ inl settle_ms () : i32 = 1000
 
 inl knight () : string = client.env_text "TIBIA_ARENA_CHARACTER" "Knight Sample"
 
-inl bot_profile () : string = lua.joined (knight ()) "_1511"
+inl bot_profile () : string = knight () ++# "_1511"
 
 inl game_master () : string = "GOD"
 
@@ -90,3 +95,14 @@ inl started_as
 
 inl started (ready : () -> ()) (timeout_ms : i32) : () =
     started_as (knight ()) ignore_text ready timeout_ms fun () => finish "timeout"
+
+///> lua
+///> c
+test chebyshev_takes_the_larger_axis_and_described_joins_xyz =
+    (
+        chebyshev { x = 10; y = 20; z = 7 } { x = 13; y = 19; z = 7 },
+        chebyshev { x = 13; y = 19; z = 7 } { x = 10; y = 20; z = 7 },
+        chebyshev { x = 5; y = 5; z = 7 } { x = 5; y = 5; z = 7 },
+        described { x = 1936; y = 1349; z = 7 }
+    )
+    |> _assert_eq (3i32, 3i32, 0i32, "1936,1349,7")

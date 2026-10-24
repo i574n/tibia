@@ -1,5 +1,23 @@
+///- --package .
+test path static =
+    open testing
+
+open sm'_operators
 inl watch_ms () : i32 = 30000
 inl sample_ms () : i32 = 50
+
+inl followed (has_last : bool) (last : client.spot) (at : client.spot) (steps : i32) : bool * i32 =
+    inl moved = has_last = false || at.x <> last.x || at.y <> last.y
+    moved, (if moved && has_last then steps + 1 else steps)
+
+inl step_line (elapsed : i32) (from : string) (distance : i32) (steps : i32) : string =
+    "path t=" ++#? elapsed ++# " ms monster at " ++# from ++# " distance " ++#? distance ++# " step " ++#? steps
+
+inl arrived_line (elapsed : i32) (steps : i32) (knight : string) : string =
+    "arrived at " ++#? elapsed ++# " ms after " ++#? steps ++# " steps, knight at " ++# knight
+
+inl not_arrived_line (elapsed : i32) (steps : i32) : string =
+    "not arrived after " ++#? elapsed ++# " ms, " ++#? steps ++# " steps"
 
 inl watch (done : lua.native_table) (started_at : i32) : () =
     let rec go (has_last : bool) (last : client.spot) (steps : i32) : () =
@@ -12,33 +30,49 @@ inl watch (done : lua.native_table) (started_at : i32) : () =
             inl arrived, has_last, last, steps =
                 if seen.found then
                     inl at = client.creature_spot (client.member people seen.index)
-                    inl moved = has_last = false || at.x <> last.x || at.y <> last.y
-                    inl steps = if moved && has_last then steps + 1 else steps
-                    if moved then
-                        inl from, distance = probe.described at, seen.distance
-                        probe.note ($'string.format("path t=%d ms monster at %s distance %d step %d", !elapsed, \
-                            !from, !distance, !steps)' : string)
+                    inl moved, steps = followed has_last last at steps
+                    if moved then probe.note (step_line elapsed (probe.described at) seen.distance steps)
                     seen.distance <= 1, true, (if moved then at else last), steps
                 else false, has_last, last, steps
             if arrived then
-                inl knight = probe.described here
-                probe.note ($'string.format("arrived at %d ms after %d steps, knight at %s", !elapsed, !steps, \
-                    !knight)' : string)
+                probe.note (arrived_line elapsed steps (probe.described here))
                 probe.finish_once_without_parity done "arrived"
             elif elapsed > watch_ms () then
-                probe.note ($'string.format("not arrived after %d ms, %d steps", !elapsed, !steps)' : string)
+                probe.note (not_arrived_line elapsed steps)
                 probe.finish_once_without_parity done "not arrived"
-            else client.after (sample_ms ()) (fun () => go has_last last steps)
+            else client.after (sample_ms ()) fun () => go has_last last steps
     go false { x = 0; y = 0; z = 0 } 0
 
+///> lua
+///> c
+test a_step_counts_only_moves_after_the_first_sighting =
+    inl first = followed false { x = 0; y = 0; z = 0 } { x = 1940; y = 1352; z = 7 } 0
+    inl same = followed true { x = 1940; y = 1352; z = 7 } { x = 1940; y = 1352; z = 7 } 3
+    inl moved = followed true { x = 1940; y = 1352; z = 7 } { x = 1939; y = 1352; z = 7 } 3
+    (first, same, moved) |> _assert_eq ((true, 0i32), (false, 3i32), (true, 4i32))
+
+///> lua
+///> c
+test the_path_lines_keep_the_probe_wording =
+    (
+        step_line 850 "1939,1352,7" 3 4,
+        arrived_line 2400 6 "1936,1349,7",
+        not_arrived_line 30050 9
+    )
+    |> _assert_eq (
+        "path t=850 ms monster at 1939,1352,7 distance 3 step 4",
+        "arrived at 2400 ms after 6 steps, knight at 1936,1349,7",
+        "not arrived after 30050 ms, 9 steps"
+    )
+
+///> _
 inl main () =
     inl done = lua.new_cell 0
-    inl on_text (mode : string) (text : string) : () = probe.note ($'string.format("server text [%s]: %s", !mode, \
-        !text)' : string)
+    inl on_text (mode : string) (text : string) : () = probe.note (("server text [" ++# mode ++# "]: " ++# text))
     inl ready () =
         client.after 1500 (fun () =>
             inl name, at = client.player_name (), probe.described (client.player_spot ())
-            probe.note ($'string.format("in game as %s at %s (path check, standing, no attack)", !name, !at)' : string)
+            probe.note (("in game as " ++# name ++# " at " ++# at ++# " (path check, standing, no attack)"))
             watch done (client.now_ms ())
             )
     client.disable_client_bot (probe.bot_profile ())

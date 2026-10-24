@@ -1,7 +1,9 @@
-packageDir: ../..
+edition: 3
+packageDir: ../../deps/spiral/lib
 packages:
     |core-
-    src-
+    spiral-
+    ../../src-
 modules:
     lua
     client

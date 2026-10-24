@@ -1,3 +1,8 @@
+///- --package .
+test adjacency static =
+    open testing
+
+open sm'_operators
 type meter =
     {
         enabled : bool
@@ -38,9 +43,20 @@ inl start_positions (here : client.spot) (people : client.crowd) : string =
             inl c = client.member people index
             if client.positioned_monster c then
                 inl at = probe.described (client.creature_spot c)
-                seen (index + 1) (if $'(!text) == ""' : bool then at else lua.joined (lua.joined text " ") at)
+                seen (index + 1) (if (text = "") then at else lua.joined (lua.joined text " ") at)
             else seen (index + 1) text
     lua.joined (lua.joined (lua.joined "start positions: knight " (probe.described here)) " monsters ") (seen 1 "")
+
+inl rate_line (adjacent_ms : i32) (hits : i32) : string =
+    inl per_second = (conv hits : f64) * 1000.0 / (conv (if adjacent_ms > 1 then adjacent_ms else 1) : f64)
+    "adjacency: " ++#? adjacent_ms ++# " monster-ms adjacent, " ++#? hits ++# " landed hits, "
+    ++# sm'.format_fixed 3 per_second ++# " landed hits per adjacent monster-second"
+
+inl count_line (none : i32) (one : i32) (two : i32) (three : i32) : string =
+    "adjacent time by count: 0 " ++#? none ++# " 1 " ++#? one ++# " 2 " ++#? two ++# " 3 " ++#? three ++# " ms"
+
+inl hit_line (elapsed : i32) (adjacent : i32) : string =
+    "hit at " ++#? elapsed ++# " ms with " ++#? adjacent ++# " adjacent"
 
 inl on_tick (m : meter) (now : i32) (here : client.spot) (people : client.crowd) : () =
     if m.enabled then
@@ -58,19 +74,31 @@ inl on_text (m : meter) (elapsed : i32) (text : string) : () =
         if client.player_present () then
             inl here = client.player_spot ()
             inl adjacent = adjacent_monsters here (client.spectators here)
-            probe.note ($'string.format("hit at %d ms with %d adjacent", !elapsed, !adjacent)' : string)
+            probe.note (hit_line elapsed adjacent)
 
 inl on_cleared (m : meter) () : () =
     if m.enabled
     then
-        inl adjacent_ms, hits = lua.cell_value m.adjacent_ms, lua.cell_value m.hits
-        probe.note ($'string.format("adjacency: %d monster-ms adjacent, %d landed hits, %.3f landed hits per adjacent \
-            monster-second", !adjacent_ms, !hits, !hits * 1000 / math.max(1, !adjacent_ms))' : string)
+        probe.note (rate_line (lua.cell_value m.adjacent_ms) (lua.cell_value m.hits))
         inl none, one, two, three =
             lua.amount_at m.ms_by_count 0,
             lua.amount_at m.ms_by_count 1,
             lua.amount_at m.ms_by_count 2,
             lua.amount_at m.ms_by_count 3
-        probe.note (
-            $'string.format("adjacent time by count: 0 %d 1 %d 2 %d 3 %d ms", !none, !one, !two, !three)' : string
-        )
+        probe.note (count_line none one two three)
+
+///> lua
+///> c
+test rate_line_divides_landed_hits_by_adjacent_seconds =
+    (rate_line 2000 3, rate_line 3000 2, rate_line 0 0)
+    |> _assert_eq (
+        "adjacency: 2000 monster-ms adjacent, 3 landed hits, 1.500 landed hits per adjacent monster-second",
+        "adjacency: 3000 monster-ms adjacent, 2 landed hits, 0.667 landed hits per adjacent monster-second",
+        "adjacency: 0 monster-ms adjacent, 0 landed hits, 0.000 landed hits per adjacent monster-second"
+    )
+
+///> lua
+///> c
+test count_line_and_hit_line_keep_the_probe_wording =
+    (count_line 1200 3400 500 0, hit_line 8125 2)
+    |> _assert_eq ("adjacent time by count: 0 1200 1 3400 2 500 3 0 ms", "hit at 8125 ms with 2 adjacent")

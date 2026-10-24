@@ -16,6 +16,8 @@ function Set-Text([string] $path, [string] $old, [string] $new) {
     if (!$text.Contains($old)) { throw "predict / $path has no '$old'" }
     [IO.File]::WriteAllText($path, $text.Replace($old, $new))
 }
+$lib = (Resolve-Path (Join-Path $repo 'deps/spiral/lib')).Path -replace '\\', '/'
+Set-Text (Join-Path $work 'apps/predict/package.spiproj') 'packageDir: ../../deps/spiral/lib' "packageDir: $lib"
 if ($Candidate.Count) {
     $chain = ($Candidate | ForEach-Object { "|> $_" }) -join ' '
     Set-Text (Join-Path $work 'apps/predict/predict.spi') 'inl candidate (c : camp) : camp = c' "inl candidate (c : camp) : camp = c $chain"

@@ -1,3 +1,8 @@
+///- --package .
+test predict static =
+    open testing
+
+open sm'_operators
 open hunting_pack
 
 inl candidate (c : camp) : camp = c
@@ -12,8 +17,26 @@ inl clears (arm : i32) (camp : camp) (t : tactic) : () =
         if i < block.count then
             inl elapsed, p = clear_run camp t (block.first + conv i) 6000
             inl h = p.hunter
-            inl code, steps, taken, damage, potions = table_clear (), h.retreats, h.hits_taken, quantity.value_of h.damage_taken, h.potions
-            $'printf("%d\\t%d\\t%d\\t%d\\t%d\\t%d\\t%d\\t%d\\n", !code, !arm, !i, !steps, !taken, !damage, !potions, !elapsed)' : ()
+            inl code, steps, taken, damage, potions =
+                table_clear (), h.retreats, h.hits_taken, quantity.value_of h.damage_taken, h.potions
+            console.write_line (
+                ""
+                ++#? code
+                ++# "\t"
+                ++#? arm
+                ++# "\t"
+                ++#? i
+                ++# "\t"
+                ++#? steps
+                ++# "\t"
+                ++#? taken
+                ++# "\t"
+                ++#? damage
+                ++# "\t"
+                ++#? potions
+                ++# "\t"
+                ++#? elapsed
+            )
             each (i + 1)
     each 0
 
@@ -24,9 +47,27 @@ inl hunters (camp : camp) (t : tactic) : () =
         if i < block.count then
             inl elapsed, p = clear_run camp t (block.first + conv i) cap_ticks
             inl h = p.hunter
-            inl code, kills, potions, taken, damage = table_hunter (), p.kills, h.potions, h.hits_taken, quantity.value_of h.damage_taken
+            inl code, kills, potions, taken, damage =
+                table_hunter (), p.kills, h.potions, h.hits_taken, quantity.value_of h.damage_taken
             inl cleared : i32 = if p.kills >= camp.size then 1 else 0
-            $'printf("%d\\t%d\\t%d\\t%d\\t%d\\t%d\\t%d\\t%d\\n", !code, !i, !kills, !cleared, !elapsed, !potions, !taken, !damage)' : ()
+            console.write_line (
+                ""
+                ++#? code
+                ++# "\t"
+                ++#? i
+                ++# "\t"
+                ++#? kills
+                ++# "\t"
+                ++#? cleared
+                ++# "\t"
+                ++#? elapsed
+                ++# "\t"
+                ++#? potions
+                ++# "\t"
+                ++#? taken
+                ++# "\t"
+                ++#? damage
+            )
             each (i + 1)
     each 0
 
@@ -36,11 +77,26 @@ inl hunts (camp : camp) (t : tactic) : () =
         if i < block.count then
             inl p = simulate camp t (block.first + conv i) (scenario_ticks ())
             inl h = p.hunter
-            inl code, kills, taken, damage, potions = table_hunt (), p.kills, h.hits_taken, quantity.value_of h.damage_taken, h.potions
-            $'printf("%d\\t%d\\t%d\\t%d\\t%d\\t%d\\n", !code, !i, !kills, !taken, !damage, !potions)' : ()
+            inl code, kills, taken, damage, potions =
+                table_hunt (), p.kills, h.hits_taken, quantity.value_of h.damage_taken, h.potions
+            console.write_line (
+                ""
+                ++#? code
+                ++# "\t"
+                ++#? i
+                ++# "\t"
+                ++#? kills
+                ++# "\t"
+                ++#? taken
+                ++# "\t"
+                ++#? damage
+                ++# "\t"
+                ++#? potions
+            )
             each (i + 1)
     each 0
 
+///> _
 inl main () =
     inl arena =
         uniform_camp (open creatures in Cyclops)

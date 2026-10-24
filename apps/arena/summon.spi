@@ -1,10 +1,14 @@
-inl orders_of (text : string) : lua.native_table =
-    $'(function(s) local t = {}; for part in string.gmatch(s, "[^;]+") do table.insert(t, part) end; return t \
-        end)(!text)' : lua.native_table
+///- --package .
+test summon static =
+    open testing
 
-inl order_count (t : lua.native_table) : i32 = $'##(!t)' : i32
+open sm'_operators
+inl orders_of (text : string) : array string =
+    text |> sm'.split ";" |> array |> am'.choose fun part => if part = "" then None else Some part
 
-inl order_at (t : lua.native_table) (index : i32) : string = $'(!t)[!index]' : string
+inl order_count (orders : array string) : i32 = am'.length orders
+
+inl order_at (orders : array string) (position : i32) : string = am'.index (position - 1) orders
 
 inl list_creatures () : () =
     inl people = client.spectators (client.player_spot ())
@@ -15,10 +19,17 @@ inl list_creatures () : () =
             inl name = client.creature_name c
             inl monster = if client.creature_is_monster c then "true" else "false"
             inl at = probe.described (client.creature_spot c)
-            probe.note ($'string.format("sees %s monster=%s at %s", !name, !monster, !at)' : string)
+            probe.note (("sees " ++# name ++# " monster=" ++# monster ++# " at " ++# at))
             each (index + 1)
     each 1
 
+///> lua
+///> c
+test orders_drop_empty_parts_like_gmatch =
+    (orders_of "green frog,3,,2", orders_of ";wolf;;troll,2;")
+    |> _assert_eq (;[ "green frog,3,,2" ], ;[ "wolf"; "troll,2" ])
+
+///> _
 inl main () =
     inl summon_at = client.env_text "TIBIA_SUMMON_AT" "1932, 1352"
     inl orders = orders_of (client.env_text "TIBIA_SUMMON_ORDERS" "green frog,3,,2")

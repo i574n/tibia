@@ -2,11 +2,13 @@
 test lua static =
     open testing
 
+open sm'_operators
+
 nominal native_table = $'any'
 
-inl joined (a : string) (b : string) : string = $'(!a) .. (!b)' : string
+inl joined (a : string) (b : string) : string = a ++# b
 
-inl shown (n : i32) : string = $'tostring(!n)' : string
+inl shown (n : i32) : string = "" ++#? n
 
 inl random_between (low : i32) (high : i32) : i32 = $'math.random(!low, !high)' : i32
 
@@ -50,7 +52,7 @@ inl stamp (stamps : native_table) (id : i32) (at : i32) (kind : string) : () = $
 
 inl matched_number (text : string) (pattern : string) : i32 = $'tonumber(string.match(!text, !pattern)) or -1' : i32
 
-inl contains (text : string) (needle : string) : bool = $'string.find(!text, !needle, 1, true) ~= nil' : bool
+inl contains (text : string) (needle : string) : bool = sm'.contains needle text
 
 inl add_to (counts : native_table) (key : i32) (amount : i32) : () = $'(!counts)[!key] = ((!counts)[!key] or 0) + \
     (!amount)' : ()

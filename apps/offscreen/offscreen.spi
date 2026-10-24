@@ -63,59 +63,148 @@ inl exit_code_of (o : outcome) : i32 =
 
 inl killed_exit_code () : u32 = 124
 
-inl create_desktop (name : string) : i64 =
-    $'{ \#[link(name = "user32")] unsafe extern "system" { fn CreateDesktopW(name: *const u16, device: *const u16, \
-        mode: *const u8, flags: u32, access: u32, attributes: *const u8) -> isize; } let wide: Vec<u16> = \
-        (&*!name).encode_utf16().chain(std::iter::once(0)).collect(); unsafe { CreateDesktopW(wide.as_ptr(), \
-        std::ptr::null(), std::ptr::null(), 0, 0x01FF, std::ptr::null()) as i64 } }' : i64
+inl win32_declarations () =
+    global """
+        #[link(name = "user32")]
+        unsafe extern "system" {
+            safe fn CreateDesktopW(
+                name: *const u16, device: *const u16, mode: *const u8, flags: u32, access: u32, attributes: *const u8,
+            ) -> i64;
+            safe fn CloseDesktop(desktop: i64) -> i32;
+        }
+        unsafe extern "system" {
+            safe fn GetLastError() -> u32;
+            safe fn GetProcessId(process: i64) -> u32;
+            safe fn WaitForSingleObject(handle: i64, milliseconds: u32) -> u32;
+            safe fn TerminateProcess(process: i64, code: u32) -> i32;
+            safe fn GetExitCodeProcess(process: i64, code: *mut u32) -> i32;
+            safe fn CloseHandle(handle: i64) -> i32;
+            safe fn CreateProcessW(
+                application: *const u16, command_line: *mut u16, process_attributes: *const u8,
+                thread_attributes: *const u8, inherit: i32, flags: u32, environment: *const u8, directory: *const u16,
+                startup: *const StartupInfo, information: *mut ProcessInformation,
+            ) -> i32;
+        }
+        #[repr(C)]
+        #[derive(Default)]
+        struct StartupInfo {
+            cb: u32, reserved: usize, desktop: usize, title: usize, x: u32, y: u32, x_size: u32, y_size: u32,
+            x_chars: u32, y_chars: u32, fill: u32, flags: u32, show: u16, reserved2_size: u16, reserved2: usize,
+            input: i64, output: i64, error: i64,
+        }
+        #[repr(C)]
+        #[derive(Default, Clone, Copy)]
+        struct ProcessInformation { process: i64, thread: i64, process_id: u32, thread_id: u32 }
+        """
+
+nominal wide = $'Vec<u16>'
+nominal wide_pointer = $'*const u16'
+nominal wide_mutable_pointer = $'*mut u16'
+nominal address = $'usize'
+nominal startup_info = $'StartupInfo'
+nominal process_information = $'std::cell::Cell<ProcessInformation>'
+nominal information_pointer = $'*mut ProcessInformation'
+nominal exit_code_cell = $'std::cell::Cell<u32>'
+nominal byte_pointer = $'*const u8'
+
+inl wide_of (text : string) : wide =
+    win32_declarations ()
+    $'(&*!text).encode_utf16().chain(std::iter::once(0)).collect::<Vec<u16>>()' : wide
+
+inl wide_start (text : wide) : wide_pointer = $'!text.as_ptr()' : wide_pointer
+
+inl wide_mutable_start (text : wide) : wide_mutable_pointer = $'!text.as_ptr().cast_mut()' : wide_mutable_pointer
+
+inl wide_address (text : wide) : address = $'!text.as_ptr().addr()' : address
+
+inl create_desktop_at (name : wide_pointer) : i64 =
+    $'CreateDesktopW(!name, std::ptr::null(), std::ptr::null(), 0, 0x01FF, std::ptr::null())' : i64
 
 inl close_desktop (desktop : i64) : () =
-    $'{ \#[link(name = "user32")] unsafe extern "system" { fn CloseDesktop(desktop: isize) -> i32; } unsafe { \
-        CloseDesktop(!desktop as isize) }; }' : ()
+    win32_declarations ()
+    ignore ($'CloseDesktop(!desktop)' : i32)
 
 inl last_error () : u32 =
-    $'{ unsafe extern "system" { fn GetLastError() -> u32; } unsafe { GetLastError() } }' : u32
+    win32_declarations ()
+    $'GetLastError()' : u32
+
+inl startup_size () : u32 = $'u32::try_from(std::mem::size_of::<StartupInfo>()).unwrap()' : u32
+
+inl startup_on (size : u32) (desktop : address) : startup_info =
+    $'StartupInfo { cb: !size, desktop: !desktop, ..Default::default() }' : startup_info
+
+inl information_empty () : process_information =
+    $'std::cell::Cell::new(ProcessInformation::default())' : process_information
+
+inl no_bytes () : byte_pointer = $'std::ptr::null::<u8>()' : byte_pointer
+
+inl information_start (information : process_information) : information_pointer =
+    $'!information.as_ptr()' : information_pointer
+
+inl create_process_at
+    (application : wide_pointer) (command : wide_mutable_pointer) (directory : wide_pointer) (startup : startup_info)
+    (information : information_pointer) (none : byte_pointer)
+    : i32
+    =
+    $'CreateProcessW(!application, !command, !none, !none, 0, 0, !none, !directory, &!startup, !information)' : i32
+
+inl information_process (information : process_information) : i64 = $'!information.get().process' : i64
+
+inl information_thread (information : process_information) : i64 = $'!information.get().thread' : i64
+
+inl close_handle (handle : i64) : () = ignore ($'CloseHandle(!handle)' : i32)
+
+inl exit_code_empty () : exit_code_cell = $'std::cell::Cell::new(0u32)' : exit_code_cell
+
+inl exit_code_read (process : i64) (cell : exit_code_cell) : () =
+    ignore ($'GetExitCodeProcess(!process, !cell.as_ptr())' : i32)
+
+inl exit_code_value (cell : exit_code_cell) : u32 = $'!cell.get()' : u32
+
+inl create_desktop (name : string) : i64 =
+    inl wide_name = wide_of name
+    create_desktop_at (wide_start wide_name)
 
 inl start_on (station : string) (exe : string) (line : string) (directory : string) : i64 =
-    $'{ \#[repr(C)] struct StartupInfo { cb: u32, reserved: *mut u16, desktop: *mut u16, title: *mut u16, x: u32, y: \
-        u32, x_size: u32, y_size: u32, x_chars: u32, y_chars: u32, fill: u32, flags: u32, show: u16, reserved2_size: \
-        u16, reserved2: *mut u8, input: isize, output: isize, error: isize } \#[repr(C)] struct ProcessInformation { \
-        process: isize, thread: isize, process_id: u32, thread_id: u32 } unsafe extern "system" { fn \
-        CreateProcessW(application: *const u16, command_line: *mut u16, process_attributes: *const u8, \
-        thread_attributes: *const u8, inherit: i32, flags: u32, environment: *const u8, directory: *const u16, \
-        startup: *const StartupInfo, information: *mut ProcessInformation) -> i32; fn CloseHandle(handle: isize) -> \
-        i32; } let wide = |s: &str| -> Vec<u16> { s.encode_utf16().chain(std::iter::once(0)).collect() }; let \
-        exe_path: &str = &*!exe; let given: &str = &*!directory; let folder: String = if given.is_empty() { \
-        std::path::Path::new(exe_path).parent().map(|p| p.to_string_lossy().into_owned()).unwrap_or_default() } else \
-        { given.to_string() }; let mut desktop = wide(&*!station); let application = wide(exe_path); let mut command \
-        = wide(&*!line); let directory_wide = wide(&folder); let startup = StartupInfo { cb: \
-        std::mem::size_of::<StartupInfo>() as u32, reserved: std::ptr::null_mut(), desktop: desktop.as_mut_ptr(), \
-        title: std::ptr::null_mut(), x: 0, y: 0, x_size: 0, y_size: 0, x_chars: 0, y_chars: 0, fill: 0, flags: 0, \
-        show: 0, reserved2_size: 0, reserved2: std::ptr::null_mut(), input: 0, output: 0, error: 0 }; let mut \
-        information = ProcessInformation { process: 0, thread: 0, process_id: 0, thread_id: 0 }; let created = unsafe \
-        { CreateProcessW(application.as_ptr(), command.as_mut_ptr(), std::ptr::null(), std::ptr::null(), 0, 0, \
-        std::ptr::null(), directory_wide.as_ptr(), &startup, &mut information) }; if created == 0 { 0i64 } else { \
-        unsafe { CloseHandle(information.thread) }; information.process as i64 } }' : i64
+    inl folder =
+        if directory <> "" then directory
+        else
+            match file_system.directory_get_parent exe |> optionm'.unbox with
+            | Some parent => parent
+            | None => ""
+    inl application, command, directory_wide, desktop = wide_of exe, wide_of line, wide_of folder, wide_of station
+    inl information = information_empty ()
+    inl startup = startup_on (startup_size ()) (wide_address desktop)
+    inl created =
+        create_process_at
+            (wide_start application) (wide_mutable_start command) (wide_start directory_wide) startup
+            (information_start information) (no_bytes ())
+    if created = 0 then 0
+    else
+        close_handle (information_thread information)
+        information_process information
 
 inl process_id (process : i64) : u32 =
-    $'{ unsafe extern "system" { fn GetProcessId(process: isize) -> u32; } unsafe { GetProcessId(!process as isize) } \
-        }' : u32
+    win32_declarations ()
+    $'GetProcessId(!process)' : u32
 
 inl wait_for (process : i64) (milliseconds : u32) : u32 =
-    $'{ unsafe extern "system" { fn WaitForSingleObject(handle: isize, milliseconds: u32) -> u32; } unsafe { \
-        WaitForSingleObject(!process as isize, !milliseconds) } }' : u32
+    win32_declarations ()
+    $'WaitForSingleObject(!process, !milliseconds)' : u32
 
 inl terminate (process : i64) (code : u32) : () =
-    $'{ unsafe extern "system" { fn TerminateProcess(process: isize, code: u32) -> i32; } unsafe { \
-        TerminateProcess(!process as isize, !code) }; }' : ()
+    win32_declarations ()
+    ignore ($'TerminateProcess(!process, !code)' : i32)
 
 inl exit_status (process : i64) : u32 =
-    $'{ unsafe extern "system" { fn GetExitCodeProcess(process: isize, code: *mut u32) -> i32; } let mut code: u32 = \
-        0; unsafe { GetExitCodeProcess(!process as isize, &mut code) }; code }' : u32
+    win32_declarations ()
+    inl cell = exit_code_empty ()
+    exit_code_read process cell
+    exit_code_value cell
 
 inl close_process (process : i64) : () =
-    $'{ unsafe extern "system" { fn CloseHandle(handle: isize) -> i32; } unsafe { CloseHandle(!process as isize) }; }'
-    : ()
+    win32_declarations ()
+    close_handle process
 
 inl run_on_desktop (l : launch) : outcome =
     inl desktop = create_desktop l.desktop
@@ -184,6 +273,23 @@ test reports_match_run_offscreen_ps1 =
     report l (Exited (77u32, 0u32)) |> _assert_eq [ "offscreen: pid 77 exit 0 on desktop tibia-probe" ]
     report l (TimedOut (77u32, 124u32))
     |> _assert_eq [ "offscreen: killed after 30 s"; "offscreen: pid 77 exit 124 on desktop tibia-probe" ]
+
+///> rust
+test a_hidden_desktop_runs_a_program_and_reports_its_exit_code =
+    inl windows = platform.is_windows ()
+    inl desktop = if windows then create_desktop "spiral-offscreen-test" else 1
+    (desktop <> 0) |> _assert_eq true
+    inl process =
+        if windows
+        then start_on "WinSta0\\spiral-offscreen-test" "C:\\Windows\\System32\\cmd.exe" "cmd.exe /c exit 3" ""
+        else 1
+    (process <> 0) |> _assert_eq true
+    inl waited = if windows then wait_for process 10000u32 else 0u32
+    inl code = if windows then exit_status process else 3u32
+    if windows then
+        close_process process
+        close_desktop desktop
+    (waited, code) |> _assert_eq (0u32, 3u32)
 
 ///> _
 inl main () =

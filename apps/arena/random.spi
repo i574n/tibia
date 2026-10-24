@@ -1,3 +1,8 @@
+///- --package .
+test random static =
+    open testing
+
+open sm'_operators
 inl health_potion () : i32 = 266
 inl step_ms () : i32 = 650
 inl tick_ms () : i32 = 100
@@ -51,11 +56,11 @@ inl tick (a : arena) (first : scoreboard.tally) : () =
                         inl at = scoreboard.elapsed a.pace
                         if client.drink (health_potion ())
                         then
-                            probe.note ($'string.format("heal (potion) at health %d t=%d", !health, !at)' : string)
+                            probe.note (("heal (potion) at health " ++#? health ++# " t=" ++#? at))
                             { t with heals = t.heals + 1 }, next_step_at
                         else
                             probe.note (
-                                $'string.format("heal dropped by the action gate at health %d", !health)' : string
+                                ("heal dropped by the action gate at health " ++#? health)
                             )
                             t, next_step_at
                     | Engage =>
@@ -74,8 +79,16 @@ inl tick (a : arena) (first : scoreboard.tally) : () =
                                     client.creature_name target,
                                     probe.described (client.creature_spot target),
                                     probe.described here
-                                probe.note ($'string.format("strike %s at %s from %s health %d", !name, !at, !from, \
-                                    !health)' : string)
+                                probe.note (
+                                    "strike "
+                                    ++# name
+                                    ++# " at "
+                                    ++# at
+                                    ++# " from "
+                                    ++# from
+                                    ++# " health "
+                                    ++#? health
+                                )
                             { t with strikes = t.strikes + 1 }, next_step_at
                         else t, next_step_at
                     | StepSomewhere =>
@@ -95,24 +108,49 @@ inl tick (a : arena) (first : scoreboard.tally) : () =
                     fun () => client.after (tick_ms ()) fun () => go t next_step_at
     go first 0
 
+///> lua
+///> c
+test move_of_maps_picks_and_falls_back_to_stand =
+    (move_of 0, move_of 1, move_of 2, move_of 3, move_of 9)
+    |> _assert_eq (Drink, Engage, StepSomewhere, Stand, Stand)
+
+///> lua
+///> c
+test heading_of_covers_eight_neighbors_once =
+    inl sum (k : i32) : i32 * i32 * i32 =
+        let rec go (i : i32) (dx : i32) (dy : i32) (diagonals : i32) : i32 * i32 * i32 =
+            if i > k then dx, dy, diagonals
+            else
+                inl h = heading_of i
+                go (i + 1) (dx + h.dx) (dy + h.dy) (if h.diagonal then diagonals + 1 else diagonals)
+        go 1 0 0 0
+    (heading_of 1, heading_of 6, sum 8)
+    |> _assert_eq ({ dx = 0; dy = -1; diagonal = false }, { dx = 1; dy = 1; diagonal = true }, (0i32, 0i32, 4i32))
+
+///> _
 inl main () =
     client.seed_random_from_clock ()
     inl started_at = lua.new_cell 0
     inl engaged = lua.new_table ()
     inl on_text (mode : string) (text : string) : () =
         inl t = client.now_ms () - lua.cell_value started_at
-        probe.note ($'string.format("server text [%s] t=%d: %s", !mode, !t, !text)' : string)
+        probe.note (("server text [" ++# mode ++# "] t=" ++#? t ++# ": " ++# text))
     inl ready () =
         inl name, health, mana = client.player_name (), client.player_health (), client.player_mana ()
-        probe.note ($'string.format("in game as %s health %d mana %d", !name, !health, !mana)' : string)
+        probe.note (("in game as " ++# name ++# " health " ++#? health ++# " mana " ++#? mana))
         client.after 1500 fun () =>
             inl start_experience = client.player_experience ()
             client.chasing false
             client.fight_balanced ()
             client.after 1000 fun () =>
                 inl at, every = probe.described (client.player_spot ()), tick_ms ()
-                probe.note ($'string.format("random control starts at %s (drink, engage, random step or stand, equal \
-                    odds every %d ms)", !at, !every)' : string)
+                probe.note (
+                    "random control starts at "
+                    ++# at
+                    ++# " (drink, engage, random step or stand, equal odds every "
+                    ++#? every
+                    ++# " ms)"
+                )
                 lua.set_cell started_at (client.now_ms ())
                 tick
                     { pace = scoreboard.pace_from_environment start_experience started_at; engaged = engaged }

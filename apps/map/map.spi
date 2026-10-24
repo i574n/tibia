@@ -1,3 +1,7 @@
+///- --package .
+test map static =
+    open testing
+
 type bytes = array u8
 
 inl otbm_node_start () : u8 = 254u8
@@ -576,6 +580,35 @@ inl floor_change_listing (g : grid) (exits : array bool) : () =
     listed g.protection "protection-zone"
     listed g.house "house"
 
+///> rust
+///> c
+test varint_reads_little_endian_base_128 =
+    (varint ;[150u8; 1u8] 0, varint ;[5u8; 172u8; 2u8] 1, varint ;[5u8] 0)
+    |> _assert_eq ((150u64, 2i32), (300u64, 3i32), (5u64, 1i32))
+
+///> rust
+///> c
+test literal_and_signed_label_render_negative_numbers =
+    (literal (0 - 5), literal 7, signed_label 5, signed_label (0 - 12), signed_label 0, signed_label 1234)
+    |> _assert_eq ("(0 - 5)", "7", "  +5", " -12", "  +0", "+1234")
+
+///> rust
+///> c
+test word_mask_covers_only_tiles_inside_the_spot =
+    (row_word_count (), word_mask 0, word_mask 1, word_mask 2)
+    |> _assert_eq (3i32, 4294967295u32, 4294967295u32, 134217727u32)
+
+///> rust
+///> c
+test row_spans_merge_runs_into_ranges =
+    inl cells : array bool = filled (spot_side () * spot_side ()) false
+    set cells 45 true
+    set cells 47 true
+    set cells 48 true
+    (row_spans cells 0, row_spans cells 1)
+    |> _assert_eq ("dx = 0 || (dx >= 2 && dx <= 3)", "")
+
+///> _
 inl main () =
     inl read (variable : string) : bytes =
         am'.from_vec (file_system.read_all_bytes (env.get_environment_variable variable))

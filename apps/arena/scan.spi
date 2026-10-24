@@ -1,3 +1,8 @@
+///- --package .
+test scan static =
+    open testing
+
+open sm'_operators
 inl mark_of (marks_unloaded : bool) (f : client.footing) : string =
     match f with
     | Unknown => if marks_unloaded then "?" else "#"
@@ -16,6 +21,8 @@ inl scan_row (marks_unloaded : bool) (centre : client.spot) (radius : i32) (dy :
             cells (dx + 1) (lua.joined row cell)
     cells (0 - radius) ""
 
+inl row_label (dy : i32) : string = sm'.pad_left 3 ' ' ((if dy >= 0 then "+" else "") ++#? dy)
+
 inl scan (marks_unloaded : bool) (radius : i32) : () =
     inl centre = client.player_spot ()
     inl legend =
@@ -26,10 +33,30 @@ inl scan (marks_unloaded : bool) (radius : i32) : () =
     let rec rows (dy : i32) : () =
         if dy <= radius then
             inl row = scan_row marks_unloaded centre radius dy
-            probe.note ($'string.format("%+3d %s", !dy, !row)' : string)
+            probe.note (row_label dy ++# " " ++# row)
             rows (dy + 1)
     rows (0 - radius)
 
+///> lua
+///> c
+test mark_of_shows_walls_walkable_and_unloaded =
+    (
+        mark_of true client.Unknown,
+        mark_of false client.Unknown,
+        mark_of true client.Blocked,
+        mark_of true client.Free,
+        mark_of false client.Ramp,
+        mark_of false client.Occupied
+    )
+    |> _assert_eq ("?", "#", "#", ".", ".", ".")
+
+///> lua
+///> c
+test row_label_is_signed_and_padded_to_three =
+    (row_label 5, row_label 0, row_label (0 - 3), row_label (0 - 12), row_label 12)
+    |> _assert_eq (" +5", " +0", " -3", "-12", "+12")
+
+///> _
 inl main () =
     inl ~radius = 12i32
     inl marks_unloaded = client.env_is "TIBIA_SCAN_MARKS_UNLOADED" "1"
