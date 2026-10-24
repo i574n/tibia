@@ -19,16 +19,50 @@ union spell v =
     | LightHealing :: forall v. healer v -> spell v
     | IntenseHealing :: forall v. healer v -> spell v
 
-type spell_data = {words : string; level : i32; mana : i32; cooldown_ms : i32; group_cooldown_ms : i32; group : cooldowns.spell_group}
+type spell_data =
+    {
+        words : string
+        level : i32
+        mana : i32
+        cooldown_ms : i32
+        group_cooldown_ms : i32
+        group : cooldowns.spell_group
+    }
 
 inl data_of forall v. (s : spell v) : spell_data =
     open cooldowns
     match s with
-    | WoundCleansing => {words = "exura ico"; level = 8; mana = 40; cooldown_ms = 1000; group_cooldown_ms = 1000; group = HealingGroup}
-    | Berserk => {words = "exori"; level = 35; mana = 115; cooldown_ms = 4000; group_cooldown_ms = 2000; group = AttackGroup}
-    | DivineHealing => {words = "exura san"; level = 35; mana = 160; cooldown_ms = 1000; group_cooldown_ms = 1000; group = HealingGroup}
-    | LightHealing _ => {words = "exura"; level = 8; mana = 20; cooldown_ms = 1000; group_cooldown_ms = 1000; group = HealingGroup}
-    | IntenseHealing _ => {words = "exura gran"; level = 20; mana = 70; cooldown_ms = 1000; group_cooldown_ms = 1000; group = HealingGroup}
+    | WoundCleansing =>
+        {
+            words = "exura ico"
+            level = 8
+            mana = 40
+            cooldown_ms = 1000
+            group_cooldown_ms = 1000
+            group = HealingGroup
+        }
+    | Berserk =>
+        { words = "exori"; level = 35; mana = 115; cooldown_ms = 4000; group_cooldown_ms = 2000; group = AttackGroup }
+    | DivineHealing =>
+        {
+            words = "exura san"
+            level = 35
+            mana = 160
+            cooldown_ms = 1000
+            group_cooldown_ms = 1000
+            group = HealingGroup
+        }
+    | LightHealing _ =>
+        { words = "exura"; level = 8; mana = 20; cooldown_ms = 1000; group_cooldown_ms = 1000; group = HealingGroup }
+    | IntenseHealing _ =>
+        {
+            words = "exura gran"
+            level = 20
+            mana = 70
+            cooldown_ms = 1000
+            group_cooldown_ms = 1000
+            group = HealingGroup
+        }
 
 inl cooldown_id_of forall v. (s : spell v) : cooldowns.spell_id =
     open cooldowns
@@ -41,7 +75,7 @@ inl cooldown_id_of forall v. (s : spell v) : cooldowns.spell_id =
 
 inl as_cooldown forall v. (s : spell v) : cooldowns.spell =
     inl d = data_of s
-    {id = cooldown_id_of s; group = d.group; own_ms = d.cooldown_ms; group_ms = d.group_cooldown_ms}
+    { id = cooldown_id_of s; group = d.group; own_ms = d.cooldown_ms; group_ms = d.group_cooldown_ms }
 
 inl castable forall v. (level : i32) (mana : i32) (s : spell v) : bool =
     inl d = data_of s
@@ -71,4 +105,6 @@ test a_paladin_cannot_cast_wound_cleansing fails "Unification failure" =
 ///> wgsl
 test spell_data_on_gpu =
     inl ~level = 8i32
-    if castable level 90 WoundCleansing && castable level 90 Berserk = false && (data_of Berserk).cooldown_ms = 4000i32 then 0i32 else 1i32
+    if castable level 90 WoundCleansing && castable level 90 Berserk = false && (data_of Berserk).cooldown_ms = 4000i32
+    then 0i32
+    else 1i32

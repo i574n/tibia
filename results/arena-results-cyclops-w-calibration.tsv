@@ -1,0 +1,8 @@
+timestamp	competitor	run	monster	count	experience	cleared_ms	lowest_health	actions_allowed	actions_dropped	potions	gold	deaths	foreign_potions	foreign_actions
+2026-10-22T06:13:34	spiral-retreat	1	cyclops	3	675	103855	76	21	2	14	89	0	0	0
+2026-10-22T06:16:09	spiral-retreat	2	cyclops	3	675	97964	99	60	13	13	68	0	0	0
+2026-10-22T06:18:49	spiral-retreat	3	cyclops	3	675	97335	90	88	41	11	115	0	0	0
+2026-10-22T06:21:01	spiral-retreat	4	cyclops	3	675	85956	119	19	5	11	93	0	0	0
+2026-10-22T06:23:18	spiral-retreat	5	cyclops	3	675	93446	87	24	3	17	98	0	0	0
+2026-10-22T06:25:56	spiral-retreat	6	cyclops	3	675	114706	100	32	4	18	35	0	0	0
+2026-10-22T06:28:21	spiral-retreat	7	cyclops	3	675	101388	84	41	15	14	50	0	0	0

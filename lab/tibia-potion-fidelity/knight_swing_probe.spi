@@ -1,6 +1,0 @@
-inl main () =
-    inl stats = creatures.stats_of (open creatures in Cyclops)
-    inl ~swings = 100000i32
-    inl landed, total = combat.swing_stats (open damage in Balanced) 30 21 60 stats.defense stats.armor 2026u32 swings
-    $'printf("knight vs cyclops: swings %d landed %d total %d\\n", !swings, !landed, !total)' : ()
-    0i32

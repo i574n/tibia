@@ -1,3 +1,4 @@
+///- --package .
 test vitality static =
     open testing
 

@@ -1,4 +1,4 @@
-param([int] $TimeoutSeconds = 240, [int] $AxeSkill = 30, [string] $Monster = 'troll', [int] $MonsterCount = 3, [string] $ProbeBody = 'competitor', [int] $SpawnRadius = 2, [ValidateSet('none', 'vBot', 'nExBot')] [string] $Bot = 'none', [switch] $NoParity, [string] $TibiaDir = (Join-Path (Split-Path $PSScriptRoot -Parent) 'src'), [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [string] $SummonAt = '1932,1352', [string] $KnightAt = '1932,1349')
+param([int] $TimeoutSeconds = 240, [int] $AxeSkill = 30, [string] $Monster = 'troll', [int] $MonsterCount = 3, [string] $ProbeBody = 'competitor', [int] $SpawnRadius = 2, [ValidateSet('none', 'vBot', 'nExBot')] [string] $Bot = 'none', [switch] $NoParity, [string] $TibiaDir = (Join-Path (Split-Path $PSScriptRoot -Parent) 'src'), [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [string] $SummonAt = '1932,1352', [string] $KnightAt = '1932,1349', [string] $SpawnFile = '', [string] $Ally = '', [string] $AllyAt = '')
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'paths.ps1')
 $root = $TibiaWorld
@@ -52,11 +52,32 @@ $healthMax = 185 + 15 * ($Level - 8)
 $manaMax = 90 + 5 * ($Level - 8)
 $env:TIBIA_ARENA_HEAL_BELOW = "$HealBelow"
 $env:TIBIA_ARENA_STRIKE_ABOVE = "$StrikeAbove"
-& $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary canary -e "update players set level = $Level, experience = $experience, healthmax = $healthMax, health = $healthMax, manamax = $manaMax, mana = $manaMax, skill_axe = $AxeSkill, posx = $knightX, posy = $knightY, posz = 7 where name = 'Knight Sample'"
+& $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary canary -e "update players set level = $Level, experience = $experience, healthmax = $healthMax, health = $healthMax, manamax = $manaMax, mana = $manaMax, skill_axe = $AxeSkill, skill_shielding = 11, skill_shielding_tries = 0, posx = $knightX, posy = $knightY, posz = 7 where name = 'Knight Sample'"
 & $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary canary -e "delete pi from player_items pi join players p on p.id = pi.player_id where p.name = 'Knight Sample'; insert into player_items (player_id, pid, sid, itemtype, count, attributes) select p.id, v.pid, v.sid, v.itemtype, v.count, '' from players p join (select 1 as pid, 101 as sid, 3354 as itemtype, 1 as count union all select 3, 102, 2853, 1 union all select 4, 103, 3359, 1 union all select 5, 104, 3425, 1 union all select 6, 105, 7773, 1 union all select 7, 106, 3372, 1 union all select 8, 107, 3552, 1 union all select 11, 108, 23396, 1 union all select 102, 109, 266, 100) v where p.name = 'Knight Sample'"
+if ($Ally) {
+    $allyX, $allyY = $AllyAt -split ','
+    & $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary canary -e "update players set vocation = 4, level = $Level, experience = $experience, healthmax = $healthMax, health = $healthMax, manamax = $manaMax, mana = $manaMax, skill_axe = $AxeSkill, skill_shielding = 11, skill_shielding_tries = 0, posx = $allyX, posy = $allyY, posz = 7 where name = '$Ally'"
+    & $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary canary -e "delete pi from player_items pi join players p on p.id = pi.player_id where p.name = '$Ally'; insert into player_items (player_id, pid, sid, itemtype, count, attributes) select p.id, i.pid, i.sid, i.itemtype, i.count, i.attributes from players p, player_items i, players k where k.id = i.player_id and k.name = 'Knight Sample' and p.name = '$Ally'"
+}
 $env:LUA_PATH = $null
 $env:LUA_CPATH = $null
 [IO.File]::WriteAllText($worldLog, '')
+$serverSpawns = Join-Path $canaryDir 'data-canary\world\canary-monster.xml'
+$keptSpawns = "$serverSpawns.kept"
+if (Test-Path $keptSpawns) { Move-Item $keptSpawns $serverSpawns -Force }
+if ($SpawnFile) {
+    Copy-Item $serverSpawns $keptSpawns
+    Copy-Item $SpawnFile $serverSpawns -Force
+}
+$serverConfig = Join-Path $canaryDir 'config.lua'
+$keptConfig = "$serverConfig.kept"
+if (Test-Path $keptConfig) { Move-Item $keptConfig $serverConfig -Force }
+if ($Ally) {
+    $configText = [IO.File]::ReadAllText($serverConfig)
+    if (-not $configText.Contains('maxPlayersOnlinePerAccount = 1') -or -not $configText.Contains('maxPlayersOutsidePZPerAccount = 1')) { throw 'config.lua lacks the per-account limits the duo raises' }
+    Copy-Item $serverConfig $keptConfig
+    [IO.File]::WriteAllText($serverConfig, $configText.Replace('maxPlayersOnlinePerAccount = 1', 'maxPlayersOnlinePerAccount = 2').Replace('maxPlayersOutsidePZPerAccount = 1', 'maxPlayersOutsidePZPerAccount = 2'))
+}
 Start-Process (Join-Path $canaryDir 'canary.exe') -WorkingDirectory $canaryDir -RedirectStandardOutput $worldLog -RedirectStandardError (Join-Path $canaryDir 'world.err') -WindowStyle Hidden | Out-Null
 try {
     $deadline = (Get-Date).AddSeconds(120)
@@ -143,13 +164,50 @@ try {
         "== nExBot seeded: TargetBot arena ($Monster, chase), HealBot potion at hp% <= $healPercent (health below $effectiveBelow of $healthMax), network calls stubbed"
     }
     "== world online, knight level $Level ($healthMax hp), axe skill $AxeSkill, $MonsterCount x $Monster, heal below $HealBelow"
-    & (Join-Path $TibiaLive 'run-probe.ps1') -Script $summon -TimeoutSeconds 60 | Select-Object -Last 2
+    if ($MonsterCount -gt 0) { & (Join-Path $TibiaLive 'run-probe.ps1') -Script $summon -TimeoutSeconds 60 | Select-Object -Last 2 }
+    "== timeline: summon probe done at wall $([DateTimeOffset]::Now.ToUnixTimeSeconds()) ($([DateTimeOffset]::Now.ToUnixTimeMilliseconds()) ms)"
     '== policy'
+    $allyRun = $null
+    if ($Ally) {
+        $allyOut = Join-Path $root 'ally-probe.out'
+        $allyProfile = Join-Path $root 'ally-profile'
+        $gateFile = Join-Path $allyProfile 'login-gate'
+        New-Item -ItemType Directory -Force $allyProfile | Out-Null
+        if (Test-Path -LiteralPath $gateFile) { Remove-Item -LiteralPath $gateFile -Force }
+        $env:TIBIA_ARENA_CHARACTER = $Ally
+        $env:TIBIA_LOGIN_GATE = 'login-gate'
+        $allyRun = Start-Process pwsh -ArgumentList '-NoProfile', '-File', (Join-Path $TibiaLive 'run-probe.ps1'), '-Script', $probe, '-TimeoutSeconds', $TimeoutSeconds, '-UserDir', $allyProfile -RedirectStandardOutput $allyOut -WindowStyle Hidden -PassThru
+        $env:TIBIA_ARENA_CHARACTER = $null
+        $env:TIBIA_LOGIN_GATE = $null
+        $gate = Start-ThreadJob -ArgumentList $worldLog, $gateFile, $Ally -ScriptBlock {
+            param($log, $file, $ally)
+            $deadline = (Get-Date).AddSeconds(180)
+            while (-not (Select-String -LiteralPath $log -SimpleMatch 'Knight Sample has logged in.' -Quiet -ErrorAction SilentlyContinue)) {
+                if ((Get-Date) -gt $deadline) { return '== login gate: the knight login line did not appear within 180 s' }
+                Start-Sleep -Milliseconds 50
+            }
+            $opened = [DateTimeOffset]::Now.ToUnixTimeMilliseconds()
+            [IO.File]::WriteAllText($file, '')
+            while (-not (Select-String -LiteralPath $log -SimpleMatch "$ally has logged in." -Quiet -ErrorAction SilentlyContinue)) {
+                if ((Get-Date) -gt $deadline) { return "== login gate: opened at $opened ms, the ally login line did not appear" }
+                Start-Sleep -Milliseconds 50
+            }
+            $entered = [DateTimeOffset]::Now.ToUnixTimeMilliseconds()
+            "== login gate: opened at $opened ms, ally login line $($entered - $opened) ms after the knight's"
+        }
+    }
     & (Join-Path $TibiaLive 'run-probe.ps1') -Script $probe -TimeoutSeconds $TimeoutSeconds
+    if ($allyRun) {
+        $allyRun.WaitForExit()
+        Receive-Job $gate -Wait -AutoRemoveJob
+        "== ally log $allyOut"
+    }
     Start-Sleep -Seconds 5
 } finally {
     Copy-Item (Join-Path $root 'otclient-src\otclientrc.lua.orig') (Join-Path $root 'otclient-src\otclientrc.lua') -Force -ErrorAction SilentlyContinue
     Get-Process canary -ErrorAction SilentlyContinue | Stop-Process -Force
+    if (Test-Path $keptSpawns) { Move-Item $keptSpawns $serverSpawns -Force }
+    if (Test-Path $keptConfig) { Move-Item $keptConfig $serverConfig -Force }
 }
 & $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary canary -e "select level, experience, health, skill_axe from players where name = 'Knight Sample'"
 '== world stopped'

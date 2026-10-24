@@ -1,3 +1,4 @@
+///- --package .
 test quantity static =
     open testing
 
@@ -20,7 +21,8 @@ inl scaled forall unit. (factor : i32) (amount x : amount unit) : amount unit = 
 
 inl at_least forall unit. (amount a : amount unit) (amount b : amount unit) : bool = a >= b
 
-inl capped forall unit. (amount limit : amount unit) (amount x : amount unit) : amount unit = amount (if x > limit then limit else x)
+inl capped forall unit. (amount limit : amount unit) (amount x : amount unit) : amount unit =
+    amount (if x > limit then limit else x)
 
 inl hp (value : i32) : amount hitpoints = amount value
 inl ms (value : i32) : amount milliseconds = amount value
@@ -46,4 +48,6 @@ test gold_is_not_hitpoints fails "Unification failure" =
 ///> wgsl
 test units_on_gpu =
     inl ~health = 150i32
-    if value_of (capped (hp 150) (plus (hp health) (hp 60))) = 150i32 && value_of (minus (ms 2000) (ms 500)) = 1500i32 then 0i32 else 1i32
+    if value_of (capped (hp 150) (plus (hp health) (hp 60))) = 150i32 && value_of (minus (ms 2000) (ms 500)) = 1500i32
+    then 0i32
+    else 1i32

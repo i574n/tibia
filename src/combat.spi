@@ -5,7 +5,7 @@ test combat static =
 inl unit_scale () : i32 = 4096
 
 inl sub_key (key : rng.roll_key) (index : u32) : rng.roll_key =
-    {key with purpose = key.purpose * 256u32 + index}
+    { key with purpose = key.purpose * 256u32 + index }
 
 inl uniform_unit (key : rng.roll_key) (index : u32) : i32 =
     conv (rng.draw (sub_key key index) % 4096u32)
@@ -52,13 +52,17 @@ inl blocked_hit (raw : i32) (defense : i32) (armor : i32) (has_block_charge : bo
         inl after_armor = after_defense - armor_block armor key
         if after_armor <= 0i32 then 0i32 else after_armor
 
-type gear = {armor : i32; defense : i32}
+type gear = { armor : i32; defense : i32 }
 
 inl balanced_defense_percent () : i32 = 75i32
 inl shield_scaling_per_mille () : i32 = 160i32
 
 inl shielded_defense (shield_skill : i32) (shield_defense : i32) : i32 =
-    (shield_skill * 25i32 + 223i32) * shield_defense * balanced_defense_percent () * shield_scaling_per_mille () / 10000000i32
+    (shield_skill * 25i32 + 223i32)
+    * shield_defense
+    * balanced_defense_percent ()
+    * shield_scaling_per_mille ()
+    / 10000000i32
 
 inl knight_sample_gear () : gear =
     inl brass_helmet = 3i32
@@ -66,7 +70,7 @@ inl knight_sample_gear () : gear =
     inl brass_legs = 5i32
     inl leather_boots = 1i32
     inl dwarven_shield = 26i32
-    {armor = brass_helmet + brass_armor + brass_legs + leather_boots; defense = shielded_defense 11i32 dwarven_shield}
+    { armor = brass_helmet + brass_armor + brass_legs + leather_boots; defense = shielded_defense 11i32 dwarven_shield }
 
 inl max_block_charges () : i32 = 2i32
 inl block_charge_ms () : i32 = 1000i32
@@ -74,38 +78,70 @@ inl block_charge_ms () : i32 = 1000i32
 inl creature_hit (melee_max : i32) (defender : gear) (shielded : bool) (key : rng.roll_key) : i32 =
     blocked_hit (melee_roll 0i32 melee_max key) defender.defense defender.armor shielded key
 
-type ranged_attack = {chance_percent : i32; max_damage : i32; range : i32; every_ms : i32}
+type ranged_attack = { chance_percent : i32; max_damage : i32; range : i32; every_ms : i32 }
 
-inl hunter_arrow () : ranged_attack = {chance_percent = 50; max_damage = 100; range = 7; every_ms = 2000}
+inl hunter_arrow () : ranged_attack = { chance_percent = 50; max_damage = 100; range = 7; every_ms = 2000 }
 
-inl ranged_in_reach (attack : ranged_attack) (distance : i32) (sight_clear : bool) : bool = distance <= attack.range && sight_clear
+inl ranged_in_reach (attack : ranged_attack) (distance : i32) (sight_clear : bool) : bool =
+    distance <= attack.range && sight_clear
 
-inl ranged_fires (attack : ranged_attack) (key : rng.roll_key) : bool = uniform_between 1i32 100i32 key 202u32 <= attack.chance_percent
+inl ranged_fires (attack : ranged_attack) (key : rng.roll_key) : bool =
+    uniform_between 1i32 100i32 key 202u32 <= attack.chance_percent
 
-inl ranged_hit_spending_a_charge (attack : ranged_attack) (defender : gear) (charges : i32) (key : rng.roll_key) : i32 * i32 =
-    blocked_hit (melee_roll 0i32 attack.max_damage key) defender.defense defender.armor false key, (if charges > 0i32 then charges - 1i32 else 0i32)
+inl ranged_hit_spending_a_charge
+    (attack : ranged_attack) (defender : gear) (charges : i32) (key : rng.roll_key)
+    : i32 * i32
+    =
+    blocked_hit (melee_roll 0i32 attack.max_damage key) defender.defense defender.armor false key,
+    if charges > 0i32
+    then charges - 1i32
+    else 0i32
 
-inl melee_hit (mode : damage.fight_mode) (level : i32) (attack_value : i32) (attack_skill : i32) (defense : i32) (armor : i32) (key : rng.roll_key) : i32 =
+inl melee_hit
+    (mode : damage.fight_mode) (level : i32) (attack_value : i32) (attack_skill : i32) (defense : i32) (armor : i32)
+    (key : rng.roll_key)
+    : i32
+    =
     inl high = damage.max_melee_damage mode attack_value attack_skill level
     inl low = if attack_value > 0i32 then level / 5i32 else 0i32
     blocked_hit (melee_roll low high key) defense armor true key
 
-inl swing_stats (mode : damage.fight_mode) (level : i32) (attack_value : i32) (attack_skill : i32) (defense : i32) (armor : i32) (seed : u32) (swings : i32) : i32 * i32 =
+inl swing_stats
+    (mode : damage.fight_mode) (level : i32) (attack_value : i32) (attack_skill : i32) (defense : i32) (armor : i32)
+    (seed : u32) (swings : i32)
+    : i32 * i32
+    =
     let rec loop (i : i32) (landed : i32) (total : i32) : i32 * i32 =
-        if i >= swings then landed, total
+        if i >= swings
+        then landed, total
         else
-            inl hit = melee_hit mode level attack_value attack_skill defense armor (rng.roll_key seed (conv i) 1u32 7u32)
+            inl hit =
+                melee_hit mode level attack_value attack_skill defense armor (rng.roll_key seed (conv i) 1u32 7u32)
             loop (i + 1i32) (if hit > 0i32 then landed + 1i32 else landed) (total + hit)
     loop 0i32 0i32 0i32
 
-inl capped_hit_stats (mode : damage.fight_mode) (level : i32) (attack_value : i32) (attack_skill : i32) (defense : i32) (armor : i32) (max_health : i32) (seed : u32) (swings : i32) : i32 * i32 =
+inl capped_hit_stats
+    (mode : damage.fight_mode) (level : i32) (attack_value : i32) (attack_skill : i32) (defense : i32) (armor : i32)
+    (max_health : i32) (seed : u32) (swings : i32)
+    : i32 * i32
+    =
     let rec loop (i : i32) (health : i32) (landed : i32) (total : i32) : i32 * i32 =
-        if i >= swings then landed, total
+        if i >= swings
+        then landed, total
         else
-            inl hit = melee_hit mode level attack_value attack_skill defense armor (rng.roll_key seed (conv i) 1u32 7u32)
+            inl hit =
+                melee_hit mode level attack_value attack_skill defense armor (rng.roll_key seed (conv i) 1u32 7u32)
             inl taken = if hit > health then health else hit
             inl left = health - taken
-            loop (i + 1i32) (if left <= 0i32 then max_health else left) (if taken > 0i32 then landed + 1i32 else landed) (total + taken)
+            loop
+                (i + 1i32)
+                if left <= 0i32
+                then max_health
+                else left
+                if taken > 0i32
+                then landed + 1i32
+                else landed
+                (total + taken)
     loop 0i32 max_health 0i32 0i32
 
 ///> c
@@ -113,12 +149,21 @@ test hunter_arrows_skip_the_shield_but_spend_a_block_charge_like_canary_distance
     inl ~shots = 4000i32
     inl gear = knight_sample_gear ()
     let rec loop (i : i32) (differ : i32) (spent : i32) (total : i32) : i32 * i32 * i32 =
-        if i >= shots then differ, spent, total
+        if i >= shots
+        then differ, spent, total
         else
             inl key = rng.roll_key 9u32 (conv i) 2u32 11u32
             inl hurt, left = ranged_hit_spending_a_charge (hunter_arrow ()) gear 2i32 key
             inl unshielded = creature_hit (hunter_arrow ()).max_damage gear false key
-            loop (i + 1i32) (if hurt = unshielded then differ else differ + 1i32) (if left = 1i32 then spent + 1i32 else spent) (total + hurt)
+            loop
+                (i + 1i32)
+                if hurt = unshielded
+                then differ
+                else differ + 1i32
+                if left = 1i32
+                then spent + 1i32
+                else spent
+                (total + hurt)
     inl differ, spent, total = loop 0i32 0i32 0i32 0i32
     inl _, empty = ranged_hit_spending_a_charge (hunter_arrow ()) gear 0i32 (rng.roll_key 9u32 0u32 2u32 11u32)
     (differ, spent, empty, total > shots * 30i32) |> _assert_eq (0i32, shots, 0i32, true)
@@ -128,9 +173,21 @@ test hunter_arrows_need_range_7_and_clear_sight_and_fire_half_the_time =
     inl ~range = 7i32
     inl arrow = hunter_arrow ()
     let rec fired (i : i32) (count : i32) : i32 =
-        if i >= 10000i32 then count else fired (i + 1i32) (if ranged_fires arrow (rng.roll_key 3u32 (conv i) 4u32 12u32) then count + 1i32 else count)
+        if i >= 10000i32
+        then count
+        else
+            fired
+                (i + 1i32)
+                if ranged_fires arrow (rng.roll_key 3u32 (conv i) 4u32 12u32)
+                then count + 1i32
+                else count
     inl shots = fired 0i32 0i32
-    (ranged_in_reach arrow range true, ranged_in_reach arrow (range + 1i32) true, ranged_in_reach arrow 3i32 false, shots > 4800i32 && shots < 5200i32)
+    (
+        ranged_in_reach arrow range true,
+        ranged_in_reach arrow (range + 1i32) true,
+        ranged_in_reach arrow 3i32 false,
+        shots > 4800i32 && shots < 5200i32
+    )
     |> _assert_eq (true, false, false, true)
 
 ///> c

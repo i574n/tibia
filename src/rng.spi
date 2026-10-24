@@ -1,3 +1,4 @@
+///- --package .
 test rng static =
     open testing
 
@@ -8,9 +9,9 @@ inl mix32 (value : u32) : u32 =
     inl d = c * 2221713035u32
     d ^^^ (d >>> 16)
 
-type roll_key = {seed : u32; tick : u32; entity : u32; purpose : u32}
+type roll_key = { seed : u32; tick : u32; entity : u32; purpose : u32 }
 
-inl roll_key seed tick entity purpose : roll_key = {seed tick entity purpose}
+inl roll_key seed tick entity purpose : roll_key = { seed tick entity purpose }
 
 inl draw (key : roll_key) : u32 =
     inl by_purpose = mix32 key.purpose

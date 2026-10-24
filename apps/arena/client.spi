@@ -4,11 +4,13 @@ nominal creature = $'any'
 
 nominal crowd = $'any'
 
-type spot = {x : i32; y : i32; z : i32}
+type spot = { x : i32; y : i32; z : i32 }
 
 inl after (ms : i32) (f : () -> ()) : () = $'scheduleEvent(!f, !ms)' : ()
 
 inl now_ms () : i32 = $'g_clock.millis()' : i32
+
+inl wall_seconds () : i32 = $'os.time()' : i32
 
 inl env_i32 (name : string) (fallback : i32) : i32 = $'tonumber(os.getenv(!name) or "") or (!fallback)' : i32
 
@@ -18,7 +20,9 @@ inl seed_random_from_clock () : () = $'math.randomseed(os.time())' : ()
 
 inl env_is (name : string) (value : string) : bool = $'os.getenv(!name) == (!value)' : bool
 
-inl spot_of (p : native_position) : spot = {x = $'!p.x' : i32; y = $'!p.y' : i32; z = $'!p.z' : i32}
+inl file_exists (path : string) : bool = $'g_resources.fileExists(!path)' : bool
+
+inl spot_of (p : native_position) : spot = { x = $'!p.x' : i32; y = $'!p.y' : i32; z = $'!p.z' : i32 }
 
 inl player_spot () : spot = spot_of ($'g_game.getLocalPlayer():getPosition()' : native_position)
 
@@ -41,7 +45,8 @@ inl player_experience () : i32 = $'g_game.getLocalPlayer():getExperience()' : i3
 inl player_walking () : bool = $'g_game.getLocalPlayer():isWalking()' : bool
 
 inl player_zone () : string =
-    $'(function() local p = g_game.getLocalPlayer(); return tostring(p.isInProtectionZone and p:isInProtectionZone() or "?") end)()' : string
+    $'(function() local p = g_game.getLocalPlayer(); return tostring(p.isInProtectionZone and p:isInProtectionZone() \
+        or "?") end)()' : string
 
 union footing =
     | Free
@@ -52,7 +57,9 @@ union footing =
 
 inl footing_at (s : spot) : footing =
     inl x, y, z = s.x, s.y, s.z
-    inl code = $'(function() local tile = g_map.getTile({ x = !x, y = !y, z = !z }); if not tile then return 4 elseif tile:isWalkable() and not tile:hasFloorChange() then return 0 elseif tile:isWalkable() then return 1 elseif tile:isWalkable(true) then return 2 else return 3 end end)()' : i32
+    inl code = $'(function() local tile = g_map.getTile({ x = !x, y = !y, z = !z }); if not tile then return 4 elseif \
+        tile:isWalkable() and not tile:hasFloorChange() then return 0 elseif tile:isWalkable() then return 1 elseif \
+        tile:isWalkable(true) then return 2 else return 3 end end)()' : i32
     if code = 0 then Free elif code = 1 then Ramp elif code = 2 then Occupied elif code = 3 then Blocked else Unknown
 
 inl spectators (s : spot) : crowd =
@@ -80,21 +87,30 @@ inl attacking () : creature = $'g_game.getAttackingCreature()' : creature
 inl attacking_anyone () : bool = $'g_game.isAttacking()' : bool
 
 inl attacking_short () : string =
-    $'(function() local a = g_game.getAttackingCreature(); if not a then return "nothing" end; return a:getName() .. " " .. a:getHealthPercent() .. "%" end)()' : string
+    $'(function() local a = g_game.getAttackingCreature(); if not a then return "nothing" end; return a:getName() .. \
+        " " .. a:getHealthPercent() .. "%" end)()' : string
 
 inl attacking_described () : string =
-    $'(function() local a = g_game.getAttackingCreature(); if not a then return "nothing" end; local p = a:getPosition(); return a:getName() .. " " .. a:getHealthPercent() .. "% at " .. string.format("%d,%d,%d", p.x, p.y, p.z) end)()' : string
+    $'(function() local a = g_game.getAttackingCreature(); if not a then return "nothing" end; local p = \
+        a:getPosition(); return a:getName() .. " " .. a:getHealthPercent() .. "% at " .. string.format("%d,%d,%d", \
+        p.x, p.y, p.z) end)()' : string
 
 inl monsters_described (s : spot) : string =
     inl x, y, z = s.x, s.y, s.z
-    $'(function() local parts = {}; for _, c in ipairs(g_map.getSpectators({ x = !x, y = !y, z = !z }, false)) do if c:isMonster() and not c:isDead() and c:getPosition() ~= nil then local p = c:getPosition(); table.insert(parts, string.format("%s %d%% %d,%d", c:getName(), c:getHealthPercent(), p.x, p.y)) end end; if ##parts == 0 then return "none" end; return table.concat(parts, "; ") end)()' : string
+    $'(function() local parts = {}; for _, c in ipairs(g_map.getSpectators({ x = !x, y = !y, z = !z }, false)) do if \
+        c:isMonster() and not c:isDead() and c:getPosition() ~= nil then local p = c:getPosition(); \
+        table.insert(parts, string.format("%s %d%% %d,%d", c:getName(), c:getHealthPercent(), p.x, p.y)) end end; if \
+        ##parts == 0 then return "none" end; return table.concat(parts, "; ") end)()' : string
 
 inl attack (c : creature) : () = $'g_game.attack(!c)' : ()
 
 inl cancel_attack () : () = $'g_game.cancelAttack()' : ()
 
+inl chase_on () : bool = $'g_game.getChaseMode() == ChaseOpponent' : bool
+
 inl chasing (on : bool) : () =
-    $'(function(mode) if g_game.getChaseMode() ~= mode then g_game.setChaseMode(mode) end end)((!on) and ChaseOpponent or DontChase)' : ()
+    $'(function(mode) if g_game.getChaseMode() ~= mode then g_game.setChaseMode(mode) end end)((!on) and \
+        ChaseOpponent or DontChase)' : ()
 
 inl fight_balanced () : () = $'g_game.setFightMode(FightBalanced)' : ()
 
@@ -103,32 +119,54 @@ inl fight_mode_text () : string = $'tostring(g_game.getFightMode())' : string
 inl drink (item : i32) : bool = $'g_game.useInventoryItemWith(!item, g_game.getLocalPlayer()) ~= false' : bool
 
 inl step (dx : i32) (dy : i32) : bool =
-    $'g_game.walk(({ ["0,-1"] = North, ["1,0"] = East, ["0,1"] = South, ["-1,0"] = West, ["1,-1"] = NorthEast, ["1,1"] = SouthEast, ["-1,1"] = SouthWest, ["-1,-1"] = NorthWest })[(!dx) .. "," .. (!dy)]) ~= false' : bool
+    $'g_game.walk(({ ["0,-1"] = North, ["1,0"] = East, ["0,1"] = South, ["-1,0"] = West, ["1,-1"] = NorthEast, \
+        ["1,1"] = SouthEast, ["-1,1"] = SouthWest, ["-1,-1"] = NorthWest })[(!dx) .. "," .. (!dy)]) ~= false' : bool
 
 inl talk (text : string) : () = $'g_game.talk(!text)' : ()
 
 inl disable_client_bot (character_key : string) : () =
-    $'(function(key) local s = g_settings.getNode("bot") or {}; s[key] = { enabled = false }; g_settings.setNode("bot", s); g_settings.save() end)(!character_key)' : ()
+    $'(function(key) local s = g_settings.getNode("bot") or {}; s[key] = { enabled = false }; \
+        g_settings.setNode("bot", s); g_settings.save() end)(!character_key)' : ()
 
 inl enable_client_bot (character_key : string) (config : string) : () =
-    $'(function(key, config) local s = g_settings.getNode("bot") or {}; s[key] = { enabled = true, config = config }; g_settings.setNode("bot", s); g_settings.save() end)(!character_key, !config)' : ()
+    $'(function(key, config) local s = g_settings.getNode("bot") or {}; s[key] = { enabled = true, config = config }; \
+        g_settings.setNode("bot", s); g_settings.save() end)(!character_key, !config)' : ()
 
 inl start_client_bot (character_key : string) (config : string) : () =
     enable_client_bot character_key config
     $'modules.game_bot.refresh()' : ()
 
 inl instrument_game_calls () : lua.native_table =
-    $'(function() local s = { attack = 0, cancel = 0, guarded = 0, other = {} }; local nativeAttack, nativeCancel, nativeCancelAndFollow, nativeCancelFollow = g_game.attack, g_game.cancelAttack, g_game.cancelAttackAndFollow, g_game.cancelFollow; g_game.attack = function(...) s.attack = s.attack + 1 return nativeAttack(...) end; if nativeCancel then g_game.cancelAttack = function(...) s.cancel = s.cancel + 1 return nativeCancel(...) end end; if nativeCancelAndFollow then g_game.cancelAttackAndFollow = function(...) s.cancel = s.cancel + 1 return nativeCancelAndFollow(...) end end; g_game.cancelFollow = function(...) if not g_game.getFollowingCreature() then s.guarded = s.guarded + 1 return end return nativeCancelFollow(...) end; for _, name in ipairs({ "stop", "walk", "autoWalk", "forceWalk", "turn", "follow", "cancelFollow", "setChaseMode", "setFightMode", "useInventoryItemWith", "useWith", "move", "look", "talk", "equipItem" }) do local native = g_game[name]; if native then g_game[name] = function(...) s.other[name] = (s.other[name] or 0) + 1 return native(...) end end end; return s end)()' : lua.native_table
+    $'(function() local s = { attack = 0, cancel = 0, guarded = 0, other = {} }; local nativeAttack, nativeCancel, \
+        nativeCancelAndFollow, nativeCancelFollow = g_game.attack, g_game.cancelAttack, g_game.cancelAttackAndFollow, \
+        g_game.cancelFollow; g_game.attack = function(...) s.attack = s.attack + 1 return nativeAttack(...) end; if \
+        nativeCancel then g_game.cancelAttack = function(...) s.cancel = s.cancel + 1 return nativeCancel(...) end \
+        end; if nativeCancelAndFollow then g_game.cancelAttackAndFollow = function(...) s.cancel = s.cancel + 1 \
+        return nativeCancelAndFollow(...) end end; g_game.cancelFollow = function(...) if not \
+        g_game.getFollowingCreature() then s.guarded = s.guarded + 1 return end return nativeCancelFollow(...) end; \
+        for _, name in ipairs({ "stop", "walk", "autoWalk", "forceWalk", "turn", "follow", "cancelFollow", \
+        "setChaseMode", "setFightMode", "useInventoryItemWith", "useWith", "move", "look", "talk", "equipItem" }) do \
+        local native = g_game[name]; if native then g_game[name] = function(...) s.other[name] = (s.other[name] or 0) \
+        + 1 return native(...) end end end; return s end)()' : lua.native_table
 
 inl game_call_report (s : lua.native_table) : string =
-    $'(function(s) local p = g_game.getLocalPlayer(); local function idAt(slot) local item = p:getInventoryItem(slot); return item and tostring(item:getId()) or "-" end; local a = g_game.getAttackingCreature(); local parts = {}; for name, count in pairs(s.other) do table.insert(parts, name .. "=" .. count) end; table.sort(parts); local d = "-"; if a then local q, r = a:getPosition(), p:getPosition(); d = tostring(math.max(math.abs(q.x - r.x), math.abs(q.y - r.y))) end; return string.format("diag attack calls %d cancels %d hands %s target distance %s chase %s fight %s", s.attack, s.cancel, idAt(InventorySlotLeft) .. "/" .. idAt(InventorySlotRight), d, tostring(g_game.getChaseMode()), tostring(g_game.getFightMode())) .. " calls " .. table.concat(parts, " ") .. " guarded cancelFollow " .. s.guarded end)(!s)' : string
+    $'(function(s) local p = g_game.getLocalPlayer(); local function idAt(slot) local item = \
+        p:getInventoryItem(slot); return item and tostring(item:getId()) or "-" end; local a = \
+        g_game.getAttackingCreature(); local parts = {}; for name, count in pairs(s.other) do table.insert(parts, \
+        name .. "=" .. count) end; table.sort(parts); local d = "-"; if a then local q, r = a:getPosition(), \
+        p:getPosition(); d = tostring(math.max(math.abs(q.x - r.x), math.abs(q.y - r.y))) end; return \
+        string.format("diag attack calls %d cancels %d hands %s target distance %s chase %s fight %s", s.attack, \
+        s.cancel, idAt(InventorySlotLeft) .. "/" .. idAt(InventorySlotRight), d, tostring(g_game.getChaseMode()), \
+        tostring(g_game.getFightMode())) .. " calls " .. table.concat(parts, " ") .. " guarded cancelFollow " .. \
+        s.guarded end)(!s)' : string
 
 inl parity_summary () : string = $'ArenaParity and ArenaParity.summary() or ""' : string
 
 inl remember (t : lua.native_table) (c : creature) : () = $'(!t)[(!c):getId()] = (!c)' : ()
 
 inl forget_dead (t : lua.native_table) : i32 =
-    $'(function(t) local n = 0; for id, c in pairs(t) do if c:isDead() then n = n + 1; t[id] = nil end end; return n end)(!t)' : i32
+    $'(function(t) local n = 0; for id, c in pairs(t) do if c:isDead() then n = n + 1; t[id] = nil end end; return n \
+        end)(!t)' : i32
 
 inl new_creature_slot () : lua.native_table = $'{}' : lua.native_table
 
@@ -155,7 +193,8 @@ inl position_known (p : native_position) : bool = $'(!p) ~= nil' : bool
 inl player_speed () : string = $'tostring(g_game.getLocalPlayer():getSpeed())' : string
 
 inl on_position_change (f : creature -> native_position -> native_position -> ()) : () =
-    $'connect(Creature, { onPositionChange = function(c, n, o) (!f)(c)(n)(o) end })' : ()
+    $'local handler = function(c, n, o) (!f)(c)(n)(o) end; connect(Creature, { onPositionChange = handler }); \
+        connect(LocalPlayer, { onPositionChange = handler })' : ()
 
 inl online () : bool = $'g_game.isOnline()' : bool
 
@@ -177,16 +216,18 @@ inl write_log_line (line : string) : () =
     $'TibiaProbeLog = TibiaProbeLog or {}' : ()
     $'table.insert(TibiaProbeLog, !line)' : ()
     $'g_logger.info(!line)' : ()
-    $'g_resources.writeFileContents("/tibia-probe.log", table.concat(TibiaProbeLog, string.char(10)) .. string.char(10))' : ()
+    $'g_resources.writeFileContents("/tibia-probe.log", table.concat(TibiaProbeLog, string.char(10)) .. \
+        string.char(10))' : ()
 
-type session = {character : string; on_start : () -> (); on_error : string -> (); on_text : string -> string -> ()}
+type session = { character : string; on_start : () -> (); on_error : string -> (); on_text : string -> string -> () }
 
 inl log_in (s : session) : () =
     inl on_start, on_error, on_text, character = s.on_start, s.on_error, s.on_text, s.character
     $'g_game.setClientVersion(1511)' : ()
     $'g_game.setProtocolVersion(g_game.getClientProtocolVersion(1511))' : ()
     $'g_game.chooseRsa("127.0.0.1")' : ()
-    $'connect(g_game, { onGameStart = !on_start, onLoginError = function(message) (!on_error)(tostring(message)) end, onTextMessage = function(mode, text) (!on_text)(tostring(mode))(tostring(text)) end })' : ()
+    $'connect(g_game, { onGameStart = !on_start, onLoginError = function(message) (!on_error)(tostring(message)) end, \
+        onTextMessage = function(mode, text) (!on_text)(tostring(mode))(tostring(text)) end })' : ()
     inl account = "@god"
     inl session_key = "@god\ngod"
     $'g_game.loginWorld(!account, "god", "OTServBR-Global", "127.0.0.1", 7172, !character, "", !session_key)' : ()

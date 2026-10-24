@@ -1,0 +1,146 @@
+///- --package .
+test character static =
+    open testing
+
+open sm'_operators
+
+type character = { name : string; level : i32; axe_skill : i32; x : i32; y : i32 }
+
+inl experience_for (level : i32) : i64 =
+    inl l : i64 = conv level
+    50 * (l * l * l - 6 * l * l + 17 * l - 12) / 3
+
+inl health_max_for (level : i32) : i32 = 185 + 15 * (level - 8)
+
+inl mana_max_for (level : i32) : i32 = 90 + 5 * (level - 8)
+
+inl reset_sql (c : character) : string =
+    inl health = health_max_for c.level
+    inl mana = mana_max_for c.level
+    "update players set level = "
+    ++#? c.level
+    ++# ", experience = "
+    ++#? experience_for c.level
+    ++# ", healthmax = "
+    ++#? health
+    ++# ", health = "
+    ++#? health
+    ++# ", manamax = "
+    ++#? mana
+    ++# ", mana = "
+    ++#? mana
+    ++# ", skill_axe = "
+    ++#? c.axe_skill
+    ++# ", skill_shielding = 11, skill_shielding_tries = 0, posx = "
+    ++#? c.x
+    ++# ", posy = "
+    ++#? c.y
+    ++# ", posz = 7 where name = '"
+    ++# c.name
+    ++# "'"
+
+///> c
+///> lua
+///> gleam
+test level_derived_stats_match_the_arena_harness =
+    inl ~level = 30i32
+    experience_for level |> _assert_eq 368300i64
+    experience_for 8 |> _assert_eq 4200i64
+    experience_for 200 |> _assert_eq 129389800i64
+    health_max_for level |> _assert_eq 515i32
+    mana_max_for level |> _assert_eq 200i32
+
+///> c
+///> lua
+///> gleam
+test the_reset_statement_matches_the_powershell_text =
+    inl ~level = 30i32
+    reset_sql { name = "Knight Sample"; level = level; axe_skill = 60; x = 1932; y = 1349 }
+    |> _assert_eq (
+        "update players set level = 30, experience = 368300, healthmax = 515, health = 515, manamax = 200, mana "
+        ^^ "= 200, skill_axe = 60, skill_shielding = 11, skill_shielding_tries = 0, posx = 1932, posy = 1349, posz "
+        ^^ "= 7 where name = 'Knight Sample'"
+    )
+
+type item = { pid : i32; sid : i32; itemtype : i32; count : i32 }
+
+inl canonical_kit () : list item =
+    [
+        { pid = 1; sid = 101; itemtype = 3354; count = 1 };
+        { pid = 3; sid = 102; itemtype = 2853; count = 1 };
+        { pid = 4; sid = 103; itemtype = 3359; count = 1 };
+        { pid = 5; sid = 104; itemtype = 3425; count = 1 };
+        { pid = 6; sid = 105; itemtype = 7773; count = 1 };
+        { pid = 7; sid = 106; itemtype = 3372; count = 1 };
+        { pid = 8; sid = 107; itemtype = 3552; count = 1 };
+        { pid = 11; sid = 108; itemtype = 23396; count = 1 };
+        { pid = 102; sid = 109; itemtype = 266; count = 100 }
+    ]
+
+inl kit_rows (items : list item) : string =
+    inl first_row (i : item) : string =
+        "select "
+        ++#? i.pid
+        ++# " as pid, "
+        ++#? i.sid
+        ++# " as sid, "
+        ++#? i.itemtype
+        ++# " as itemtype, "
+        ++#? i.count
+        ++# " as count"
+    inl later_row (i : item) : string =
+        " union all select " ++#? i.pid ++# ", " ++#? i.sid ++# ", " ++#? i.itemtype ++# ", " ++#? i.count
+    match items with
+    | Cons (head, tail) => listm.fold (fun text i => text ++# later_row i) (first_row head) tail
+    | Nil => ""
+
+inl kit_sql (name : string) (items : list item) : string =
+    "delete pi from player_items pi join players p on p.id = pi.player_id where p.name = '"
+    ++# name
+    ++# (
+        "'; insert into player_items (player_id, pid, sid, itemtype, count, attributes) select p.id, v.pid, v.sid, "
+        ^^ "v.itemtype, v.count, '' from players p join ("
+    )
+    ++# kit_rows items
+    ++# ") v where p.name = '"
+    ++# name
+    ++# "'"
+
+///> c
+///> lua
+///> gleam
+test the_kit_statement_matches_the_powershell_text =
+    inl ~name = "Knight Sample"
+    kit_sql name (canonical_kit ())
+    |> _assert_eq (
+        "delete pi from player_items pi join players p on p.id = pi.player_id where p.name = 'Knight Sample'; "
+        ^^ "insert into player_items (player_id, pid, sid, itemtype, count, attributes) select p.id, v.pid, v.sid, "
+        ^^ "v.itemtype, v.count, '' from players p join (select 1 as pid, 101 as sid, 3354 as itemtype, 1 as count "
+        ^^ "union all select 3, 102, 2853, 1 union all select 4, 103, 3359, 1 union all select 5, 104, 3425, 1 "
+        ^^ "union all select 6, 105, 7773, 1 union all select 7, 106, 3372, 1 union all select 8, 107, 3552, 1 "
+        ^^ "union all select 11, 108, 23396, 1 union all select 102, 109, 266, 100) v where p.name = 'Knight "
+        ^^ "Sample'"
+    )
+
+union config_edit =
+    | Raised : string
+    | LimitsMissing
+
+inl with_duo_limits (config : string) : config_edit =
+    inl online = "maxPlayersOnlinePerAccount = 1"
+    inl outside = "maxPlayersOutsidePZPerAccount = 1"
+    if sm'.contains online config && sm'.contains outside config
+    then
+        config
+        |> sm'.replace online "maxPlayersOnlinePerAccount = 2"
+        |> sm'.replace outside "maxPlayersOutsidePZPerAccount = 2"
+        |> Raised
+    else LimitsMissing
+
+///> lua
+///> gleam
+test the_duo_raises_both_per_account_limits_or_refuses =
+    inl ~prefix = "serverName = x\n"
+    with_duo_limits (prefix ++# "maxPlayersOnlinePerAccount = 1\nmaxPlayersOutsidePZPerAccount = 1\n")
+    |> _assert_eq (Raised "serverName = x\nmaxPlayersOnlinePerAccount = 2\nmaxPlayersOutsidePZPerAccount = 2\n")
+    with_duo_limits (prefix ++# "maxPlayersOnlinePerAccount = 1\n") |> _assert_eq LimitsMissing

@@ -12,43 +12,2296 @@ union layout =
 inl corridor_row () : i32 = 100
 inl corridor_mouth () : i32 = 99
 
-let arena_spot_low (row : i32) : u32 =
-    if row < 0 || row > 60 then 4294967295u32 else if row <= 30 then if row <= 15 then if row <= 7 then if row <= 3 then if row <= 1 then if row <= 0 then 540671u32 else 311295u32 else if row <= 2 then 12632063u32 else 1345535u32 else if row <= 5 then if row <= 4 then 10503167u32 else 1066495u32 else if row <= 6 then 4043445759u32 else 271714815u32 else if row <= 11 then if row <= 9 then if row <= 8 then 286428159u32 else 285222911u32 else if row <= 10 then 274223103u32 else 272711679u32 else if row <= 13 then if row <= 12 then 4160831487u32 else 536707071u32 else if row <= 14 then 411860991u32 else 411860991u32 else if row <= 23 then if row <= 19 then if row <= 17 then if row <= 16 then 528842751u32 else 293928959u32 else if row <= 18 then 284983295u32 else 277135359u32 else if row <= 21 then if row <= 20 then 478453759u32 else 528838655u32 else if row <= 22 then 2761758719u32 else 1291600895u32 else if row <= 27 then if row <= 25 then if row <= 24 then 76393471u32 else 1150034431u32 else if row <= 26 then 478544895u32 else 2952571391u32 else if row <= 29 then if row <= 28 then 134284287u32 else 1082724351u32 else 654921727u32 else if row <= 45 then if row <= 38 then if row <= 34 then if row <= 32 then if row <= 31 then 320880639u32 else 1149304831u32 else if row <= 33 then 671154175u32 else 4237099007u32 else if row <= 36 then if row <= 35 then 101580799u32 else 33685503u32 else if row <= 37 then 37879807u32 else 33619967u32 else if row <= 42 then if row <= 40 then if row <= 39 then 37814271u32 else 35291135u32 else if row <= 41 then 35143679u32 else 4265639935u32 else if row <= 44 then if row <= 43 then 37781503u32 else 33619967u32 else 37814271u32 else if row <= 53 then if row <= 49 then if row <= 47 then if row <= 46 then 33882111u32 else 4261478399u32 else if row <= 48 then 2260991u32 else 75513855u32 else if row <= 51 then if row <= 50 then 1073750015u32 else 8404991u32 else if row <= 52 then 5013503u32 else 67928063u32 else if row <= 57 then if row <= 55 then if row <= 54 then 269778943u32 else 2147811327u32 else if row <= 56 then 3238133759u32 else 3758227455u32 else if row <= 59 then if row <= 58 then 4028760063u32 else 4093771775u32 else 4160815103u32
+let arena_spot_bits (word : i32) (row : i32) : u32 =
+    if row < 0 || row > 90
+    then
+        if word = 0
+        then 4294967295u32
+        elif word = 1
+        then 4294967295u32
+        else 134217727u32
+    elif word = 0
+    then
+        if row <= 45
+        then
+            if row <= 22
+            then
+                if row <= 11
+                then
+                    if row <= 5
+                    then
+                        if row <= 2
+                        then
+                            if row <= 1
+                            then
+                                if row <= 0
+                                then 4294967295u32
+                                else 4294967295u32
+                            else 4294967295u32
+                        elif row <= 4
+                        then
+                            if row <= 3
+                            then 4294967295u32
+                            else 4294967295u32
+                        else 4294967295u32
+                    elif row <= 8
+                    then
+                        if row <= 7
+                        then
+                            if row <= 6
+                            then 4294967295u32
+                            else 4294967295u32
+                        else 4294967295u32
+                    elif row <= 10
+                    then
+                        if row <= 9
+                        then 4294967295u32
+                        else 4294967295u32
+                    else 4294967295u32
+                elif row <= 17
+                then
+                    if row <= 14
+                    then
+                        if row <= 13
+                        then
+                            if row <= 12
+                            then 1073741823u32
+                            else 536870911u32
+                        else 1879048191u32
+                    elif row <= 16
+                    then
+                        if row <= 15
+                        then 536870911u32
+                        else 1610612735u32
+                    else 1610612735u32
+                elif row <= 20
+                then
+                    if row <= 19
+                    then
+                        if row <= 18
+                        then 1140850687u32
+                        else 570425343u32
+                    else 587202559u32
+                elif row <= 21
+                then 184549375u32
+                else 83886079u32
+            elif row <= 34
+            then
+                if row <= 28
+                then
+                    if row <= 25
+                    then
+                        if row <= 24
+                        then
+                            if row <= 23
+                            then 1174405119u32
+                            else 335544319u32
+                        else 671088639u32
+                    elif row <= 27
+                    then
+                        if row <= 26
+                        then 2684354559u32
+                        else 2684354559u32
+                    else 3221225471u32
+                elif row <= 31
+                then
+                    if row <= 30
+                    then
+                        if row <= 29
+                        then 1073741823u32
+                        else 1073741823u32
+                    else 3221225471u32
+                elif row <= 33
+                then
+                    if row <= 32
+                    then 2147483647u32
+                    else 1073741823u32
+                else 1610612735u32
+            elif row <= 40
+            then
+                if row <= 37
+                then
+                    if row <= 36
+                    then
+                        if row <= 35
+                        then 1342177279u32
+                        else 3087007743u32
+                    else 2348810239u32
+                elif row <= 39
+                then
+                    if row <= 38
+                    then 570425343u32
+                    else 3590324223u32
+                else 285212671u32
+            elif row <= 43
+            then
+                if row <= 42
+                then
+                    if row <= 41
+                    then 33554431u32
+                    else 1426063359u32
+                else 2181038079u32
+            elif row <= 44
+            then 2281701375u32
+            else 2818572287u32
+        elif row <= 68
+        then
+            if row <= 57
+            then
+                if row <= 51
+                then
+                    if row <= 48
+                    then
+                        if row <= 47
+                        then
+                            if row <= 46
+                            then 536870911u32
+                            else 2147483647u32
+                        else 2147483647u32
+                    elif row <= 50
+                    then
+                        if row <= 49
+                        then 2147483647u32
+                        else 4294967295u32
+                    else 4294967295u32
+                elif row <= 54
+                then
+                    if row <= 53
+                    then
+                        if row <= 52
+                        then 4294967295u32
+                        else 2147483647u32
+                    else 2147483647u32
+                elif row <= 56
+                then
+                    if row <= 55
+                    then 1073741823u32
+                    else 536870911u32
+                else 1073741823u32
+            elif row <= 63
+            then
+                if row <= 60
+                then
+                    if row <= 59
+                    then
+                        if row <= 58
+                        then 1073741823u32
+                        else 2147483647u32
+                    else 2147483647u32
+                elif row <= 62
+                then
+                    if row <= 61
+                    then 2147483647u32
+                    else 2147483647u32
+                else 1073741823u32
+            elif row <= 66
+            then
+                if row <= 65
+                then
+                    if row <= 64
+                    then 536870911u32
+                    else 268435455u32
+                else 536870911u32
+            elif row <= 67
+            then 1073741823u32
+            else 1073741823u32
+        elif row <= 79
+        then
+            if row <= 74
+            then
+                if row <= 71
+                then
+                    if row <= 70
+                    then
+                        if row <= 69
+                        then 1073741823u32
+                        else 2147483647u32
+                    else 4294967295u32
+                elif row <= 73
+                then
+                    if row <= 72
+                    then 4294967295u32
+                    else 4294967295u32
+                else 4294967295u32
+            elif row <= 77
+            then
+                if row <= 76
+                then
+                    if row <= 75
+                    then 2147483647u32
+                    else 2147483647u32
+                else 4294967295u32
+            elif row <= 78
+            then 4294967295u32
+            else 4294967295u32
+        elif row <= 85
+        then
+            if row <= 82
+            then
+                if row <= 81
+                then
+                    if row <= 80
+                    then 4294967295u32
+                    else 4294967295u32
+                else 4294967295u32
+            elif row <= 84
+            then
+                if row <= 83
+                then 4294967295u32
+                else 4294967295u32
+            else 4294967295u32
+        elif row <= 88
+        then
+            if row <= 87
+            then
+                if row <= 86
+                then 4294967295u32
+                else 4294967295u32
+            else 4294967295u32
+        elif row <= 89
+        then 4294967295u32
+        else 4294967295u32
+    elif word = 1
+    then
+        if row <= 45
+        then
+            if row <= 22
+            then
+                if row <= 11
+                then
+                    if row <= 5
+                    then
+                        if row <= 2
+                        then
+                            if row <= 1
+                            then
+                                if row <= 0
+                                then 135560767u32
+                                else 2861563935u32
+                            else 17825823u32
+                        elif row <= 4
+                        then
+                            if row <= 3
+                            then 1356675615u32
+                            else 5244687u32
+                        else 671355015u32
+                    elif row <= 8
+                    then
+                        if row <= 7
+                        then
+                            if row <= 6
+                            then 67633799u32
+                            else 133711879u32
+                        else 76049671u32
+                    elif row <= 10
+                    then
+                        if row <= 9
+                        then 76025863u32
+                        else 83363463u32
+                    else 533511u32
+                elif row <= 17
+                then
+                    if row <= 14
+                    then
+                        if row <= 13
+                        then
+                            if row <= 12
+                            then 557056u32
+                            else 67635202u32
+                        else 67633160u32
+                    elif row <= 16
+                    then
+                        if row <= 15
+                        then 133693444u32
+                        else 109314050u32
+                    else 5242976u32
+                elif row <= 20
+                then
+                    if row <= 19
+                    then
+                        if row <= 18
+                        then 267911178u32
+                        else 83361872u32
+                    else 80216072u32
+                elif row <= 21
+                then 206305409u32
+                else 71960601u32
+            elif row <= 34
+            then
+                if row <= 28
+                then
+                    if row <= 25
+                    then
+                        if row <= 24
+                        then
+                            if row <= 23
+                            then 268044425u32
+                            else 76155008u32
+                        else 76154924u32
+                    elif row <= 27
+                    then
+                        if row <= 26
+                        then 210372640u32
+                        else 268434432u32
+                    else 4094u32
+                elif row <= 31
+                then
+                    if row <= 30
+                    then
+                        if row <= 29
+                        then 3142u32
+                        else 3142u32
+                    else 4034u32
+                elif row <= 33
+                then
+                    if row <= 32
+                    then 2242u32
+                    else 2174u32
+                else 267388994u32
+            elif row <= 40
+            then
+                if row <= 37
+                then
+                    if row <= 36
+                    then
+                        if row <= 35
+                        then 134745666u32
+                        else 134746050u32
+                    else 135090766u32
+                elif row <= 39
+                then
+                    if row <= 38
+                    then 170731134u32
+                    else 134775366u32
+                else 135012934u32
+            elif row <= 43
+            then
+                if row <= 42
+                then
+                    if row <= 41
+                    then 135073347u32
+                    else 170448894u32
+                else 134906880u32
+            elif row <= 44
+            then 135012420u32
+            else 134976388u32
+        elif row <= 68
+        then
+            if row <= 57
+            then
+                if row <= 51
+                then
+                    if row <= 48
+                    then
+                        if row <= 47
+                        then
+                            if row <= 46
+                            then 204999056u32
+                            else 134652480u32
+                        else 5120u32
+                    elif row <= 50
+                    then
+                        if row <= 49
+                        then 261702u32
+                        else 393990u32
+                    else 131328u32
+                elif row <= 54
+                then
+                    if row <= 53
+                    then
+                        if row <= 52
+                        then 131360u32
+                        else 33685760u32
+                    else 4261544224u32
+                elif row <= 56
+                then
+                    if row <= 55
+                    then 33685773u32
+                    else 101056780u32
+                else 67370784u32
+            elif row <= 63
+            then
+                if row <= 60
+                then
+                    if row <= 59
+                    then
+                        if row <= 58
+                        then 393504u32
+                        else 100794624u32
+                    else 33685792u32
+                elif row <= 62
+                then
+                    if row <= 61
+                    then 4261544194u32
+                    else 1359478528u32
+                else 17u32
+            elif row <= 66
+            then
+                if row <= 65
+                then
+                    if row <= 64
+                    then 17039936u32
+                    else 1073782784u32
+                else 268435520u32
+            elif row <= 67
+            then 16547878u32
+            else 1241252358u32
+        elif row <= 79
+        then
+            if row <= 74
+            then
+                if row <= 71
+                then
+                    if row <= 70
+                    then
+                        if row <= 69
+                        then 134088714u32
+                        else 268419074u32
+                    else 2147475584u32
+                elif row <= 73
+                then
+                    if row <= 72
+                    then 4294963200u32
+                    else 4294965264u32
+                else 4294965760u32
+            elif row <= 77
+            then
+                if row <= 76
+                then
+                    if row <= 75
+                    then 4294966272u32
+                    else 4294966784u32
+                else 4294966816u32
+            elif row <= 78
+            then 4294967203u32
+            else 4294967233u32
+        elif row <= 85
+        then
+            if row <= 82
+            then
+                if row <= 81
+                then
+                    if row <= 80
+                    then 4294967267u32
+                    else 4294967295u32
+                else 4294967295u32
+            elif row <= 84
+            then
+                if row <= 83
+                then 4294967295u32
+                else 4294967295u32
+            else 4294967295u32
+        elif row <= 88
+        then
+            if row <= 87
+            then
+                if row <= 86
+                then 4294967295u32
+                else 4294967295u32
+            else 4294967295u32
+        elif row <= 89
+        then 4294967295u32
+        else 4294967295u32
+    elif row <= 45
+    then
+        if row <= 22
+        then
+            if row <= 11
+            then
+                if row <= 5
+                then
+                    if row <= 2
+                    then
+                        if row <= 1
+                        then
+                            if row <= 0
+                            then 70254618u32
+                            else 68716552u32
+                        else 68157458u32
+                    elif row <= 4
+                    then
+                        if row <= 3
+                        then 68190179u32
+                        else 68821192u32
+                    else 68182244u32
+                elif row <= 8
+                then
+                    if row <= 7
+                    then
+                        if row <= 6
+                        then 68165698u32
+                        else 68429822u32
+                    else 133243971u32
+                elif row <= 10
+                then
+                    if row <= 9
+                    then 70526017u32
+                    else 70297153u32
+                else 74464993u32
+            elif row <= 17
+            then
+                if row <= 14
+                then
+                    if row <= 13
+                    then
+                        if row <= 12
+                        then 79724479u32
+                        else 128590339u32
+                    else 67110928u32
+                elif row <= 16
+                then
+                    if row <= 15
+                    then 132382592u32
+                    else 132223362u32
+                else 44142976u32
+            elif row <= 20
+            then
+                if row <= 19
+                then
+                    if row <= 18
+                    then 44638112u32
+                    else 2167039u32
+                else 2168734u32
+            elif row <= 21
+            then 36377747u32
+            else 35782546u32
+        elif row <= 34
+        then
+            if row <= 28
+            then
+                if row <= 25
+                then
+                    if row <= 24
+                    then
+                        if row <= 23
+                        then 8129683u32
+                        else 5112990u32
+                    else 5047431u32
+                elif row <= 27
+                then
+                    if row <= 26
+                    then 4985990u32
+                    else 16648191u32
+                else 0u32
+            elif row <= 31
+            then
+                if row <= 30
+                then
+                    if row <= 29
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 33
+            then
+                if row <= 32
+                then 0u32
+                else 4194304u32
+            else 4194303u32
+        elif row <= 40
+        then
+            if row <= 37
+            then
+                if row <= 36
+                then
+                    if row <= 35
+                    then 4194302u32
+                    else 6859434u32
+                else 7318186u32
+            elif row <= 39
+            then
+                if row <= 38
+                then 2097152u32
+                else 2097216u32
+            else 6291520u32
+        elif row <= 43
+        then
+            if row <= 42
+            then
+                if row <= 41
+                then 6291456u32
+                else 6564522u32
+            else 6302378u32
+        elif row <= 44
+        then 2113534u32
+        else 2113534u32
+    elif row <= 68
+    then
+        if row <= 57
+        then
+            if row <= 51
+            then
+                if row <= 48
+                then
+                    if row <= 47
+                    then
+                        if row <= 46
+                        then 2105346u32
+                        else 6987776u32
+                    else 6988936u32
+                elif row <= 50
+                then
+                    if row <= 49
+                    then 4186112u32
+                    else 8382528u32
+                else 5246976u32
+            elif row <= 54
+            then
+                if row <= 53
+                then
+                    if row <= 52
+                    then 4228132u32
+                    else 34144256u32
+                else 104891647u32
+            elif row <= 56
+            then
+                if row <= 55
+                then 34087040u32
+                else 33554880u32
+            else 50332992u32
+        elif row <= 63
+        then
+            if row <= 60
+            then
+                if row <= 59
+                then
+                    if row <= 58
+                    then 48431296u32
+                    else 107151552u32
+                else 109580672u32
+            elif row <= 62
+            then
+                if row <= 61
+                then 255u32
+                else 2621440u32
+            else 2113553u32
+        elif row <= 66
+        then
+            if row <= 65
+            then
+                if row <= 64
+                then 32832u32
+                else 41945088u32
+            else 513u32
+        elif row <= 67
+        then 4186112u32
+        else 41941000u32
+    elif row <= 79
+    then
+        if row <= 74
+        then
+            if row <= 71
+            then
+                if row <= 70
+                then
+                    if row <= 69
+                    then 16776736u32
+                    else 33554304u32
+                else 134217616u32
+            elif row <= 73
+            then
+                if row <= 72
+                then 134217681u32
+                else 134217699u32
+            else 134217727u32
+        elif row <= 77
+        then
+            if row <= 76
+            then
+                if row <= 75
+                then 134217727u32
+                else 134217727u32
+            else 134217727u32
+        elif row <= 78
+        then 134217727u32
+        else 134217727u32
+    elif row <= 85
+    then
+        if row <= 82
+        then
+            if row <= 81
+            then
+                if row <= 80
+                then 134217727u32
+                else 134217727u32
+            else 134217727u32
+        elif row <= 84
+        then
+            if row <= 83
+            then 134217727u32
+            else 134217727u32
+        else 134217727u32
+    elif row <= 88
+    then
+        if row <= 87
+        then
+            if row <= 86
+            then 134217727u32
+            else 134217727u32
+        else 262143u32
+    elif row <= 89
+    then 131071u32
+    else 65535u32
 
-let arena_spot_high (row : i32) : u32 =
-    if row < 0 || row > 60 then 536870911u32 else if row <= 30 then if row <= 15 then if row <= 7 then if row <= 3 then if row <= 1 then if row <= 0 then 520097776u32 else 50597128u32 else if row <= 2 then 50331808u32 else 524296176u32 else if row <= 5 then if row <= 4 then 33425904u32 else 255592848u32 else if row <= 6 then 153491607u32 else 522455188u32 else if row <= 11 then if row <= 9 then if row <= 8 then 421928948u32 else 154929428u32 else if row <= 10 then 151914772u32 else 151787796u32 else if row <= 13 then if row <= 12 then 268312575u32 else 0u32 else if row <= 14 then 0u32 else 0u32 else if row <= 23 then if row <= 19 then if row <= 17 then if row <= 16 then 0u32 else 0u32 else if row <= 18 then 0u32 else 536748000u32 else if row <= 21 then if row <= 20 then 536612880u32 else 357830672u32 else if row <= 22 then 357830682u32 else 5210u32 else if row <= 27 then if row <= 25 then if row <= 24 then 8392721u32 else 8392728u32 else if row <= 26 then 4122u32 else 357831761u32 else if row <= 29 then if row <= 28 then 357830677u32 else 536612888u32 else 536612887u32 else if row <= 45 then if row <= 38 then if row <= 34 then if row <= 32 then if row <= 31 then 268400u32 else 4109u32 else if row <= 33 then 152043520u32 else 7u32 else if row <= 36 then if row <= 35 then 276824076u32 else 4u32 else if row <= 37 then 138936324u32 else 1028u32 else if row <= 42 then if row <= 40 then if row <= 39 then 167771140u32 else 16778244u32 else if row <= 41 then 58723340u32 else 176162823u32 else if row <= 44 then if row <= 43 then 25165836u32 else 25168900u32 else 50332676u32 else if row <= 53 then if row <= 49 then if row <= 47 then if row <= 46 then 33553412u32 else 41487u32 else if row <= 48 then 2228224u32 else 8389128u32 else if row <= 51 then if row <= 50 then 268468225u32 else 67248128u32 else if row <= 52 then 505u32 else 269521912u32 else if row <= 57 then if row <= 55 then if row <= 54 then 473960444u32 else 520101887u32 else if row <= 56 then 522256383u32 else 530841599u32 else if row <= 59 then if row <= 58 then 533200895u32 else 536870911u32 else 536870911u32
+inl arena_spot_radius () : i32 = 45
+inl row_word_bits () : i32 = 32
 
-inl arena_spot_radius () : i32 = 30
+inl arena_bit_set (bits : i32 -> i32 -> u32) (p : geometry.position) : bool =
+    inl r = arena_spot_radius ()
+    inl bit = p.x - 100 + r
+    ((bits (bit / row_word_bits ()) (p.y - 100 + r) >>> (bit % row_word_bits ())) &&& 1u32) = 1u32
+
+inl inside_arena_spot (p : geometry.position) : bool =
+    inl r = arena_spot_radius ()
+    p.x - 100 >= 0 - r && p.x - 100 <= r && p.y - 100 >= 0 - r && p.y - 100 <= r
 
 let arena_spot_blocked (p : geometry.position) : bool =
-    inl dx = p.x - 100
-    inl dy = p.y - 100
-    inl r = arena_spot_radius ()
-    if dx < 0 - r || dx > r || dy < 0 - r || dy > r then true
-    else
-        inl bit = dx + r
-        inl word = if bit < 32 then arena_spot_low (dy + r) else arena_spot_high (dy + r)
-        inl shift = if bit < 32 then bit else bit - 32
-        ((word >>> shift) &&& 1u32) = 1u32
+    if inside_arena_spot p
+    then arena_bit_set arena_spot_bits p
+    else true
 
-let arena_road_low (row : i32) : u32 =
-    if row < 0 || row > 60 then 0u32 else if row <= 30 then if row <= 15 then if row <= 7 then if row <= 3 then if row <= 1 then if row <= 0 then 0u32 else 0u32 else if row <= 2 then 0u32 else 0u32 else if row <= 5 then if row <= 4 then 0u32 else 0u32 else if row <= 6 then 0u32 else 3758096384u32 else if row <= 11 then if row <= 9 then if row <= 8 then 3758096384u32 else 3758096384u32 else if row <= 10 then 3758096384u32 else 3758096384u32 else if row <= 13 then if row <= 12 then 3758096384u32 else 3758096384u32 else if row <= 14 then 4294443008u32 else 4294443008u32 else if row <= 23 then if row <= 19 then if row <= 17 then if row <= 16 then 4294443008u32 else 4294443008u32 else if row <= 18 then 4294443008u32 else 4294443008u32 else if row <= 21 then if row <= 20 then 4294443008u32 else 133693440u32 else if row <= 22 then 133693440u32 else 133693440u32 else if row <= 27 then if row <= 25 then if row <= 24 then 133693440u32 else 133693440u32 else if row <= 26 then 133693440u32 else 133693440u32 else if row <= 29 then if row <= 28 then 0u32 else 0u32 else 0u32 else if row <= 45 then if row <= 38 then if row <= 34 then if row <= 32 then if row <= 31 then 0u32 else 0u32 else if row <= 33 then 0u32 else 0u32 else if row <= 36 then if row <= 35 then 4160749568u32 else 4227858432u32 else if row <= 37 then 4227858432u32 else 4227858432u32 else if row <= 42 then if row <= 40 then if row <= 39 then 4227858432u32 else 4227858432u32 else if row <= 41 then 4227858432u32 else 4227858432u32 else if row <= 44 then if row <= 43 then 4227858432u32 else 4227858432u32 else 4227858432u32 else if row <= 53 then if row <= 49 then if row <= 47 then if row <= 46 then 4227858432u32 else 4227858432u32 else if row <= 48 then 0u32 else 0u32 else if row <= 51 then if row <= 50 then 0u32 else 0u32 else if row <= 52 then 0u32 else 0u32 else if row <= 57 then if row <= 55 then if row <= 54 then 0u32 else 0u32 else if row <= 56 then 0u32 else 0u32 else if row <= 59 then if row <= 58 then 0u32 else 0u32 else 0u32
+let arena_road_bits (word : i32) (row : i32) : u32 =
+    if row < 0 || row > 90
+    then
+        if word = 0
+        then 0u32
+        elif word = 1
+        then 0u32
+        else 0u32
+    elif word = 0
+    then
+        if row <= 45
+        then
+            if row <= 22
+            then
+                if row <= 11
+                then
+                    if row <= 5
+                    then
+                        if row <= 2
+                        then
+                            if row <= 1
+                            then
+                                if row <= 0
+                                then 0u32
+                                else 0u32
+                            else 0u32
+                        elif row <= 4
+                        then
+                            if row <= 3
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 8
+                    then
+                        if row <= 7
+                        then
+                            if row <= 6
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 10
+                    then
+                        if row <= 9
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 17
+                then
+                    if row <= 14
+                    then
+                        if row <= 13
+                        then
+                            if row <= 12
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 16
+                    then
+                        if row <= 15
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 20
+                then
+                    if row <= 19
+                    then
+                        if row <= 18
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 21
+                then 0u32
+                else 0u32
+            elif row <= 34
+            then
+                if row <= 28
+                then
+                    if row <= 25
+                    then
+                        if row <= 24
+                        then
+                            if row <= 23
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 27
+                    then
+                        if row <= 26
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 31
+                then
+                    if row <= 30
+                    then
+                        if row <= 29
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 33
+                then
+                    if row <= 32
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 40
+            then
+                if row <= 37
+                then
+                    if row <= 36
+                    then
+                        if row <= 35
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 39
+                then
+                    if row <= 38
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 43
+            then
+                if row <= 42
+                then
+                    if row <= 41
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 44
+            then 0u32
+            else 0u32
+        elif row <= 68
+        then
+            if row <= 57
+            then
+                if row <= 51
+                then
+                    if row <= 48
+                    then
+                        if row <= 47
+                        then
+                            if row <= 46
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 50
+                    then
+                        if row <= 49
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 54
+                then
+                    if row <= 53
+                    then
+                        if row <= 52
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 56
+                then
+                    if row <= 55
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 63
+            then
+                if row <= 60
+                then
+                    if row <= 59
+                    then
+                        if row <= 58
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 62
+                then
+                    if row <= 61
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 66
+            then
+                if row <= 65
+                then
+                    if row <= 64
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 67
+            then 0u32
+            else 0u32
+        elif row <= 79
+        then
+            if row <= 74
+            then
+                if row <= 71
+                then
+                    if row <= 70
+                    then
+                        if row <= 69
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 73
+                then
+                    if row <= 72
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 77
+            then
+                if row <= 76
+                then
+                    if row <= 75
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 78
+            then 0u32
+            else 0u32
+        elif row <= 85
+        then
+            if row <= 82
+            then
+                if row <= 81
+                then
+                    if row <= 80
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 84
+            then
+                if row <= 83
+                then 0u32
+                else 0u32
+            else 0u32
+        elif row <= 88
+        then
+            if row <= 87
+            then
+                if row <= 86
+                then 0u32
+                else 0u32
+            else 0u32
+        elif row <= 89
+        then 0u32
+        else 0u32
+    elif word = 1
+    then
+        if row <= 45
+        then
+            if row <= 22
+            then
+                if row <= 11
+                then
+                    if row <= 5
+                    then
+                        if row <= 2
+                        then
+                            if row <= 1
+                            then
+                                if row <= 0
+                                then 0u32
+                                else 0u32
+                            else 0u32
+                        elif row <= 4
+                        then
+                            if row <= 3
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 8
+                    then
+                        if row <= 7
+                        then
+                            if row <= 6
+                            then 0u32
+                            else 4160749568u32
+                        else 4160749568u32
+                    elif row <= 10
+                    then
+                        if row <= 9
+                        then 4160749568u32
+                        else 4160749568u32
+                    else 4160749568u32
+                elif row <= 17
+                then
+                    if row <= 14
+                    then
+                        if row <= 13
+                        then
+                            if row <= 12
+                            then 4160749568u32
+                            else 4160749568u32
+                        else 4160749568u32
+                    elif row <= 16
+                    then
+                        if row <= 15
+                        then 4160749568u32
+                        else 4160749568u32
+                    else 4026531840u32
+                elif row <= 20
+                then
+                    if row <= 19
+                    then
+                        if row <= 18
+                        then 4059037696u32
+                        else 4159700992u32
+                    else 4159700992u32
+                elif row <= 21
+                then 4159700992u32
+                else 4159959040u32
+            elif row <= 34
+            then
+                if row <= 28
+                then
+                    if row <= 25
+                    then
+                        if row <= 24
+                        then
+                            if row <= 23
+                            then 4159959040u32
+                            else 4159959040u32
+                        else 4159959040u32
+                    elif row <= 27
+                    then
+                        if row <= 26
+                        then 4159959040u32
+                        else 4294176768u32
+                    else 4294963200u32
+                elif row <= 31
+                then
+                    if row <= 30
+                    then
+                        if row <= 29
+                        then 4294967292u32
+                        else 4294967292u32
+                    else 4294967292u32
+                elif row <= 33
+                then
+                    if row <= 32
+                    then 4294967292u32
+                    else 4294967292u32
+                else 4027056124u32
+            elif row <= 40
+            then
+                if row <= 37
+                then
+                    if row <= 36
+                    then
+                        if row <= 35
+                        then 4025745404u32
+                        else 4025484284u32
+                    else 4025484284u32
+                elif row <= 39
+                then
+                    if row <= 38
+                    then 4025484284u32
+                    else 4025484284u32
+                else 4025484284u32
+            elif row <= 43
+            then
+                if row <= 42
+                then
+                    if row <= 41
+                    then 4025484284u32
+                    else 4025484284u32
+                else 4025483264u32
+            elif row <= 44
+            then 4025483264u32
+            else 4025483264u32
+        elif row <= 68
+        then
+            if row <= 57
+            then
+                if row <= 51
+                then
+                    if row <= 48
+                    then
+                        if row <= 47
+                        then
+                            if row <= 46
+                            then 4024434688u32
+                            else 4089446400u32
+                        else 4294443008u32
+                    elif row <= 50
+                    then
+                        if row <= 49
+                        then 4294443008u32
+                        else 4294704128u32
+                    else 4294704640u32
+                elif row <= 54
+                then
+                    if row <= 53
+                    then
+                        if row <= 52
+                        then 4294704640u32
+                        else 33291776u32
+                    else 16514560u32
+                elif row <= 56
+                then
+                    if row <= 55
+                    then 4244372992u32
+                    else 4277927424u32
+                else 4277927424u32
+            elif row <= 63
+            then
+                if row <= 60
+                then
+                    if row <= 59
+                    then
+                        if row <= 58
+                        then 4277927424u32
+                        else 4277927424u32
+                    else 4244372992u32
+                elif row <= 62
+                then
+                    if row <= 61
+                    then 16514560u32
+                    else 16514560u32
+                else 16252928u32
+            elif row <= 66
+            then
+                if row <= 65
+                then
+                    if row <= 64
+                    then 16252928u32
+                    else 16252928u32
+                else 0u32
+            elif row <= 67
+            then 0u32
+            else 0u32
+        elif row <= 79
+        then
+            if row <= 74
+            then
+                if row <= 71
+                then
+                    if row <= 70
+                    then
+                        if row <= 69
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 73
+                then
+                    if row <= 72
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 77
+            then
+                if row <= 76
+                then
+                    if row <= 75
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 78
+            then 0u32
+            else 0u32
+        elif row <= 85
+        then
+            if row <= 82
+            then
+                if row <= 81
+                then
+                    if row <= 80
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 84
+            then
+                if row <= 83
+                then 0u32
+                else 0u32
+            else 0u32
+        elif row <= 88
+        then
+            if row <= 87
+            then
+                if row <= 86
+                then 0u32
+                else 0u32
+            else 0u32
+        elif row <= 89
+        then 0u32
+        else 0u32
+    elif row <= 45
+    then
+        if row <= 22
+        then
+            if row <= 11
+            then
+                if row <= 5
+                then
+                    if row <= 2
+                    then
+                        if row <= 1
+                        then
+                            if row <= 0
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 4
+                    then
+                        if row <= 3
+                        then 0u32
+                        else 16256u32
+                    else 16256u32
+                elif row <= 8
+                then
+                    if row <= 7
+                    then
+                        if row <= 6
+                        then 16256u32
+                        else 16257u32
+                    else 16381u32
+                elif row <= 10
+                then
+                    if row <= 9
+                    then 16383u32
+                    else 16383u32
+                else 16383u32
+            elif row <= 17
+            then
+                if row <= 14
+                then
+                    if row <= 13
+                    then
+                        if row <= 12
+                        then 16191u32
+                        else 0u32
+                    else 0u32
+                elif row <= 16
+                then
+                    if row <= 15
+                    then 0u32
+                    else 130816u32
+                else 130816u32
+            elif row <= 20
+            then
+                if row <= 19
+                then
+                    if row <= 18
+                    then 130816u32
+                    else 130816u32
+                else 131068u32
+            elif row <= 21
+            then 131068u32
+            else 131068u32
+        elif row <= 34
+        then
+            if row <= 28
+            then
+                if row <= 25
+                then
+                    if row <= 24
+                    then
+                        if row <= 23
+                        then 2044u32
+                        else 59388u32
+                    else 59388u32
+                elif row <= 27
+                then
+                    if row <= 26
+                    then 59388u32
+                    else 129021u32
+                else 134217727u32
+            elif row <= 31
+            then
+                if row <= 30
+                then
+                    if row <= 29
+                    then 134217727u32
+                    else 134217727u32
+                else 134217727u32
+            elif row <= 33
+            then
+                if row <= 32
+                then 134217727u32
+                else 134217727u32
+            else 130023425u32
+        elif row <= 40
+        then
+            if row <= 37
+            then
+                if row <= 36
+                then
+                    if row <= 35
+                    then 125829249u32
+                    else 125829121u32
+                else 125829121u32
+            elif row <= 39
+            then
+                if row <= 38
+                then 125829123u32
+                else 125829123u32
+            else 125829123u32
+        elif row <= 43
+        then
+            if row <= 42
+            then
+                if row <= 41
+                then 125829123u32
+                else 126091265u32
+            else 125829121u32
+        elif row <= 44
+        then 125829121u32
+        else 125837313u32
+    elif row <= 68
+    then
+        if row <= 57
+        then
+            if row <= 51
+            then
+                if row <= 48
+                then
+                    if row <= 47
+                    then
+                        if row <= 46
+                        then 125829121u32
+                        else 125829121u32
+                    else 125829121u32
+                elif row <= 50
+                then
+                    if row <= 49
+                    then 125829121u32
+                    else 125829121u32
+                else 125829121u32
+            elif row <= 54
+            then
+                if row <= 53
+                then
+                    if row <= 52
+                    then 125829121u32
+                    else 125829120u32
+                else 125829120u32
+            elif row <= 56
+            then
+                if row <= 55
+                then 67108991u32
+                else 67108991u32
+            else 67108927u32
+        elif row <= 63
+        then
+            if row <= 60
+            then
+                if row <= 59
+                then
+                    if row <= 58
+                    then 67108927u32
+                    else 67108991u32
+                else 67108991u32
+            elif row <= 62
+            then
+                if row <= 61
+                then 0u32
+                else 0u32
+            else 0u32
+        elif row <= 66
+        then
+            if row <= 65
+            then
+                if row <= 64
+                then 0u32
+                else 0u32
+            else 0u32
+        elif row <= 67
+        then 0u32
+        else 0u32
+    elif row <= 79
+    then
+        if row <= 74
+        then
+            if row <= 71
+            then
+                if row <= 70
+                then
+                    if row <= 69
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 73
+            then
+                if row <= 72
+                then 0u32
+                else 0u32
+            else 0u32
+        elif row <= 77
+        then
+            if row <= 76
+            then
+                if row <= 75
+                then 0u32
+                else 0u32
+            else 0u32
+        elif row <= 78
+        then 0u32
+        else 0u32
+    elif row <= 85
+    then
+        if row <= 82
+        then
+            if row <= 81
+            then
+                if row <= 80
+                then 0u32
+                else 0u32
+            else 0u32
+        elif row <= 84
+        then
+            if row <= 83
+            then 0u32
+            else 0u32
+        else 0u32
+    elif row <= 88
+    then
+        if row <= 87
+        then
+            if row <= 86
+            then 0u32
+            else 0u32
+        else 0u32
+    elif row <= 89
+    then 0u32
+    else 0u32
 
-let arena_road_high (row : i32) : u32 =
-    if row < 0 || row > 60 then 0u32 else if row <= 30 then if row <= 15 then if row <= 7 then if row <= 3 then if row <= 1 then if row <= 0 then 126976u32 else 503443456u32 else if row <= 2 then 503439360u32 else 503440352u32 else if row <= 5 then if row <= 4 then 503443424u32 else 536473568u32 else if row <= 6 then 536473568u32 else 536473575u32 else if row <= 11 then if row <= 9 then if row <= 8 then 268038119u32 else 268038119u32 else if row <= 10 then 268038119u32 else 268038119u32 else if row <= 13 then if row <= 12 then 268173287u32 else 536870911u32 else if row <= 14 then 536870911u32 else 536870911u32 else if row <= 23 then if row <= 19 then if row <= 17 then if row <= 16 then 536870911u32 else 536870911u32 else if row <= 18 then 536870911u32 else 253967u32 else if row <= 21 then if row <= 20 then 17031143u32 else 253920u32 else if row <= 22 then 253920u32 else 516064u32 else if row <= 27 then if row <= 25 then if row <= 24 then 516064u32 else 516064u32 else if row <= 26 then 516064u32 else 253920u32 else if row <= 29 then if row <= 28 then 253920u32 else 253920u32 else 253920u32 else if row <= 45 then if row <= 38 then if row <= 34 then if row <= 32 then if row <= 31 then 253888u32 else 255872u32 else if row <= 33 then 262128u32 else 262128u32 else if row <= 36 then if row <= 35 then 262135u32 else 262135u32 else if row <= 37 then 262135u32 else 1015u32 else if row <= 42 then if row <= 40 then if row <= 39 then 503u32 else 16775671u32 else if row <= 41 then 16776695u32 else 8388087u32 else if row <= 44 then if row <= 43 then 8388087u32 else 16776695u32 else 16775671u32 else if row <= 53 then if row <= 49 then if row <= 47 then if row <= 46 then 503u32 else 503u32 else if row <= 48 then 496u32 else 496u32 else if row <= 51 then if row <= 50 then 496u32 else 0u32 else if row <= 52 then 0u32 else 0u32 else if row <= 57 then if row <= 55 then if row <= 54 then 0u32 else 0u32 else if row <= 56 then 0u32 else 0u32 else if row <= 59 then if row <= 58 then 0u32 else 0u32 else 0u32
+let arena_road (p : geometry.position) : bool = if inside_arena_spot p then arena_bit_set arena_road_bits p else false
 
-let arena_road (p : geometry.position) : bool =
-    inl dx = p.x - 100
-    inl dy = p.y - 100
-    inl r = arena_spot_radius ()
-    if dx < 0 - r || dx > r || dy < 0 - r || dy > r then false
-    else
-        inl bit = dx + r
-        inl word = if bit < 32 then arena_road_low (dy + r) else arena_road_high (dy + r)
-        inl shift = if bit < 32 then bit else bit - 32
-        ((word >>> shift) &&& 1u32) = 1u32
+let arena_sight_bits (word : i32) (row : i32) : u32 =
+    if row < 0 || row > 90
+    then
+        if word = 0
+        then 0u32
+        elif word = 1
+        then 0u32
+        else 0u32
+    elif word = 0
+    then
+        if row <= 45
+        then
+            if row <= 22
+            then
+                if row <= 11
+                then
+                    if row <= 5
+                    then
+                        if row <= 2
+                        then
+                            if row <= 1
+                            then
+                                if row <= 0
+                                then 0u32
+                                else 0u32
+                            else 0u32
+                        elif row <= 4
+                        then
+                            if row <= 3
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 8
+                    then
+                        if row <= 7
+                        then
+                            if row <= 6
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 10
+                    then
+                        if row <= 9
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 17
+                then
+                    if row <= 14
+                    then
+                        if row <= 13
+                        then
+                            if row <= 12
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 16
+                    then
+                        if row <= 15
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 20
+                then
+                    if row <= 19
+                    then
+                        if row <= 18
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 21
+                then 0u32
+                else 0u32
+            elif row <= 34
+            then
+                if row <= 28
+                then
+                    if row <= 25
+                    then
+                        if row <= 24
+                        then
+                            if row <= 23
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 27
+                    then
+                        if row <= 26
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 31
+                then
+                    if row <= 30
+                    then
+                        if row <= 29
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 33
+                then
+                    if row <= 32
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 40
+            then
+                if row <= 37
+                then
+                    if row <= 36
+                    then
+                        if row <= 35
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 39
+                then
+                    if row <= 38
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 43
+            then
+                if row <= 42
+                then
+                    if row <= 41
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 44
+            then 0u32
+            else 0u32
+        elif row <= 68
+        then
+            if row <= 57
+            then
+                if row <= 51
+                then
+                    if row <= 48
+                    then
+                        if row <= 47
+                        then
+                            if row <= 46
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 50
+                    then
+                        if row <= 49
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 54
+                then
+                    if row <= 53
+                    then
+                        if row <= 52
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 56
+                then
+                    if row <= 55
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 63
+            then
+                if row <= 60
+                then
+                    if row <= 59
+                    then
+                        if row <= 58
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 62
+                then
+                    if row <= 61
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 66
+            then
+                if row <= 65
+                then
+                    if row <= 64
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 67
+            then 0u32
+            else 0u32
+        elif row <= 79
+        then
+            if row <= 74
+            then
+                if row <= 71
+                then
+                    if row <= 70
+                    then
+                        if row <= 69
+                        then 0u32
+                        else 0u32
+                    else 0u32
+                elif row <= 73
+                then
+                    if row <= 72
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 77
+            then
+                if row <= 76
+                then
+                    if row <= 75
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 78
+            then 0u32
+            else 0u32
+        elif row <= 85
+        then
+            if row <= 82
+            then
+                if row <= 81
+                then
+                    if row <= 80
+                    then 0u32
+                    else 0u32
+                else 4261412864u32
+            elif row <= 84
+            then
+                if row <= 83
+                then 4278190080u32
+                else 4278190080u32
+            else 4286578688u32
+        elif row <= 88
+        then
+            if row <= 87
+            then
+                if row <= 86
+                then 4286578688u32
+                else 4290772992u32
+            else 4292870144u32
+        elif row <= 89
+        then 4293918720u32
+        else 4293918720u32
+    elif word = 1
+    then
+        if row <= 45
+        then
+            if row <= 22
+            then
+                if row <= 11
+                then
+                    if row <= 5
+                    then
+                        if row <= 2
+                        then
+                            if row <= 1
+                            then
+                                if row <= 0
+                                then 0u32
+                                else 0u32
+                            else 0u32
+                        elif row <= 4
+                        then
+                            if row <= 3
+                            then 0u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 8
+                    then
+                        if row <= 7
+                        then
+                            if row <= 6
+                            then 0u32
+                            else 129499136u32
+                        else 524288u32
+                    elif row <= 10
+                    then
+                        if row <= 9
+                        then 67633152u32
+                        else 67633152u32
+                    else 0u32
+                elif row <= 17
+                then
+                    if row <= 14
+                    then
+                        if row <= 13
+                        then
+                            if row <= 12
+                            then 524288u32
+                            else 67633152u32
+                        else 67633152u32
+                    elif row <= 16
+                    then
+                        if row <= 15
+                        then 131596288u32
+                        else 0u32
+                    else 0u32
+                elif row <= 20
+                then
+                    if row <= 19
+                    then
+                        if row <= 18
+                        then 133693440u32
+                        else 71827456u32
+                    else 4718592u32
+                elif row <= 21
+                then 72087552u32
+                else 71960576u32
+            elif row <= 34
+            then
+                if row <= 28
+                then
+                    if row <= 25
+                    then
+                        if row <= 24
+                        then
+                            if row <= 23
+                            then 133826560u32
+                            else 76154880u32
+                        else 9046016u32
+                    elif row <= 27
+                    then
+                        if row <= 26
+                        then 76154880u32
+                        else 133953536u32
+                    else 4094u32
+                elif row <= 31
+                then
+                    if row <= 30
+                    then
+                        if row <= 29
+                        then 2114u32
+                        else 2114u32
+                    else 4034u32
+                elif row <= 33
+                then
+                    if row <= 32
+                    then 2114u32
+                    else 2174u32
+                else 267388994u32
+            elif row <= 40
+            then
+                if row <= 37
+                then
+                    if row <= 36
+                    then
+                        if row <= 35
+                        then 134745666u32
+                        else 134742978u32
+                    else 134742594u32
+                elif row <= 39
+                then
+                    if row <= 38
+                    then 134742654u32
+                    else 134742594u32
+                else 134742594u32
+            elif row <= 43
+            then
+                if row <= 42
+                then
+                    if row <= 41
+                    then 134742594u32
+                    else 134743038u32
+                else 134742016u32
+            elif row <= 44
+            then 134742016u32
+            else 134742016u32
+        elif row <= 68
+        then
+            if row <= 57
+            then
+                if row <= 51
+                then
+                    if row <= 48
+                    then
+                        if row <= 47
+                        then
+                            if row <= 46
+                            then 204996608u32
+                            else 0u32
+                        else 0u32
+                    elif row <= 50
+                    then
+                        if row <= 49
+                        then 253440u32
+                        else 131840u32
+                    else 131328u32
+                elif row <= 54
+                then
+                    if row <= 53
+                    then
+                        if row <= 52
+                        then 131328u32
+                        else 131328u32
+                    else 4261544192u32
+                elif row <= 56
+                then
+                    if row <= 55
+                    then 33685760u32
+                    else 100794624u32
+                else 67370752u32
+            elif row <= 63
+            then
+                if row <= 60
+                then
+                    if row <= 59
+                    then
+                        if row <= 58
+                        then 131328u32
+                        else 100794624u32
+                    else 33685760u32
+                elif row <= 62
+                then
+                    if row <= 61
+                    then 4261544192u32
+                    else 253696u32
+                else 0u32
+            elif row <= 66
+            then
+                if row <= 65
+                then
+                    if row <= 64
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 67
+            then 13369344u32
+            else 33292288u32
+        elif row <= 79
+        then
+            if row <= 74
+            then
+                if row <= 71
+                then
+                    if row <= 70
+                    then
+                        if row <= 69
+                        then 134086656u32
+                        else 268419072u32
+                    else 2147475456u32
+                elif row <= 73
+                then
+                    if row <= 72
+                    then 4294963200u32
+                    else 4294965248u32
+                else 4294965248u32
+            elif row <= 77
+            then
+                if row <= 76
+                then
+                    if row <= 75
+                    then 4294966272u32
+                    else 4294966784u32
+                else 4294966784u32
+            elif row <= 78
+            then 4294966784u32
+            else 4294966784u32
+        elif row <= 85
+        then
+            if row <= 82
+            then
+                if row <= 81
+                then
+                    if row <= 80
+                    then 4294966784u32
+                    else 4294967040u32
+                else 4294967169u32
+            elif row <= 84
+            then
+                if row <= 83
+                then 4294967171u32
+                else 4294967279u32
+            else 4294967295u32
+        elif row <= 88
+        then
+            if row <= 87
+            then
+                if row <= 86
+                then 4294967295u32
+                else 4294967295u32
+            else 4294967295u32
+        elif row <= 89
+        then 4294967295u32
+        else 4294967295u32
+    elif row <= 45
+    then
+        if row <= 22
+        then
+            if row <= 11
+            then
+                if row <= 5
+                then
+                    if row <= 2
+                    then
+                        if row <= 1
+                        then
+                            if row <= 0
+                            then 68157440u32
+                            else 68157440u32
+                        else 68157440u32
+                    elif row <= 4
+                    then
+                        if row <= 3
+                        then 68173760u32
+                        else 68165696u32
+                    else 68165696u32
+                elif row <= 8
+                then
+                    if row <= 7
+                    then
+                        if row <= 6
+                        then 68165696u32
+                        else 68167166u32
+                    else 133178435u32
+                elif row <= 10
+                then
+                    if row <= 9
+                    then 68166721u32
+                    else 68166657u32
+                else 74458337u32
+            elif row <= 17
+            then
+                if row <= 14
+                then
+                    if row <= 13
+                    then
+                        if row <= 12
+                        then 79708095u32
+                        else 125829120u32
+                    else 0u32
+                elif row <= 16
+                then
+                    if row <= 15
+                    then 132235136u32
+                    else 35721344u32
+                else 35717248u32
+            elif row <= 20
+            then
+                if row <= 19
+                then
+                    if row <= 18
+                    then 35724160u32
+                    else 2166974u32
+                else 71570u32
+            elif row <= 21
+            then 35722386u32
+            else 2228098u32
+        elif row <= 34
+        then
+            if row <= 28
+            then
+                if row <= 25
+                then
+                    if row <= 24
+                    then
+                        if row <= 23
+                        then 3933330u32
+                        else 263326u32
+                    else 263298u32
+                elif row <= 27
+                then
+                    if row <= 26
+                    then 263298u32
+                    else 16516606u32
+                else 0u32
+            elif row <= 31
+            then
+                if row <= 30
+                then
+                    if row <= 29
+                    then 0u32
+                    else 0u32
+                else 0u32
+            elif row <= 33
+            then
+                if row <= 32
+                then 0u32
+                else 0u32
+            else 4177662u32
+        elif row <= 40
+        then
+            if row <= 37
+            then
+                if row <= 36
+                then
+                    if row <= 35
+                    then 2105890u32
+                    else 2105890u32
+                else 2105890u32
+            elif row <= 39
+            then
+                if row <= 38
+                then 2097152u32
+                else 2097216u32
+            else 2097152u32
+        elif row <= 43
+        then
+            if row <= 42
+            then
+                if row <= 41
+                then 0u32
+                else 2105888u32
+            else 2097698u32
+        elif row <= 44
+        then 2105890u32
+        else 16382u32
+    elif row <= 68
+    then
+        if row <= 57
+        then
+            if row <= 51
+            then
+                if row <= 48
+                then
+                    if row <= 47
+                    then
+                        if row <= 46
+                        then 2105344u32
+                        else 2236416u32
+                    else 2236416u32
+                elif row <= 50
+                then
+                    if row <= 49
+                    then 2236416u32
+                    else 4186112u32
+                else 0u32
+            elif row <= 54
+            then
+                if row <= 53
+                then
+                    if row <= 52
+                    then 0u32
+                    else 0u32
+                else 100663551u32
+            elif row <= 56
+            then
+                if row <= 55
+                then 33554560u32
+                else 192u32
+            else 33554496u32
+        elif row <= 63
+        then
+            if row <= 60
+            then
+                if row <= 59
+                then
+                    if row <= 58
+                    then 33554496u32
+                    else 192u32
+                else 100663424u32
+            elif row <= 62
+            then
+                if row <= 61
+                then 255u32
+                else 0u32
+            else 0u32
+        elif row <= 66
+        then
+            if row <= 65
+            then
+                if row <= 64
+                then 0u32
+                else 0u32
+            else 0u32
+        elif row <= 67
+        then 4186112u32
+        else 8386560u32
+    elif row <= 79
+    then
+        if row <= 74
+        then
+            if row <= 71
+            then
+                if row <= 70
+                then
+                    if row <= 69
+                    then 16776704u32
+                    else 33554304u32
+                else 134217600u32
+            elif row <= 73
+            then
+                if row <= 72
+                then 134217665u32
+                else 134217699u32
+            else 134217727u32
+        elif row <= 77
+        then
+            if row <= 76
+            then
+                if row <= 75
+                then 134217727u32
+                else 134217727u32
+            else 134217727u32
+        elif row <= 78
+        then 134217727u32
+        else 134217727u32
+    elif row <= 85
+    then
+        if row <= 82
+        then
+            if row <= 81
+            then
+                if row <= 80
+                then 134217727u32
+                else 134217727u32
+            else 134217727u32
+        elif row <= 84
+        then
+            if row <= 83
+            then 134217727u32
+            else 134217727u32
+        else 134217727u32
+    elif row <= 88
+    then
+        if row <= 87
+        then
+            if row <= 86
+            then 134217727u32
+            else 134217727u32
+        else 262143u32
+    elif row <= 89
+    then 131071u32
+    else 65535u32
 
-inl blocked (l : layout) (p : geometry.position) : bool =
+let arena_sight_blocked (p : geometry.position) : bool =
+    if inside_arena_spot p then arena_bit_set arena_sight_bits p else false
+
+let arena_protection_zone (dx : i32) (dy : i32) : bool =
+    if dy = (0 - 29)
+    then (dx >= 41 && dx <= 43) || dx = 45
+    elif dy = (0 - 28)
+    then (dx >= 41 && dx <= 43) || dx = 45
+    elif dy = (0 - 27)
+    then dx >= 40 && dx <= 45
+    elif dy = (0 - 26)
+    then dx >= 41 && dx <= 45
+    elif dy = (0 - 25)
+    then dx >= 41 && dx <= 45
+    elif dy = (0 - 24)
+    then dx >= 41 && dx <= 45
+    elif dy = (0 - 23)
+    then dx >= 41 && dx <= 45
+    elif dy = (0 - 22)
+    then dx >= 41 && dx <= 45
+    elif dy = (0 - 21)
+    then dx >= 38 && dx <= 45
+    elif dy = (0 - 20)
+    then dx >= 38 && dx <= 45
+    elif dy = (0 - 19)
+    then dx >= 38 && dx <= 45
+    elif dy = (0 - 18)
+    then dx >= 38 && dx <= 45
+    elif dy = (0 - 10)
+    then
+        (dx >= 7 && dx <= 14)
+        || (dx >= 21 && dx <= 23)
+        || (dx >= 25 && dx <= 27)
+        || (dx >= 29 && dx <= 31)
+        || (dx >= 33 && dx <= 40)
+    elif dy = (0 - 9)
+    then
+        (dx >= 7 && dx <= 14)
+        || (dx >= 21 && dx <= 23)
+        || (dx >= 25 && dx <= 27)
+        || (dx >= 29 && dx <= 31)
+        || (dx >= 33 && dx <= 40)
+    elif dy = (0 - 8)
+    then (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    elif dy = (0 - 7)
+    then (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    elif dy = (0 - 6)
+    then (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    elif dy = (0 - 5)
+    then (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    elif dy = (0 - 4)
+    then (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    elif dy = (0 - 3)
+    then (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    elif dy = (0 - 2)
+    then (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    elif dy = (0 - 1)
+    then (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    elif dy = 0
+    then (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    elif dy = 1
+    then (dx >= 8 && dx <= 14) || (dx >= 33 && dx <= 40)
+    elif dy = 2
+    then dx >= 33 && dx <= 40
+    elif dy = 3
+    then dx >= 33 && dx <= 40
+    elif dy = 4
+    then dx >= 33 && dx <= 40
+    elif dy = 5
+    then dx >= 33 && dx <= 40
+    else false
+
+inl arena_spot_world_x () : i32 = 1933
+inl arena_spot_world_y () : i32 = 1350
+
+let arena_spot_protected (p : geometry.position) : bool = arena_protection_zone (p.x - 100) (p.y - 100)
+
+inl arena_world_protected (x : i32) (y : i32) : bool =
+    arena_protection_zone (x - arena_spot_world_x ()) (y - arena_spot_world_y ())
+
+inl walls (l : layout) (p : geometry.position) : bool =
     match l with
     | OpenField => false
     | EastCorridor => p.y <> corridor_row () || p.x < corridor_mouth ()
@@ -56,29 +2309,66 @@ inl blocked (l : layout) (p : geometry.position) : bool =
     | ArenaSpot => arena_spot_blocked p
     | ArenaHunt => arena_spot_blocked p
 
+inl sight_blocks (l : layout) (p : geometry.position) : bool =
+    match l with
+    | ArenaSpot => arena_sight_blocked p
+    | ArenaHunt => arena_sight_blocked p
+    | _ => walls l p
+
+inl blocked (l : layout) (p : geometry.position) : bool =
+    match l with
+    | ArenaSpot => arena_spot_blocked p || arena_spot_protected p
+    | ArenaHunt => arena_spot_blocked p || arena_spot_protected p
+    | _ => walls l p
+
 inl free (l : layout) (taken : geometry.position -> bool) (p : geometry.position) : bool =
     blocked l p = false && taken p = false
 
 inl direction_of (n : i32) : i32 = if n > 0 then 1 elif n < 0 then -1 else 0
 
-inl shifted (dx : i32) (dy : i32) (from : geometry.position) : geometry.position = geometry.position (from.x + dx) (from.y + dy) from.z
+inl shifted (dx : i32) (dy : i32) (from : geometry.position) : geometry.position =
+    geometry.position (from.x + dx) (from.y + dy) from.z
 
-inl best_step (l : layout) (taken : geometry.position -> bool) (improves : geometry.position -> bool) (sx : i32) (sy : i32) (from : geometry.position) : geometry.position =
+inl best_step
+    (l : layout) (taken : geometry.position -> bool) (improves : geometry.position -> bool) (sx : i32) (sy : i32)
+    (from : geometry.position)
+    : geometry.position
+    =
     inl usable p = free l taken p && improves p
     inl both = shifted sx sy from
     inl across = shifted sx 0 from
     inl along = shifted 0 sy from
     inl left = if sy = 0 then shifted sx 1 from else shifted 1 sy from
     inl right = if sy = 0 then shifted sx -1 from else shifted -1 sy from
-    if usable both then both elif usable across then across elif usable along then along elif usable left then left elif usable right then right else from
+    if usable both
+    then both
+    elif usable across
+    then across
+    elif usable along
+    then along
+    elif usable left
+    then left
+    elif usable right
+    then right
+    else from
 
-inl greedy_step_toward (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
+inl greedy_step_toward
+    (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position)
+    : geometry.position
+    =
     inl distance = geometry.chebyshev_distance target from
-    best_step l taken (fun p => geometry.chebyshev_distance target p < distance) (direction_of (target.x - from.x)) (direction_of (target.y - from.y)) from
+    best_step l taken
+        fun p => geometry.chebyshev_distance target p < distance
+        (direction_of (target.x - from.x))
+        (direction_of (target.y - from.y))
+        from
 
 inl region_rows () : i32 = 2 * arena_spot_radius () + 1
-inl region_high_bits () : u32 = 536870911u32
+inl region_words () : i32 = (region_rows () + row_word_bits () - 1) / row_word_bits ()
 inl all_bits () : u32 = 4294967295u32
+inl region_word_mask (word : i32) : u32 =
+    inl valid = region_rows () - word * row_word_bits ()
+    if valid >= row_word_bits () then all_bits () else (1u32 <<< valid) - 1u32
 
 union route_choice =
     | GoEast
@@ -98,67 +2388,94 @@ inl route_offset (c : route_choice) : i32 * i32 =
 
 inl region_bit (x : i32) : i32 = x - 100 + arena_spot_radius ()
 inl region_row (y : i32) : i32 = y - 100 + arena_spot_radius ()
-inl inside_region (x : i32) (y : i32) : bool = region_bit x >= 0 && region_bit x < region_rows () && region_row y >= 0 && region_row y < region_rows ()
+inl inside_region (x : i32) (y : i32) : bool =
+    region_bit x >= 0 && region_bit x < region_rows () && region_row y >= 0 && region_row y < region_rows ()
 
 inl word_holds (word : u32) (bit : i32) : bool = ((word >>> bit) &&& 1u32) = 1u32
 
-let route_between (tx : i32) (ty : i32) (fx : i32) (fy : i32) (free_east : bool) (free_west : bool) (free_south : bool) (free_north : bool) : route_choice =
+let route_between
+    (tx : i32) (ty : i32) (fx : i32) (fy : i32) (free_east : bool) (free_west : bool) (free_south : bool)
+    (free_north : bool)
+    : route_choice
+    =
     inl rows = region_rows ()
-    inl lows : array_base u32 = !!!!ArrayCreate(`u32, rows)
-    inl highs : array_base u32 = !!!!ArrayCreate(`u32, rows)
-    inl open_lows : array_base u32 = !!!!ArrayCreate(`u32, rows)
-    inl open_highs : array_base u32 = !!!!ArrayCreate(`u32, rows)
-    inl low_at (row : i32) : u32 = if row < 0 || row >= rows then 0u32 else !!!!ArrayIndex(lows, row)
-    inl high_at (row : i32) : u32 = if row < 0 || row >= rows then 0u32 else !!!!ArrayIndex(highs, row)
-    let rec prepare (row : i32) : () =
-        if row < rows then
-            !!!!ArrayIndexSet(lows, row, 0u32)
-            !!!!ArrayIndexSet(highs, row, 0u32)
-            inl open_low = arena_spot_low row ^^^ all_bits ()
-            inl open_high = arena_spot_high row ^^^ region_high_bits ()
-            !!!!ArrayIndexSet(open_lows, row, open_low)
-            !!!!ArrayIndexSet(open_highs, row, open_high)
-            prepare (row + 1)
+    inl width = region_words ()
+    inl cells = rows * width
+    inl reach : array_base u32 = !!!!ArrayCreate(`u32, cells)
+    inl openings : array_base u32 = !!!!ArrayCreate(`u32, cells)
+    inl above : array_base u32 = !!!!ArrayCreate(`u32, width)
+    inl grown : array_base u32 = !!!!ArrayCreate(`u32, width)
+    inl reach_at (row : i32) (word : i32) : u32 =
+        if row < 0 || row >= rows || word < 0 || word >= width
+        then 0u32
+        else !!!!ArrayIndex(reach, row * width + word)
+    let rec prepare (cell : i32) : () =
+        if cell < cells then
+            !!!!ArrayIndexSet(reach, cell, 0u32)
+            inl open_bits = arena_spot_bits (cell % width) (cell / width) ^^^ region_word_mask (cell % width)
+            !!!!ArrayIndexSet(openings, cell, open_bits)
+            prepare (cell + 1)
     prepare 0
     inl is_open (x : i32) (y : i32) : bool =
         if inside_region x y = false then false
         else
             inl bit = region_bit x
-            inl row = region_row y
-            inl open_low : u32 = !!!!ArrayIndex(open_lows, row)
-            inl open_high : u32 = !!!!ArrayIndex(open_highs, row)
-            if bit < 32 then word_holds open_low bit else word_holds open_high (bit - 32)
+            inl open_bits : u32 = !!!!ArrayIndex(openings, region_row y * width + bit / row_word_bits ())
+            word_holds open_bits (bit % row_word_bits ())
     inl reached (x : i32) (y : i32) : bool =
         if inside_region x y = false then false
         else
             inl bit = region_bit x
-            inl row = region_row y
-            if bit < 32 then word_holds (low_at row) bit else word_holds (high_at row) (bit - 32)
+            word_holds (reach_at (region_row y) (bit / row_word_bits ())) (bit % row_word_bits ())
     inl mark (x : i32) (y : i32) : () =
         if inside_region x y && is_open x y then
             inl bit = region_bit x
             inl row = region_row y
-            inl marked_low = low_at row ||| (if bit < 32 then 1u32 <<< bit else 0u32)
-            inl marked_high = high_at row ||| (if bit < 32 then 0u32 else 1u32 <<< (bit - 32))
-            !!!!ArrayIndexSet(lows, row, marked_low)
-            !!!!ArrayIndexSet(highs, row, marked_high)
+            inl word = bit / row_word_bits ()
+            inl marked = reach_at row word ||| (1u32 <<< (bit % row_word_bits ()))
+            !!!!ArrayIndexSet(reach, row * width + word, marked)
     let rec seed (k : i32) : () =
         if k < 9 then
             mark (tx + k % 3 - 1) (ty + k / 3 - 1)
             seed (k + 1)
     seed 0
-    let rec sweep (row : i32) (above_low : u32) (above_high : u32) (changed : bool) : bool =
-        if row >= rows then changed
+    let rec forget_above (word : i32) : () =
+        if word < width then
+            !!!!ArrayIndexSet(above, word, 0u32)
+            forget_above (word + 1)
+    let rec sweep (row : i32) (changed : bool) : bool =
+        if row >= rows
+        then changed
         else
-            inl low = low_at row
-            inl high = high_at row
-            inl open_low : u32 = !!!!ArrayIndex(open_lows, row)
-            inl open_high : u32 = !!!!ArrayIndex(open_highs, row)
-            inl grown_low = (low ||| (low <<< 1) ||| (low >>> 1) ||| (high <<< 31) ||| above_low ||| low_at (row + 1)) &&& open_low
-            inl grown_high = (high ||| (high <<< 1) ||| (low >>> 31) ||| (high >>> 1) ||| above_high ||| high_at (row + 1)) &&& open_high
-            !!!!ArrayIndexSet(lows, row, grown_low)
-            !!!!ArrayIndexSet(highs, row, grown_high)
-            sweep (row + 1) low high (changed || grown_low <> low || grown_high <> high)
+            let rec grow (word : i32) : () =
+                if word < width
+                then
+                    inl here = reach_at row word
+                    inl open_bits : u32 = !!!!ArrayIndex(openings, row * width + word)
+                    inl up : u32 = !!!!ArrayIndex(above, word)
+                    inl spread =
+                        here
+                        ||| (here <<< 1)
+                        ||| (here >>> 1)
+                        ||| (reach_at row (word + 1) <<< 31)
+                        ||| (reach_at row (word - 1) >>> 31)
+                        ||| up
+                        ||| reach_at (row + 1) word
+                    !!!!ArrayIndexSet(grown, word, spread &&& open_bits)
+                    grow (word + 1)
+            grow 0
+            let rec commit (word : i32) (changed : bool) : bool =
+                if word >= width then changed
+                else
+                    inl here = reach_at row word
+                    inl next : u32 = !!!!ArrayIndex(grown, word)
+                    !!!!ArrayIndexSet(above, word, here)
+                    !!!!ArrayIndexSet(reach, row * width + word, next)
+                    commit (word + 1) (changed || next <> here)
+            sweep (row + 1) (commit 0 changed)
+    inl sweep_all () : bool =
+        forget_above 0
+        sweep 0 false
     inl along_x = (if tx - fx < 0 then fx - tx else tx - fx) >= (if ty - fy < 0 then fy - ty else ty - fy)
     inl east_first = tx >= fx
     inl south_first = ty >= fy
@@ -172,11 +2489,19 @@ let route_between (tx : i32) (ty : i32) (fx : i32) (fy : i32) (free_east : bool)
     inl y_away = if south_first then GoNorth else GoSouth
     inl first, second = if along_x then x_toward, y_toward else y_toward, x_toward
     inl choose () : route_choice =
-        if leads first then first elif leads second then second elif leads y_away then y_away elif leads x_away then x_away else NoRoute
+        if leads first
+        then first
+        elif leads second
+        then second
+        elif leads y_away
+        then y_away
+        elif leads x_away
+        then x_away
+        else NoRoute
     inl still_searching (c : route_choice) : bool = match c with NoRoute => true | _ => false
     let rec layers (k : i32) : route_choice =
         inl c = choose ()
-        if still_searching c && k < rows * 2 && sweep 0 0u32 0u32 false then layers (k + 1) else c
+        if still_searching c && k < rows * 2 && sweep_all () then layers (k + 1) else c
     if reached fx fy then Arrived else layers 0
 
 inl straight_step_weight () : i32 = 10
@@ -184,11 +2509,34 @@ inl diagonal_step_weight () : i32 = 25
 inl unreachable_weight () : i32 = 1000000
 inl window_margin () : i32 = 6
 
-inl direction_dx (k : i32) : i32 = if k = 0 then 1 elif k = 1 then -1 elif k = 2 then 0 elif k = 3 then 0 elif k = 4 || k = 6 then 1 else -1
-inl direction_dy (k : i32) : i32 = if k = 0 || k = 1 then 0 elif k = 2 then 1 elif k = 3 then -1 elif k = 4 || k = 5 then 1 else -1
+inl direction_dx (k : i32) : i32 =
+    if k = 0
+    then 1
+    elif k = 1
+    then -1
+    elif k = 2
+    then 0
+    elif k = 3
+    then 0
+    elif k = 4 || k = 6
+    then 1
+    else -1
+inl direction_dy (k : i32) : i32 =
+    if k = 0 || k = 1
+    then 0
+    elif k = 2
+    then 1
+    elif k = 3
+    then -1
+    elif k = 4 || k = 5
+    then 1
+    else -1
 inl direction_weight (k : i32) : i32 = if k < 4 then straight_step_weight () else diagonal_step_weight ()
 
-let weighted_choice (tx : i32) (ty : i32) (fx : i32) (fy : i32) (x0 : i32) (y0 : i32) (w : i32) (h : i32) (passable : array_base i32) : i32 =
+let weighted_choice
+    (tx : i32) (ty : i32) (fx : i32) (fy : i32) (x0 : i32) (y0 : i32) (w : i32) (h : i32) (passable : array_base i32)
+    : i32
+    =
     inl cells = w * h
     inl distance : array_base i32 = !!!!ArrayCreate(`i32, cells)
     inl inside (x : i32) (y : i32) : bool = x >= x0 && x < x0 + w && y >= y0 && y < y0 + h
@@ -204,10 +2552,14 @@ let weighted_choice (tx : i32) (ty : i32) (fx : i32) (fy : i32) (x0 : i32) (y0 :
             d
         else unreachable_weight ()
     let rec seed (c : i32) : () =
-        if c < cells then
+        if c < cells
+        then
             inl x = x0 + c % w
             inl y = y0 + c / w
-            inl goal = passable_at x y && geometry.chebyshev_distance (geometry.position x y 7) (geometry.position tx ty 7) <= 1 && (x <> tx || y <> ty)
+            inl goal =
+                passable_at x y
+                && geometry.chebyshev_distance (geometry.position x y 7) (geometry.position tx ty 7) <= 1
+                && (x <> tx || y <> ty)
             inl start = if goal then 0 else unreachable_weight ()
             !!!!ArrayIndexSet(distance, c, start)
             seed (c + 1)
@@ -228,27 +2580,41 @@ let weighted_choice (tx : i32) (ty : i32) (fx : i32) (fy : i32) (x0 : i32) (y0 :
                 !!!!ArrayIndexSet(distance, c, improved)
                 true
             else false
-    let rec forward (c : i32) (changed : bool) : bool = if c >= cells then changed else forward (c + 1) (relax c || changed)
-    let rec backward (c : i32) (changed : bool) : bool = if c < 0 then changed else backward (c - 1) (relax c || changed)
+    let rec forward (c : i32) (changed : bool) : bool =
+        if c >= cells
+        then changed
+        else forward (c + 1) (relax c || changed)
+    let rec backward (c : i32) (changed : bool) : bool =
+        if c < 0
+        then changed
+        else backward (c - 1) (relax c || changed)
     let rec settle (round : i32) : () =
         if round < 40 then
             inl a = forward 0 false
             inl b = backward (cells - 1) false
             if a || b then settle (round + 1)
     settle 0
-    if distance_at fx fy = 0 then 8
+    if distance_at fx fy = 0
+    then 8
     else
         let rec pick (k : i32) (best_k : i32) (best_score : i32) : i32 =
-            if k >= 8 then best_k
+            if k >= 8
+            then best_k
             else
                 inl nx = fx + direction_dx k
                 inl ny = fy + direction_dy k
                 inl d = distance_at nx ny
-                inl score = if passable_at nx ny && d < unreachable_weight () then d + direction_weight k else unreachable_weight ()
+                inl score =
+                    if passable_at nx ny && d < unreachable_weight ()
+                    then d + direction_weight k
+                    else unreachable_weight ()
                 if score < best_score then pick (k + 1) k score else pick (k + 1) best_k best_score
         pick 0 8 (unreachable_weight ())
 
-inl weighted_step (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
+inl weighted_step
+    (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position)
+    : geometry.position
+    =
     inl m = window_margin ()
     inl low_x = (if from.x < target.x then from.x else target.x) - m
     inl low_y = (if from.y < target.y then from.y else target.y) - m
@@ -267,7 +2633,10 @@ inl weighted_step (l : layout) (taken : geometry.position -> bool) (target : geo
     fill 0
     inl k = weighted_choice target.x target.y from.x from.y low_x low_y w h passable
     if k >= 8 then from else shifted (direction_dx k) (direction_dy k) from
-inl routed_step (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
+inl routed_step
+    (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position)
+    : geometry.position
+    =
     inl usable dx dy = free l taken (shifted dx dy from)
     match route_between target.x target.y from.x from.y (usable 1 0) (usable -1 0) (usable 0 1) (usable 0 -1) with
     | Arrived => from
@@ -276,17 +2645,30 @@ inl routed_step (l : layout) (taken : geometry.position -> bool) (target : geome
         inl dx, dy = route_offset c
         shifted dx dy from
 
-inl step_toward (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
+inl step_toward
+    (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position)
+    : geometry.position
+    =
     match l with
     | ArenaHunt => routed_step l taken target from
     | ArenaSpot => weighted_step l taken target from
     | _ => greedy_step_toward l taken target from
 
-inl step_away (l : layout) (taken : geometry.position -> bool) (threat : geometry.position) (from : geometry.position) : geometry.position =
+inl step_away
+    (l : layout) (taken : geometry.position -> bool) (threat : geometry.position) (from : geometry.position)
+    : geometry.position
+    =
     inl distance = geometry.chebyshev_distance threat from
-    best_step l taken (fun p => geometry.chebyshev_distance threat p > distance) (direction_of (from.x - threat.x)) (direction_of (from.y - threat.y)) from
+    best_step l taken
+        fun p => geometry.chebyshev_distance threat p > distance
+        (direction_of (from.x - threat.x))
+        (direction_of (from.y - threat.y))
+        from
 
-inl step_away_like_the_live_probe (l : layout) (taken : geometry.position -> bool) (threat : geometry.position) (from : geometry.position) : geometry.position =
+inl step_away_like_the_live_probe
+    (l : layout) (taken : geometry.position -> bool) (threat : geometry.position) (from : geometry.position)
+    : geometry.position
+    =
     inl sx = direction_of (from.x - threat.x)
     inl sy = direction_of (from.y - threat.y)
     inl usable p = geometry.same_tile p from = false && free l taken p
@@ -295,8 +2677,18 @@ inl step_away_like_the_live_probe (l : layout) (taken : geometry.position -> boo
     inl along = shifted 0 sy from
     inl left = if sx = 0 then shifted 1 sy from elif sy = 0 then shifted sx 1 from else from
     inl right = if sx = 0 then shifted -1 sy from elif sy = 0 then shifted sx -1 from else from
-    if usable both then both elif usable across then across elif usable along then along elif usable left then left elif usable right then right else from
-type footing = {away : i32; room : i32; crowd : i32; align : i32; diagonal : i32}
+    if usable both
+    then both
+    elif usable across
+    then across
+    elif usable along
+    then along
+    elif usable left
+    then left
+    elif usable right
+    then right
+    else from
+type footing = { away : i32; room : i32; crowd : i32; align : i32; diagonal : i32 }
 
 inl neighbor (k : i32) (from : geometry.position) : geometry.position =
     inl dx = if k = 0 || k = 3 || k = 5 then -1 elif k = 2 || k = 4 || k = 7 then 1 else 0
@@ -308,12 +2700,25 @@ inl walkable_around (l : layout) (p : geometry.position) : i32 =
         if k >= 8 then acc else count (k + 1) (if blocked l (neighbor k p) then acc else acc + 1)
     count 0 0
 
-inl footing_score (l : layout) (foes_near : geometry.position -> i32) (w : footing) (threat : geometry.position) (from : geometry.position) (c : geometry.position) : i32 =
-    inl alignment = (c.x - from.x) * direction_of (from.x - threat.x) + (c.y - from.y) * direction_of (from.y - threat.y)
+inl footing_score
+    (l : layout) (foes_near : geometry.position -> i32) (w : footing) (threat : geometry.position)
+    (from : geometry.position) (c : geometry.position)
+    : i32
+    =
+    inl alignment =
+        (c.x - from.x) * direction_of (from.x - threat.x) + (c.y - from.y) * direction_of (from.y - threat.y)
     inl slanted = if c.x <> from.x && c.y <> from.y then 1 else 0
-    w.away * geometry.chebyshev_distance threat c + w.room * walkable_around l c - w.crowd * foes_near c + w.align * alignment - w.diagonal * slanted
+    w.away * geometry.chebyshev_distance threat c
+    + w.room * walkable_around l c
+    - w.crowd * foes_near c
+    + w.align * alignment
+    - w.diagonal * slanted
 
-inl scored_step (l : layout) (taken : geometry.position -> bool) (foes_near : geometry.position -> i32) (w : footing) (threat : geometry.position) (from : geometry.position) : geometry.position =
+inl scored_step
+    (l : layout) (taken : geometry.position -> bool) (foes_near : geometry.position -> i32) (w : footing)
+    (threat : geometry.position) (from : geometry.position)
+    : geometry.position
+    =
     inl distance = geometry.chebyshev_distance threat from
     inl sx = direction_of (from.x - threat.x)
     inl sy = direction_of (from.y - threat.y)
@@ -338,10 +2743,23 @@ inl on_ground (l : layout) (step_ms : i32) : i32 = step_ms * ground_step_percent
 
 inl arena_ground_speed () : i32 = 160
 inl road_ground_speed () : i32 = 100
+inl grass_ground_speed () : i32 = 150
+
+inl ground_speed_at (l : layout) (from : geometry.position) : i32 =
+    match l with
+    | ArenaSpot => if arena_road from then road_ground_speed () else arena_ground_speed ()
+    | ArenaHunt => if arena_road from then road_ground_speed () else arena_ground_speed ()
+    | _ => grass_ground_speed ()
+
+inl on_the_server_map (l : layout) (from : geometry.position) (step_ms : i32) : i32 =
+    if arena_road from
+    then step_ms * ground_step_percent l * road_ground_speed () / (100 * arena_ground_speed ())
+    else on_ground l step_ms
 
 inl on_ground_at (l : layout) (from : geometry.position) (step_ms : i32) : i32 =
     match l with
-    | ArenaHunt => if arena_road from then step_ms * ground_step_percent l * road_ground_speed () / (100 * arena_ground_speed ()) else on_ground l step_ms
+    | ArenaHunt => on_the_server_map l from step_ms
+    | ArenaSpot => on_the_server_map l from step_ms
     | _ => on_ground l step_ms
 
 inl grave () : geometry.position = geometry.position 0 0 15
@@ -363,7 +2781,7 @@ inl spawn_points (l : layout) : geometry.position * geometry.position * geometry
     | EastCorridor => geometry.position 102 100 7, geometry.position 104 100 7, geometry.position 106 100 7
     | RoomAndCorridor => geometry.position 103 100 7, geometry.position 104 102 7, geometry.position 104 98 7
     | ArenaSpot => geometry.position 99 101 7, geometry.position 98 102 7, geometry.position 98 103 7
-    | ArenaHunt => geometry.position 125 86 7, geometry.position 124 96 7, geometry.position 110 84 7
+    | ArenaHunt => geometry.position 125 86 7, geometry.position 120 96 7, geometry.position 110 84 7
 
 ///> c
 test a_corridor_turns_a_diagonal_approach_into_a_straight_one =
@@ -394,8 +2812,9 @@ test corridor_steps_on_gpu =
 ///> c
 test the_arena_spot_matches_the_live_scan_and_the_server_map =
     inl ~x = 100i32
-    inl at dx dy = blocked ArenaSpot (geometry.position (x + dx) (100 + dy) 7)
-    (at 0 0, at -1 0, at 1 0, at 4 -4, at -7 0, at 8 0, at -1 1) |> _assert_eq (false, true, false, false, false, false, false)
+    inl at dx dy = walls ArenaSpot (geometry.position (x + dx) (100 + dy) 7)
+    (at 0 0, at -1 0, at 1 0, at 4 -4, at -7 0, at 8 0, at -1 1)
+    |> _assert_eq (false, true, false, false, false, false, false)
 
 ///> c
 test a_scored_step_can_prefer_room_over_distance =
@@ -403,8 +2822,16 @@ test a_scored_step_can_prefer_room_over_distance =
     inl nobody (p : geometry.position) = false
     inl alone (p : geometry.position) = 0i32
     inl threat = geometry.position (x + 1) 100 7
-    inl run = scored_step RoomAndCorridor nobody alone {away = 10; room = 0; crowd = 0; align = 0; diagonal = 0} threat (geometry.position x 100 7)
-    inl roomy = scored_step RoomAndCorridor nobody alone {away = 0; room = 10; crowd = 0; align = 0; diagonal = 0} threat (geometry.position x 100 7)
+    inl run =
+        scored_step RoomAndCorridor nobody alone
+            { away = 10; room = 0; crowd = 0; align = 0; diagonal = 0 }
+            threat
+            (geometry.position x 100 7)
+    inl roomy =
+        scored_step RoomAndCorridor nobody alone
+            { away = 0; room = 10; crowd = 0; align = 0; diagonal = 0 }
+            threat
+            (geometry.position x 100 7)
     (run.x, walkable_around RoomAndCorridor (geometry.position 98 100 7), roomy.x) |> _assert_eq (99i32, 2i32, 99i32)
 
 ///> c
@@ -413,7 +2840,17 @@ test the_arena_hunt_spawns_and_start_are_open_ground =
     inl a, b, c = spawn_points ArenaHunt
     inl d, e, f = more_spawn_points ArenaHunt
     inl s = player_start ArenaHunt
-    (blocked ArenaHunt a, blocked ArenaHunt b, blocked ArenaHunt c, blocked ArenaHunt d, blocked ArenaHunt e, blocked ArenaHunt f, blocked ArenaHunt s, x) |> _assert_eq (false, false, false, false, false, false, false, 0i32)
+    (
+        blocked ArenaHunt a,
+        blocked ArenaHunt b,
+        blocked ArenaHunt c,
+        blocked ArenaHunt d,
+        blocked ArenaHunt e,
+        blocked ArenaHunt f,
+        blocked ArenaHunt s,
+        x
+    )
+    |> _assert_eq (false, false, false, false, false, false, false, 0i32)
 
 ///> c
 test on_the_hunting_ground_a_route_goes_where_a_greedy_step_sticks =
@@ -429,10 +2866,16 @@ test on_the_hunting_ground_a_route_goes_where_a_greedy_step_sticks =
     (greedy.x, greedy.y, steps, last.x, last.y) |> _assert_eq (110i32, 88i32, 9i32, 115i32, 92i32)
 
 ///> c
-test on_the_hunting_ground_a_road_tile_speeds_the_next_step_up =
+test on_the_server_map_a_road_tile_speeds_the_next_step_up_at_the_spot_and_on_the_hunting_ground =
     inl ~cyclops_ms = 650i32
-    (on_ground_at ArenaHunt (geometry.position 115 93 7) cyclops_ms, on_ground_at ArenaHunt (geometry.position 115 89 7) cyclops_ms, on_ground_at ArenaSpot (geometry.position 115 89 7) cyclops_ms, arena_road (geometry.position 99 99 7))
-    |> _assert_eq (702i32, 438i32, 702i32, false)
+    (
+        on_ground_at ArenaHunt (geometry.position 115 93 7) cyclops_ms,
+        on_ground_at ArenaHunt (geometry.position 115 89 7) cyclops_ms,
+        on_ground_at ArenaSpot (geometry.position 115 89 7) cyclops_ms,
+        on_ground_at ArenaSpot (geometry.position 99 99 7) cyclops_ms,
+        arena_road (geometry.position 99 99 7)
+    )
+    |> _assert_eq (702i32, 438i32, 438i32, 702i32, false)
 
 ///> c
 test on_the_arena_spot_a_monster_detours_around_another_with_a_diagonal_step =
@@ -442,12 +2885,44 @@ test on_the_arena_spot_a_monster_detours_around_another_with_a_diagonal_step =
     inl first = step_toward ArenaSpot blocker knight (geometry.position x 102 7)
     inl second = step_toward ArenaSpot blocker knight first
     inl greedy = greedy_step_toward ArenaSpot blocker knight (geometry.position x 102 7)
-    (first.x, first.y, second.x, second.y, greedy.x, greedy.y) |> _assert_eq (99i32, 102i32, 100i32, 101i32, 98i32, 102i32)
+    (first.x, first.y, second.x, second.y, greedy.x, greedy.y)
+    |> _assert_eq (99i32, 102i32, 100i32, 101i32, 98i32, 102i32)
 
 ///> c
 test ramps_and_stairs_near_the_arena_spot_are_walls_because_cyclopes_never_take_them =
     inl ~west = 1833i32
     inl at x y = geometry.position (x - west) (y - 1250) 7
     inl l = ArenaSpot
-    (blocked l (at 1940 1372), blocked l (at 1941 1372), blocked l (at 1927 1337), blocked l (at 1958 1345), blocked l (at 1939 1371))
+    (
+        blocked l (at 1940 1372),
+        blocked l (at 1941 1372),
+        blocked l (at 1927 1337),
+        blocked l (at 1958 1345),
+        blocked l (at 1939 1371)
+    )
     |> _assert_eq (true, true, true, true, false)
+
+///> c
+test the_protection_zones_east_of_the_spot_stop_walkers_but_not_arrows =
+    inl ~west = 1833i32
+    inl at x y = geometry.position (x - west) (y - 1250) 7
+    inl l = ArenaSpot
+    (
+        blocked l (at 1942 1351),
+        walls l (at 1942 1351),
+        blocked ArenaHunt (at 1960 1343),
+        blocked l (at 1942 1352),
+        blocked l (at 1960 1358),
+        arena_world_protected (west + 110) 1351
+    )
+    |> _assert_eq (true, false, true, false, false, true)
+
+///> c
+test the_server_map_ground_speed_is_160_off_the_road_100_on_it_and_150_on_open_grass =
+    inl ~x = 115i32
+    (
+        ground_speed_at ArenaHunt (geometry.position x 93 7),
+        ground_speed_at ArenaHunt (geometry.position x 89 7),
+        ground_speed_at OpenField (geometry.position x 89 7)
+    )
+    |> _assert_eq (160i32, 100i32, 150i32)

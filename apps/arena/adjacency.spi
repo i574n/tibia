@@ -1,4 +1,11 @@
-type meter = {enabled : bool; adjacent_ms : lua.native_table; hits : lua.native_table; last_tick : lua.native_table; ms_by_count : lua.native_table}
+type meter =
+    {
+        enabled : bool
+        adjacent_ms : lua.native_table
+        hits : lua.native_table
+        last_tick : lua.native_table
+        ms_by_count : lua.native_table
+    }
 
 inl from_environment () : meter =
     {
@@ -12,10 +19,15 @@ inl from_environment () : meter =
 inl adjacent_monsters (here : client.spot) (people : client.crowd) : i32 =
     inl size = client.crowd_size people
     let rec count (index : i32) (n : i32) : i32 =
-        if index > size then n
+        if index > size
+        then n
         else
             inl c = client.member people index
-            count (index + 1) (if client.live_monster c && probe.chebyshev (client.creature_spot c) here <= 1 then n + 1 else n)
+            count
+                (index + 1)
+                if client.live_monster c && probe.chebyshev (client.creature_spot c) here <= 1
+                then n + 1
+                else n
     count 1 0
 
 inl start_positions (here : client.spot) (people : client.crowd) : string =
@@ -49,8 +61,16 @@ inl on_text (m : meter) (elapsed : i32) (text : string) : () =
             probe.note ($'string.format("hit at %d ms with %d adjacent", !elapsed, !adjacent)' : string)
 
 inl on_cleared (m : meter) () : () =
-    if m.enabled then
+    if m.enabled
+    then
         inl adjacent_ms, hits = lua.cell_value m.adjacent_ms, lua.cell_value m.hits
-        probe.note ($'string.format("adjacency: %d monster-ms adjacent, %d landed hits, %.3f landed hits per adjacent monster-second", !adjacent_ms, !hits, !hits * 1000 / math.max(1, !adjacent_ms))' : string)
-        inl none, one, two, three = lua.amount_at m.ms_by_count 0, lua.amount_at m.ms_by_count 1, lua.amount_at m.ms_by_count 2, lua.amount_at m.ms_by_count 3
-        probe.note ($'string.format("adjacent time by count: 0 %d 1 %d 2 %d 3 %d ms", !none, !one, !two, !three)' : string)
+        probe.note ($'string.format("adjacency: %d monster-ms adjacent, %d landed hits, %.3f landed hits per adjacent \
+            monster-second", !adjacent_ms, !hits, !hits * 1000 / math.max(1, !adjacent_ms))' : string)
+        inl none, one, two, three =
+            lua.amount_at m.ms_by_count 0,
+            lua.amount_at m.ms_by_count 1,
+            lua.amount_at m.ms_by_count 2,
+            lua.amount_at m.ms_by_count 3
+        probe.note (
+            $'string.format("adjacent time by count: 0 %d 1 %d 2 %d 3 %d ms", !none, !one, !two, !three)' : string
+        )

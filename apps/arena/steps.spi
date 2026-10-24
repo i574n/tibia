@@ -5,7 +5,11 @@ inl step_kind (chasing : bool) (is_knight : bool) (diagonal : bool) (near : bool
     inl base = lua.joined (if is_knight then "knight-" else "") (if diagonal then "diagonal" else "straight")
     if chasing && is_knight = false then lua.joined base (if near then "-adjacent" else "-chasing") else base
 
-inl record (chasing : bool) (stamps : lua.native_table) (intervals : lua.native_table) (c : client.creature) (new_position : client.native_position) (old_position : client.native_position) : () =
+inl record
+    (chasing : bool) (stamps : lua.native_table) (intervals : lua.native_table) (c : client.creature)
+    (new_position : client.native_position) (old_position : client.native_position)
+    : ()
+    =
     if client.position_known new_position && client.position_known old_position then
         inl is_knight = client.creature_is_local_player c
         if client.creature_is_monster c || is_knight then
@@ -23,7 +27,8 @@ inl record (chasing : bool) (stamps : lua.native_table) (intervals : lua.native_
                     inl interval = now - previous_at
                     lua.labeled_sample intervals measured interval
                     inl name, from, to = client.creature_name c, probe.described o, probe.described n
-                    probe.note ($'string.format("%s %d %s step %s -> %s; interval after its %s step %d ms", !name, !id, !kind, !from, !to, !measured, !interval)' : string)
+                    probe.note ($'string.format("%s %d %s step %s -> %s; interval after its %s step %d ms", !name, \
+                        !id, !kind, !from, !to, !measured, !interval)' : string)
 
 inl direction_of (n : i32) : i32 = if n > 0 then 1 elif n < 0 then -1 else 0
 
@@ -40,15 +45,41 @@ inl walk_away () : () =
             client.after (walk_away_ms ()) go
     go ()
 
+inl knight_walk_poll_ms () : i32 = 50
+inl knight_walk_leg () : i32 = 5
+
+inl walk_back_and_forth () : () =
+    let rec go (dx : i32) (left : i32) (waits : i32) : () =
+        if client.player_present () then
+            if client.player_walking () then
+                if waits % 40 = 39 then probe.note ($'string.format("knight walk still walking at %s after %d polls", \
+                    !(probe.described (client.player_spot ())), !(waits + 1))' : string)
+                client.after (knight_walk_poll_ms ()) (fun () => go dx left (waits + 1))
+            elif left = 0 then go (0 - dx) (knight_walk_leg ()) 0
+            else
+                if client.step dx 0 = false then probe.note ($'string.format("knight walk step %d refused at %s", \
+                    !dx, !(probe.described (client.player_spot ())))' : string)
+                client.after (knight_walk_poll_ms ()) (fun () => go dx (left - 1) 0)
+        else probe.note "knight walk stopped: no player in game"
+    probe.note ($'string.format("knight walk starts at %s speed %s walking %s", \
+        !(if client.player_positioned () then probe.described (client.player_spot ()) else "nil"), \
+        !(client.player_speed ()), !(if client.player_walking () then "yes" else "no"))' : string)
+    go (0 - 1) (knight_walk_leg ()) 0
+
 inl main () =
     inl chasing = client.env_is "TIBIA_STEPS_CHASE" "1"
+    inl walking = client.env_is "TIBIA_STEPS_KNIGHT_WALK" "1"
     inl stamps, intervals = lua.new_table (), lua.new_table ()
     client.on_position_change (record chasing stamps intervals)
-    inl on_text (mode : string) (text : string) : () = probe.note ($'string.format("server text [%s]: %s", !mode, !text)' : string)
+    inl on_text (mode : string) (text : string) : () =
+        probe.note ($'string.format("server text [%s]: %s", !mode, !text)' : string)
     inl ready () =
-        inl name, at, speed = client.player_name (), (if client.player_positioned () then probe.described (client.player_spot ()) else "nil"), client.player_speed ()
+        inl name = client.player_name ()
+        inl at = if client.player_positioned () then probe.described (client.player_spot ()) else "nil"
+        inl speed = client.player_speed ()
         probe.note ($'string.format("in game as %s at %s speed %s", !name, !at, !speed)' : string)
         if chasing then client.after 2000 walk_away
+        if walking then client.after 2000 walk_back_and_forth
         client.after (measure_ms ()) (fun () =>
             probe.note (lua.joined "end: " (lua.labeled_summary intervals))
             probe.finish "steps measured"

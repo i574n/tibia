@@ -14,6 +14,15 @@ $Exclude = @($Exclude | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 
 & ../apps/arena/build.ps1
 
+. ../deps/spiral/lib/spiral/lib.ps1
+$spiral = Ensure-SpiralCompiler | Select-Object -Last 1
+$layout = @(& $spiral.Dotnet $spiral.Compiler format ../src ../apps/arena ../apps/map ../apps/host ../apps/offscreen --check 2>&1)
+if ($LASTEXITCODE -ne 0) {
+    $layout | Select-Object -Last 10 | ForEach-Object { Write-Output "build.ps1 / layout / $_" }
+    throw "build.ps1 / layout: run SpiralCompiler format on src, apps/arena, apps/map, apps/host and apps/offscreen"
+}
+Write-Output "build.ps1 / layout / formatter check clean"
+
 $runNotebook = (Resolve-Path "../deps/spiral/apps/cells/spi/run_notebook.ps1").Path
 $wgslRun = @($env:SPIRAL_WGSL_RUN, "../target/wgsl-run/release/spiral-wgsl$(_exe)") |
     Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
@@ -43,7 +52,7 @@ $testRows = [Collections.Generic.List[object]]::new()
 $wgslRows = [Collections.Generic.List[object]]::new()
 
 $notebooks = (New-Item -ItemType Directory -Force "../notebooks").FullName
-$sources = Get-ChildItem ../src, ../apps/arena -File -Filter "*.spi" |
+$sources = Get-ChildItem ../src, ../apps/arena, ../apps/host, ../apps/offscreen -File -Filter "*.spi" |
     Where-Object { !$Files -or $_.BaseName -in $Files } |
     Where-Object { Select-String -Path $_.FullName -Pattern '^test ' -Quiet } |
     Where-Object { $_.BaseName -notin $Exclude } |

@@ -14,13 +14,13 @@ inl default_foe () : creatures.arena_creature =
     open creatures
     Troll
 
-type offense = {level : i32; weapon_attack : i32; weapon_skill : i32; step_ms : i32}
+type offense = { level : i32; weapon_attack : i32; weapon_skill : i32; step_ms : i32 }
 
 inl offense_against (foe : creatures.arena_creature) : offense =
     open creatures
     match foe with
-    | Cyclops => {level = 30; weapon_attack = 21; weapon_skill = 60; step_ms = hunting_pack.knight_sample_step_ms ()}
-    | _ => {level = 8; weapon_attack = 20; weapon_skill = 30; step_ms = hunting_pack.knight_sample_step_ms ()}
+    | Cyclops => { level = 30; weapon_attack = 21; weapon_skill = 60; step_ms = hunting_pack.knight_sample_step_ms () }
+    | _ => { level = 8; weapon_attack = 20; weapon_skill = 30; step_ms = hunting_pack.knight_sample_step_ms () }
 
 inl player_hit (foe : creatures.arena_creature) (roll : rng.roll_key) : i32 =
     inl stats = creatures.stats_of foe
@@ -77,39 +77,61 @@ inl spawn_point () : geometry.position = geometry.position 106 103 7
 
 inl creature_moves (foe : creatures.arena_creature) (now : i32) (s : hunt) : hunt =
     inl stats = creatures.stats_of foe
-    if now < s.creature_next_step_at then s
-    elif vitality.health s.creature < stats.run_health then
+    if now < s.creature_next_step_at
+    then s
+    elif vitality.health s.creature < stats.run_health
+    then
         inl away = geometry.step_away s.player_at s.creature_at
-        inl fled = {s with creature_at = away; creature_next_step_at = now + geometry.step_cost stats.step_ms s.creature_at away}
-        if geometry.chebyshev_distance fled.player_at fled.creature_at >= escape_distance () then
-            {fled with creature = vitality.spawn (spawn_health foe); creature_at = spawn_point (); escapes = s.escapes + 1; creature_met_player = false}
+        inl fled =
+            { s with
+                creature_at = away
+                creature_next_step_at = now + geometry.step_cost stats.step_ms s.creature_at away
+            }
+        if geometry.chebyshev_distance fled.player_at fled.creature_at >= escape_distance ()
+        then
+            { fled with
+                creature = vitality.spawn (spawn_health foe)
+                creature_at = spawn_point ()
+                escapes = s.escapes + 1
+                creature_met_player = false
+            }
         else fled
-    elif adjacent s then {s with creature_met_player = true}
+    elif adjacent s
+    then { s with creature_met_player = true }
     else
         inl toward = geometry.step_toward s.player_at s.creature_at
-        inl straight = if s.creature_met_player then stats.step_ms * hunting_pack.chase_step_factor () else stats.step_ms
-        {s with creature_at = toward; creature_next_step_at = now + geometry.step_cost straight s.creature_at toward}
+        inl straight =
+            if s.creature_met_player
+            then stats.step_ms * hunting_pack.chase_step_factor ()
+            else stats.step_ms
+        { s with creature_at = toward; creature_next_step_at = now + geometry.step_cost straight s.creature_at toward }
 
 inl creature_strikes (foe : creatures.arena_creature) (seed : u32) (tick : i32) (now : i32) (s : hunt) : hunt =
-    if adjacent s && s.creature_strikes_at <= now then
-        inl damage = combat.creature_hit (conv (creature_melee_max foe)) (combat.knight_sample_gear ()) true (key seed tick (purpose_creature_hit ()))
-        {s with player_health = s.player_health - damage; creature_strikes_at = now + creature_strike_ms ()}
+    if adjacent s && s.creature_strikes_at <= now
+    then
+        inl damage =
+            combat.creature_hit
+                (conv (creature_melee_max foe))
+                (combat.knight_sample_gear ())
+                true
+                (key seed tick (purpose_creature_hit ()))
+        { s with player_health = s.player_health - damage; creature_strikes_at = now + creature_strike_ms () }
     else s
 
 inl heal_now (seed : u32) (tick : i32) (now : i32) (s : hunt) : hunt =
     inl spell = vocations.as_cooldown (vocations.knight_heal ())
     inl amount : i32 = conv (rng.roll_between 30 60 (key seed tick (purpose_player_heal ())))
-    {s with player_health = s.player_health + amount; timers = cooldowns.after_cast now spell s.timers}
+    { s with player_health = s.player_health + amount; timers = cooldowns.after_cast now spell s.timers }
 
 inl strike_now (foe : creatures.arena_creature) (seed : u32) (tick : i32) (now : i32) (s : hunt) : hunt =
     open vitality
     inl damage = player_hit foe (key seed tick (purpose_player_hit ()))
     inl timers = cooldowns.after_cast now (cooldowns.strike_spell ()) s.timers
     match strike damage s.creature with
-    | Survived wounded => {s with creature = wounded; timers = timers}
+    | Survived wounded => { s with creature = wounded; timers = timers }
     | Slain _ =>
         inl bounty : i32 = conv (rng.roll_between 10 30 (key seed tick (purpose_loot ())))
-        {s with
+        { s with
             creature = spawn (spawn_health foe)
             creature_at = spawn_point ()
             timers = timers
@@ -128,7 +150,8 @@ inl observe (now : i32) (s : hunt) : policy.observation =
     }
 
 inl player_heals_below (threshold : i32) (seed : u32) (tick : i32) (now : i32) (s : hunt) : hunt =
-    if s.player_health < threshold && cooldowns.can_cast now (vocations.as_cooldown (vocations.knight_heal ())) s.timers then heal_now seed tick now s
+    if s.player_health < threshold && cooldowns.can_cast now (vocations.as_cooldown (vocations.knight_heal ())) s.timers
+    then heal_now seed tick now s
     else s
 
 inl player_strikes (foe : creatures.arena_creature) (seed : u32) (tick : i32) (now : i32) (s : hunt) : hunt =
@@ -136,12 +159,19 @@ inl player_strikes (foe : creatures.arena_creature) (seed : u32) (tick : i32) (n
     else s
 
 inl player_approaches (foe : creatures.arena_creature) (now : i32) (s : hunt) : hunt =
-    if now < s.player_next_step_at || adjacent s then s
+    if now < s.player_next_step_at || adjacent s
+    then s
     else
         inl toward = geometry.step_toward s.creature_at s.player_at
-        {s with player_at = toward; player_next_step_at = now + geometry.step_cost (offense_against foe).step_ms s.player_at toward}
+        { s with
+            player_at = toward
+            player_next_step_at = now + geometry.step_cost (offense_against foe).step_ms s.player_at toward
+        }
 
-inl follow_policy (foe : creatures.arena_creature) (t : policy.thresholds) (seed : u32) (tick : i32) (now : i32) (s : hunt) : hunt =
+inl follow_policy
+    (foe : creatures.arena_creature) (t : policy.thresholds) (seed : u32) (tick : i32) (now : i32) (s : hunt)
+    : hunt
+    =
     open policy
     inl healed = if heals t (observe now s) then heal_now seed tick now s else s
     match engages t (observe now healed) with
@@ -159,7 +189,10 @@ inl purpose_policy () : u32 = 5
 
 inl cavebot_baseline () : policy = Tuned (120, 0)
 
-inl player_acts (foe : creatures.arena_creature) (choice : policy) (seed : u32) (tick : i32) (now : i32) (s : hunt) : hunt =
+inl player_acts
+    (foe : creatures.arena_creature) (choice : policy) (seed : u32) (tick : i32) (now : i32) (s : hunt)
+    : hunt
+    =
     match choice with
     | Scripted =>
         s
@@ -170,7 +203,7 @@ inl player_acts (foe : creatures.arena_creature) (choice : policy) (seed : u32) 
         |> player_heals_below threshold seed tick now
         |> player_strikes foe seed tick now
     | Tuned (heal_threshold, strike_above) =>
-        follow_policy foe {heal_below = heal_threshold; strike_above = strike_above} seed tick now s
+        follow_policy foe { heal_below = heal_threshold; strike_above = strike_above } seed tick now s
     | RandomControl =>
         inl pick = rng.roll_between 0 2 (key seed tick (purpose_policy ()))
         if pick = 1 then player_heals_below 100000 seed tick now s
@@ -197,19 +230,27 @@ inl simulate (seed : u32) (ticks : i32) : hunt =
 
 inl total_kills (choice : policy) (first_seed : u32) (count : i32) : i32 =
     let rec loop (index : i32) (acc : i32) : i32 =
-        if index >= count then acc else loop (index + 1) (acc + (simulate_with choice (first_seed + conv index) (scenario_ticks ())).kills)
+        if index >= count
+        then acc
+        else loop (index + 1) (acc + (simulate_with choice (first_seed + conv index) (scenario_ticks ())).kills)
     loop 0 0
 inl total_deaths_against (foe : creatures.arena_creature) (choice : policy) (first_seed : u32) (count : i32) : i32 =
     let rec loop (index : i32) (acc : i32) : i32 =
-        if index >= count then acc
+        if index >= count
+        then acc
         else
-            inl died = if (simulate_against foe choice (first_seed + conv index) (scenario_ticks ())).player_health <= 0 then 1 else 0
+            inl died =
+                if (simulate_against foe choice (first_seed + conv index) (scenario_ticks ())).player_health <= 0
+                then 1
+                else 0
             loop (index + 1) (acc + died)
     loop 0 0
 
 inl total_kills_against (foe : creatures.arena_creature) (choice : policy) (first_seed : u32) (count : i32) : i32 =
     let rec loop (index : i32) (acc : i32) : i32 =
-        if index >= count then acc else loop (index + 1) (acc + (simulate_against foe choice (first_seed + conv index) (scenario_ticks ())).kills)
+        if index >= count
+        then acc
+        else loop (index + 1) (acc + (simulate_against foe choice (first_seed + conv index) (scenario_ticks ())).kills)
     loop 0 0
 
 inl policy_score (foe : creatures.arena_creature) (choice : policy) (first_seed : u32) (count : i32) : i32 =
@@ -231,18 +272,26 @@ inl tuned_cavebot_heal (foe : creatures.arena_creature) (first_seed : u32) (coun
             if score > best_score then best (heal + 10) heal score else best (heal + 10) best_heal best_score
     best 40 40 (policy_score foe (Tuned (40, 0)) first_seed count)
 
-inl evolve_policy (foe : creatures.arena_creature) (search_seed : u32) (first_seed : u32) (count : i32) (generations : i32) (offspring : i32) : i32 * i32 =
+inl evolve_policy
+    (foe : creatures.arena_creature) (search_seed : u32) (first_seed : u32) (count : i32) (generations : i32)
+    (offspring : i32)
+    : i32 * i32
+    =
     let rec generation (index : i32) (heal : i32) (strike : i32) (spread : i32) : i32 * i32 =
-        if index >= generations then heal, strike
+        if index >= generations
+        then heal, strike
         else
             let rec child (k : i32) (best_heal : i32) (best_strike : i32) (best_score : i32) : i32 * i32 =
-                if k >= offspring then best_heal, best_strike
+                if k >= offspring
+                then best_heal, best_strike
                 else
                     inl salt : u32 = conv (index * 1000 + k)
                     inl h = perturb spread (rng.roll_key search_seed salt 1 (purpose_search ())) heal
                     inl a = perturb spread (rng.roll_key search_seed salt 2 (purpose_search ())) strike
                     inl score = policy_score foe (Tuned (h, a)) first_seed count
-                    if score > best_score then child (k + 1) h a score else child (k + 1) best_heal best_strike best_score
+                    if score > best_score
+                    then child (k + 1) h a score
+                    else child (k + 1) best_heal best_strike best_score
             inl next_heal, next_strike = child 0 heal strike (policy_score foe (Tuned (heal, strike)) first_seed count)
             generation (index + 1) next_heal next_strike (if spread > 8 then spread / 2 else spread)
     generation 0 60 0 64

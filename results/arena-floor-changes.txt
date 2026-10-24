@@ -1,6 +1,0 @@
-floor-change tiles on floor 7 within radius 30 of 1932,1349 (from 434 floorchange item ids)
-1927,1337 floorchange
-1940,1372 floorchange
-1941,1372 floorchange
-1958,1345 floorchange
-

@@ -35,10 +35,16 @@ $dump = $output[$dumpAt..($listingAt - 1)]
 $listing = Join-Path $out 'floor-changes.txt'
 [IO.File]::WriteAllText($listing, ($output[$listingAt..($output.Count - 1)] -join "`n") + "`n")
 "map / floor-change listing in $listing"
-$region = Join-Path $repo 'results/arena-region-r30.txt'
-$committed = @(Get-Content $region)
-if (($committed -join "`n") -ne ($dump -join "`n")) { throw "map / the walkability dump differs from results/arena-region-r30.txt" }
-"map / walkability dump matches results/arena-region-r30.txt ($($dump.Count - 1) rows)"
+$dumpRadius = [regex]::Match($dump[0], ' radius (\d+) ').Groups[1].Value
+$regionName = "results/arena-region-r$dumpRadius.txt"
+$region = Join-Path $repo $regionName
+$committed = @(Get-Content $region -ErrorAction Ignore)
+if (($committed -join "`n") -ne ($dump -join "`n")) {
+    if (!$Update) { throw "map / the walkability dump differs from $regionName; rerun with -Update to rewrite it" }
+    [IO.File]::WriteAllText($region, ($dump -join "`n") + "`n")
+    "map / rewrote $regionName from the server map"
+}
+"map / walkability dump matches $regionName ($($dump.Count - 1) rows)"
 
 $scan = @(Get-Content (Join-Path $repo 'results/arena-spot-scan-r12.txt'))
 $marker = [array]::FindIndex([string[]]$scan, [Predicate[string]] { param($line) $line.Contains('client-loaded check') })
@@ -64,14 +70,22 @@ foreach ($line in $scan[($marker + 2)..($marker + 26)]) {
 $terrainPath = Join-Path $repo 'src/terrain.spi'
 $terrain = [Collections.Generic.List[string]]::new([string[]](Get-Content $terrainPath))
 $differ = @()
+$scratch = Join-Path $out 'generated-definition.spi'
 for ($k = 0; $k -lt $generated.Count; $k += 2) {
     $name = ($generated[$k] -split ' ')[1]
+    [IO.File]::WriteAllText($scratch, $generated[$k] + "`n" + $generated[$k + 1] + "`n")
+    & $dotnet $compiler format $scratch | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "map / formatting the generated $name failed ($LASTEXITCODE)" }
+    $laidOut = @(Get-Content $scratch | Where-Object { $_ -ne '' })
     $at = $terrain.FindIndex([Predicate[string]] { param($line) $line.StartsWith("let $name ") })
     if ($at -lt 0) { throw "map / src/terrain.spi has no definition of $name" }
-    if ($terrain[$at] -ne $generated[$k] -or $terrain[$at + 1] -ne $generated[$k + 1]) {
+    $end = $at + 1
+    while ($end -lt $terrain.Count -and $terrain[$end] -ne '' -and $terrain[$end].StartsWith(' ')) { $end++ }
+    $current = @($terrain.GetRange($at, $end - $at))
+    if (($current -join "`n") -ne ($laidOut -join "`n")) {
         $differ += $name
-        $terrain[$at] = $generated[$k]
-        $terrain[$at + 1] = $generated[$k + 1]
+        $terrain.RemoveRange($at, $end - $at)
+        $terrain.InsertRange($at, [string[]]$laidOut)
     }
 }
 if (!$differ) { "map / src/terrain.spi matches the server map ($($generated.Count / 2) definitions)"; return }

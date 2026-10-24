@@ -8,69 +8,91 @@ union move =
     | StepSomewhere
     | Stand
 
-inl move_of (pick : i32) : move = if pick = 0 then Drink elif pick = 1 then Engage elif pick = 2 then StepSomewhere else Stand
+inl move_of (pick : i32) : move =
+    if pick = 0
+    then Drink
+    elif pick = 1
+    then Engage
+    elif pick = 2
+    then StepSomewhere
+    else Stand
 
-type heading = {dx : i32; dy : i32; diagonal : bool}
+type heading = { dx : i32; dy : i32; diagonal : bool }
 
 inl heading_of (k : i32) : heading =
-    if k = 1 then {dx = 0; dy = -1; diagonal = false}
-    elif k = 2 then {dx = 1; dy = 0; diagonal = false}
-    elif k = 3 then {dx = 0; dy = 1; diagonal = false}
-    elif k = 4 then {dx = -1; dy = 0; diagonal = false}
-    elif k = 5 then {dx = 1; dy = -1; diagonal = true}
-    elif k = 6 then {dx = 1; dy = 1; diagonal = true}
-    elif k = 7 then {dx = -1; dy = 1; diagonal = true}
-    else {dx = -1; dy = -1; diagonal = true}
+    if k = 1 then { dx = 0; dy = -1; diagonal = false }
+    elif k = 2 then { dx = 1; dy = 0; diagonal = false }
+    elif k = 3 then { dx = 0; dy = 1; diagonal = false }
+    elif k = 4 then { dx = -1; dy = 0; diagonal = false }
+    elif k = 5 then { dx = 1; dy = -1; diagonal = true }
+    elif k = 6 then { dx = 1; dy = 1; diagonal = true }
+    elif k = 7 then { dx = -1; dy = 1; diagonal = true }
+    else { dx = -1; dy = -1; diagonal = true }
 
-type arena = {pace : scoreboard.pace; engaged : lua.native_table}
+type arena = { pace : scoreboard.pace; engaged : lua.native_table }
 
 inl tick (a : arena) (first : scoreboard.tally) : () =
     let rec go (t : scoreboard.tally) (next_step_at : i32) : () =
-        if client.player_present () = false then probe.finish_reporting_parity "offline"
+        if client.player_present () = false
+        then probe.finish_reporting_parity "offline"
         else
             inl now = client.now_ms ()
             inl health = client.player_health ()
             inl t = scoreboard.counted health t
-            if health <= 0 then
+            if health <= 0
+            then
                 probe.note (lua.joined "dead: " (scoreboard.summary a.pace t))
                 probe.finish_reporting_parity "death"
             else
-                inl t = {t with kills = t.kills + client.forget_dead a.engaged}
+                inl t = { t with kills = t.kills + client.forget_dead a.engaged }
                 inl t, next_step_at =
                     match move_of (lua.random_between 0 3) with
                     | Drink =>
                         inl at = scoreboard.elapsed a.pace
-                        if client.drink (health_potion ()) then
+                        if client.drink (health_potion ())
+                        then
                             probe.note ($'string.format("heal (potion) at health %d t=%d", !health, !at)' : string)
-                            {t with heals = t.heals + 1}, next_step_at
+                            { t with heals = t.heals + 1 }, next_step_at
                         else
-                            probe.note ($'string.format("heal dropped by the action gate at health %d", !health)' : string)
+                            probe.note (
+                                $'string.format("heal dropped by the action gate at health %d", !health)' : string
+                            )
                             t, next_step_at
                     | Engage =>
                         inl here = client.player_spot ()
                         inl people = client.spectators here
                         inl seen = probe.nearest_monster here people
-                        if seen.found then
+                        if seen.found
+                        then
                             client.chasing true
                             inl target = client.member people seen.index
-                            if client.same_creature (client.attacking ()) target = false then
+                            if client.same_creature (client.attacking ()) target = false
+                            then
                                 client.attack target
                                 client.remember a.engaged target
-                                inl name, at, from = client.creature_name target, probe.described (client.creature_spot target), probe.described here
-                                probe.note ($'string.format("strike %s at %s from %s health %d", !name, !at, !from, !health)' : string)
-                            {t with strikes = t.strikes + 1}, next_step_at
+                                inl name, at, from =
+                                    client.creature_name target,
+                                    probe.described (client.creature_spot target),
+                                    probe.described here
+                                probe.note ($'string.format("strike %s at %s from %s health %d", !name, !at, !from, \
+                                    !health)' : string)
+                            { t with strikes = t.strikes + 1 }, next_step_at
                         else t, next_step_at
                     | StepSomewhere =>
-                        if now >= next_step_at && client.player_walking () = false then
+                        if now >= next_step_at && client.player_walking () = false
+                        then
                             inl h = heading_of (lua.random_between 1 8)
-                            if client.step h.dx h.dy then {t with retreats = t.retreats + 1}, now + step_ms () * (if h.diagonal then 3 else 1)
-                            else {t with gated = t.gated + 1}, next_step_at
+                            if client.step h.dx h.dy
+                            then { t with retreats = t.retreats + 1 }, now + step_ms () * (if h.diagonal then 3 else 1)
+                            else { t with gated = t.gated + 1 }, next_step_at
                         else t, next_step_at
-                    | Stand => {t with holds = t.holds + 1}, next_step_at
+                    | Stand => { t with holds = t.holds + 1 }, next_step_at
                 if scoreboard.due_for_summary t then
                     inl at = probe.described (client.player_spot ())
                     probe.note (lua.joined (scoreboard.summary a.pace t) (lua.joined " player at " at))
-                scoreboard.finish_or_continue a.pace t (fun () => ()) (fun () => client.after (tick_ms ()) (fun () => go t next_step_at))
+                scoreboard.finish_or_continue a.pace t
+                    fun () => ()
+                    fun () => client.after (tick_ms ()) fun () => go t next_step_at
     go first 0
 
 inl main () =
@@ -83,17 +105,18 @@ inl main () =
     inl ready () =
         inl name, health, mana = client.player_name (), client.player_health (), client.player_mana ()
         probe.note ($'string.format("in game as %s health %d mana %d", !name, !health, !mana)' : string)
-        client.after 1500 (fun () =>
+        client.after 1500 fun () =>
             inl start_experience = client.player_experience ()
             client.chasing false
             client.fight_balanced ()
-            client.after 1000 (fun () =>
+            client.after 1000 fun () =>
                 inl at, every = probe.described (client.player_spot ()), tick_ms ()
-                probe.note ($'string.format("random control starts at %s (drink, engage, random step or stand, equal odds every %d ms)", !at, !every)' : string)
+                probe.note ($'string.format("random control starts at %s (drink, engage, random step or stand, equal \
+                    odds every %d ms)", !at, !every)' : string)
                 lua.set_cell started_at (client.now_ms ())
-                tick {pace = scoreboard.pace_from_environment start_experience started_at; engaged = engaged} (scoreboard.empty ())
-                )
-            )
-    client.disable_client_bot "Knight Sample_1511"
+                tick
+                    { pace = scoreboard.pace_from_environment start_experience started_at; engaged = engaged }
+                    (scoreboard.empty ())
+    client.disable_client_bot (probe.bot_profile ())
     probe.started_as (probe.knight ()) on_text ready 200000 (fun () => probe.finish_reporting_parity "timeout")
     0i32

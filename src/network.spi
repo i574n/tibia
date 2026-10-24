@@ -48,9 +48,10 @@ inl output_slot (o : output) : i32 =
 
 inl input_weight_slot (hidden h) (f : feature) : i32 = h * input_count () + feature_slot f
 
-inl output_weight_slot (o : output) (hidden h) : i32 = input_count () * hidden_count () + output_slot o * hidden_count () + h
+inl output_weight_slot (o : output) (hidden h) : i32 =
+    input_count () * hidden_count () + output_slot o * hidden_count () + h
 
-type decision = {heal : bool; engage : bool; retreat : bool}
+type decision = { heal : bool; engage : bool; retreat : bool }
 
 inl filled (count : i32) (value : i32) : array i32 =
     inl x : array i32 = create count
@@ -65,7 +66,11 @@ inl zero_weights () : weights = weights (filled (weight_count ()) 0)
 
 inl weight (weights w) (i : i32) : i32 = index w i
 
-inl inputs_of (health_fraction : i32) (attackers : i32) (target_health : i32) (target_distance : i32) (heal_ready : bool) (strike_ready : bool) (target_fleeing : bool) : inputs =
+inl inputs_of
+    (health_fraction : i32) (attackers : i32) (target_health : i32) (target_distance : i32) (heal_ready : bool)
+    (strike_ready : bool) (target_fleeing : bool)
+    : inputs
+    =
     inl x = filled (input_count ()) 0
     inl flag b = if b then one () else 0
     inl put f value = set x (feature_slot f) value
@@ -97,7 +102,9 @@ inl hidden_layer (w : weights) (x : inputs) : array i32 =
 inl output_unit (w : weights) (hidden : array i32) (k : i32) : i32 =
     inl offset = input_count () * hidden_count ()
     let rec sum (j : i32) (total : i32) : i32 =
-        if j >= hidden_count () then total else sum (j + 1) (total + weight w (offset + k * hidden_count () + j) * index hidden j)
+        if j >= hidden_count ()
+        then total
+        else sum (j + 1) (total + weight w (offset + k * hidden_count () + j) * index hidden j)
     sum 0 0 / one ()
 
 inl decide (w : weights) (x : inputs) : decision =
@@ -105,15 +112,17 @@ inl decide (w : weights) (x : inputs) : decision =
     inl heal = output_unit w hidden 0
     inl engage = output_unit w hidden 1
     inl retreat = output_unit w hidden 2
-    {heal = heal > 0; engage = engage > 0 && engage >= retreat; retreat = retreat > 0 && retreat > engage}
+    { heal = heal > 0; engage = engage > 0 && engage >= retreat; retreat = retreat > 0 && retreat > engage }
 
 inl with_weight (i : i32) (value : i32) (weights w) : weights =
     set w i value
     weights w
 
-inl with_input_weight (h : hidden) (f : feature) (value : i32) (w : weights) : weights = with_weight (input_weight_slot h f) value w
+inl with_input_weight (h : hidden) (f : feature) (value : i32) (w : weights) : weights =
+    with_weight (input_weight_slot h f) value w
 
-inl with_output_weight (o : output) (h : hidden) (value : i32) (w : weights) : weights = with_weight (output_weight_slot o h) value w
+inl with_output_weight (o : output) (h : hidden) (value : i32) (w : weights) : weights =
+    with_weight (output_weight_slot o h) value w
 
 inl fraction_below (heal_below : i32) (max_health : i32) : i32 = (heal_below - 1) * one () / max_health + 1
 
@@ -137,23 +146,36 @@ inl clamp_weight (x : i32) : i32 = if x < -2048 then -2048 elif x > 2048 then 20
 inl mutate (seed : u32) (generation : i32) (child : i32) (spread : i32) (w : weights) : weights =
     inl next = filled (weight_count ()) 0
     let rec copy (i : i32) : () =
-        if i < weight_count () then
-            inl draw : i32 = conv (rng.roll_between 0 (conv (2 * spread)) (rng.roll_key seed (conv generation) (conv child) (conv (1000 + i))))
+        if i < weight_count ()
+        then
+            inl draw : i32 =
+                conv (
+                    rng.roll_between 0
+                        (conv (2 * spread))
+                        (rng.roll_key seed (conv generation) (conv child) (conv (1000 + i)))
+                )
             set next i (clamp_weight (weight w i + draw - spread))
             copy (i + 1)
     copy 0
     weights next
 
-inl evolve (fitness : weights -> i32) (start : weights) (seed : u32) (generations : i32) (offspring : i32) (spread : i32) : weights =
+inl evolve
+    (fitness : weights -> i32) (start : weights) (seed : u32) (generations : i32) (offspring : i32) (spread : i32)
+    : weights
+    =
     let rec generation (index : i32) (parent : weights) (parent_score : i32) (width : i32) : weights =
-        if index >= generations then parent
+        if index >= generations
+        then parent
         else
             let rec children (child : i32) (best : weights) (best_score : i32) : weights * i32 =
-                if child >= offspring then best, best_score
+                if child >= offspring
+                then best, best_score
                 else
                     inl candidate = mutate seed index child width parent
                     inl score = fitness candidate
-                    if score > best_score then children (child + 1) candidate score else children (child + 1) best best_score
+                    if score > best_score
+                    then children (child + 1) candidate score
+                    else children (child + 1) best best_score
             match children 0 parent parent_score with
             | best, best_score => generation (index + 1) best best_score (if width > 4 then width * 4 / 5 else 4)
     generation 0 start (fitness start) spread
@@ -169,7 +191,11 @@ test a_zero_network_holds =
 ///> c
 test a_hand_wired_network_heals_when_low =
     inl ~health = 64i32
-    inl w = zero_weights () |> with_input_weight (hidden 0) HealthFraction (-256) |> with_input_weight (hidden 0) Bias 128 |> with_output_weight HealOutput (hidden 0) 256
+    inl w =
+        zero_weights ()
+        |> with_input_weight (hidden 0) HealthFraction (-256)
+        |> with_input_weight (hidden 0) Bias 128
+        |> with_output_weight HealOutput (hidden 0) 256
     (decide w (inputs_of health 0 0 0 true true false)).heal |> _assert_eq true
     (decide w (inputs_of (health + 100) 0 0 0 true true false)).heal |> _assert_eq false
 
@@ -216,5 +242,13 @@ test evolution_learns_to_heal_below_a_quarter =
 ///> wgsl
 test network_decides_on_gpu =
     inl ~health = 64i32
-    inl w = zero_weights () |> with_input_weight (hidden 0) HealthFraction (-256) |> with_input_weight (hidden 0) Bias 128 |> with_output_weight HealOutput (hidden 0) 256
-    if (decide w (inputs_of health 0 0 0 true true false)).heal && (decide w (inputs_of (health + 100) 0 0 0 true true false)).heal = false then 0i32 else 1i32
+    inl w =
+        zero_weights ()
+        |> with_input_weight (hidden 0) HealthFraction (-256)
+        |> with_input_weight (hidden 0) Bias 128
+        |> with_output_weight HealOutput (hidden 0) 256
+    if
+        (decide w (inputs_of health 0 0 0 true true false)).heal
+        && (decide w (inputs_of (health + 100) 0 0 0 true true false)).heal = false
+    then 0i32
+    else 1i32

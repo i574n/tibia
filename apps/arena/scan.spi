@@ -6,15 +6,22 @@ inl mark_of (marks_unloaded : bool) (f : client.footing) : string =
 
 inl scan_row (marks_unloaded : bool) (centre : client.spot) (radius : i32) (dy : i32) : string =
     let rec cells (dx : i32) (row : string) : string =
-        if dx > radius then row
+        if dx > radius
+        then row
         else
-            inl cell = if dx = 0 && dy = 0 then "K" else mark_of marks_unloaded (client.footing_at {centre with x = centre.x + dx; y = centre.y + dy})
+            inl cell =
+                if dx = 0 && dy = 0
+                then "K"
+                else mark_of marks_unloaded (client.footing_at { centre with x = centre.x + dx; y = centre.y + dy })
             cells (dx + 1) (lua.joined row cell)
     cells (0 - radius) ""
 
 inl scan (marks_unloaded : bool) (radius : i32) : () =
     inl centre = client.player_spot ()
-    inl legend = if marks_unloaded then " (# wall or blocked, . walkable, ? not loaded by the client, K knight)" else " (# wall or blocked, . walkable, K knight)"
+    inl legend =
+        if marks_unloaded
+        then " (# wall or blocked, . walkable, ? not loaded by the client, K knight)"
+        else " (# wall or blocked, . walkable, K knight)"
     probe.note (lua.joined (lua.joined "scan around " (probe.described centre)) legend)
     let rec rows (dy : i32) : () =
         if dy <= radius then

@@ -1,3 +1,4 @@
+///- --package .
 test cooldowns static =
     open testing
 
@@ -12,12 +13,29 @@ union spell_id =
     | WoundCleansingSpell
     | HasteSpell
 
-type spell = {id : spell_id; group : spell_group; own_ms : i32; group_ms : i32}
+type spell = { id : spell_id; group : spell_group; own_ms : i32; group_ms : i32 }
 
-type timers = {attack_ready_at : i32; healing_ready_at : i32; support_ready_at : i32; strike_ready_at : i32; light_healing_ready_at : i32; wound_cleansing_ready_at : i32; haste_ready_at : i32}
+type timers =
+    {
+        attack_ready_at : i32
+        healing_ready_at : i32
+        support_ready_at : i32
+        strike_ready_at : i32
+        light_healing_ready_at : i32
+        wound_cleansing_ready_at : i32
+        haste_ready_at : i32
+    }
 
 inl idle_timers () : timers =
-    {attack_ready_at = 0; healing_ready_at = 0; support_ready_at = 0; strike_ready_at = 0; light_healing_ready_at = 0; wound_cleansing_ready_at = 0; haste_ready_at = 0}
+    {
+        attack_ready_at = 0
+        healing_ready_at = 0
+        support_ready_at = 0
+        strike_ready_at = 0
+        light_healing_ready_at = 0
+        wound_cleansing_ready_at = 0
+        haste_ready_at = 0
+    }
 
 inl group_ready_at (group : spell_group) (held : timers) : i32 =
     match group with
@@ -34,10 +52,10 @@ inl own_ready_at (id : spell_id) (held : timers) : i32 =
 
 inl with_own_ready_at (id : spell_id) (until : i32) (held : timers) : timers =
     match id with
-    | StrikeSpell => {held with strike_ready_at = until}
-    | LightHealingSpell => {held with light_healing_ready_at = until}
-    | WoundCleansingSpell => {held with wound_cleansing_ready_at = until}
-    | HasteSpell => {held with haste_ready_at = until}
+    | StrikeSpell => { held with strike_ready_at = until }
+    | LightHealingSpell => { held with light_healing_ready_at = until }
+    | WoundCleansingSpell => { held with wound_cleansing_ready_at = until }
+    | HasteSpell => { held with haste_ready_at = until }
 
 inl later (a : i32) (b : i32) : i32 =
     if a < b then b else a
@@ -52,13 +70,13 @@ inl after_cast (now : i32) (cast : spell) (held : timers) : timers =
     inl group_until = now + cast.group_ms
     inl with_spell = with_own_ready_at cast.id (later (own_ready_at cast.id held) (now + cast.own_ms)) held
     match cast.group with
-    | AttackGroup => {with_spell with attack_ready_at = group_until}
-    | HealingGroup => {with_spell with healing_ready_at = group_until}
-    | SupportGroup => {with_spell with support_ready_at = group_until}
+    | AttackGroup => { with_spell with attack_ready_at = group_until }
+    | HealingGroup => { with_spell with healing_ready_at = group_until }
+    | SupportGroup => { with_spell with support_ready_at = group_until }
 
-inl strike_spell () : spell = {id = StrikeSpell; group = AttackGroup; own_ms = 2000; group_ms = 2000}
-inl light_healing () : spell = {id = LightHealingSpell; group = HealingGroup; own_ms = 1000; group_ms = 1000}
-inl haste () : spell = {id = HasteSpell; group = SupportGroup; own_ms = 2000; group_ms = 2000}
+inl strike_spell () : spell = { id = StrikeSpell; group = AttackGroup; own_ms = 2000; group_ms = 2000 }
+inl light_healing () : spell = { id = LightHealingSpell; group = HealingGroup; own_ms = 1000; group_ms = 1000 }
+inl haste () : spell = { id = HasteSpell; group = SupportGroup; own_ms = 2000; group_ms = 2000 }
 
 ///> c
 test fresh_timers_allow_any_spell =
@@ -97,7 +115,12 @@ test support_sets_only_support_group =
 test attack_cooldown_on_gpu =
     inl ~now = 1000i32
     inl held = idle_timers () |> after_cast now (strike_spell ())
-    if can_cast (now + 1999) (strike_spell ()) held = false && can_cast (now + 2000) (strike_spell ()) held && held.healing_ready_at = 0i32 then 0i32 else 1i32
+    if
+        can_cast (now + 1999) (strike_spell ()) held = false
+        && can_cast (now + 2000) (strike_spell ()) held
+        && held.healing_ready_at = 0i32
+    then 0i32
+    else 1i32
 
 ///> c
 test healing_right_after_a_strike_is_allowed_like_canary =

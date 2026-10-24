@@ -1,0 +1,64 @@
+///- --package .
+test scenario static =
+    open testing
+
+open sm'_operators
+
+type order = { name : string; count : i32 }
+
+union mix =
+    | Mix : list order
+    | BadOrder : string
+
+inl order_of (part : string) : option order =
+    inl fields = part |> sm'.split ":" |> array
+    if am'.length fields <> 2
+    then None
+    else
+        match convert.try_convert (sm'.trim (am'.index 1 fields)) with
+        | Some count => Some { name = sm'.trim (am'.index 0 fields); count = count }
+        | None => None
+
+inl mix_of (monster : string) (count : i32) : mix =
+    if sm'.contains ":" monster
+    then
+        inl parts = monster |> sm'.split "," |> array
+        let rec collect (i : i32) (orders : list order) : mix =
+            if i < 0
+            then Mix orders
+            else
+                inl part = am'.index i parts
+                match order_of part with
+                | Some o => collect (i - 1) (o :: orders)
+                | None => BadOrder part
+        collect (am'.length parts - 1) Nil
+    else Mix [ { name = monster; count = count } ]
+
+inl summon_orders (orders : list order) (radius : i32) : string =
+    inl entry (o : order) : string = o.name ++# "," ++#? o.count ++# ",," ++#? radius
+    match orders with
+    | Cons (head, tail) => listm.fold (fun text o => text ++# ";" ++# entry o) (entry head) tail
+    | Nil => ""
+
+inl total_count (orders : list order) : i32 = listm.fold (fun total (o : order) => total + o.count) 0 orders
+
+///> lua
+///> gleam
+test a_single_monster_and_a_mixed_camp_give_the_harness_orders =
+    inl ~radius = 2i32
+    match mix_of "troll" 3 with
+    | Mix orders =>
+        summon_orders orders radius |> _assert_eq "troll,3,,2"
+        total_count orders |> _assert_eq 3i32
+    | BadOrder part => failwith part
+    match mix_of "troll:2, cyclops:1" 0 with
+    | Mix orders =>
+        summon_orders orders radius |> _assert_eq "troll,2,,2;cyclops,1,,2"
+        total_count orders |> _assert_eq 3i32
+    | BadOrder part => failwith part
+
+///> lua
+///> gleam
+test a_count_that_is_not_a_number_names_its_part =
+    inl ~monster = "troll:2,cyclops:x"
+    mix_of monster 0 |> _assert_eq (BadOrder "cyclops:x")

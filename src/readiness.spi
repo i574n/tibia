@@ -38,7 +38,10 @@ inl healing_gate (now : quantity.amount quantity.milliseconds) (timers : cooldow
     if cooldowns.can_cast at spell timers then Open (HealingReady now)
     else ClosedUntil (quantity.ms (cooldowns.ready_at spell timers))
 
-inl action_gate (now : quantity.amount quantity.milliseconds) (next_action_at : quantity.amount quantity.milliseconds) : gate action_slot =
+inl action_gate
+    (now : quantity.amount quantity.milliseconds) (next_action_at : quantity.amount quantity.milliseconds)
+    : gate action_slot
+    =
     if quantity.at_least now next_action_at then Open (ActionReady now) else ClosedUntil next_action_at
 
 inl command_code (c : command) : i32 =
@@ -86,7 +89,10 @@ test gates_on_gpu =
 ///> c
 test the_action_gate_opens_once_per_gap =
     inl ~now = 1000i32
-    inl code g = match g with Open proof => quantity.value_of (since proof) | ClosedUntil until => 0 - quantity.value_of until
+    inl code g =
+        match g with
+        | Open proof => quantity.value_of (since proof)
+        | ClosedUntil until => 0 - quantity.value_of until
     code (action_gate (quantity.ms now) (quantity.ms 1250)) |> _assert_eq -1250i32
     code (action_gate (quantity.ms (now + 250)) (quantity.ms 1250)) |> _assert_eq 1250i32
 

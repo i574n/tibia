@@ -1,44 +1,18 @@
 param([string] $Results = (Join-Path (Split-Path $PSScriptRoot -Parent) 'results\arena-results-cyclops.tsv'), [string] $Monster = 'cyclops', [datetime] $Since = [datetime]::MinValue)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'paths.ps1')
-$logDir = $TibiaLogs
+$eoie = (Get-Command eoie -ErrorAction Ignore).Source ?? 'C:\home\git\eoie\eoie.exe'
 
-function Get-Spread([double[]] $values) {
-    if ($values.Count -eq 0) { return [pscustomobject]@{ Mean = [double]::NaN; Sd = [double]::NaN } }
-    $mean = ($values | Measure-Object -Average).Average
-    $sd = if ($values.Count -gt 1) { [Math]::Sqrt((($values | ForEach-Object { ($_ - $mean) * ($_ - $mean) }) | Measure-Object -Sum).Sum / ($values.Count - 1)) } else { 0 }
-    [pscustomobject]@{ Mean = $mean; Sd = $sd }
-}
+& $eoie table query $Results --group competitor --count cleared_ms --mean cleared_ms,potions --sd cleared_ms,potions --min lowest_health --sum deaths
+if ($LASTEXITCODE -ne 0) { throw "arena-summary / eoie table query failed ($LASTEXITCODE)" }
 
-$rows = Import-Csv $Results -Delimiter "`t" | Where-Object { [datetime]$_.timestamp -ge $Since }
-$taken = @{}
-Get-ChildItem $logDir -Filter "*-$Monster-*.log" | ForEach-Object {
+$logs = @(Get-ChildItem $TibiaLogs -Filter "*-$Monster-*.log" | Where-Object {
     $parts = $_.BaseName -split "-$Monster-"
-    $competitor = $parts[1] -replace '-\d+$', ''
-    $stamp = [datetime]::ParseExact($parts[0], 'yyyyMMdd-HHmmss', $null)
-    if ($stamp -ge $Since) {
-        $hits = @(Select-String -Path $_.FullName -Pattern 'You lose (\d+) hitpoints? due to an attack' | ForEach-Object { [int]$_.Matches[0].Groups[1].Value })
-        if ($hits.Count -gt 0) {
-            if (-not $taken[$competitor]) { $taken[$competitor] = @() }
-            $taken[$competitor] += ($hits | Measure-Object -Sum).Sum
-        }
-    }
-}
-
-$rows | Group-Object competitor | ForEach-Object {
-    $group = $_.Group
-    $cleared = @($group | Where-Object { $_.cleared_ms } | ForEach-Object { [double]$_.cleared_ms / 1000 })
-    $clear = Get-Spread $cleared
-    $potions = Get-Spread @($group | ForEach-Object { [double]$_.potions })
-    $damage = Get-Spread @($taken[$_.Name] | ForEach-Object { [double]$_ })
-    [pscustomobject]@{
-        competitor = $_.Name
-        runs = $group.Count
-        cleared = "$($cleared.Count)/$($group.Count)"
-        clear_s = '{0:N1} +- {1:N1}' -f $clear.Mean, $clear.Sd
-        potions = '{0:N1} +- {1:N1}' -f $potions.Mean, $potions.Sd
-        damage_taken = if ($taken[$_.Name]) { '{0:N0} +- {1:N0} ({2} logs)' -f $damage.Mean, $damage.Sd, $taken[$_.Name].Count } else { 'no damage lines' }
-        lowest_health = [int]($group | ForEach-Object { [int]$_.lowest_health } | Measure-Object -Minimum).Minimum
-        deaths = [int]($group | ForEach-Object { [int]$_.deaths } | Measure-Object -Sum).Sum
-    }
-} | Format-Table -AutoSize | Out-String -Width 200
+    $parts.Count -ge 2 -and [datetime]::ParseExact($parts[0], 'yyyyMMdd-HHmmss', $null) -ge $Since
+} | ForEach-Object FullName)
+if (!$logs) { "damage taken / no $Monster logs since $($Since.ToString('s'))"; return }
+$damage = Join-Path (New-Item -ItemType Directory -Force (Join-Path $TibiaRepo 'target/summary')).FullName "damage-$Monster.tsv"
+& $eoie table logs @logs --field competitor="-$Monster-(.+)-\d+\.log$" --sum damage='You lose (\d+) hitpoints? due to an attack' --out $damage | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "arena-summary / eoie table logs failed ($LASTEXITCODE)" }
+"damage taken since $($Since.ToString('s')), logs with at least one hit:"
+& $eoie table query $damage --where 'damage>0' --group competitor --count damage --mean damage --sd damage

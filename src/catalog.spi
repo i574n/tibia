@@ -11,7 +11,7 @@ union kind k =
     | GoblinKind :: kind goblin_kind
     | CyclopsKind :: kind cyclops_kind
 
-type spawn k = {kind : kind k; count : i32; radius : i32}
+type spawn k = { kind : kind k; count : i32; radius : i32 }
 
 nominal entry = exists k. spawn k
 
@@ -26,7 +26,7 @@ inl stats_of forall k. (which : kind k) : creatures.creature_stats =
     creatures.stats_of (arena_creature_of which)
 
 inl spawn_of forall k. (which : kind k) (count : i32) (radius : i32) : spawn k =
-    {kind = which; count = count; radius = radius}
+    { kind = which; count = count; radius = radius }
 
 inl pack_entry forall k. (s : spawn k) : entry = entry (exists s)
 
@@ -70,4 +70,6 @@ test a_troll_spawn_cannot_hold_a_cyclops fails "Unification failure" =
 ///> wgsl
 test camps_on_gpu =
     inl ~scale = 1i32
-    if camp_experience (troll_camp ()) * scale = 110i32 && camp_health (cyclops_cave ()) * scale = 360i32 then 0i32 else 1i32
+    if camp_experience (troll_camp ()) * scale = 110i32 && camp_health (cyclops_cave ()) * scale = 360i32
+    then 0i32
+    else 1i32

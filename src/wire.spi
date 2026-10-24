@@ -1,9 +1,10 @@
+///- --package .
 test wire static =
     open testing
 
-type xtea_key = {k0 : u32; k1 : u32; k2 : u32; k3 : u32}
+type xtea_key = { k0 : u32; k1 : u32; k2 : u32; k3 : u32 }
 
-inl xtea_key k0 k1 k2 k3 : xtea_key = {k0 k1 k2 k3}
+inl xtea_key k0 k1 k2 k3 : xtea_key = { k0 k1 k2 k3 }
 
 inl xtea_delta () : u32 = 2654435769
 
@@ -37,13 +38,13 @@ inl xtea_decrypt (key : xtea_key) (v0 : u32) (v1 : u32) : u32 * u32 =
 
 inl adler_modulus () : u32 = 65521
 
-type adler = {low : u32; high : u32}
+type adler = { low : u32; high : u32 }
 
-inl adler_start () : adler = {low = 1; high = 0}
+inl adler_start () : adler = { low = 1; high = 0 }
 
 inl adler_step (byte : u32) (state : adler) : adler =
     inl low = (state.low + byte) % adler_modulus ()
-    {low = low; high = (state.high + low) % adler_modulus ()}
+    { low = low; high = (state.high + low) % adler_modulus () }
 
 inl adler_value (state : adler) : u32 =
     (state.high <<< 16) ||| state.low

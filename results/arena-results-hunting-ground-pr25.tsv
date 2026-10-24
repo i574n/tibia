@@ -1,0 +1,21 @@
+timestamp	competitor	run	monster	count	experience	cleared_ms	lowest_health	actions_allowed	actions_dropped	potions	gold	deaths	foreign_potions	foreign_actions
+2026-10-23T19:33:20	spiral-policy	1	hunting-ground	0	1184		129	22	4	6	68	0	0	0
+2026-10-23T19:33:20	spiral-policy-ally	1	hunting-ground	0	237		153	8	2	1	8	0	0	0
+2026-10-23T19:39:22	spiral-policy	2	hunting-ground	0	735		111	22	2	6	65	0	0	0
+2026-10-23T19:39:23	spiral-policy-ally	2	hunting-ground	0	895		187	17	2	0	89	0	0	0
+2026-10-23T19:46:27	spiral-policy	3	hunting-ground	0	868		110	20	2	3	105	0	0	0
+2026-10-23T19:46:27	spiral-policy-ally	3	hunting-ground	0	764		124	16	2	2	121	0	0	0
+2026-10-23T19:52:51	spiral-policy	4	hunting-ground	0	1044		112	24	2	8	125	0	0	0
+2026-10-23T19:52:51	spiral-policy-ally	4	hunting-ground	0	586		123	13	0	1	74	0	0	0
+2026-10-23T19:59:09	spiral-policy	5	hunting-ground	0	998		100	21	2	6	110	0	0	0
+2026-10-23T19:59:09	spiral-policy-ally	5	hunting-ground	0	574		86	13	0	3	47	0	0	0
+2026-10-23T20:05:10	spiral-policy	6	hunting-ground	0	1098		121	24	2	7	121	0	0	0
+2026-10-23T20:05:10	spiral-policy-ally	6	hunting-ground	0	534		144	12	0	1	51	0	0	0
+2026-10-23T20:11:14	spiral-policy	7	hunting-ground	0	893		130	20	2	6	95	0	0	0
+2026-10-23T20:11:14	spiral-policy-ally	7	hunting-ground	0	460		294	11	2	0	40	0	0	0
+2026-10-23T20:17:23	spiral-policy	8	hunting-ground	0	746		140	23	8	5	56	0	0	0
+2026-10-23T20:17:23	spiral-policy-ally	8	hunting-ground	0	882		156	18	4	1	113	0	0	0
+2026-10-23T20:23:29	spiral-policy	9	hunting-ground	0	962		87	32	6	12	35	0	0	0
+2026-10-23T20:23:29	spiral-policy-ally	9	hunting-ground	0	702		166	17	6	0	60	0	0	0
+2026-10-23T20:29:41	spiral-policy	10	hunting-ground	0	1100		103	29	8	10	92	0	0	0
+2026-10-23T20:29:42	spiral-policy-ally	10	hunting-ground	0	470		129	12	4	2	74	0	0	0

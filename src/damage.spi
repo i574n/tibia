@@ -1,3 +1,4 @@
+///- --package .
 test damage static =
     open testing
 
@@ -50,4 +51,6 @@ test level_bonus_truncates =
 ///> wgsl
 test max_melee_matches_canary_on_gpu =
     inl ~value = 50i32
-    if max_melee_damage_offensive value 80 100 = 360i32 && max_melee_damage_offensive (value + 150) 130 1000 = 2410i32 then 0i32 else 1i32
+    if max_melee_damage_offensive value 80 100 = 360i32 && max_melee_damage_offensive (value + 150) 130 1000 = 2410i32
+    then 0i32
+    else 1i32

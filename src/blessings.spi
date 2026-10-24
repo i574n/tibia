@@ -1,3 +1,4 @@
+///- --package .
 test blessings static =
     open testing
 
@@ -11,7 +12,17 @@ union carried =
     | EquippedItem
 
 inl item_loss_percent (blessings : i32) : i32 =
-    if blessings <= 0 then 100 elif blessings = 1 then 70 elif blessings = 2 then 45 elif blessings = 3 then 25 elif blessings = 4 then 10 else 0
+    if blessings <= 0
+    then 100
+    elif blessings = 1
+    then 70
+    elif blessings = 2
+    then 45
+    elif blessings = 3
+    then 25
+    elif blessings = 4
+    then 10
+    else 0
 
 inl roll_scale () : i32 = 10000
 
@@ -38,10 +49,22 @@ test an_unblessed_knight_always_drops_the_backpack_and_each_other_item_one_time_
 ///> c
 test blessings_amulet_of_loss_and_skulls_follow_canary_blessing_lua =
     inl ~one = 1i32
-    (drops_over_every_roll (Unprotected one) ContainerItem, drops_over_every_roll (Unprotected one) EquippedItem, drops_over_every_roll (Unprotected (one + 3)) EquippedItem, drops_over_every_roll (Unprotected (one + 4)) ContainerItem, drops_over_every_roll AmuletOfLoss ContainerItem, drops_over_every_roll Skulled EquippedItem)
+    (
+        drops_over_every_roll (Unprotected one) ContainerItem,
+        drops_over_every_roll (Unprotected one) EquippedItem,
+        drops_over_every_roll (Unprotected (one + 3)) EquippedItem,
+        drops_over_every_roll (Unprotected (one + 4)) ContainerItem,
+        drops_over_every_roll AmuletOfLoss ContainerItem,
+        drops_over_every_roll Skulled EquippedItem
+    )
     |> _assert_eq (7000i32, 700i32, 100i32, 0i32, 0i32, 10000i32)
 
 ///> wgsl
 test unblessed_drops_on_gpu =
     inl ~roll = 1000i32
-    if dropped (Unprotected 0) EquippedItem roll && dropped (Unprotected 0) EquippedItem (roll + 1) = false && dropped (Unprotected 0) ContainerItem 10000 then 0i32 else 1i32
+    if
+        dropped (Unprotected 0) EquippedItem roll
+        && dropped (Unprotected 0) EquippedItem (roll + 1) = false
+        && dropped (Unprotected 0) ContainerItem 10000
+    then 0i32
+    else 1i32

@@ -1,5 +1,6 @@
 inl orders_of (text : string) : lua.native_table =
-    $'(function(s) local t = {}; for part in string.gmatch(s, "[^;]+") do table.insert(t, part) end; return t end)(!text)' : lua.native_table
+    $'(function(s) local t = {}; for part in string.gmatch(s, "[^;]+") do table.insert(t, part) end; return t \
+        end)(!text)' : lua.native_table
 
 inl order_count (t : lua.native_table) : i32 = $'##(!t)' : i32
 
@@ -11,7 +12,9 @@ inl list_creatures () : () =
     let rec each (index : i32) : () =
         if index <= size then
             inl c = client.member people index
-            inl name, monster, at = client.creature_name c, (if client.creature_is_monster c then "true" else "false"), probe.described (client.creature_spot c)
+            inl name = client.creature_name c
+            inl monster = if client.creature_is_monster c then "true" else "false"
+            inl at = probe.described (client.creature_spot c)
             probe.note ($'string.format("sees %s monster=%s at %s", !name, !monster, !at)' : string)
             each (index + 1)
     each 1
