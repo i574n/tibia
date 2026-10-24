@@ -1,0 +1,7 @@
+File	Test	Target	Status	Ms	Memo
+competitor	candidate_steps_try_the_diagonal_then_axes_then_sidesteps	lua	failed	3588	miss
+competitor	candidate_steps_try_the_diagonal_then_axes_then_sidesteps	c	not_run		miss
+competitor	threat_rank_orders_by_x_then_y	lua	failed	3151	miss
+competitor	threat_rank_orders_by_x_then_y	c	not_run		miss
+competitor	footing_label_names_each_footing	lua	failed	3983	miss
+competitor	footing_label_names_each_footing	c	not_run		miss

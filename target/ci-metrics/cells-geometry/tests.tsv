@@ -1,0 +1,17 @@
+File	Test	Target	Status	Ms	Memo
+geometry	step_north_decrements_y	c	passed	1014	miss
+geometry	step_south_east_moves_both_axes	c	passed	764	miss
+geometry	step_keeps_floor	c	passed	1007	miss
+geometry	diagonal_headings	c	passed	852	miss
+geometry	chebyshev_counts_diagonals_as_one	c	passed	694	miss
+geometry	opposite_steps_cancel	c	passed	5765	miss
+geometry	steps_match_canary_walk_probe_2026_10_12	c	passed	1313	miss
+geometry	diagonal_steps_match_canary_walk_probe_2026_10_12	c	passed	934	miss
+geometry	stepping_onto_the_south_ramp_matches_the_live_floor_change_2026_10_15	c	passed	1391	miss
+geometry	every_up_ramp_climbs_one_floor_and_shifts_like_canary_query_destination	c	passed	1378	miss
+geometry	sight_lines_match_canary_check_sight_line_on_a_walled_grid	c	passed	2102	miss
+geometry	sight_lines_are_blocked_or_clear_like_canary_for_named_pairs	c	passed	1425	miss
+geometry	sight_lines_on_gpu	wgsl	passed	1140	miss
+geometry	range_needs_same_floor	c	passed	1023	miss
+geometry	distance_and_steps_on_gpu	wgsl	passed	921	miss
+geometry	straight_steps_take_the_longer_axis_first	c	passed	716	miss

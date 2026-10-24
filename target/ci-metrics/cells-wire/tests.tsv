@@ -1,0 +1,7 @@
+File	Test	Target	Status	Ms	Memo
+wire	xtea_matches_published_vector	c	passed	909	miss
+wire	xtea_matches_reference_on_small_key	c	passed	937	miss
+wire	xtea_round_trips	c	passed	1404	miss
+wire	adler32_of_wikipedia	c	passed	863	miss
+wire	xtea_published_vector_on_gpu	wgsl	passed	760	miss
+wire	xtea_published_vector_on_zig	zig	passed	1207	miss

@@ -1,0 +1,4 @@
+File	Test	Target	Status	Ms	Memo
+blessings	an_unblessed_knight_always_drops_the_backpack_and_each_other_item_one_time_in_ten	c	passed	4014	miss
+blessings	blessings_amulet_of_loss_and_skulls_follow_canary_blessing_lua	c	passed	4448	miss
+blessings	unblessed_drops_on_gpu	wgsl	passed	7572	miss

@@ -1,0 +1,6 @@
+File	Test	Target	Status	Ms	Memo
+experience	experience_table_matches_canary_get_exp_for_level	c	passed	867	miss
+experience	a_level_8_knight_sample_death_costs_a_level_like_live	c	passed	862	miss
+experience	a_death_mid_level_keeps_the_level_when_the_loss_stays_above_its_floor	c	passed	1155	miss
+experience	the_loss_rounds_up_like_canary_ceil_and_spares_levels_up_to_7	c	passed	773	miss
+experience	death_penalty_on_gpu	wgsl	passed	823	miss

@@ -1,0 +1,7 @@
+File	Test	Target	Status	Ms	Memo
+rng	mix32_zero_is_fixed_point	c	passed	787	miss
+rng	mix32_reference_values	c	passed	779	miss
+rng	draw_reference_value	c	passed	1219	miss
+rng	roll_reference_values	c	passed	746	miss
+rng	draw_is_a_pure_function_of_its_key	c	passed	984	miss
+rng	mix32_reference_values_on_gpu	wgsl	passed	675	miss

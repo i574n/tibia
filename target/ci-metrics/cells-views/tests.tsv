@@ -1,0 +1,7 @@
+File	Test	Target	Status	Ms	Memo
+views	one_decision_is_the_live_client_view	c	passed	790	miss
+views	four_lanes_decide_like_four_single_calls	c	passed	1350	miss
+views	lanes_on_gpu	wgsl	passed	844	miss
+views	counted_folds_every_view_the_same_way	c	passed	1366	miss
+views	a_trio_maps_like_the_other_views	c	passed	1078	miss
+views	a_band_reads_writes_maps_and_counts	c	passed	950	miss

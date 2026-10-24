@@ -1,0 +1,6 @@
+File	Test	Target	Status	Ms	Memo
+hunt	adjacent_attack_lands	c	passed	872	miss
+hunt	distant_attack_misses	c	passed	878	miss
+hunt	kill_pays_bounty	c	passed	1285	miss
+hunt	loot_conserves_gold_and_pays_in_fewest_coins_over_1600_purses_and_bounties	c	passed	659	miss
+hunt	kill_pays_bounty_on_gpu	wgsl	passed	3995	miss

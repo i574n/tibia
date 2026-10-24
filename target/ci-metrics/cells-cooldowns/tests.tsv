@@ -1,0 +1,8 @@
+File	Test	Target	Status	Ms	Memo
+cooldowns	fresh_timers_allow_any_spell	c	passed	1068	miss
+cooldowns	attack_blocks_its_group_until_it_expires	c	passed	1088	miss
+cooldowns	attack_does_not_block_healing_group	c	passed	1394	miss
+cooldowns	own_cooldown_gates_only_the_same_spell_like_canary	c	passed	1065	miss
+cooldowns	support_sets_only_support_group	c	passed	729	miss
+cooldowns	attack_cooldown_on_gpu	wgsl	passed	917	miss
+cooldowns	healing_right_after_a_strike_is_allowed_like_canary	c	passed	808	miss

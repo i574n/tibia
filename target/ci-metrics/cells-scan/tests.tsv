@@ -1,0 +1,5 @@
+File	Test	Target	Status	Ms	Memo
+scan	mark_of_shows_walls_walkable_and_unloaded	lua	failed	800	miss
+scan	mark_of_shows_walls_walkable_and_unloaded	c	not_run		miss
+scan	row_label_is_signed_and_padded_to_three	lua	failed	833	miss
+scan	row_label_is_signed_and_padded_to_three	c	not_run		miss

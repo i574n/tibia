@@ -1,0 +1,5 @@
+File	Test	Target	Status	Ms	Memo
+scoreboard	counted_ticks_and_keeps_the_lowest_health	lua	failed	816	miss
+scoreboard	counted_ticks_and_keeps_the_lowest_health	c	not_run		miss
+scoreboard	summary_text_lists_every_counter_in_order	lua	failed	813	miss
+scoreboard	summary_text_lists_every_counter_in_order	c	not_run		miss

@@ -1,0 +1,10 @@
+packageDir: ../../deps/spiral/lib
+packages:
+    |core-
+    spiral-
+modules:
+    block_plan
+    character
+    scenario
+    activity
+    arena_host

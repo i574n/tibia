@@ -1,0 +1,7 @@
+File	Test	Target	Status	Ms	Memo
+gpu_sim	ten_ticks_of_a_troll_pack_on_the_oracle	c	passed	2734	miss
+gpu_sim	ten_ticks_of_a_troll_pack_on_gpu	wgsl	passed	3866	miss
+gpu_sim	a_full_troll_hunt_and_five_cyclops_clears_on_the_oracle	c	passed	5615	miss
+gpu_sim	a_full_troll_hunt_and_five_cyclops_clears_on_gpu	wgsl	passed	14130	miss
+gpu_sim	a_hunting_ground_hunt_with_routing_on_the_oracle	c	passed	4229	miss
+gpu_sim	a_hunting_ground_hunt_with_routing_on_gpu	wgsl	passed	18354	miss

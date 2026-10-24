@@ -1,0 +1,5 @@
+File	Test	Target	Status	Ms	Memo
+skills	knight_skill_tries_match_canary_pow_of_the_float_multiplier	c	passed	986	miss
+skills	an_axe_30_knight_loses_a_skill_level_on_death_like_live	c	passed	978	miss
+skills	skill_loss_matches_canary_death_loop_across_levels	c	passed	1526	miss
+skills	skill_loss_on_gpu	wgsl	passed	837	miss

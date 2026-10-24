@@ -1,0 +1,10 @@
+File	Test	Target	Status	Ms	Memo
+combat	hunter_arrows_skip_the_shield_but_spend_a_block_charge_like_canary_distance_spells	c	passed	1368	miss
+combat	hunter_arrows_need_range_7_and_clear_sight_and_fire_half_the_time	c	passed	992	miss
+combat	armor_block_follows_canary_bounds	c	passed	8711	miss
+combat	truncated_normal_stays_in_unit_range_with_mean_near_half	c	passed	2204	miss
+combat	level_8_knight_rarely_hurts_a_troll	c	passed	3400	miss
+combat	axe_skill_30_hurts_a_troll_often	c	passed	2321	miss
+combat	balanced_axe_skill_30_matches_live_troll_hits	c	passed	1698	miss
+combat	balanced_swing_stats_on_gpu	wgsl	passed	1806	miss
+combat	hits_capped_at_remaining_health_match_live_skeleton_log	c	passed	1080	miss

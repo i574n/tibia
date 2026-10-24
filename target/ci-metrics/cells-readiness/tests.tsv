@@ -1,0 +1,5 @@
+File	Test	Target	Status	Ms	Memo
+readiness	gates_open_only_when_the_group_is_ready	c	passed	949	miss
+readiness	a_strike_needs_an_attack_proof	c	passed	871	miss
+readiness	gates_on_gpu	wgsl	passed	834	miss
+readiness	the_action_gate_opens_once_per_gap	c	passed	1341	miss

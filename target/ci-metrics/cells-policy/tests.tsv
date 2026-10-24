@@ -1,0 +1,13 @@
+File	Test	Target	Status	Ms	Memo
+policy	heals_only_below_threshold_when_ready	c	passed	716	miss
+policy	heals_only_below_threshold_when_ready	lua	unsupported	6611	miss
+policy	strikes_only_in_reach_ready_and_healthy_enough	c	passed	881	miss
+policy	strikes_only_in_reach_ready_and_healthy_enough	lua	unsupported	644	miss
+policy	prefers_reach_then_current_then_weakest_then_nearest	c	passed	643	miss
+policy	prefers_reach_then_current_then_weakest_then_nearest	lua	unsupported	690	miss
+policy	decisions_on_gpu	wgsl	passed	6771	miss
+policy	current_first_keeps_a_fleeing_target	c	passed	1225	miss
+policy	current_first_keeps_a_fleeing_target	lua	unsupported	1840	miss
+policy	adaptive_healing_rises_with_attackers	c	passed	1904	miss
+policy	temperate_rules_count_standing_and_fleeing_attackers_apart	c	passed	1858	miss
+policy	a_scored_aim_can_express_reach_first	c	passed	1537	miss

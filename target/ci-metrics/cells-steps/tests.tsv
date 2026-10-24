@@ -1,0 +1,5 @@
+File	Test	Target	Status	Ms	Memo
+steps	step_kind_names_knight_and_monster_steps	lua	failed	848	miss
+steps	step_kind_names_knight_and_monster_steps	c	not_run		miss
+steps	direction_of_is_the_sign	lua	failed	811	miss
+steps	direction_of_is_the_sign	c	not_run		miss

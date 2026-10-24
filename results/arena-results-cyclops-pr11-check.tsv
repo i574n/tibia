@@ -1,0 +1,3 @@
+timestamp	competitor	run	monster	count	experience	cleared_ms	lowest_health	actions_allowed	actions_dropped	potions	gold	deaths	foreign_potions	foreign_actions
+2026-10-15T14:17:17	spiral-policy	1	cyclops	3	675	76845	103	16	0	13	12	0	0	0
+2026-10-15T14:20:09	vbot	1	cyclops	3	675	100411	69	27	2	17	91	0		

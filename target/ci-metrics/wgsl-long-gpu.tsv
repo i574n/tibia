@@ -1,0 +1,6 @@
+File	Shader	Bytes	CompileMs	RunMs	Adapter
+gpu_sim	ten_ticks_of_a_troll_pack_on_gpu	1482037	1284	1558	llvmpipe (LLVM 20.1.2, 256 bits) backend Vulkan type Cpu driver llvmpipe Mesa 25.2.8-0ubuntu0.24.04.4 (LLVM 20.1.2)
+gpu_sim	a_full_troll_hunt_and_five_cyclops_clears_on_gpu	2952854	3292	6847	llvmpipe (LLVM 20.1.2, 256 bits) backend Vulkan type Cpu driver llvmpipe Mesa 25.2.8-0ubuntu0.24.04.4 (LLVM 20.1.2)
+gpu_sim	a_hunting_ground_hunt_with_routing_on_gpu	1802756	3056	12101	llvmpipe (LLVM 20.1.2, 256 bits) backend Vulkan type Cpu driver llvmpipe Mesa 25.2.8-0ubuntu0.24.04.4 (LLVM 20.1.2)
+hunt_sim	golden_seed_7_on_gpu	79072	142	301	llvmpipe (LLVM 20.1.2, 256 bits) backend Vulkan type Cpu driver llvmpipe Mesa 25.2.8-0ubuntu0.24.04.4 (LLVM 20.1.2)
+hunt_sim	scripted_beats_random_control_on_gpu	160982	194	383	llvmpipe (LLVM 20.1.2, 256 bits) backend Vulkan type Cpu driver llvmpipe Mesa 25.2.8-0ubuntu0.24.04.4 (LLVM 20.1.2)

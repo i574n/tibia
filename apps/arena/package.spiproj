@@ -1,0 +1,22 @@
+edition: 3
+packageDir: ../../deps/spiral/lib
+packages:
+    |core-
+    spiral-
+    ../../src-
+modules:
+    lua
+    client
+    probe
+    scoreboard
+    adjacency
+    observer
+    scan
+    summon
+    competitor
+    random
+    vbot
+    nexbot
+    path
+    measure
+    steps

@@ -1,0 +1,7 @@
+File	Test	Target	Status	Ms	Memo
+live	probe_rules_follow_the_policy_thresholds	c	passed	1367	miss
+live	probe_rules_follow_the_policy_thresholds	lua	unsupported	1445	miss
+live	probe_targeting_orders	c	passed	5290	miss
+live	probe_targeting_orders	lua	unsupported	585	miss
+live	probe_network_heals_at_the_rules_threshold_and_kites	c	passed	3020	miss
+live	probe_network_heals_at_the_rules_threshold_and_kites	lua	unsupported	836	miss

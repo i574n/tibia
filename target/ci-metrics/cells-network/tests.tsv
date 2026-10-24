@@ -1,0 +1,7 @@
+File	Test	Target	Status	Ms	Memo
+network	a_zero_network_holds	c	passed	1268	miss
+network	a_hand_wired_network_heals_when_low	c	passed	1157	miss
+network	a_threshold_healer_heals_below_and_engages_above	c	passed	1468	miss
+network	kiting_retreats_only_while_the_strike_recovers	c	passed	1312	miss
+network	evolution_learns_to_heal_below_a_quarter	c	passed	760	miss
+network	network_decides_on_gpu	wgsl	passed	1503	miss

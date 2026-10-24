@@ -1,0 +1,108 @@
+///- --package .
+test probe static =
+    open testing
+
+open sm'_operators
+inl note (message : string) : () = client.write_log_line (lua.joined "[tibia-probe] " message)
+
+inl described (s : client.spot) : string =
+    inl x, y, z = s.x, s.y, s.z
+    ("" ++#? x ++# "," ++#? y ++# "," ++#? z)
+
+inl chebyshev (a : client.spot) (b : client.spot) : i32 =
+    inl dx = if a.x > b.x then a.x - b.x else b.x - a.x
+    inl dy = if a.y > b.y then a.y - b.y else b.y - a.y
+    if dx > dy then dx else dy
+
+inl finish (reason : string) : () =
+    note (lua.joined "finish: " reason)
+    if client.online () then client.log_out ()
+    client.after 2000 client.exit_client
+
+inl finish_reporting_parity (reason : string) : () =
+    inl parity = client.parity_summary ()
+    if (parity <> "") then note parity
+    finish reason
+
+inl finish_once (done : lua.native_table) (reason : string) : () =
+    if lua.cell_value done = 0 then
+        lua.set_cell done 1
+        finish_reporting_parity reason
+
+inl finish_once_without_parity (done : lua.native_table) (reason : string) : () =
+    if lua.cell_value done = 0 then
+        lua.set_cell done 1
+        finish reason
+
+type nearest = { found : bool; index : i32; distance : i32 }
+
+inl nearest_monster (here : client.spot) (people : client.crowd) : nearest =
+    inl size = client.crowd_size people
+    let rec scan (index : i32) (best : nearest) : nearest =
+        if index > size then best
+        else
+            inl c = client.member people index
+            if client.live_monster c then
+                inl d = chebyshev (client.creature_spot c) here
+                scan (index + 1) (if d < best.distance then { found = true; index = index; distance = d } else best)
+            else scan (index + 1) best
+    scan 1 { found = false; index = 0; distance = 999 }
+
+inl keep_hidden () : () =
+    if client.hidden_requested () then client.hide_window ()
+    client.mute ()
+
+inl ignore_text (mode : string) (text : string) : () = ()
+
+inl start_delay_ms () : i32 = 2500
+
+inl settle_ms () : i32 = 1000
+
+inl knight () : string = client.env_text "TIBIA_ARENA_CHARACTER" "Knight Sample"
+
+inl bot_profile () : string = knight () ++# "_1511"
+
+inl game_master () : string = "GOD"
+
+inl login_gate () : string = client.env_text "TIBIA_LOGIN_GATE" ""
+
+inl when_gate_opens (gate : string) (go : () -> ()) : () =
+    let rec poll () : () =
+        if gate = "" || client.file_exists (lua.joined "/" gate)
+        then go ()
+        else client.after 50 poll
+    poll ()
+
+inl started_as
+    (character : string) (on_text : string -> string -> ()) (ready : () -> ()) (timeout_ms : i32)
+    (on_timeout : () -> ())
+    : ()
+    =
+    keep_hidden ()
+    client.after 200 keep_hidden
+    client.after 1000 keep_hidden
+    inl enter () =
+        client.log_in {
+            character = character
+            on_start = ready
+            on_error = fun message =>
+                note (lua.joined "game login error: " message)
+                finish "game login error"
+            on_text = on_text
+            }
+    client.after 3000 (fun () => when_gate_opens (login_gate ()) enter)
+    client.after timeout_ms on_timeout
+
+inl started (ready : () -> ()) (timeout_ms : i32) : () =
+    started_as (knight ()) ignore_text ready timeout_ms fun () => finish "timeout"
+
+///> lua
+///> c
+test chebyshev_takes_the_larger_axis_and_described_joins_xyz =
+    (
+        chebyshev { x = 10; y = 20; z = 7 } { x = 13; y = 19; z = 7 },
+        chebyshev { x = 13; y = 19; z = 7 } { x = 10; y = 20; z = 7 },
+        chebyshev { x = 5; y = 5; z = 7 } { x = 5; y = 5; z = 7 },
+        described { x = 1936; y = 1349; z = 7 }
+    )
+    |> _assert_eq (3i32, 3i32, 0i32, "1936,1349,7")

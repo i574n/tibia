@@ -1,0 +1,9 @@
+File	Test	Target	Status	Ms	Memo
+creatures	stats_match_canary_data_canary_lua_2026_10_12	c	passed	1050	miss
+creatures	every_melee_arena_creature_fights_adjacent_and_the_hunter_keeps_four_tiles_away	c	passed	1267	miss
+creatures	experience_per_health_ranks_skeleton_above_troll	c	passed	1324	miss
+creatures	armor_defense_and_flee_match_data_canary_2026_10_13	c	passed	977	miss
+creatures	step_ms_matches_canary_step_formula_on_grass	c	passed	1027	miss
+creatures	stats_on_gpu	wgsl	passed	720	miss
+creatures	integer_step_speed_equals_canary_double_formula_for_every_speed_up_to_its_exact_limit	c	passed	819	miss
+creatures	integer_step_speed_on_gpu	wgsl	passed	620	miss

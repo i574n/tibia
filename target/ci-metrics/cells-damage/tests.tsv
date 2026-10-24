@@ -1,0 +1,5 @@
+File	Test	Target	Status	Ms	Memo
+damage	max_melee_matches_canary_double_formula	c	passed	1158	miss
+damage	fight_mode_scales_max_melee_like_canary_attack_factor	c	passed	1251	miss
+damage	level_bonus_truncates	c	passed	1100	miss
+damage	max_melee_matches_canary_on_gpu	wgsl	passed	720	miss

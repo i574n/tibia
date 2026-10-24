@@ -1,0 +1,5 @@
+File	Test	Target	Status	Ms	Memo
+adjacency	rate_line_divides_landed_hits_by_adjacent_seconds	lua	failed	2710	miss
+adjacency	rate_line_divides_landed_hits_by_adjacent_seconds	c	not_run		miss
+adjacency	count_line_and_hit_line_keep_the_probe_wording	lua	failed	4730	miss
+adjacency	count_line_and_hit_line_keep_the_probe_wording	c	not_run		miss

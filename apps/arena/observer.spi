@@ -1,0 +1,138 @@
+///- --package .
+test observer static =
+    open testing
+
+open sm'_operators
+inl watch_ms () : i32 = 100
+inl observe_ms () : i32 = 10000
+inl run_ms () : i32 = 150000
+
+type watch =
+    {
+        start_experience : i32
+        started_at : i32
+        full_experience : i32
+        lowest : lua.native_table
+        cleared : lua.native_table
+        done : lua.native_table
+    }
+
+type bot = { config : string; banner : string; diagnostics : () -> string }
+
+inl gained (w : watch) : i32 = client.player_experience () - w.start_experience
+
+inl note_lowest (w : watch) (health : i32) : () =
+    if health < lua.cell_value w.lowest then lua.set_cell w.lowest health
+
+inl cleared_line (plus : i32) (health : i32) (lowest : i32) : string =
+    "cleared: experience +" ++#? plus ++# " health " ++#? health ++# " lowest health " ++#? lowest
+
+inl progress_line (seconds : i32) (plus : i32) (health : i32) (lowest : i32) (attacking : string) (at : string)
+    : string
+    =
+    "t="
+    ++#? seconds
+    ++# "s experience +"
+    ++#? plus
+    ++# " health "
+    ++#? health
+    ++# " lowest "
+    ++#? lowest
+    ++# " attacking "
+    ++# attacking
+    ++# " at "
+    ++# at
+
+inl clear_if_full (w : watch) (health : i32) (at : i32) : bool =
+    if lua.cell_value w.cleared = 0 && gained w >= w.full_experience
+    then
+        lua.set_cell w.cleared 1
+        inl plus, lowest = gained w, lua.cell_value w.lowest
+        probe.note (("cleared at " ++#? at ++# " ms"))
+        probe.note (cleared_line plus health lowest)
+        probe.finish_once w.done "cleared"
+        true
+    else false
+
+inl watch_every_tick (w : watch) : () =
+    let rec go () : () =
+        if lua.cell_value w.done = 0 && client.player_present () then
+            inl health = client.player_health ()
+            note_lowest w health
+            if clear_if_full w health (client.now_ms () - w.started_at) = false then client.after (watch_ms ()) go
+    go ()
+
+inl observe (b : bot) (w : watch) : () =
+    let rec go () : () =
+        if lua.cell_value w.done = 0
+        then
+            if client.player_present () = false
+            then probe.finish_once w.done "offline"
+            else
+                inl health = client.player_health ()
+                note_lowest w health
+                inl elapsed = client.now_ms () - w.started_at
+                if clear_if_full w health elapsed = false
+                then
+                    inl seconds, plus, lowest, attacking, at =
+                        elapsed / 1000,
+                        gained w,
+                        lua.cell_value w.lowest,
+                        client.attacking_short (),
+                        probe.described (client.player_spot ())
+                    probe.note (progress_line seconds plus health lowest attacking at)
+                    inl diagnostics = b.diagnostics ()
+                    if (diagnostics <> "") then probe.note diagnostics
+                    if elapsed > run_ms () then
+                        probe.note (("end: experience +" ++#? plus ++# " lowest health " ++#? lowest))
+                        probe.finish_once w.done "run complete"
+                    else client.after (observe_ms ()) go
+    go ()
+
+inl run (b : bot) : () =
+    inl done = lua.new_cell 0
+    inl lowest = lua.new_cell 999
+    inl cleared = lua.new_cell 0
+    inl full_experience = client.env_i32 "TIBIA_ARENA_FULL_EXPERIENCE" 90
+    inl logged_in_at = lua.new_cell 0
+    inl on_text (mode : string) (text : string) : () =
+        inl t = client.now_ms () - lua.cell_value logged_in_at
+        if lua.cell_value done = 1 && lua.contains text "health potion"
+        then
+            probe.note (
+                ("server text after finish (potion not counted) [" ++# mode ++# "] @t+" ++#? t)
+            )
+        else probe.note (("server text [" ++# mode ++# "]: " ++# text ++# " @t+" ++#? t))
+    inl ready () =
+        inl name, health, banner = client.player_name (), client.player_health (), b.banner
+        probe.note (("in game as " ++# name ++# " health " ++#? health ++# " " ++# banner))
+        lua.set_cell logged_in_at (client.now_ms ())
+        client.after (probe.start_delay_ms ()) fun () =>
+            client.fight_balanced ()
+            client.start_client_bot (probe.bot_profile ()) b.config
+            inl t = client.now_ms () - lua.cell_value logged_in_at
+            probe.note (("client bot starts @t+" ++#? t))
+            inl w : watch =
+                {
+                    start_experience = client.player_experience ()
+                    started_at = client.now_ms ()
+                    full_experience = full_experience
+                    lowest = lowest
+                    cleared = cleared
+                    done = done
+                }
+            watch_every_tick w
+            observe b w
+    client.disable_client_bot (probe.bot_profile ())
+    probe.started_as (probe.knight ()) on_text ready 200000 (fun () => probe.finish_once done "timeout")
+
+///> lua
+///> c
+test progress_line_reports_time_experience_health_and_target =
+    progress_line 12 270 377 210 "Cyclops" "1936,1349,7"
+    |> _assert_eq "t=12s experience +270 health 377 lowest 210 attacking Cyclops at 1936,1349,7"
+
+///> lua
+///> c
+test cleared_line_reports_experience_and_both_healths =
+    cleared_line 675 410 188 |> _assert_eq "cleared: experience +675 health 410 lowest health 188"

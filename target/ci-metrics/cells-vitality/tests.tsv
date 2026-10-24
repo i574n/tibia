@@ -1,0 +1,6 @@
+File	Test	Target	Status	Ms	Memo
+vitality	strike_reduces_health	c	passed	4558	miss
+vitality	lethal_strike_slays	c	passed	817	miss
+vitality	heal_caps_at_maximum	c	passed	1304	miss
+vitality	strike_then_heal	c	passed	919	miss
+vitality	strike_then_heal_on_gpu	wgsl	passed	944	miss

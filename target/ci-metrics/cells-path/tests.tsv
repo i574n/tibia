@@ -1,0 +1,5 @@
+File	Test	Target	Status	Ms	Memo
+path	a_step_counts_only_moves_after_the_first_sighting	lua	failed	2680	miss
+path	a_step_counts_only_moves_after_the_first_sighting	c	not_run		miss
+path	the_path_lines_keep_the_probe_wording	lua	failed	2567	miss
+path	the_path_lines_keep_the_probe_wording	c	not_run		miss

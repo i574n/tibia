@@ -1,0 +1,11 @@
+timestamp	competitor	run	monster	count	experience	cleared_ms	lowest_health	actions_allowed	actions_dropped	potions	gold	deaths	foreign_potions	foreign_actions
+2026-10-18T21:28:43	spiral-policy	1	hunter	3	225		107	2	0	1	0	0	0	0
+2026-10-18T21:32:07	spiral-policy	2	hunter	3	450		296	2	0	0	0	0	0	0
+2026-10-18T21:33:41	spiral-policy	3	hunter	3	675	51449	113	7	0	4	0	0	0	0
+2026-10-18T21:36:54	spiral-policy	4	hunter	3	225		79	3	0	2	0	0	0	0
+2026-10-18T21:38:28	spiral-policy	5	hunter	3	675	51574	107	7	2	3	0	0	0	0
+2026-10-18T21:41:40	spiral-policy	6	hunter	3	225		152	2	0	1	0	0	0	0
+2026-10-18T21:43:20	spiral-policy	7	hunter	3	675	59240	115	9	0	6	0	0	0	0
+2026-10-18T21:45:13	spiral-policy	8	hunter	3	675	71596	108	9	0	6	0	0	0	0
+2026-10-18T21:48:25	spiral-policy	9	hunter	3	225		227	1	0	0	0	0	0	0
+2026-10-18T21:50:21	spiral-policy	10	hunter	3	675	74335	130	10	0	7	0	0	0	0

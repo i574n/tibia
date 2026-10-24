@@ -1,0 +1,8 @@
+File	Test	Target	Status	Ms	Memo
+offscreen	flags_fill_the_launch_and_keep_the_script_defaults	lua	unsupported	8850	miss
+offscreen	flags_fill_the_launch_and_keep_the_script_defaults	rust	passed	7398	miss
+offscreen	bad_input_names_its_cause	lua	unsupported	6943	miss
+offscreen	bad_input_names_its_cause	rust	passed	5626	miss
+offscreen	reports_match_run_offscreen_ps1	lua	unsupported	7535	miss
+offscreen	reports_match_run_offscreen_ps1	rust	passed	4844	miss
+offscreen	a_hidden_desktop_runs_a_program_and_reports_its_exit_code	rust	failed	5990	miss

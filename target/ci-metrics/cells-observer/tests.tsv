@@ -1,0 +1,5 @@
+File	Test	Target	Status	Ms	Memo
+observer	progress_line_reports_time_experience_health_and_target	lua	failed	815	miss
+observer	progress_line_reports_time_experience_health_and_target	c	not_run		miss
+observer	cleared_line_reports_experience_and_both_healths	lua	failed	820	miss
+observer	cleared_line_reports_experience_and_both_healths	c	not_run		miss

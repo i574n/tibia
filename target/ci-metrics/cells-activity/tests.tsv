@@ -1,0 +1,4 @@
+File	Test	Target	Status	Ms	Memo
+activity	foreign_activity_follows_the_arena_check	c	passed	6274	miss
+activity	foreign_activity_follows_the_arena_check	lua	unsupported	613	miss
+activity	foreign_activity_follows_the_arena_check	gleam	passed	4195	miss

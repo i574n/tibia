@@ -1,0 +1,12 @@
+File	Test	Target	Status	Ms	Memo
+character	level_derived_stats_match_the_arena_harness	c	passed	769	miss
+character	level_derived_stats_match_the_arena_harness	lua	unsupported	592	miss
+character	level_derived_stats_match_the_arena_harness	gleam	passed	2017	miss
+character	the_reset_statement_matches_the_powershell_text	c	passed	641	miss
+character	the_reset_statement_matches_the_powershell_text	lua	unsupported	634	miss
+character	the_reset_statement_matches_the_powershell_text	gleam	passed	1904	miss
+character	the_kit_statement_matches_the_powershell_text	c	passed	948	miss
+character	the_kit_statement_matches_the_powershell_text	lua	unsupported	743	miss
+character	the_kit_statement_matches_the_powershell_text	gleam	passed	2306	miss
+character	the_duo_raises_both_per_account_limits_or_refuses	lua	unsupported	831	miss
+character	the_duo_raises_both_per_account_limits_or_refuses	gleam	passed	1966	miss

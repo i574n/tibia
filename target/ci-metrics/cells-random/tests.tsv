@@ -1,0 +1,5 @@
+File	Test	Target	Status	Ms	Memo
+random	move_of_maps_picks_and_falls_back_to_stand	lua	failed	811	miss
+random	move_of_maps_picks_and_falls_back_to_stand	c	not_run		miss
+random	heading_of_covers_eight_neighbors_once	lua	failed	801	miss
+random	heading_of_covers_eight_neighbors_once	c	not_run		miss

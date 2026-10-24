@@ -1,0 +1,6 @@
+File	Test	Target	Status	Ms	Memo
+coins	fewest_coins_conserves_value	c	passed	760	miss
+coins	fewest_coins_breakdown	c	passed	4230	miss
+coins	paying_conserves_value	c	passed	1375	miss
+coins	paying_too_much_reports_shortfall	c	passed	860	miss
+coins	fewest_coins_breakdown_on_gpu	wgsl	passed	1150	miss

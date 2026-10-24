@@ -1,0 +1,3 @@
+File	Test	Target	Status	Ms	Memo
+vocations	spell_data_matches_canary_scripts	c	passed	868	miss
+vocations	spell_data_on_gpu	wgsl	passed	856	miss

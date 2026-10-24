@@ -1,0 +1,3 @@
+File	Test	Target	Status	Ms	Memo
+catalog	mixed_camps_sum_their_kinds	c	passed	583	miss
+catalog	camps_on_gpu	wgsl	passed	762	miss
