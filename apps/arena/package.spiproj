@@ -24,5 +24,6 @@ modules:
     nexbot
     path
     samples
+    combat_text
     measure
     steps

@@ -30,28 +30,6 @@ inl sample_max (samples : native_table) : i32 = $'(function(s) local n = 0; for 
 
 := samples_joined (samples : native_table) : string = $'table.concat(!samples, ",")' : string
 
-:= labeled_sample (samples : native_table) (label : string) (value : i32) : () =
-    $'(function(s, label, value) s[label] = s[label] or {}; table.insert(s[label], value) end)(!samples, !label, \
-        !value)' : ()
-
-:= labeled_summary (samples : native_table) : string =
-    $'(function(s) local parts = {}; for label, values in pairs(s) do local sorted = {}; for i, v in ipairs(values) \
-        do sorted[i] = v end; table.sort(sorted); if ##sorted == 0 then table.insert(parts, label .. " none") else \
-        table.insert(parts, string.format("%s n=%d median %d min %d max %d", label, ##sorted, \
-        sorted[math.floor((##sorted + 1) / 2)], sorted[1], sorted[##sorted])) end end; table.sort(parts); return \
-        table.concat(parts, "; ") end)(!samples)' : string
-
-inl stamp_at (stamps : native_table) (id : i32) : i32 = $'(function(s, id) local p = s[id]; return p and p.at or -1 \
-    end)(!stamps, !id)' : i32
-
-inl stamp_kind (stamps : native_table) (id : i32) : string = $'(function(s, id) local p = s[id]; return p and p.kind \
-    or "" end)(!stamps, !id)' : string
-
-inl stamp (stamps : native_table) (id : i32) (at : i32) (kind : string) : () = $'(!stamps)[!id] = { at = !at, kind = \
-    !kind }' : ()
-
-:= matched_number (text : string) (pattern : string) : i32 = $'tonumber(string.match(!text, !pattern)) or -1' : i32
-
 := contains (text : string) (needle : string) : bool = sm'.contains needle text
 
 inl add_to (counts : native_table) (key : i32) (amount : i32) : () = $'(!counts)[!key] = ((!counts)[!key] or 0) + \
@@ -76,30 +54,9 @@ test samples_report_count_total_max_median_and_joined =
     |> _assert_eq (4i32, 22i32, 9i32, 5i32, "5,1,9,7")
 
 ///> lua
-test labeled_samples_summarize_each_label_in_order =
-    := s = new_table ()
-    labeled_sample s "b" 3
-    labeled_sample s "a" 2
-    labeled_sample s "b" 1
-    labeled_summary s |> _assert_eq "a n=1 median 2 min 2 max 2; b n=2 median 1 min 1 max 3"
-
-///> lua
-test stamps_remember_the_last_time_and_kind_per_key =
-    := s = new_table ()
-    := before = stamp_at s 7
-    stamp s 7 100 "straight"
-    (before, stamp_at s 7, stamp_kind s 7, stamp_kind s 8) |> _assert_eq (-1i32, 100i32, "straight", "")
-
-///> lua
-test text_matching_reads_numbers_and_needles =
+test text_matching_reads_needles =
     := text = "A troll loses 12 hitpoints due to your attack."
-    (
-        matched_number text "loses (%d+) hitpoints? due to your",
-        matched_number text "You lose (%d+) hitpoints?",
-        contains text "due to your",
-        contains text "critical"
-    )
-    |> _assert_eq (12i32, -1i32, !+, !-)
+    (contains text "due to your", contains text "critical") |> _assert_eq (!+, !-)
 
 ///> lua
 test cells_hold_a_value_between_calls =

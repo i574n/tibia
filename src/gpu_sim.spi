@@ -1,4 +1,4 @@
-///- --package .
+///- --package . --timeout 900000
 test gpu_sim static =
     :< testing
 

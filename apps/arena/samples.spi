@@ -6,7 +6,7 @@ test samples static =
 
 := new_samples () : mut (list i32) = mut Nil
 
-:= sample (s : mut (list i32)) (value : i32) : () = s <- Cons (value, *s)
+:= sample (s : mut (list i32)) (value : i32) : () = s <- value :: *s
 
 := in_order (s : mut (list i32)) : list i32 = listm.rev *s
 
@@ -18,15 +18,15 @@ test samples static =
 
 :~ ^ insert_sorted (value : i32) (xs : list i32) : list i32 =
     ?= xs ?|
-    | Nil => Cons (value, Nil)
-    | Cons (head, rest) => ? value <= head ?> Cons (value, xs) |: Cons (head, insert_sorted value rest)
+    | Nil => [ value ]
+    | head :: rest => ? value <= head ?> value :: xs |: head :: insert_sorted value rest
 
 := sorted (xs : list i32) : list i32 = listm.fold (\ acc value => insert_sorted value acc) Nil xs
 
 :~ ^ nth (index : i32) (xs : list i32) : i32 =
     ?= xs ?|
     | Nil => 0i32
-    | Cons (head, rest) => ? index = 0i32 ?> head |: nth (index - 1i32) rest
+    | head :: rest => ? index = 0i32 ?> head |: nth (index - 1i32) rest
 
 := sample_median (s : mut (list i32)) : i32 =
     := n = sample_count s
@@ -56,3 +56,87 @@ test samples_join_in_insertion_order =
 test empty_samples_report_zero =
     := s = new_samples ()
     (sample_count s, sample_total s, sample_max s, sample_median s) |> _assert_eq (0i32, 0i32, 0i32, 0i32)
+
+:= new_labeled_samples () : mut (list (string * list i32)) = mut Nil
+
+:~ ^ with_labeled (label : string) (value : i32) (entries : list (string * list i32)) : list (string * list i32) =
+    ?= entries ?|
+    | Nil => [ (label, [ value ]) ]
+    | (known, values) :: rest =>
+        ? known = label ?> (known, value :: values) :: rest
+        |: (known, values) :: with_labeled label value rest
+
+:= labeled_sample (s : mut (list (string * list i32))) (label : string) (value : i32) : () =
+    s <- with_labeled label value *s
+
+:~ ^ insert_by_label (entry : string * list i32) (entries : list (string * list i32)) : list (string * list i32) =
+    ?= entries ?|
+    | Nil => [ entry ]
+    | head :: rest =>
+        := label, _ = entry
+        := head_label, _ = head
+        ? lt_is (comp label head_label) ?> entry :: entries |: head :: insert_by_label entry rest
+
+:= label_line (entry : string * list i32) : string =
+    := label, values = entry
+    := ordered = sorted values
+    := n = listm.length values
+    := median = nth ((n + 1i32) / 2i32 - 1i32) ordered
+    label
+    ++# " n="
+    ++#? n
+    ++# " median "
+    ++#? median
+    ++# " min "
+    ++#? nth 0i32 ordered
+    ++# " max "
+    ++#? nth (n - 1i32) ordered
+
+:= labeled_summary (s : mut (list (string * list i32))) : string =
+    listm.fold (\ acc entry => insert_by_label entry acc) Nil *s |> listm.map label_line |> sm'.concat_list "; "
+
+:= new_stamps () : mut (list (i32 * i32 * string)) = mut Nil
+
+:~ ^ stamp_of (key : i32) (stamps : list (i32 * i32 * string)) : i32 * string =
+    ?= stamps ?|
+    | Nil => -1i32, ""
+    | (known, at, kind) :: rest => ? known = key ?> at, kind |: stamp_of key rest
+
+:~ ^ restamped (key : i32) (at : i32) (kind : string) (stamps : list (i32 * i32 * string)) : list (i32 * i32 * string) =
+    ?= stamps ?|
+    | Nil => [ (key, at, kind) ]
+    | (known, a, k) :: rest =>
+        ? known = key ?> (key, at, kind) :: rest |: (known, a, k) :: restamped key at kind rest
+
+:= stamp (s : mut (list (i32 * i32 * string))) (key : i32) (at : i32) (kind : string) : () =
+    s <- restamped key at kind *s
+
+:= last_stamp (s : mut (list (i32 * i32 * string))) (key : i32) : i32 * string = stamp_of key *s
+
+///> lua
+///> c
+test labeled_samples_summarize_each_label_in_order =
+    := s = new_labeled_samples ()
+    labeled_sample s "b" 3i32
+    labeled_sample s "a" 2i32
+    labeled_sample s "b" 1i32
+    labeled_summary s |> _assert_eq "a n=1 median 2 min 2 max 2; b n=2 median 1 min 1 max 3"
+
+///> lua
+///> c
+test labels_sort_a_prefix_before_its_extension =
+    := s = new_labeled_samples ()
+    labeled_sample s "kd-chasing" 5i32
+    labeled_sample s "kd" 4i32
+    labeled_summary s |> _assert_eq "kd n=1 median 4 min 4 max 4; kd-chasing n=1 median 5 min 5 max 5"
+
+///> lua
+///> c
+test stamps_remember_the_last_time_and_kind_per_key =
+    := s = new_stamps ()
+    := before = last_stamp s 7i32
+    stamp s 7i32 100i32 "straight"
+    stamp s 9i32 50i32 "diagonal"
+    stamp s 7i32 130i32 "knight-straight"
+    (before, last_stamp s 7i32, last_stamp s 9i32, last_stamp s 8i32)
+    |> _assert_eq ((-1i32, ""), (130i32, "knight-straight"), (50i32, "diagonal"), (-1i32, ""))

@@ -114,8 +114,8 @@
         }
     := potion_below = client.env_i32 "TIBIA_MEASURE_POTION_BELOW" 90
     := on_text (mode : string) (text : string) : () =
-        := amount = lua.matched_number text "loses (%d+) hitpoints? due to your"
-        := lost = lua.matched_number text "You lose (%d+) hitpoints? due to an attack"
+        := amount = combat_text.hit_amount text
+        := lost = combat_text.damage_taken text
         ? lost >= 0 ?> samples.sample b.taken lost
         |? amount >= 0 ?>
             samples.sample b.hits amount

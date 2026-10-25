@@ -7,8 +7,8 @@
     ? chasing && is_knight = !- ?> base ++# (? near ?> "-adjacent" |: "-chasing") |: base
 
 := record
-    (chasing : bool) (stamps : lua.native_table) (intervals : lua.native_table) (c : client.creature)
-    (new_position : client.native_position) (old_position : client.native_position)
+    (chasing : bool) (stamps : mut (list (i32 * i32 * string))) (intervals : mut (list (string * list i32)))
+    (c : client.creature) (new_position : client.native_position) (old_position : client.native_position)
     : ()
     =
     ? client.position_known new_position && client.position_known old_position ?>
@@ -22,11 +22,11 @@
                 := id = client.creature_id c
                 := near = client.player_present () && probe.chebyshev n (client.player_spot ()) <= 1
                 := kind = step_kind chasing is_knight (dx = 1 && dy = 1) near
-                := previous_at, measured = lua.stamp_at stamps id, lua.stamp_kind stamps id
-                lua.stamp stamps id now kind
+                := previous_at, measured = samples.last_stamp stamps id
+                samples.stamp stamps id now kind
                 ? previous_at >= 0 ?>
                     := interval = now - previous_at
-                    lua.labeled_sample intervals measured interval
+                    samples.labeled_sample intervals measured interval
                     := name, from, to = client.creature_name c, probe.described o, probe.described n
                     probe.note (
                         name
@@ -91,7 +91,7 @@
 := main () =
     := chasing = client.env_is "TIBIA_STEPS_CHASE" "1"
     := walking = client.env_is "TIBIA_STEPS_KNIGHT_WALK" "1"
-    := stamps, intervals = lua.new_table (), lua.new_table ()
+    := stamps, intervals = samples.new_stamps (), samples.new_labeled_samples ()
     client.on_position_change (record chasing stamps intervals)
     := on_text (mode : string) (text : string) : () =
         probe.note (("server text [" ++# mode ++# "]: " ++# text))
@@ -103,7 +103,7 @@
         ? chasing ?> client.after 2000 walk_away
         ? walking ?> client.after 2000 walk_back_and_forth
         client.after (measure_ms ()) (\ () =>
-            probe.note ("end: " ++# lua.labeled_summary intervals)
+            probe.note ("end: " ++# samples.labeled_summary intervals)
             probe.finish "steps measured"
             )
     probe.started_as (probe.knight ()) on_text ready 90000 (\ () => probe.finish "timeout")
