@@ -1,54 +1,54 @@
 ///- --package .
 test blessings static =
-    open testing
+    :< testing
 
-union death_cover =
+:| death_cover =
     | Unprotected : i32
     | AmuletOfLoss
     | Skulled
 
-union carried =
+:| carried =
     | ContainerItem
     | EquippedItem
 
-inl item_loss_percent (blessings : i32) : i32 =
-    if blessings <= 0
-    then 100
-    elif blessings = 1
-    then 70
-    elif blessings = 2
-    then 45
-    elif blessings = 3
-    then 25
-    elif blessings = 4
-    then 10
-    else 0
+:= item_loss_percent (blessings : i32) : i32 =
+    ? blessings <= 0
+    ?> 100
+    |? blessings = 1
+    ?> 70
+    |? blessings = 2
+    ?> 45
+    |? blessings = 3
+    ?> 25
+    |? blessings = 4
+    ?> 10
+    |: 0
 
-inl roll_scale () : i32 = 10000
+:= roll_scale () : i32 = 10000
 
-inl dropped (cover : death_cover) (item : carried) (roll : i32) : bool =
-    match cover with
-    | Skulled => true
-    | AmuletOfLoss => false
+:= dropped (cover : death_cover) (item : carried) (roll : i32) : bool =
+    ?= cover ?|
+    | Skulled => !+
+    | AmuletOfLoss => !-
     | Unprotected blessings =>
-        inl chance = item_loss_percent blessings * 100
-        inl item_chance = match item with | ContainerItem => chance | EquippedItem => chance / 10
+        := chance = item_loss_percent blessings * 100
+        := item_chance = ?= item ?| | ContainerItem => chance | EquippedItem => chance / 10
         roll <= item_chance
 
-inl drops_over_every_roll (cover : death_cover) (item : carried) : i32 =
-    let rec count (roll : i32) (total : i32) : i32 =
-        if roll > roll_scale () then total else count (roll + 1) (if dropped cover item roll then total + 1 else total)
+:= drops_over_every_roll (cover : death_cover) (item : carried) : i32 =
+    :~ ^ count (roll : i32) (total : i32) : i32 =
+        ? roll > roll_scale () ?> total |: count (roll + 1) (? dropped cover item roll ?> total + 1 |: total)
     count 1 0
 
 ///> c
 test an_unblessed_knight_always_drops_the_backpack_and_each_other_item_one_time_in_ten =
-    inl ~bless = 0i32
+    := ~bless = 0i32
     (drops_over_every_roll (Unprotected bless) ContainerItem, drops_over_every_roll (Unprotected bless) EquippedItem)
     |> _assert_eq (10000i32, 1000i32)
 
 ///> c
 test blessings_amulet_of_loss_and_skulls_follow_canary_blessing_lua =
-    inl ~one = 1i32
+    := ~one = 1i32
     (
         drops_over_every_roll (Unprotected one) ContainerItem,
         drops_over_every_roll (Unprotected one) EquippedItem,
@@ -61,10 +61,10 @@ test blessings_amulet_of_loss_and_skulls_follow_canary_blessing_lua =
 
 ///> wgsl
 test unblessed_drops_on_gpu =
-    inl ~roll = 1000i32
-    if
+    := ~roll = 1000i32
+    ?
         dropped (Unprotected 0) EquippedItem roll
-        && dropped (Unprotected 0) EquippedItem (roll + 1) = false
+        && dropped (Unprotected 0) EquippedItem (roll + 1) = !-
         && dropped (Unprotected 0) ContainerItem 10000
-    then 0i32
-    else 1i32
+    ?> 0i32
+    |: 1i32

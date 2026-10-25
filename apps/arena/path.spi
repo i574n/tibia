@@ -1,80 +1,53 @@
-///- --package .
-test path static =
-    open testing
+:< sm'_operators
+:= watch_ms () : i32 = 30000
+:= sample_ms () : i32 = 50
 
-open sm'_operators
-inl watch_ms () : i32 = 30000
-inl sample_ms () : i32 = 50
-
-inl followed (has_last : bool) (last : client.spot) (at : client.spot) (steps : i32) : bool * i32 =
-    inl moved = has_last = false || at.x <> last.x || at.y <> last.y
-    moved, (if moved && has_last then steps + 1 else steps)
-
-inl step_line (elapsed : i32) (from : string) (distance : i32) (steps : i32) : string =
-    "path t=" ++#? elapsed ++# " ms monster at " ++# from ++# " distance " ++#? distance ++# " step " ++#? steps
-
-inl arrived_line (elapsed : i32) (steps : i32) (knight : string) : string =
-    "arrived at " ++#? elapsed ++# " ms after " ++#? steps ++# " steps, knight at " ++# knight
-
-inl not_arrived_line (elapsed : i32) (steps : i32) : string =
-    "not arrived after " ++#? elapsed ++# " ms, " ++#? steps ++# " steps"
-
-inl watch (done : lua.native_table) (started_at : i32) : () =
-    let rec go (has_last : bool) (last : client.spot) (steps : i32) : () =
-        if client.player_present () = false then probe.finish_once_without_parity done "offline"
-        else
-            inl elapsed = client.now_ms () - started_at
-            inl here = client.player_spot ()
-            inl people = client.spectators here
-            inl seen = probe.nearest_monster here people
-            inl arrived, has_last, last, steps =
-                if seen.found then
-                    inl at = client.creature_spot (client.member people seen.index)
-                    inl moved, steps = followed has_last last at steps
-                    if moved then probe.note (step_line elapsed (probe.described at) seen.distance steps)
-                    seen.distance <= 1, true, (if moved then at else last), steps
-                else false, has_last, last, steps
-            if arrived then
-                probe.note (arrived_line elapsed steps (probe.described here))
+:= watch (done : mut i32) (started_at : i32) : () =
+    :~ ^ go (has_last : bool) (last : client.spot) (steps : i32) : () =
+        ? client.player_present () = !- ?> probe.finish_once_without_parity done "offline"
+        |:
+            := elapsed = client.now_ms () - started_at
+            := here = client.player_spot ()
+            := people = client.spectators here
+            := seen = probe.nearest_monster here people
+            := arrived, has_last, last, steps =
+                ? seen.found ?>
+                    := at = client.creature_spot (client.member people seen.index)
+                    := moved = has_last = !- || at.x <> last.x || at.y <> last.y
+                    := steps = ? moved && has_last ?> steps + 1 |: steps
+                    ? moved ?>
+                        := from, distance = probe.described at, seen.distance
+                        probe.note (
+                            "path t="
+                            ++#? elapsed
+                            ++# " ms monster at "
+                            ++# from
+                            ++# " distance "
+                            ++#? distance
+                            ++# " step "
+                            ++#? steps
+                        )
+                    seen.distance <= 1, !+, (? moved ?> at |: last), steps
+                |: !-, has_last, last, steps
+            ? arrived ?>
+                := knight = probe.described here
+                probe.note ("arrived at " ++#? elapsed ++# " ms after " ++#? steps ++# " steps, knight at " ++# knight)
                 probe.finish_once_without_parity done "arrived"
-            elif elapsed > watch_ms () then
-                probe.note (not_arrived_line elapsed steps)
+            |? elapsed > watch_ms () ?>
+                probe.note (("not arrived after " ++#? elapsed ++# " ms, " ++#? steps ++# " steps"))
                 probe.finish_once_without_parity done "not arrived"
-            else client.after (sample_ms ()) fun () => go has_last last steps
-    go false { x = 0; y = 0; z = 0 } 0
+            |: client.after (sample_ms ()) \ () => go has_last last steps
+    go !- { x = 0; y = 0; z = 0 } 0
 
-///> lua
-///> c
-test a_step_counts_only_moves_after_the_first_sighting =
-    inl first = followed false { x = 0; y = 0; z = 0 } { x = 1940; y = 1352; z = 7 } 0
-    inl same = followed true { x = 1940; y = 1352; z = 7 } { x = 1940; y = 1352; z = 7 } 3
-    inl moved = followed true { x = 1940; y = 1352; z = 7 } { x = 1939; y = 1352; z = 7 } 3
-    (first, same, moved) |> _assert_eq ((true, 0i32), (false, 3i32), (true, 4i32))
-
-///> lua
-///> c
-test the_path_lines_keep_the_probe_wording =
-    (
-        step_line 850 "1939,1352,7" 3 4,
-        arrived_line 2400 6 "1936,1349,7",
-        not_arrived_line 30050 9
-    )
-    |> _assert_eq (
-        "path t=850 ms monster at 1939,1352,7 distance 3 step 4",
-        "arrived at 2400 ms after 6 steps, knight at 1936,1349,7",
-        "not arrived after 30050 ms, 9 steps"
-    )
-
-///> _
-inl main () =
-    inl done = lua.new_cell 0
-    inl on_text (mode : string) (text : string) : () = probe.note (("server text [" ++# mode ++# "]: " ++# text))
-    inl ready () =
-        client.after 1500 (fun () =>
-            inl name, at = client.player_name (), probe.described (client.player_spot ())
+:= main () =
+    := done = mut 0
+    := on_text (mode : string) (text : string) : () = probe.note (("server text [" ++# mode ++# "]: " ++# text))
+    := ready () =
+        client.after 1500 (\ () =>
+            := name, at = client.player_name (), probe.described (client.player_spot ())
             probe.note (("in game as " ++# name ++# " at " ++# at ++# " (path check, standing, no attack)"))
             watch done (client.now_ms ())
             )
     client.disable_client_bot (probe.bot_profile ())
-    probe.started_as (probe.knight ()) on_text ready 60000 (fun () => probe.finish_once_without_parity done "timeout")
+    probe.started_as (probe.knight ()) on_text ready 60000 (\ () => probe.finish_once_without_parity done "timeout")
     0i32

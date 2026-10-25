@@ -1,23 +1,19 @@
-///- --package .
-test predict static =
-    open testing
+:< sm'_operators
+:< hunting_pack
 
-open sm'_operators
-open hunting_pack
+:= candidate (c : camp) : camp = c
 
-inl candidate (c : camp) : camp = c
+:= table_clear () : i32 = 1
+:= table_hunter () : i32 = 2
+:= table_hunt () : i32 = 3
 
-inl table_clear () : i32 = 1
-inl table_hunter () : i32 = 2
-inl table_hunt () : i32 = 3
-
-inl clears (arm : i32) (camp : camp) (t : tactic) : () =
-    inl block = range_of (held_out_block ())
-    let rec each (i : i32) : () =
-        if i < block.count then
-            inl elapsed, p = clear_run camp t (block.first + conv i) 6000
-            inl h = p.hunter
-            inl code, steps, taken, damage, potions =
+:= clears (arm : i32) (camp : camp) (t : tactic) : () =
+    := block = range_of (held_out_block ())
+    :~ ^ each (i : i32) : () =
+        ? i < block.count ?>
+            := elapsed, p = clear_run camp t (block.first + conv i) 6000
+            := h = p.hunter
+            := code, steps, taken, damage, potions =
                 table_clear (), h.retreats, h.hits_taken, quantity.value_of h.damage_taken, h.potions
             console.write_line (
                 ""
@@ -40,16 +36,16 @@ inl clears (arm : i32) (camp : camp) (t : tactic) : () =
             each (i + 1)
     each 0
 
-inl hunters (camp : camp) (t : tactic) : () =
-    inl block = range_of (held_out_block ())
-    inl cap_ticks = 2000i32
-    let rec each (i : i32) : () =
-        if i < block.count then
-            inl elapsed, p = clear_run camp t (block.first + conv i) cap_ticks
-            inl h = p.hunter
-            inl code, kills, potions, taken, damage =
+:= hunters (camp : camp) (t : tactic) : () =
+    := block = range_of (held_out_block ())
+    := cap_ticks = 2000i32
+    :~ ^ each (i : i32) : () =
+        ? i < block.count ?>
+            := elapsed, p = clear_run camp t (block.first + conv i) cap_ticks
+            := h = p.hunter
+            := code, kills, potions, taken, damage =
                 table_hunter (), p.kills, h.potions, h.hits_taken, quantity.value_of h.damage_taken
-            inl cleared : i32 = if p.kills >= camp.size then 1 else 0
+            := cleared : i32 = ? p.kills >= camp.size ?> 1 |: 0
             console.write_line (
                 ""
                 ++#? code
@@ -71,13 +67,13 @@ inl hunters (camp : camp) (t : tactic) : () =
             each (i + 1)
     each 0
 
-inl hunts (camp : camp) (t : tactic) : () =
-    inl block = range_of (held_out_block ())
-    let rec each (i : i32) : () =
-        if i < block.count then
-            inl p = simulate camp t (block.first + conv i) (scenario_ticks ())
-            inl h = p.hunter
-            inl code, kills, taken, damage, potions =
+:= hunts (camp : camp) (t : tactic) : () =
+    := block = range_of (held_out_block ())
+    :~ ^ each (i : i32) : () =
+        ? i < block.count ?>
+            := p = simulate camp t (block.first + conv i) (scenario_ticks ())
+            := h = p.hunter
+            := code, kills, taken, damage, potions =
                 table_hunt (), p.kills, h.hits_taken, quantity.value_of h.damage_taken, h.potions
             console.write_line (
                 ""
@@ -96,21 +92,20 @@ inl hunts (camp : camp) (t : tactic) : () =
             each (i + 1)
     each 0
 
-///> _
-inl main () =
-    inl arena =
-        uniform_camp (open creatures in Cyclops)
-        |> on_layout (open terrain in ArenaSpot)
+:= main () =
+    := arena =
+        uniform_camp (:< creatures ;; Cyclops)
+        |> on_layout (:< terrain ;; ArenaSpot)
         |> mirroring_the_current_arena
         |> candidate
     clears 0 arena (cavebot_with_heal 160)
     clears 1 arena (live_retreat_tactic 160 2)
-    inl spot =
-        uniform_camp (open creatures in Hunter)
-        |> on_layout (open terrain in ArenaSpot)
+    := spot =
+        uniform_camp (:< creatures ;; Hunter)
+        |> on_layout (:< terrain ;; ArenaSpot)
         |> mirroring_the_current_arena
         |> candidate
     hunters spot (cavebot_with_heal 160)
-    inl ground = arena_hunt () |> mirroring_the_current_arena |> candidate |> respawning_like_canary 60000
+    := ground = arena_hunt () |> mirroring_the_current_arena |> candidate |> respawning_like_canary 60000
     hunts ground (cavebot_with_heal 160)
     0i32

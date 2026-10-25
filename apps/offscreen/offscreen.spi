@@ -1,69 +1,69 @@
 ///- --package .
 test offscreen static =
-    open testing
+    :< testing
 
-open sm'_operators
+:< sm'_operators
 
-type launch = { exe : string; directory : string; arguments : string; desktop : string; timeout_seconds : i32 }
+:== launch = { exe : string; directory : string; arguments : string; desktop : string; timeout_seconds : i32 }
 
-union parsed =
+:| parsed =
     | Ready : launch
     | MissingExe
     | MissingValue : string
     | BadTimeout : string
     | UnknownFlag : string
 
-union outcome =
+:| outcome =
     | Exited : u32 * u32
     | TimedOut : u32 * u32
     | NoDesktop : u32
     | NotStarted : u32
 
-inl defaults () : launch = { exe = ""; directory = ""; arguments = ""; desktop = "tibia-probe"; timeout_seconds = 120 }
+:= defaults () : launch = { exe = ""; directory = ""; arguments = ""; desktop = "tibia-probe"; timeout_seconds = 120 }
 
-let rec parse_from (args : list string) (l : launch) : parsed =
-    match args with
-    | Nil => if l.exe = "" then MissingExe else Ready l
+:~ ^ parse_from (args : list string) (l : launch) : parsed =
+    ?= args ?|
+    | Nil => ? l.exe = "" ?> MissingExe |: Ready l
     | Cons (flag, Nil) => MissingValue flag
     | Cons (flag, Cons (value, rest)) =>
-        if flag = "--exe" then parse_from rest { l with exe = value }
-        elif flag = "--directory" then parse_from rest { l with directory = value }
-        elif flag = "--arguments" then parse_from rest { l with arguments = value }
-        elif flag = "--desktop" then parse_from rest { l with desktop = value }
-        elif flag = "--timeout-seconds"
-        then
-            match convert.try_convert value with
-            | Some seconds => parse_from rest { l with timeout_seconds = seconds }
+        ? flag = "--exe" ?> parse_from rest { l ?| exe = value }
+        |? flag = "--directory" ?> parse_from rest { l ?| directory = value }
+        |? flag = "--arguments" ?> parse_from rest { l ?| arguments = value }
+        |? flag = "--desktop" ?> parse_from rest { l ?| desktop = value }
+        |? flag = "--timeout-seconds"
+        ?>
+            ?= convert.try_convert value ?|
+            | Some seconds => parse_from rest { l ?| timeout_seconds = seconds }
             | None => BadTimeout value
-        else UnknownFlag flag
+        |: UnknownFlag flag
 
-inl parse (args : list string) : parsed = parse_from args (defaults ())
+:= parse (args : list string) : parsed = parse_from args (defaults ())
 
-inl command_line (l : launch) : string =
-    inl quoted = "\"" ++# l.exe ++# "\""
-    if l.arguments = "" then quoted else quoted ++# " " ++# l.arguments
+:= command_line (l : launch) : string =
+    := quoted = "\"" ++# l.exe ++# "\""
+    ? l.arguments = "" ?> quoted |: quoted ++# " " ++# l.arguments
 
-inl station_desktop (l : launch) : string = "WinSta0\\" ++# l.desktop
+:= station_desktop (l : launch) : string = "WinSta0\\" ++# l.desktop
 
-inl report (l : launch) (o : outcome) : list string =
-    inl finished (pid : u32) (code : u32) : string =
+:= report (l : launch) (o : outcome) : list string =
+    := finished (pid : u32) (code : u32) : string =
         "offscreen: pid " ++#? pid ++# " exit " ++#? code ++# " on desktop " ++# l.desktop
-    match o with
+    ?= o ?|
     | Exited (pid, code) => [ finished pid code ]
     | TimedOut (pid, code) => [ "offscreen: killed after " ++#? l.timeout_seconds ++# " s"; finished pid code ]
     | NoDesktop error => [ "CreateDesktop failed: " ++#? error ]
     | NotStarted error => [ "CreateProcess failed: " ++#? error ]
 
-inl exit_code_of (o : outcome) : i32 =
-    match o with
+:= exit_code_of (o : outcome) : i32 =
+    ?= o ?|
     | Exited _ => 0
     | TimedOut _ => 0
     | NoDesktop _ => 1
     | NotStarted _ => 1
 
-inl killed_exit_code () : u32 = 124
+:= killed_exit_code () : u32 = 124
 
-inl win32_declarations () =
+:= win32_declarations () =
     global """
         #[link(name = "user32")]
         unsafe extern "system" {
@@ -97,138 +97,138 @@ inl win32_declarations () =
         struct ProcessInformation { process: i64, thread: i64, process_id: u32, thread_id: u32 }
         """
 
-nominal wide = $'Vec<u16>'
-nominal wide_pointer = $'*const u16'
-nominal wide_mutable_pointer = $'*mut u16'
-nominal address = $'usize'
-nominal startup_info = $'StartupInfo'
-nominal process_information = $'std::cell::Cell<ProcessInformation>'
-nominal information_pointer = $'*mut ProcessInformation'
-nominal exit_code_cell = $'std::cell::Cell<u32>'
-nominal byte_pointer = $'*const u8'
+:! wide = $'Vec<u16>'
+:! wide_pointer = $'*const u16'
+:! wide_mutable_pointer = $'*mut u16'
+:! address = $'usize'
+:! startup_info = $'StartupInfo'
+:! process_information = $'std::cell::Cell<ProcessInformation>'
+:! information_pointer = $'*mut ProcessInformation'
+:! exit_code_cell = $'std::cell::Cell<u32>'
+:! byte_pointer = $'*const u8'
 
-inl wide_of (text : string) : wide =
+:= wide_of (text : string) : wide =
     win32_declarations ()
     $'(&*!text).encode_utf16().chain(std::iter::once(0)).collect::<Vec<u16>>()' : wide
 
-inl wide_start (text : wide) : wide_pointer = $'!text.as_ptr()' : wide_pointer
+:= wide_start (text : wide) : wide_pointer = $'!text.as_ptr()' : wide_pointer
 
-inl wide_mutable_start (text : wide) : wide_mutable_pointer = $'!text.as_ptr().cast_mut()' : wide_mutable_pointer
+:= wide_mutable_start (text : wide) : wide_mutable_pointer = $'!text.as_ptr().cast_mut()' : wide_mutable_pointer
 
-inl wide_address (text : wide) : address = $'!text.as_ptr().addr()' : address
+:= wide_address (text : wide) : address = $'!text.as_ptr().addr()' : address
 
-inl create_desktop_at (name : wide_pointer) : i64 =
+:= create_desktop_at (name : wide_pointer) : i64 =
     $'CreateDesktopW(!name, std::ptr::null(), std::ptr::null(), 0, 0x01FF, std::ptr::null())' : i64
 
-inl close_desktop (desktop : i64) : () =
+:= close_desktop (desktop : i64) : () =
     win32_declarations ()
     ignore ($'CloseDesktop(!desktop)' : i32)
 
-inl last_error () : u32 =
+:= last_error () : u32 =
     win32_declarations ()
     $'GetLastError()' : u32
 
-inl startup_size () : u32 = $'u32::try_from(std::mem::size_of::<StartupInfo>()).unwrap()' : u32
+:= startup_size () : u32 = $'u32::try_from(std::mem::size_of::<StartupInfo>()).unwrap()' : u32
 
-inl startup_on (size : u32) (desktop : address) : startup_info =
+:= startup_on (size : u32) (desktop : address) : startup_info =
     $'StartupInfo { cb: !size, desktop: !desktop, ..Default::default() }' : startup_info
 
-inl information_empty () : process_information =
+:= information_empty () : process_information =
     $'std::cell::Cell::new(ProcessInformation::default())' : process_information
 
-inl no_bytes () : byte_pointer = $'std::ptr::null::<u8>()' : byte_pointer
+:= no_bytes () : byte_pointer = $'std::ptr::null::<u8>()' : byte_pointer
 
-inl information_start (information : process_information) : information_pointer =
+:= information_start (information : process_information) : information_pointer =
     $'!information.as_ptr()' : information_pointer
 
-inl create_process_at
+:= create_process_at
     (application : wide_pointer) (command : wide_mutable_pointer) (directory : wide_pointer) (startup : startup_info)
     (information : information_pointer) (none : byte_pointer)
     : i32
     =
     $'CreateProcessW(!application, !command, !none, !none, 0, 0, !none, !directory, &!startup, !information)' : i32
 
-inl information_process (information : process_information) : i64 = $'!information.get().process' : i64
+:= information_process (information : process_information) : i64 = $'!information.get().process' : i64
 
-inl information_thread (information : process_information) : i64 = $'!information.get().thread' : i64
+:= information_thread (information : process_information) : i64 = $'!information.get().thread' : i64
 
-inl close_handle (handle : i64) : () = ignore ($'CloseHandle(!handle)' : i32)
+:= close_handle (handle : i64) : () = ignore ($'CloseHandle(!handle)' : i32)
 
-inl exit_code_empty () : exit_code_cell = $'std::cell::Cell::new(0u32)' : exit_code_cell
+:= exit_code_empty () : exit_code_cell = $'std::cell::Cell::new(0u32)' : exit_code_cell
 
-inl exit_code_read (process : i64) (cell : exit_code_cell) : () =
+:= exit_code_read (process : i64) (cell : exit_code_cell) : () =
     ignore ($'GetExitCodeProcess(!process, !cell.as_ptr())' : i32)
 
-inl exit_code_value (cell : exit_code_cell) : u32 = $'!cell.get()' : u32
+:= exit_code_value (cell : exit_code_cell) : u32 = $'!cell.get()' : u32
 
-inl create_desktop (name : string) : i64 =
-    inl wide_name = wide_of name
+:= create_desktop (name : string) : i64 =
+    := wide_name = wide_of name
     create_desktop_at (wide_start wide_name)
 
-inl start_on (station : string) (exe : string) (line : string) (directory : string) : i64 =
-    inl folder =
-        if directory <> "" then directory
-        else
-            match file_system.directory_get_parent exe |> optionm'.unbox with
+:= start_on (station : string) (exe : string) (line : string) (directory : string) : i64 =
+    := folder =
+        ? directory <> "" ?> directory
+        |:
+            ?= file_system.directory_get_parent exe |> optionm'.unbox ?|
             | Some parent => parent
             | None => ""
-    inl application, command, directory_wide, desktop = wide_of exe, wide_of line, wide_of folder, wide_of station
-    inl information = information_empty ()
-    inl startup = startup_on (startup_size ()) (wide_address desktop)
-    inl created =
+    := application, command, directory_wide, desktop = wide_of exe, wide_of line, wide_of folder, wide_of station
+    := information = information_empty ()
+    := startup = startup_on (startup_size ()) (wide_address desktop)
+    := created =
         create_process_at
             (wide_start application) (wide_mutable_start command) (wide_start directory_wide) startup
             (information_start information) (no_bytes ())
-    if created = 0 then 0
-    else
+    ? created = 0 ?> 0
+    |:
         close_handle (information_thread information)
         information_process information
 
-inl process_id (process : i64) : u32 =
+:= process_id (process : i64) : u32 =
     win32_declarations ()
     $'GetProcessId(!process)' : u32
 
-inl wait_for (process : i64) (milliseconds : u32) : u32 =
+:= wait_for (process : i64) (milliseconds : u32) : u32 =
     win32_declarations ()
     $'WaitForSingleObject(!process, !milliseconds)' : u32
 
-inl terminate (process : i64) (code : u32) : () =
+:= terminate (process : i64) (code : u32) : () =
     win32_declarations ()
     ignore ($'TerminateProcess(!process, !code)' : i32)
 
-inl exit_status (process : i64) : u32 =
+:= exit_status (process : i64) : u32 =
     win32_declarations ()
-    inl cell = exit_code_empty ()
+    := cell = exit_code_empty ()
     exit_code_read process cell
     exit_code_value cell
 
-inl close_process (process : i64) : () =
+:= close_process (process : i64) : () =
     win32_declarations ()
     close_handle process
 
-inl run_on_desktop (l : launch) : outcome =
-    inl desktop = create_desktop l.desktop
-    if desktop = 0
-    then NoDesktop (last_error ())
-    else
-        inl process = start_on (station_desktop l) l.exe (command_line l) l.directory
-        inl o =
-            if process = 0
-            then NotStarted (last_error ())
-            else
-                inl pid = process_id process
-                inl waited = wait_for process (conv l.timeout_seconds * 1000u32)
-                inl timed_out = waited <> 0
-                if timed_out then terminate process (killed_exit_code ())
-                inl code = exit_status process
+:= run_on_desktop (l : launch) : outcome =
+    := desktop = create_desktop l.desktop
+    ? desktop = 0
+    ?> NoDesktop (last_error ())
+    |:
+        := process = start_on (station_desktop l) l.exe (command_line l) l.directory
+        := o =
+            ? process = 0
+            ?> NotStarted (last_error ())
+            |:
+                := pid = process_id process
+                := waited = wait_for process (conv l.timeout_seconds * 1000u32)
+                := timed_out = waited <> 0
+                ? timed_out ?> terminate process (killed_exit_code ())
+                := code = exit_status process
                 close_process process
-                if timed_out then TimedOut (pid, code) else Exited (pid, code)
+                ? timed_out ?> TimedOut (pid, code) |: Exited (pid, code)
         close_desktop desktop
         o
 
-inl arguments () : list string =
-    let rec collect (i : i32) (found : list string) : list string =
-        match env.try_command_line_argument i with
+:= arguments () : list string =
+    :~ ^ collect (i : i32) (found : list string) : list string =
+        ?= env.try_command_line_argument i ?|
         | Some value => collect (i + 1) (value :: found)
         | None => listm.rev found
     collect 0 Nil
@@ -236,7 +236,7 @@ inl arguments () : list string =
 ///> lua
 ///> rust
 test flags_fill_the_launch_and_keep_the_script_defaults =
-    match parse [ "--exe"; "C:\\otc\\otclient.exe"; "--arguments"; "--mode probe" ] with
+    ?= parse [ "--exe"; "C:\\otc\\otclient.exe"; "--arguments"; "--mode probe" ] ?|
     | Ready l =>
         l.desktop |> _assert_eq "tibia-probe"
         l.timeout_seconds |> _assert_eq 120i32
@@ -247,18 +247,18 @@ test flags_fill_the_launch_and_keep_the_script_defaults =
 ///> lua
 ///> rust
 test bad_input_names_its_cause =
-    inl missing : bool =
-        match parse [ "--desktop"; "x" ] with
-        | MissingExe => true
-        | _ => false
-    missing |> _assert_eq true
-    inl bad : string =
-        match parse [ "--exe"; "a.exe"; "--timeout-seconds"; "soon" ] with
+    := missing : bool =
+        ?= parse [ "--desktop"; "x" ] ?|
+        | MissingExe => !+
+        | _ => !-
+    missing |> _assert_eq !+
+    := bad : string =
+        ?= parse [ "--exe"; "a.exe"; "--timeout-seconds"; "soon" ] ?|
         | BadTimeout value => value
         | _ => ""
     bad |> _assert_eq "soon"
-    inl dangling : string =
-        match parse [ "--exe" ] with
+    := dangling : string =
+        ?= parse [ "--exe" ] ?|
         | MissingValue flag => flag
         | _ => ""
     dangling |> _assert_eq "--exe"
@@ -266,9 +266,9 @@ test bad_input_names_its_cause =
 ///> lua
 ///> rust
 test reports_match_run_offscreen_ps1 =
-    inl base = defaults ()
-    inl l : launch = { base with exe = "a.exe"; timeout_seconds = 30 }
-    inl lines : i32 = listm.length (report l (TimedOut (77u32, 124u32)))
+    := base = defaults ()
+    := l : launch = { base ?| exe = "a.exe"; timeout_seconds = 30 }
+    := lines : i32 = listm.length (report l (TimedOut (77u32, 124u32)))
     lines |> _assert_eq 2i32
     report l (Exited (77u32, 0u32)) |> _assert_eq [ "offscreen: pid 77 exit 0 on desktop tibia-probe" ]
     report l (TimedOut (77u32, 124u32))
@@ -276,27 +276,27 @@ test reports_match_run_offscreen_ps1 =
 
 ///> rust
 test a_hidden_desktop_runs_a_program_and_reports_its_exit_code =
-    inl windows = platform.is_windows ()
-    inl desktop = if windows then create_desktop "spiral-offscreen-test" else 1
-    (desktop <> 0) |> _assert_eq true
-    inl process =
-        if windows
-        then start_on "WinSta0\\spiral-offscreen-test" "C:\\Windows\\System32\\cmd.exe" "cmd.exe /c exit 3" ""
-        else 1
-    (process <> 0) |> _assert_eq true
-    inl waited = if windows then wait_for process 10000u32 else 0u32
-    inl code = if windows then exit_status process else 3u32
-    if windows then
+    := windows = platform.is_windows ()
+    := desktop = ? windows ?> create_desktop "spiral-offscreen-test" |: 1
+    (desktop <> 0) |> _assert_eq !+
+    := process =
+        ? windows
+        ?> start_on "WinSta0\\spiral-offscreen-test" "C:\\Windows\\System32\\cmd.exe" "cmd.exe /c exit 3" ""
+        |: 1
+    (process <> 0) |> _assert_eq !+
+    := waited = ? windows ?> wait_for process 10000u32 |: 0u32
+    := code = ? windows ?> exit_status process |: 3u32
+    ? windows ?>
         close_process process
         close_desktop desktop
     (waited, code) |> _assert_eq (0u32, 3u32)
 
 ///> _
-inl main () =
-    inl code =
-        match parse (arguments ()) with
+:= main () =
+    := code =
+        ?= parse (arguments ()) ?|
         | Ready l =>
-            inl o = run_on_desktop l
+            := o = run_on_desktop l
             listm.iter console.write_line (report l o)
             exit_code_of o
         | MissingExe =>

@@ -1,5 +1,5 @@
-inl no_comment_lines () = NoCommentLines
-inl lf_only () = LfOnly
-inl test_targets () = TestTargets
-inl line_width () = LineWidth 120u32
-inl lib_referenced () = LibReferenced
+:= no_comment_lines () = NoCommentLines
+:= lf_only () = LfOnly
+:= test_targets () = TestTargets
+:= line_width () = LineWidth 120u32
+:= lib_referenced () = LibReferenced

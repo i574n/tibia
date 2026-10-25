@@ -1,31 +1,31 @@
 ///- --package .
 test experience static =
-    open testing
+    :< testing
 
-type standing = { level : i32; experience : i32 }
+:== standing = { level : i32; experience : i32 }
 
-inl experience_for_level (level : i32) : i32 =
+:= experience_for_level (level : i32) : i32 =
     (((level - 6) * level + 17) * level - 12) / 6 * 100
 
-inl unblessed_death_loss_below_level_24 (experience : i32) : i32 = (experience + 9) / 10
+:= unblessed_death_loss_below_level_24 (experience : i32) : i32 = (experience + 9) / 10
 
-inl last_level_without_experience_loss () : i32 = 7
+:= last_level_without_experience_loss () : i32 = 7
 
-inl level_of (experience : i32) (from_level : i32) : i32 =
-    let rec down (level : i32) : i32 =
-        if level > 1 && experience < experience_for_level level then down (level - 1) else level
+:= level_of (experience : i32) (from_level : i32) : i32 =
+    :~ ^ down (level : i32) : i32 =
+        ? level > 1 && experience < experience_for_level level ?> down (level - 1) |: level
     down from_level
 
-inl after_unblessed_death (s : standing) : standing =
-    inl left =
-        if s.level > last_level_without_experience_loss ()
-        then s.experience - unblessed_death_loss_below_level_24 s.experience
-        else s.experience
+:= after_unblessed_death (s : standing) : standing =
+    := left =
+        ? s.level > last_level_without_experience_loss ()
+        ?> s.experience - unblessed_death_loss_below_level_24 s.experience
+        |: s.experience
     { level = level_of left s.level; experience = left }
 
 ///> c
 test experience_table_matches_canary_get_exp_for_level =
-    inl ~level = 8i32
+    := ~level = 8i32
     (
         experience_for_level 1,
         experience_for_level 2,
@@ -40,21 +40,21 @@ test experience_table_matches_canary_get_exp_for_level =
 
 ///> c
 test a_level_8_knight_sample_death_costs_a_level_like_live =
-    inl ~experience = 4200i32
-    inl after = after_unblessed_death { level = 8; experience = experience }
+    := ~experience = 4200i32
+    := after = after_unblessed_death { level = 8; experience = experience }
     (after.level, after.experience) |> _assert_eq (7i32, 3780i32)
 
 ///> c
 test a_death_mid_level_keeps_the_level_when_the_loss_stays_above_its_floor =
-    inl ~experience = 9000i32
-    inl after = after_unblessed_death { level = 9; experience = experience }
+    := ~experience = 9000i32
+    := after = after_unblessed_death { level = 9; experience = experience }
     (after.level, after.experience, level_of 2599 8, level_of 0 5) |> _assert_eq (9i32, 8100i32, 6i32, 1i32)
 
 ///> c
 test the_loss_rounds_up_like_canary_ceil_and_spares_levels_up_to_7 =
-    inl ~experience = 4205i32
-    inl odd = after_unblessed_death { level = 8; experience = experience }
-    inl young = after_unblessed_death { level = 7; experience = 2600 }
+    := ~experience = 4205i32
+    := odd = after_unblessed_death { level = 8; experience = experience }
+    := young = after_unblessed_death { level = 7; experience = 2600 }
     (
         odd.level,
         odd.experience,
@@ -67,6 +67,6 @@ test the_loss_rounds_up_like_canary_ceil_and_spares_levels_up_to_7 =
 
 ///> wgsl
 test death_penalty_on_gpu =
-    inl ~experience = 4200i32
-    inl after = after_unblessed_death { level = 8; experience = experience }
-    if after.level = 7i32 && after.experience = 3780i32 && experience_for_level 24 = 179400i32 then 0i32 else 1i32
+    := ~experience = 4200i32
+    := after = after_unblessed_death { level = 8; experience = experience }
+    ? after.level = 7i32 && after.experience = 3780i32 && experience_for_level 24 = 179400i32 ?> 0i32 |: 1i32

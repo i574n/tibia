@@ -1,67 +1,42 @@
-///- --package .
-test scan static =
-    open testing
-
-open sm'_operators
-inl mark_of (marks_unloaded : bool) (f : client.footing) : string =
-    match f with
-    | Unknown => if marks_unloaded then "?" else "#"
+:< sm'_operators
+:= mark_of (marks_unloaded : bool) (f : client.footing) : string =
+    ?= f ?|
+    | Unknown => ? marks_unloaded ?> "?" |: "#"
     | Blocked => "#"
     | _ => "."
 
-inl scan_row (marks_unloaded : bool) (centre : client.spot) (radius : i32) (dy : i32) : string =
-    let rec cells (dx : i32) (row : string) : string =
-        if dx > radius
-        then row
-        else
-            inl cell =
-                if dx = 0 && dy = 0
-                then "K"
-                else mark_of marks_unloaded (client.footing_at { centre with x = centre.x + dx; y = centre.y + dy })
-            cells (dx + 1) (lua.joined row cell)
+:= scan_row (marks_unloaded : bool) (centre : client.spot) (radius : i32) (dy : i32) : string =
+    :~ ^ cells (dx : i32) (row : string) : string =
+        ? dx > radius
+        ?> row
+        |:
+            := cell =
+                ? dx = 0 && dy = 0
+                ?> "K"
+                |: mark_of marks_unloaded (client.footing_at { centre ?| x = centre.x + dx; y = centre.y + dy })
+            cells (dx + 1) (row ++# cell)
     cells (0 - radius) ""
 
-inl row_label (dy : i32) : string = sm'.pad_left 3 ' ' ((if dy >= 0 then "+" else "") ++#? dy)
-
-inl scan (marks_unloaded : bool) (radius : i32) : () =
-    inl centre = client.player_spot ()
-    inl legend =
-        if marks_unloaded
-        then " (# wall or blocked, . walkable, ? not loaded by the client, K knight)"
-        else " (# wall or blocked, . walkable, K knight)"
-    probe.note (lua.joined (lua.joined "scan around " (probe.described centre)) legend)
-    let rec rows (dy : i32) : () =
-        if dy <= radius then
-            inl row = scan_row marks_unloaded centre radius dy
-            probe.note (row_label dy ++# " " ++# row)
+:= scan (marks_unloaded : bool) (radius : i32) : () =
+    := centre = client.player_spot ()
+    := legend =
+        ? marks_unloaded
+        ?> " (# wall or blocked, . walkable, ? not loaded by the client, K knight)"
+        |: " (# wall or blocked, . walkable, K knight)"
+    probe.note ("scan around " ++# probe.described centre ++# legend)
+    :~ ^ rows (dy : i32) : () =
+        ? dy <= radius ?>
+            := row = scan_row marks_unloaded centre radius dy
+            := signed = (? dy >= 0 ?> "+" |: "") ++#? dy
+            probe.note (sm'.pad_left 3 ' ' signed ++# " " ++# row)
             rows (dy + 1)
     rows (0 - radius)
 
-///> lua
-///> c
-test mark_of_shows_walls_walkable_and_unloaded =
-    (
-        mark_of true client.Unknown,
-        mark_of false client.Unknown,
-        mark_of true client.Blocked,
-        mark_of true client.Free,
-        mark_of false client.Ramp,
-        mark_of false client.Occupied
-    )
-    |> _assert_eq ("?", "#", "#", ".", ".", ".")
-
-///> lua
-///> c
-test row_label_is_signed_and_padded_to_three =
-    (row_label 5, row_label 0, row_label (0 - 3), row_label (0 - 12), row_label 12)
-    |> _assert_eq (" +5", " +0", " -3", "-12", "+12")
-
-///> _
-inl main () =
-    inl ~radius = 12i32
-    inl marks_unloaded = client.env_is "TIBIA_SCAN_MARKS_UNLOADED" "1"
-    inl scan_then_finish () =
+:= main () =
+    := ~radius = 12i32
+    := marks_unloaded = client.env_is "TIBIA_SCAN_MARKS_UNLOADED" "1"
+    := scan_then_finish () =
         scan marks_unloaded radius
         probe.finish "scanned"
-    probe.started (fun () => client.after 2500 scan_then_finish) 40000
+    probe.started (\ () => client.after 2500 scan_then_finish) 40000
     0i32

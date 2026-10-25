@@ -1,31 +1,27 @@
-///- --package .
-test competitor static =
-    open testing
+:< sm'_operators
+:= health_potion () : i32 = 266
+:= heal_cooldown_ms () : i32 = 1000
+:= swing_ms () : i32 = 2000
+:= step_ms () : i32 = 650
+:= tick_ms () : i32 = 100
+:= cornered_report_every () : i32 = 50
 
-open sm'_operators
-inl health_potion () : i32 = 266
-inl heal_cooldown_ms () : i32 = 1000
-inl swing_ms () : i32 = 2000
-inl step_ms () : i32 = 650
-inl tick_ms () : i32 = 100
-inl cornered_report_every () : i32 = 50
+:== plan = { heal_below : i32; strike_above : i32; retreat_at : i32; kite_at : i32; reach_first : bool }
 
-type plan = { heal_below : i32; strike_above : i32; retreat_at : i32; kite_at : i32; reach_first : bool }
+:== clocks = { last_heal_at : i32; next_step_at : i32 }
 
-type clocks = { last_heal_at : i32; next_step_at : i32 }
-
-type arena =
+:== arena =
     {
         plan : plan
         pace : scoreboard.pace
         engaged : lua.native_table
-        last_swing : lua.native_table
+        last_swing : mut i32
         meter : adjacency.meter
     }
 
-type sighting = { found : bool; index : i32; distance : i32 }
+:== sighting = { found : bool; index : i32; distance : i32 }
 
-inl plan_from_environment () : plan =
+:= plan_from_environment () : plan =
     {
         heal_below = client.env_i32 "TIBIA_ARENA_HEAL_BELOW" 120
         strike_above = client.env_i32 "TIBIA_ARENA_STRIKE_ABOVE" 40
@@ -34,143 +30,143 @@ inl plan_from_environment () : plan =
         reach_first = client.env_is "TIBIA_ARENA_TARGETING" "reach"
     }
 
-inl finish (reason : string) : () = probe.finish_reporting_parity reason
+:= finish (reason : string) : () = probe.finish_reporting_parity reason
 
 
-inl candidate_of (current : client.creature) (c : client.creature) (distance : i32) : policy.candidate =
+:= candidate_of (current : client.creature) (c : client.creature) (distance : i32) : policy.candidate =
     {
         is_current = client.same_creature c current
         distance = distance
         health_percent = client.creature_health_percent c
     }
 
-inl sight (a : arena) (here : client.spot) (people : client.crowd) : sighting =
-    inl current = client.attacking ()
-    inl prefers (x : policy.candidate) (y : policy.candidate) : bool =
-        if a.plan.reach_first
-        then policy.prefers_by (open policy in ReachFirst) x y
-        else policy.prefers_by (open policy in CurrentFirst) x y
-    inl size = client.crowd_size people
-    let rec scan (index : i32) (best : sighting) : sighting =
-        if index > size
-        then best
-        else
-            inl c = client.member people index
-            if client.live_monster c
-            then
-                inl d = probe.chebyshev (client.creature_spot c) here
-                inl better =
-                    if best.found = false
-                    then true
-                    else
+:= sight (a : arena) (here : client.spot) (people : client.crowd) : sighting =
+    := current = client.attacking ()
+    := prefers (x : policy.candidate) (y : policy.candidate) : bool =
+        ? a.plan.reach_first
+        ?> policy.prefers_by (:< policy ;; ReachFirst) x y
+        |: policy.prefers_by (:< policy ;; CurrentFirst) x y
+    := size = client.crowd_size people
+    :~ ^ scan (index : i32) (best : sighting) : sighting =
+        ? index > size
+        ?> best
+        |:
+            := c = client.member people index
+            ? client.live_monster c
+            ?>
+                := d = probe.chebyshev (client.creature_spot c) here
+                := better =
+                    ? best.found = !-
+                    ?> !+
+                    |:
                         prefers
                             (candidate_of current c d)
                             (candidate_of current (client.member people best.index) best.distance)
-                scan (index + 1) (if better then { found = true; index = index; distance = d } else best)
-            else scan (index + 1) best
-    scan 1 { found = false; index = 0; distance = 999 }
+                scan (index + 1) (? better ?> { found = !+; index = index; distance = d } |: best)
+            |: scan (index + 1) best
+    scan 1 { found = !-; index = 0; distance = 999 }
 
-type threat = { attackers : i32; found : bool; index : i32 }
+:== threat = { attackers : i32; found : bool; index : i32 }
 
-inl threat_rank (s : client.spot) : i32 = s.x * 100000 + s.y
+:= threat_rank (s : client.spot) : i32 = s.x * 100000 + s.y
 
-inl threats (here : client.spot) (people : client.crowd) : threat =
-    inl size = client.crowd_size people
-    let rec scan (index : i32) (t : threat) : threat =
-        if index > size
-        then t
-        else
-            inl c = client.member people index
-            if client.live_monster c && probe.chebyshev (client.creature_spot c) here <= 1
-            then
-                inl closer =
-                    t.found = false
+:= threats (here : client.spot) (people : client.crowd) : threat =
+    := size = client.crowd_size people
+    :~ ^ scan (index : i32) (t : threat) : threat =
+        ? index > size
+        ?> t
+        |:
+            := c = client.member people index
+            ? client.live_monster c && probe.chebyshev (client.creature_spot c) here <= 1
+            ?>
+                := closer =
+                    t.found = !-
                     || threat_rank (client.creature_spot c)
                        < threat_rank (client.creature_spot (client.member people t.index))
                 scan (index + 1) {
                     attackers = t.attackers + 1
-                    found = true
+                    found = !+
                     index =
-                        if closer
-                        then index
-                        else t.index
+                        ? closer
+                        ?> index
+                        |: t.index
                 }
-            else scan (index + 1) t
-    scan 1 { attackers = 0; found = false; index = 0 }
+            |: scan (index + 1) t
+    scan 1 { attackers = 0; found = !-; index = 0 }
 
-inl direction_of (n : i32) : i32 = if n > 0 then 1 elif n < 0 then -1 else 0
+:= direction_of (n : i32) : i32 = ? n > 0 ?> 1 |? n < 0 ?> -1 |: 0
 
-type offset = { dx : i32; dy : i32; present : bool }
+:== offset = { dx : i32; dy : i32; present : bool }
 
-inl candidate_step (sx : i32) (sy : i32) (slot : i32) : offset =
-    if slot = 0 then { dx = sx; dy = sy; present = true }
-    elif slot = 1 then { dx = sx; dy = 0; present = true }
-    elif slot = 2 then { dx = 0; dy = sy; present = true }
-    elif slot = 3 then { dx = 1; dy = sy; present = sx = 0 }
-    elif slot = 4 then { dx = -1; dy = sy; present = sx = 0 }
-    elif slot = 5 then { dx = sx; dy = 1; present = sy = 0 }
-    else { dx = sx; dy = -1; present = sy = 0 }
+:= candidate_step (sx : i32) (sy : i32) (slot : i32) : offset =
+    ? slot = 0 ?> { dx = sx; dy = sy; present = !+ }
+    |? slot = 1 ?> { dx = sx; dy = 0; present = !+ }
+    |? slot = 2 ?> { dx = 0; dy = sy; present = !+ }
+    |? slot = 3 ?> { dx = 1; dy = sy; present = sx = 0 }
+    |? slot = 4 ?> { dx = -1; dy = sy; present = sx = 0 }
+    |? slot = 5 ?> { dx = sx; dy = 1; present = sy = 0 }
+    |: { dx = sx; dy = -1; present = sy = 0 }
 
-inl usable (o : offset) : bool = o.present && (o.dx <> 0 || o.dy <> 0)
+:= usable (o : offset) : bool = o.present && (o.dx <> 0 || o.dy <> 0)
 
-inl footing_label (f : client.footing) : string =
-    match f with
+:= footing_label (f : client.footing) : string =
+    ?= f ?|
     | Free => "walk"
     | Ramp => "walk"
     | Occupied => "creature"
     | Blocked => "blocked"
     | Unknown => "none"
 
-inl slots () : i32 = 7
+:= slots () : i32 = 7
 
-inl retreat_footing (s : client.spot) : client.footing =
-    if terrain.arena_world_protected s.x s.y then open client in Blocked else client.footing_at s
+:= retreat_footing (s : client.spot) : client.footing =
+    ? terrain.arena_world_protected s.x s.y ?> :< client ;; Blocked |: client.footing_at s
 
-inl retreat_label (s : client.spot) : string =
-    if terrain.arena_world_protected s.x s.y then "zone" else footing_label (client.footing_at s)
+:= retreat_label (s : client.spot) : string =
+    ? terrain.arena_world_protected s.x s.y ?> "zone" |: footing_label (client.footing_at s)
 
-union retreat =
+:| retreat =
     | Stepped
     | Gated
     | Cornered
 
-inl near_monsters (here : client.spot) (people : client.crowd) : string =
-    inl size = client.crowd_size people
-    let rec seen (index : i32) (text : string) : string =
-        if index > size then text
-        else
-            inl c = client.member people index
-            if client.live_monster c && probe.chebyshev (client.creature_spot c) here <= 2 then
-                inl at = probe.described (client.creature_spot c)
-                seen (index + 1) (if $'(!text) == ""' : bool then at else lua.joined (lua.joined text " ") at)
-            else seen (index + 1) text
+:= near_monsters (here : client.spot) (people : client.crowd) : string =
+    := size = client.crowd_size people
+    :~ ^ seen (index : i32) (text : string) : string =
+        ? index > size ?> text
+        |:
+            := c = client.member people index
+            ? client.live_monster c && probe.chebyshev (client.creature_spot c) here <= 2 ?>
+                := at = probe.described (client.creature_spot c)
+                seen (index + 1) (? text = "" ?> at |: text ++# " " ++# at)
+            |: seen (index + 1) text
     seen 1 ""
 
-inl step_away
+:= step_away
     (a : arena) (here : client.spot) (danger : client.spot) (people : client.crowd) (cornered_so_far : i32)
     : retreat * i32
     =
-    client.chasing false
-    inl sx = direction_of (here.x - danger.x)
-    inl sy = direction_of (here.y - danger.y)
-    inl now = client.now_ms ()
-    let rec attempt (slot : i32) : retreat * i32 =
-        if slot >= slots ()
-        then Cornered, 0
-        else
-            inl o = candidate_step sx sy slot
-            if
+    client.chasing !-
+    := sx = direction_of (here.x - danger.x)
+    := sy = direction_of (here.y - danger.y)
+    := now = client.now_ms ()
+    :~ ^ attempt (slot : i32) : retreat * i32 =
+        ? slot >= slots ()
+        ?> Cornered, 0
+        |:
+            := o = candidate_step sx sy slot
+            ?
                 usable o
                 && (
-                    match retreat_footing { here with x = here.x + o.dx; y = here.y + o.dy } with
-                    | Free => true
-                    | _ => false
+                    ?= retreat_footing { here ?| x = here.x + o.dx; y = here.y + o.dy } ?|
+                    | Free => !+
+                    | _ => !-
                 )
-            then
-                if client.step o.dx o.dy then
-                    inl dx, dy, t = o.dx, o.dy, scoreboard.elapsed a.pace
-                    inl from = probe.described here
-                    inl near = near_monsters here people
+            ?>
+                ? client.step o.dx o.dy ?>
+                    := dx, dy, t = o.dx, o.dy, scoreboard.elapsed a.pace
+                    := from = probe.described here
+                    := near = near_monsters here people
                     probe.note (
                         "step away from "
                         ++# from
@@ -183,47 +179,47 @@ inl step_away
                         ++# " near "
                         ++# near
                     )
-                    Stepped, now + step_ms () * (if o.dx <> 0 && o.dy <> 0 then 3 else 1)
-                else Gated, 0
-            else attempt (slot + 1)
-    inl outcome, next_step_at = attempt 0
-    match outcome with
+                    Stepped, now + step_ms () * (? o.dx <> 0 && o.dy <> 0 ?> 3 |: 1)
+                |: Gated, 0
+            |: attempt (slot + 1)
+    := outcome, next_step_at = attempt 0
+    ?= outcome ?|
     | Cornered =>
-        if (cornered_so_far + 1) % cornered_report_every () = 1
-        then
-            inl size = client.crowd_size people
-            let rec around (index : i32) (text : string) : string =
-                if index > size
-                then text
-                else
-                    inl c = client.member people index
-                    if client.positioned_monster c && probe.chebyshev (client.creature_spot c) here <= 1
-                    then
+        ? (cornered_so_far + 1) % cornered_report_every () = 1
+        ?>
+            := size = client.crowd_size people
+            :~ ^ around (index : i32) (text : string) : string =
+                ? index > size
+                ?> text
+                |:
+                    := c = client.member people index
+                    ? client.positioned_monster c && probe.chebyshev (client.creature_spot c) here <= 1
+                    ?>
                         around
                             (index + 1)
                             (
-                                if (text = "")
-                                then probe.described (client.creature_spot c)
-                                else lua.joined (lua.joined text " ") (probe.described (client.creature_spot c))
+                                ? (text = "")
+                                ?> probe.described (client.creature_spot c)
+                                |: text ++# " " ++# probe.described (client.creature_spot c)
                             )
-                    else around (index + 1) text
-            let rec rejected (slot : i32) (text : string) : string =
-                if slot >= slots ()
-                then text
-                else
-                    inl o = candidate_step sx sy slot
-                    if usable o
-                    then
-                        inl dx, dy = o.dx, o.dy
-                        inl label = retreat_label { here with x = here.x + o.dx; y = here.y + o.dy }
-                        inl item = ("" ++#? dx ++# "," ++#? dy ++# ":" ++# label)
+                    |: around (index + 1) text
+            :~ ^ rejected (slot : i32) (text : string) : string =
+                ? slot >= slots ()
+                ?> text
+                |:
+                    := o = candidate_step sx sy slot
+                    ? usable o
+                    ?>
+                        := dx, dy = o.dx, o.dy
+                        := label = retreat_label { here ?| x = here.x + o.dx; y = here.y + o.dy }
+                        := item = ("" ++#? dx ++# "," ++#? dy ++# ":" ++# label)
                         rejected
                             (slot + 1)
-                            if (text = "")
-                            then item
-                            else lua.joined (lua.joined text " ") item
-                    else rejected (slot + 1) text
-            inl at, from, adjacent, candidates =
+                            ? (text = "")
+                            ?> item
+                            |: text ++# " " ++# item
+                    |: rejected (slot + 1) text
+            := at, from, adjacent, candidates =
                 probe.described here, probe.described danger, around 1 "", rejected 0 ""
             probe.note (
                 "cornered at "
@@ -239,15 +235,15 @@ inl step_away
         outcome, next_step_at
     | _ => outcome, next_step_at
 
-inl network_code
+:= network_code
     (p : plan) (health : i32) (attackers : i32) (target_health : i32) (target_distance : i32) (heal_ready : bool)
     (strike_ready : bool)
     : i32
     =
-    inl max_health = client.player_max_health ()
-    inl healer = network.threshold_healer (network.fraction_below p.heal_below max_health)
-    inl w = if p.kite_at > 0 then network.with_kiting p.kite_at healer else healer
-    inl x =
+    := max_health = client.player_max_health ()
+    := healer = network.threshold_healer (network.fraction_below p.heal_below max_health)
+    := w = ? p.kite_at > 0 ?> network.with_kiting p.kite_at healer |: healer
+    := x =
         network.inputs_of
             (health * network.one () / max_health)
             attackers
@@ -255,52 +251,52 @@ inl network_code
             target_distance
             heal_ready
             strike_ready
-            false
-    inl d = network.decide w x
-    (if d.heal then 1 else 0) + (if d.engage then 2 else 0) + (if d.retreat then 4 else 0)
+            !-
+    := d = network.decide w x
+    (? d.heal ?> 1 |: 0) + (? d.engage ?> 2 |: 0) + (? d.retreat ?> 4 |: 0)
 
-inl tick (a : arena) (first : scoreboard.tally) (first_clocks : clocks) : () =
-    let rec go (t : scoreboard.tally) (k : clocks) : () =
-        if client.player_present () = false
-        then finish "offline"
-        else
-            inl now = client.now_ms ()
-            inl health = client.player_health ()
-            inl t = scoreboard.counted health t
-            if health <= 0
-            then
-                probe.note (lua.joined "dead: " (scoreboard.summary a.pace t))
+:= tick (a : arena) (first : scoreboard.tally) (first_clocks : clocks) : () =
+    :~ ^ go (t : scoreboard.tally) (k : clocks) : () =
+        ? client.player_present () = !-
+        ?> finish "offline"
+        |:
+            := now = client.now_ms ()
+            := health = client.player_health ()
+            := t = scoreboard.counted health t
+            ? health <= 0
+            ?>
+                probe.note ("dead: " ++# scoreboard.summary a.pace t)
                 finish "death"
-            else
-                inl t = { t with kills = t.kills + client.forget_dead a.engaged }
-                inl here = client.player_spot ()
-                inl people = client.spectators here
+            |:
+                := t = { t ?| kills = t.kills + client.forget_dead a.engaged }
+                := here = client.player_spot ()
+                := people = client.spectators here
                 adjacency.on_tick a.meter now here people
-                inl seen = sight a here people
-                inl target_code : i32 = if seen.found = false then 0 elif seen.distance <= 1 then 1 else 2
-                inl heal_ready = now - k.last_heal_at >= heal_cooldown_ms ()
-                inl drink (t : scoreboard.tally) (k : clocks) : scoreboard.tally * clocks =
-                    if client.drink (health_potion ()) then
+                := seen = sight a here people
+                := target_code : i32 = ? seen.found = !- ?> 0 |? seen.distance <= 1 ?> 1 |: 2
+                := heal_ready = now - k.last_heal_at >= heal_cooldown_ms ()
+                := drink (t : scoreboard.tally) (k : clocks) : scoreboard.tally * clocks =
+                    ? client.drink (health_potion ()) ?>
                         probe.note (("heal (potion) at health " ++#? health))
-                        { t with heals = t.heals + 1 }, { k with last_heal_at = now }
-                    else
+                        { t ?| heals = t.heals + 1 }, { k ?| last_heal_at = now }
+                    |:
                         probe.note (("heal dropped by the action gate at health " ++#? health))
                         t, k
-                inl engage (chasing : bool) (t : scoreboard.tally) : scoreboard.tally =
-                    if client.chase_on () <> chasing then
-                        inl turned, at_ms = (if chasing then "on" else "off"), scoreboard.elapsed a.pace
+                := engage (chasing : bool) (t : scoreboard.tally) : scoreboard.tally =
+                    ? client.chase_on () <> chasing ?>
+                        := turned, at_ms = (? chasing ?> "on" |: "off"), scoreboard.elapsed a.pace
                         probe.note (("chase " ++# turned ++# " @t+" ++#? at_ms))
                     client.chasing chasing
-                    inl target = client.member people seen.index
-                    if client.same_creature (client.attacking ()) target = false
-                    then
+                    := target = client.member people seen.index
+                    ? client.same_creature (client.attacking ()) target = !-
+                    ?>
                         client.attack target
                         client.remember a.engaged target
-                        inl verb = if chasing then "approach" else "strike"
-                        inl name = client.creature_name target
-                        inl at = probe.described (client.creature_spot target)
-                        inl from = probe.described here
-                        inl engaged_ms = scoreboard.elapsed a.pace
+                        := verb = ? chasing ?> "approach" |: "strike"
+                        := name = client.creature_name target
+                        := at = probe.described (client.creature_spot target)
+                        := from = probe.described here
+                        := engaged_ms = scoreboard.elapsed a.pace
                         probe.note (
                             verb
                             ++# " "
@@ -314,173 +310,123 @@ inl tick (a : arena) (first : scoreboard.tally) (first_clocks : clocks) : () =
                             ++# " @t+"
                             ++#? engaged_ms
                         )
-                    { t with strikes = t.strikes + 1 }
-                inl hold (t : scoreboard.tally) : scoreboard.tally =
-                    if client.attacking_anyone () && target_code = 1 then
+                    { t ?| strikes = t.strikes + 1 }
+                := hold (t : scoreboard.tally) : scoreboard.tally =
+                    ? client.attacking_anyone () && target_code = 1 ?>
                         client.cancel_attack ()
                         probe.note (("hold at health " ++#? health))
-                    { t with holds = t.holds + 1 }
-                inl danger = threats here people
-                inl can_step = danger.found && now >= k.next_step_at && client.player_walking () = false
-                inl retreat_now (t : scoreboard.tally) (k : clocks) : bool * scoreboard.tally * clocks =
-                    inl threat = client.creature_spot (client.member people danger.index)
-                    inl outcome, next_step_at = step_away a here threat people t.cornered
-                    match outcome with
-                    | Stepped => true, { t with retreats = t.retreats + 1 }, { k with next_step_at = next_step_at }
-                    | Gated => false, { t with gated = t.gated + 1 }, k
-                    | Cornered => false, { t with cornered = t.cornered + 1 }, k
-                inl t, k =
-                    if a.plan.kite_at > 0 then
-                        inl strike_ready = now - lua.cell_value a.last_swing >= swing_ms ()
-                        inl target_health =
-                            if seen.found then client.creature_health_percent (client.member people seen.index) else 0
-                        inl distance = if seen.found then seen.distance else 0
-                        inl code =
+                    { t ?| holds = t.holds + 1 }
+                := danger = threats here people
+                := can_step = danger.found && now >= k.next_step_at && client.player_walking () = !-
+                := retreat_now (t : scoreboard.tally) (k : clocks) : bool * scoreboard.tally * clocks =
+                    := threat = client.creature_spot (client.member people danger.index)
+                    := outcome, next_step_at = step_away a here threat people t.cornered
+                    ?= outcome ?|
+                    | Stepped => !+, { t ?| retreats = t.retreats + 1 }, { k ?| next_step_at = next_step_at }
+                    | Gated => !-, { t ?| gated = t.gated + 1 }, k
+                    | Cornered => !-, { t ?| cornered = t.cornered + 1 }, k
+                := t, k =
+                    ? a.plan.kite_at > 0 ?>
+                        := strike_ready = now - *a.last_swing >= swing_ms ()
+                        := target_health =
+                            ? seen.found ?> client.creature_health_percent (client.member people seen.index) |: 0
+                        := distance = ? seen.found ?> seen.distance |: 0
+                        := code =
                             network_code a.plan health danger.attackers target_health distance heal_ready strike_ready
-                        inl t, k = if code % 2 = 1 && heal_ready then drink t k else t, k
-                        inl retreated, t, k = if (code / 4) % 2 = 1 && can_step then retreat_now t k else false, t, k
-                        if retreated then t, k
-                        elif (code / 2) % 2 = 1 && seen.found then engage (target_code = 2) t, k
-                        else hold t, k
-                    else
-                        inl thresholds : policy.thresholds =
+                        := t, k = ? code % 2 = 1 && heal_ready ?> drink t k |: t, k
+                        := retreated, t, k = ? (code / 4) % 2 = 1 && can_step ?> retreat_now t k |: !-, t, k
+                        ? retreated ?> t, k
+                        |? (code / 2) % 2 = 1 && seen.found ?> engage (target_code = 2) t, k
+                        |: hold t, k
+                    |:
+                        := thresholds : policy.thresholds =
                             { heal_below = a.plan.heal_below; strike_above = a.plan.strike_above }
-                        inl reach =
-                            if target_code = 1 then open policy in InReach
-                            elif target_code = 2 then open policy in OutOfReach
-                            else open policy in NoTarget
-                        inl seen_by_policy : policy.observation =
-                            { health = health; heal_ready = heal_ready; strike_ready = true; target = reach }
-                        inl t, k = if policy.heals thresholds seen_by_policy then drink t k else t, k
-                        inl adaptive : policy.adaptive =
+                        := reach =
+                            ? target_code = 1 ?> :< policy ;; InReach
+                            |? target_code = 2 ?> :< policy ;; OutOfReach
+                            |: :< policy ;; NoTarget
+                        := seen_by_policy : policy.observation =
+                            { health = health; heal_ready = heal_ready; strike_ready = !+; target = reach }
+                        := t, k = ? policy.heals thresholds seen_by_policy ?> drink t k |: t, k
+                        := adaptive : policy.adaptive =
                             {
                                 heal_base = 0
                                 heal_per_attacker = 0
                                 strike_above = 0
                                 retreat_at = a.plan.retreat_at
                             }
-                        inl may_retreat =
+                        := may_retreat =
                             a.plan.retreat_at > 0 && policy.retreats adaptive danger.attackers && can_step
-                        inl retreated, t, k = if may_retreat then retreat_now t k else false, t, k
-                        if retreated then t, k
-                        else
-                            inl decision = policy.engagement_code (policy.engages thresholds seen_by_policy)
-                            if decision = 1 || decision = 2 then engage (decision = 2) t, k else hold t, k
-                if scoreboard.due_for_trace t then
-                    inl spot = client.player_spot ()
-                    inl sx, sy = spot.x, spot.y
-                    inl label = ("seen at " ++#? sx ++# "," ++#? sy ++# ": ")
-                    probe.note (lua.joined label (client.monsters_described spot))
-                if scoreboard.due_for_summary t then
-                    inl attacking = client.attacking_described ()
-                    inl at = probe.described (client.player_spot ())
-                    inl zone = client.player_zone ()
-                    inl summary = scoreboard.summary a.pace t
-                    inl detail = (" attacking " ++# attacking ++# " player at " ++# at ++# " pz " ++# zone)
-                    probe.note (lua.joined summary detail)
-                inl next_tick () = client.after (tick_ms ()) (fun () => go t k)
+                        := retreated, t, k = ? may_retreat ?> retreat_now t k |: !-, t, k
+                        ? retreated ?> t, k
+                        |:
+                            := decision = policy.engagement_code (policy.engages thresholds seen_by_policy)
+                            ? decision = 1 || decision = 2 ?> engage (decision = 2) t, k |: hold t, k
+                ? scoreboard.due_for_trace t ?>
+                    := spot = client.player_spot ()
+                    := sx, sy = spot.x, spot.y
+                    := label = ("seen at " ++#? sx ++# "," ++#? sy ++# ": ")
+                    probe.note (label ++# client.monsters_described spot)
+                ? scoreboard.due_for_summary t ?>
+                    := attacking = client.attacking_described ()
+                    := at = probe.described (client.player_spot ())
+                    := zone = client.player_zone ()
+                    := summary = scoreboard.summary a.pace t
+                    := detail = (" attacking " ++# attacking ++# " player at " ++# at ++# " pz " ++# zone)
+                    probe.note (summary ++# detail)
+                := next_tick () = client.after (tick_ms ()) (\ () => go t k)
                 scoreboard.finish_or_continue a.pace t (adjacency.on_cleared a.meter) next_tick
     go first first_clocks
 
-///> lua
-///> c
-test candidate_steps_try_the_diagonal_then_axes_then_sidesteps =
-    inl usable_slots (sx : i32) (sy : i32) : i32 =
-        let rec go (slot : i32) (n : i32) : i32 =
-            if slot >= slots () then n else go (slot + 1) (if usable (candidate_step sx sy slot) then n + 1 else n)
-        go 0 0
-    (
-        candidate_step 1 (0 - 1) 0,
-        candidate_step 1 (0 - 1) 1,
-        candidate_step 1 (0 - 1) 2,
-        candidate_step 0 1 3,
-        candidate_step 0 1 4,
-        usable_slots 1 (0 - 1),
-        usable_slots 0 1,
-        usable_slots 1 0
-    )
-    |> _assert_eq (
-        { dx = 1i32; dy = -1i32; present = true },
-        { dx = 1i32; dy = 0i32; present = true },
-        { dx = 0i32; dy = -1i32; present = true },
-        { dx = 1i32; dy = 1i32; present = true },
-        { dx = -1i32; dy = 1i32; present = true },
-        3i32,
-        4i32,
-        4i32
-    )
-
-///> lua
-///> c
-test threat_rank_orders_by_x_then_y =
-    (
-        threat_rank { x = 1936; y = 1349; z = 7 } < threat_rank { x = 1937; y = 1300; z = 7 },
-        threat_rank { x = 1936; y = 1348; z = 7 } < threat_rank { x = 1936; y = 1349; z = 7 }
-    )
-    |> _assert_eq (true, true)
-
-///> lua
-///> c
-test footing_label_names_each_footing =
-    (
-        footing_label client.Free,
-        footing_label client.Ramp,
-        footing_label client.Occupied,
-        footing_label client.Blocked,
-        footing_label client.Unknown
-    )
-    |> _assert_eq ("walk", "walk", "creature", "blocked", "none")
-
-///> _
-inl main () =
-    inl p = plan_from_environment ()
-    inl started_at = lua.new_cell 0
-    inl last_swing = lua.new_cell (0 - swing_ms ())
-    inl engaged = lua.new_table ()
-    inl meter = adjacency.from_environment ()
-    inl shield_seen = lua.new_cell 0
-    inl logged_in_at = lua.new_cell 0
-    inl on_text (mode : string) (text : string) : () =
-        if lua.contains text "due to your" then lua.set_cell last_swing (client.now_ms ())
-        inl t = client.now_ms () - lua.cell_value started_at
+:= main () =
+    := p = plan_from_environment ()
+    := started_at = mut 0
+    := last_swing = mut (0 - swing_ms ())
+    := engaged = lua.new_table ()
+    := meter = adjacency.from_environment ()
+    := shield_seen = mut 0
+    := logged_in_at = mut 0
+    := on_text (mode : string) (text : string) : () =
+        ? sm'.contains "due to your" text ?> last_swing <- (client.now_ms ())
+        := t = client.now_ms () - *started_at
         probe.note (("server text [" ++# mode ++# "]: " ++# text ++# " @t+" ++#? t))
-        inl shield = client.player_shield_skill ()
-        if shield <> lua.cell_value shield_seen then
-            lua.set_cell shield_seen shield
+        := shield = client.player_shield_skill ()
+        ? shield <> *shield_seen ?>
+            shield_seen <- shield
             probe.note (("shield skill " ++#? shield ++# " @t+" ++#? t))
         adjacency.on_text meter t text
-    inl on_move (c : client.creature) (new_position : client.native_position) (old_position : client.native_position)
+    := on_move (c : client.creature) (new_position : client.native_position) (old_position : client.native_position)
         : ()
         =
-        inl known = client.position_known new_position && client.position_known old_position
-        if lua.cell_value started_at = 0 && known && client.creature_is_monster c then
-            inl n, id = client.spot_of new_position, client.creature_id c
-            inl x, y, since_login = n.x, n.y, client.now_ms () - lua.cell_value logged_in_at
+        := known = client.position_known new_position && client.position_known old_position
+        ? *started_at = 0 && known && client.creature_is_monster c ?>
+            := n, id = client.spot_of new_position, client.creature_id c
+            := x, y, since_login = n.x, n.y, client.now_ms () - *logged_in_at
             probe.note (("monster " ++#? id ++# " moved to " ++#? x ++# "," ++#? y ++# " @login+" ++#? since_login))
-        elif lua.cell_value started_at > 0 && known then
-            inl who =
-                if client.creature_is_local_player c then "knight"
-                elif client.same_creature (client.attacking ()) c then "target"
-                else ""
-            if who <> "" then
-                inl n, at_ms = client.spot_of new_position, client.now_ms () - lua.cell_value started_at
-                inl x, y = n.x, n.y
+        |? *started_at > 0 && known ?>
+            := who =
+                ? client.creature_is_local_player c ?> "knight"
+                |? client.same_creature (client.attacking ()) c ?> "target"
+                |: ""
+            ? who <> "" ?>
+                := n, at_ms = client.spot_of new_position, client.now_ms () - *started_at
+                := x, y = n.x, n.y
                 probe.note ((who ++# " moved to " ++#? x ++# "," ++#? y ++# " @t+" ++#? at_ms))
-    inl ready () =
-        inl name, health, mana = client.player_name (), client.player_health (), client.player_mana ()
+    := ready () =
+        := name, health, mana = client.player_name (), client.player_health (), client.player_mana ()
         probe.note (("in game as " ++# name ++# " health " ++#? health ++# " mana " ++#? mana))
-        lua.set_cell logged_in_at (client.now_ms ())
+        logged_in_at <- (client.now_ms ())
         client.on_position_change on_move
-        client.after (probe.start_delay_ms () - probe.settle_ms ()) fun () =>
-            inl start_experience = client.player_experience ()
-            client.chasing false
+        client.after (probe.start_delay_ms () - probe.settle_ms ()) \ () =>
+            := start_experience = client.player_experience ()
+            client.chasing !-
             client.fight_balanced ()
-            client.after (probe.settle_ms ()) fun () =>
-                inl at = probe.described (client.player_spot ())
-                inl heal_below, strike_above, kite_at, retreat_at =
+            client.after (probe.settle_ms ()) \ () =>
+                := at = probe.described (client.player_spot ())
+                := heal_below, strike_above, kite_at, retreat_at =
                     p.heal_below, p.strike_above, p.kite_at, p.retreat_at
-                inl targeting = client.env_text "TIBIA_ARENA_TARGETING" "current"
-                inl wall = client.wall_seconds ()
+                := targeting = client.env_text "TIBIA_ARENA_TARGETING" "current"
+                := wall = client.wall_seconds ()
                 probe.note (
                     "policy starts at "
                     ++# at
@@ -497,8 +443,8 @@ inl main () =
                     ++# " wall "
                     ++#? wall
                 )
-                lua.set_cell started_at (client.now_ms ())
-                inl a : arena =
+                started_at <- (client.now_ms ())
+                := a : arena =
                     {
                         plan = p
                         pace = scoreboard.pace_from_environment start_experience started_at
@@ -508,5 +454,5 @@ inl main () =
                     }
                 tick a (scoreboard.empty ()) { last_heal_at = 0 - heal_cooldown_ms (); next_step_at = 0 }
     client.disable_client_bot (probe.bot_profile ())
-    probe.started_as (probe.knight ()) on_text ready (scoreboard.probe_timeout_ms ()) (fun () => finish "timeout")
+    probe.started_as (probe.knight ()) on_text ready (scoreboard.probe_timeout_ms ()) (\ () => finish "timeout")
     0i32

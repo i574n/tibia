@@ -76,8 +76,10 @@ for ($k = 0; $k -lt $generated.Count; $k += 2) {
     [IO.File]::WriteAllText($scratch, $generated[$k] + "`n" + $generated[$k + 1] + "`n")
     & $dotnet $compiler format $scratch | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "map / formatting the generated $name failed ($LASTEXITCODE)" }
+    & $dotnet $compiler format --spelling symbols $scratch | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "map / respelling the generated $name failed ($LASTEXITCODE)" }
     $laidOut = @(Get-Content $scratch | Where-Object { $_ -ne '' })
-    $at = $terrain.FindIndex([Predicate[string]] { param($line) $line.StartsWith("let $name ") })
+    $at = $terrain.FindIndex([Predicate[string]] { param($line) $line.StartsWith(":~ $name ") })
     if ($at -lt 0) { throw "map / src/terrain.spi has no definition of $name" }
     $end = $at + 1
     while ($end -lt $terrain.Count -and $terrain[$end] -ne '' -and $terrain[$end].StartsWith(' ')) { $end++ }

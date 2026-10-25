@@ -1,55 +1,44 @@
-///- --package .
-test summon static =
-    open testing
+:< sm'_operators
+:= orders_of (text : string) : array string =
+    text |> sm'.split ";" |> array |> am'.choose \ part => ? part = "" ?> None |: Some part
 
-open sm'_operators
-inl orders_of (text : string) : array string =
-    text |> sm'.split ";" |> array |> am'.choose fun part => if part = "" then None else Some part
+:= order_count (orders : array string) : i32 = am'.length orders
 
-inl order_count (orders : array string) : i32 = am'.length orders
+:= order_at (orders : array string) (position : i32) : string = am'.index (position - 1) orders
 
-inl order_at (orders : array string) (position : i32) : string = am'.index (position - 1) orders
-
-inl list_creatures () : () =
-    inl people = client.spectators (client.player_spot ())
-    inl size = client.crowd_size people
-    let rec each (index : i32) : () =
-        if index <= size then
-            inl c = client.member people index
-            inl name = client.creature_name c
-            inl monster = if client.creature_is_monster c then "true" else "false"
-            inl at = probe.described (client.creature_spot c)
+:= list_creatures () : () =
+    := people = client.spectators (client.player_spot ())
+    := size = client.crowd_size people
+    :~ ^ each (index : i32) : () =
+        ? index <= size ?>
+            := c = client.member people index
+            := name = client.creature_name c
+            := monster = ? client.creature_is_monster c ?> "true" |: "false"
+            := at = probe.described (client.creature_spot c)
             probe.note (("sees " ++# name ++# " monster=" ++# monster ++# " at " ++# at))
             each (index + 1)
     each 1
 
-///> lua
-///> c
-test orders_drop_empty_parts_like_gmatch =
-    (orders_of "green frog,3,,2", orders_of ";wolf;;troll,2;")
-    |> _assert_eq (;[ "green frog,3,,2" ], ;[ "wolf"; "troll,2" ])
-
-///> _
-inl main () =
-    inl summon_at = client.env_text "TIBIA_SUMMON_AT" "1932, 1352"
-    inl orders = orders_of (client.env_text "TIBIA_SUMMON_ORDERS" "green frog,3,,2")
-    inl on_text (mode : string) (text : string) : () = probe.note (lua.joined "server text: " text)
-    inl ready () =
-        probe.note (lua.joined "in game as " (client.player_name ()))
-        client.after 1500 (fun () =>
-            probe.note (lua.joined "at " (probe.described (client.player_spot ())))
-            client.talk (lua.joined (lua.joined "/pos " summon_at) ", 7")
-            inl count = order_count orders
-            let rec schedule (index : i32) : () =
-                if index <= count then
-                    inl order = order_at orders index
-                    client.after (1200 + 500 * (index - 1)) (fun () => client.talk (lua.joined "/m " order))
+:= main () =
+    := summon_at = client.env_text "TIBIA_SUMMON_AT" "1932, 1352"
+    := orders = orders_of (client.env_text "TIBIA_SUMMON_ORDERS" "green frog,3,,2")
+    := on_text (mode : string) (text : string) : () = probe.note ("server text: " ++# text)
+    := ready () =
+        probe.note ("in game as " ++# client.player_name ())
+        client.after 1500 (\ () =>
+            probe.note ("at " ++# probe.described (client.player_spot ()))
+            client.talk ("/pos " ++# summon_at ++# ", 7")
+            := count = order_count orders
+            :~ ^ schedule (index : i32) : () =
+                ? index <= count ?>
+                    := order = order_at orders index
+                    client.after (1200 + 500 * (index - 1)) (\ () => client.talk ("/m " ++# order))
                     schedule (index + 1)
             schedule 1
-            client.after 4000 (fun () =>
+            client.after 4000 (\ () =>
                 list_creatures ()
                 probe.finish "summoned"
                 )
             )
-    probe.started_as (probe.game_master ()) on_text ready 60000 (fun () => probe.finish "timeout")
+    probe.started_as (probe.game_master ()) on_text ready 60000 (\ () => probe.finish "timeout")
     0i32

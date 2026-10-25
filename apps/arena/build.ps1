@@ -12,7 +12,7 @@ try {
 
     $targetDir = (New-Item -ItemType Directory -Force "../../target/arena").FullName
     $lua = Get-Command lua -ErrorAction Ignore
-    $probes = Get-ChildItem . -File -Filter "*.spi" | Where-Object { Select-String -Path $_.FullName -Pattern '^inl main \(\)' -Quiet } | Sort-Object Name
+    $probes = Get-ChildItem . -File -Filter "*.spi" | Where-Object { Select-String -Path $_.FullName -Pattern '^(inl|:=) main \(\)' -Quiet } | Sort-Object Name
     foreach ($probe in $probes) {
         $name = "tibia/apps/arena/$($probe.BaseName)"
         $out = Join-Path $targetDir "$($probe.BaseName).lua"

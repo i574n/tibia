@@ -20,7 +20,9 @@ $lib = (Resolve-Path (Join-Path $repo 'deps/spiral/lib')).Path -replace '\\', '/
 Set-Text (Join-Path $work 'apps/predict/package.spiproj') 'packageDir: ../../deps/spiral/lib' "packageDir: $lib"
 if ($Candidate.Count) {
     $chain = ($Candidate | ForEach-Object { "|> $_" }) -join ' '
-    Set-Text (Join-Path $work 'apps/predict/predict.spi') 'inl candidate (c : camp) : camp = c' "inl candidate (c : camp) : camp = c $chain"
+    $predict = Join-Path $work 'apps/predict/predict.spi'
+    $identity = @('inl', ':=') | ForEach-Object { "$_ candidate (c : camp) : camp = c" } | Where-Object { [IO.File]::ReadAllText($predict).Contains($_) } | Select-Object -First 1
+    Set-Text $predict ($identity ?? 'inl candidate (c : camp) : camp = c') "$identity $chain"
 }
 if ($Shield -ne 11) {
     Set-Text (Join-Path $work 'src/combat.spi') 'shielded_defense 11i32 dwarven_shield' "shielded_defense ${Shield}i32 dwarven_shield"

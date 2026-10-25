@@ -1,45 +1,45 @@
 ///- --package . --timeout 1800000
 test pack_sim static =
-    open testing
+    :< testing
 
 ///> c
 test cyclops_hits_on_the_knight_sample_match_the_live_measurement =
-    inl ~seed = 3u32
-    inl melee_max = (creatures.stats_of (open creatures in Cyclops)).melee_max
-    inl gear = combat.knight_sample_gear ()
-    let rec loop (i : i32) (landed : i32) (total : i32) (high : i32) : i32 * i32 * i32 =
-        if i >= 2000
-        then landed, total, high
-        else
-            inl h =
-                combat.creature_hit melee_max gear true (
+    := ~seed = 3u32
+    := melee_max = (creatures.stats_of (:< creatures ;; Cyclops)).melee_max
+    := gear = combat.knight_sample_gear ()
+    :~ ^ loop (i : i32) (landed : i32) (total : i32) (high : i32) : i32 * i32 * i32 =
+        ? i >= 2000
+        ?> landed, total, high
+        |:
+            := h =
+                combat.creature_hit melee_max gear !+ (
                     rng.roll_key seed (conv i) 0u32 (hunting_pack.purpose_creature_hit ())
                 )
-            loop (i + 1) (if h > 0 then landed + 1 else landed) (total + h) (if h > high then h else high)
-    match loop 0 0 0 0 with
+            loop (i + 1) (? h > 0 ?> landed + 1 |: landed) (total + h) (? h > high ?> h |: high)
+    ?= loop 0 0 0 0 ?|
     | landed, total, high =>
         (gear.armor, gear.defense, total * 100 / landed, high) |> _assert_eq (17i32, 15i32, 3497i32, 86i32)
 
 ///> rust
 ///> c
 test golden_seed_7_troll_pack =
-    open hunting_pack
-    open creatures
-    inl ~seed = 7u32
-    inl outcome = simulate (uniform_camp Troll) (cavebot (open policy in ReachFirst)) seed (scenario_ticks ())
+    :< hunting_pack
+    :< creatures
+    := ~seed = 7u32
+    := outcome = simulate (uniform_camp Troll) (cavebot (:< policy ;; ReachFirst)) seed (scenario_ticks ())
     outcome.kills |> _assert_eq 6i32
     outcome.escapes |> _assert_eq 18i32
     outcome.deaths |> _assert_eq 0i32
 
 ///> c
 test current_first_targeting_finishes_fleeing_trolls_over_twenty_seeds =
-    open hunting_pack
-    open creatures
-    inl ~first = 1u32
-    match
-        totals (uniform_camp Troll) (cavebot (open policy in ReachFirst)) first 20,
-        totals (uniform_camp Troll) (cavebot (open policy in CurrentFirst)) first 20
-    with
+    :< hunting_pack
+    :< creatures
+    := ~first = 1u32
+    ?=
+        totals (uniform_camp Troll) (cavebot (:< policy ;; ReachFirst)) first 20,
+        totals (uniform_camp Troll) (cavebot (:< policy ;; CurrentFirst)) first 20
+    ?|
     | (reach_kills, reach_escapes, reach_deaths), (current_kills, current_escapes, current_deaths) =>
         reach_kills |> _assert_eq 71i32
         reach_escapes |> _assert_eq 393i32
@@ -47,20 +47,20 @@ test current_first_targeting_finishes_fleeing_trolls_over_twenty_seeds =
         current_kills |> _assert_eq 303i32
         current_escapes |> _assert_eq 20i32
         current_deaths |> _assert_eq 0i32
-        (current_kills > reach_kills && current_escapes < reach_escapes) |> _assert_eq true
+        (current_kills > reach_kills && current_escapes < reach_escapes) |> _assert_eq !+
 
 ///> c
 test mixed_camp_from_the_catalog_over_twenty_seeds =
-    open catalog
-    open hunting_pack
-    inl ~first = 1u32
-    inl camp =
+    :< catalog
+    :< hunting_pack
+    := ~first = 1u32
+    := camp =
         camp_of_entries (
             pack_entry (spawn_of TrollKind 1 2),
             pack_entry (spawn_of GoblinKind 1 2),
             pack_entry (spawn_of TrollKind 1 2)
         )
-    match totals camp (cavebot (open policy in CurrentFirst)) first 20 with
+    ?= totals camp (cavebot (:< policy ;; CurrentFirst)) first 20 ?|
     | kills, escapes, deaths =>
         kills |> _assert_eq 340i32
         escapes |> _assert_eq 1i32
@@ -68,56 +68,56 @@ test mixed_camp_from_the_catalog_over_twenty_seeds =
 
 ///> c
 test a_strike_needs_a_readiness_proof fails "Unification failure" =
-    open hunting_pack
-    open creatures
+    :< hunting_pack
+    :< creatures
     player_strikes (uniform_camp Troll) 7 0 (quantity.ms 0) (start (uniform_camp Troll))
 
 ///> c
 test a_pack_with_millisecond_health_is_rejected fails "Unification failure" =
-    open hunting_pack
-    open creatures
-    inl p = start (uniform_camp Troll)
-    respawn_player (uniform_camp Troll) { p with player_health = quantity.ms 150 }
+    :< hunting_pack
+    :< creatures
+    := p = start (uniform_camp Troll)
+    respawn_player (uniform_camp Troll) { p ?| player_health = quantity.ms 150 }
 
 ///> c
 test cyclops_pack_healing_below_130_dies_while_170_and_above_tie_on_kills =
-    open hunting_pack
-    open creatures
-    inl ~first = 1u32
-    inl camp = uniform_camp Cyclops
-    inl deaths heal = match totals camp (cavebot_with_heal heal) first 100 with | _, _, d => d
-    inl at heal = score camp (cavebot_with_heal heal) first 100
+    :< hunting_pack
+    :< creatures
+    := ~first = 1u32
+    := camp = uniform_camp Cyclops
+    := deaths heal = ?= totals camp (cavebot_with_heal heal) first 100 ?| | _, _, d => d
+    := at heal = score camp (cavebot_with_heal heal) first 100
     (deaths 90, deaths 170, at 90, at 130, at 170, at 210)
     |> _assert_eq (127i32, 0i32, -5399i32, -247i32, 950i32, 950i32)
 
 ///> c
 test cyclops_pack_only_the_warm_started_network_dominates_the_tuned_cavebot_by_a_hair =
-    open hunting_pack
-    open creatures
-    inl ~search = 11u32
-    inl camp = uniform_camp Cyclops
-    inl heal = cavebot_heal_tuned_on Profit camp (training_block ())
-    inl floor = (ledger_on camp (cavebot_with_heal heal) (training_block ())).hunt_kills
-    inl objective = ProfitKeepingKills floor
-    inl training t = worth_on_training objective camp t (training_block ())
-    inl held_out t =
-        inl l = ledger_on camp t (held_out_block ())
+    :< hunting_pack
+    :< creatures
+    := ~search = 11u32
+    := camp = uniform_camp Cyclops
+    := heal = cavebot_heal_tuned_on Profit camp (training_block ())
+    := floor = (ledger_on camp (cavebot_with_heal heal) (training_block ())).hunt_kills
+    := objective = ProfitKeepingKills floor
+    := training t = worth_on_training objective camp t (training_block ())
+    := held_out t =
+        := l = ledger_on camp t (held_out_block ())
         l.hunt_kills, quantity.value_of l.hunt_profit
-    inl g = tactic_evolved_on objective { first = heal; second = 0; third = 4 } camp search (training_block ()) 6 6
-    inl kiting n = network_tactic (cavebot_network camp heal |> network.with_kiting n)
-    inl k1, k2, k3 = training (kiting 1), training (kiting 2), training (kiting 3)
-    inl chosen = if k1 >= k2 && k1 >= k3 then 1 elif k2 >= k3 then 2 else 3
-    inl cold = network.evolve (fun w => training (network_tactic w)) (network.zero_weights ()) (search + 2u32) 6 6 256
-    inl warm =
+    := g = tactic_evolved_on objective { first = heal; second = 0; third = 4 } camp search (training_block ()) 6 6
+    := kiting n = network_tactic (cavebot_network camp heal |> network.with_kiting n)
+    := k1, k2, k3 = training (kiting 1), training (kiting 2), training (kiting 3)
+    := chosen = ? k1 >= k2 && k1 >= k3 ?> 1 |? k2 >= k3 ?> 2 |: 3
+    := cold = network.evolve (\ w => training (network_tactic w)) (network.zero_weights ()) (search + 2u32) 6 6 256
+    := warm =
         network.evolve
-            fun w => training (network_tactic w)
+            \ w => training (network_tactic w)
             (cavebot_network camp heal |> network.with_kiting chosen)
             (search + 4u32)
             6
             6
             64
-    inl tuned = heal, floor, chosen, g.first, g.second, g.third
-    inl table =
+    := tuned = heal, floor, chosen, g.first, g.second, g.third
+    := table =
         held_out (cavebot_with_heal heal),
         held_out (tactic_of g),
         held_out (kiting chosen),
@@ -134,21 +134,21 @@ test cyclops_pack_only_the_warm_started_network_dominates_the_tuned_cavebot_by_a
             (955i32, -452543i32)
         )
     )
-    inl dominates (k, p) (bk, bp) = k >= bk && p >= bp && (k > bk || p > bp)
-    inl cavebot, rules, kited, cold_learned, warm_learned = table
+    := dominates (k, p) (bk, bp) = k >= bk && p >= bp && (k > bk || p > bp)
+    := cavebot, rules, kited, cold_learned, warm_learned = table
     (dominates kited cavebot, dominates rules cavebot, dominates cold_learned cavebot, dominates warm_learned cavebot)
-    |> _assert_eq (false, false, false, true)
+    |> _assert_eq (!-, !-, !-, !+)
 
 ///> c
 test open_field_clear_predictions_with_kiting_losing_the_monsters =
-    open hunting_pack
-    open creatures
-    inl ~first = 1u32
-    inl camp = uniform_camp Cyclops
-    let rec sum (t : tactic) (i : i32) (ms : i32) (potions : i32) (deaths : i32) : i32 * i32 * i32 =
-        if i >= 20 then ms / 20, potions * 10 / 20, deaths
-        else
-            match clear_run camp t (first + conv i) 6000 with
+    :< hunting_pack
+    :< creatures
+    := ~first = 1u32
+    := camp = uniform_camp Cyclops
+    :~ ^ sum (t : tactic) (i : i32) (ms : i32) (potions : i32) (deaths : i32) : i32 * i32 * i32 =
+        ? i >= 20 ?> ms / 20, potions * 10 / 20, deaths
+        |:
+            ?= clear_run camp t (first + conv i) 6000 ?|
             | elapsed, p => sum t (i + 1) (ms + elapsed) (potions + p.hunter.potions) (deaths + p.deaths)
     (
         sum (cavebot_with_heal 70) 0 0 0 0,
@@ -158,74 +158,74 @@ test open_field_clear_predictions_with_kiting_losing_the_monsters =
 
 ///> c
 test a_knight_slain_by_a_hit_cannot_drink_in_the_same_tick =
-    open hunting_pack
-    open creatures
-    inl ~seed = 1u32
-    inl p = simulate (uniform_camp Cyclops) (cavebot_with_heal 0) seed 600
+    :< hunting_pack
+    :< creatures
+    := ~seed = 1u32
+    := p = simulate (uniform_camp Cyclops) (cavebot_with_heal 0) seed 600
     (p.hunter.potions, p.deaths) |> _assert_eq (0i32, 4i32)
 
 ///> c
 test a_corridor_cuts_potions_and_deaths_in_a_cyclops_clear =
-    open hunting_pack
-    open creatures
-    inl ~first = 1u32
-    inl open_field = uniform_camp Cyclops
-    inl corridor = open_field |> on_layout (open terrain in EastCorridor)
-    let rec sum (camp : camp) (i : i32) (ms : i32) (potions : i32) (deaths : i32) : i32 * i32 * i32 =
-        if i >= 20 then ms / 20, potions * 10 / 20, deaths
-        else
-            match clear_run camp (cavebot_with_heal 100) (first + conv i) 6000 with
+    :< hunting_pack
+    :< creatures
+    := ~first = 1u32
+    := open_field = uniform_camp Cyclops
+    := corridor = open_field |> on_layout (:< terrain ;; EastCorridor)
+    :~ ^ sum (camp : camp) (i : i32) (ms : i32) (potions : i32) (deaths : i32) : i32 * i32 * i32 =
+        ? i >= 20 ?> ms / 20, potions * 10 / 20, deaths
+        |:
+            ?= clear_run camp (cavebot_with_heal 100) (first + conv i) 6000 ?|
             | elapsed, p => sum camp (i + 1) (ms + elapsed) (potions + p.hunter.potions) (deaths + p.deaths)
-    inl in_the_open = sum open_field 0 0 0 0
-    inl in_the_corridor = sum corridor 0 0 0 0
+    := in_the_open = sum open_field 0 0 0 0
+    := in_the_corridor = sum corridor 0 0 0 0
     (in_the_open, in_the_corridor) |> _assert_eq ((85915i32, 153i32, 3i32), (85000i32, 65i32, 0i32))
-    inl _, open_potions, open_deaths = in_the_open
-    inl _, corridor_potions, corridor_deaths = in_the_corridor
-    (corridor_potions < open_potions, corridor_deaths < open_deaths) |> _assert_eq (true, true)
+    := _, open_potions, open_deaths = in_the_open
+    := _, corridor_potions, corridor_deaths = in_the_corridor
+    (corridor_potions < open_potions, corridor_deaths < open_deaths) |> _assert_eq (!+, !+)
 
 ///> c
 test room_and_corridor_evolved_retreat_dominates_the_fully_tuned_cavebot =
-    open hunting_pack
-    open creatures
-    inl ~search = 29u32
-    inl room = uniform_camp Cyclops |> on_layout (open terrain in RoomAndCorridor)
-    inl heal = cavebot_heal_tuned_on Profit room (training_block ())
-    inl floor = (ledger_on room (cavebot_with_heal heal) (training_block ())).hunt_kills
-    inl objective = ProfitKeepingKills floor
-    inl training t = worth_on_training objective room t (training_block ())
-    inl held_out t =
-        inl l = ledger_on room t (held_out_block ())
+    :< hunting_pack
+    :< creatures
+    := ~search = 29u32
+    := room = uniform_camp Cyclops |> on_layout (:< terrain ;; RoomAndCorridor)
+    := heal = cavebot_heal_tuned_on Profit room (training_block ())
+    := floor = (ledger_on room (cavebot_with_heal heal) (training_block ())).hunt_kills
+    := objective = ProfitKeepingKills floor
+    := training t = worth_on_training objective room t (training_block ())
+    := held_out t =
+        := l = ledger_on room t (held_out_block ())
         l.hunt_kills, quantity.value_of l.hunt_profit
-    inl evolve order =
+    := evolve order =
         rules_evolved_on objective order { first = heal; second = 0; third = 4 } room search (training_block ()) 6 6
-    inl current = evolve (open policy in CurrentFirst)
-    inl reach = evolve (open policy in ReachFirst)
-    inl current_worth = training (tactic_with_order (open policy in CurrentFirst) current)
-    inl reach_worth = training (tactic_with_order (open policy in ReachFirst) reach)
-    inl chosen =
-        if reach_worth > current_worth
-        then tactic_with_order (open policy in ReachFirst) reach
-        else tactic_with_order (open policy in CurrentFirst) current
-    inl genes = if reach_worth > current_worth then reach else current
-    inl cavebot = held_out (cavebot_with_heal heal)
-    inl evolved = held_out chosen
+    := current = evolve (:< policy ;; CurrentFirst)
+    := reach = evolve (:< policy ;; ReachFirst)
+    := current_worth = training (tactic_with_order (:< policy ;; CurrentFirst) current)
+    := reach_worth = training (tactic_with_order (:< policy ;; ReachFirst) reach)
+    := chosen =
+        ? reach_worth > current_worth
+        ?> tactic_with_order (:< policy ;; ReachFirst) reach
+        |: tactic_with_order (:< policy ;; CurrentFirst) current
+    := genes = ? reach_worth > current_worth ?> reach |: current
+    := cavebot = held_out (cavebot_with_heal heal)
+    := evolved = held_out chosen
     ((heal, floor, genes.first, genes.second, genes.third, reach_worth > current_worth), cavebot, evolved)
-    |> _assert_eq ((230i32, 956i32, 207i32, 34i32, 3i32, true), (942i32, -477181i32), (946i32, -288217i32))
-    inl base_kills, base_profit = cavebot
-    inl kills, profit = evolved
-    (kills >= base_kills, profit > base_profit) |> _assert_eq (true, true)
+    |> _assert_eq ((230i32, 956i32, 207i32, 34i32, 3i32, !+), (942i32, -477181i32), (946i32, -288217i32))
+    := base_kills, base_profit = cavebot
+    := kills, profit = evolved
+    (kills >= base_kills, profit > base_profit) |> _assert_eq (!+, !+)
 
 ///> c
 test the_arena_spot_clear_takes_the_live_clear_time =
-    open hunting_pack
-    open creatures
-    inl ~first = 1u32
-    inl spot = uniform_camp Cyclops |> on_layout (open terrain in ArenaSpot)
-    let rec sum (i : i32) (ms : i32) (potions : i32) (deaths : i32) (hits : i32) (taken : i32) : i32 * i32 * i32 * i32 =
-        if i >= 20
-        then ms / 20, potions * 10 / 20, deaths, taken * 100 / hits
-        else
-            match clear_run spot (cavebot_with_heal 160) (first + conv i) 6000 with
+    :< hunting_pack
+    :< creatures
+    := ~first = 1u32
+    := spot = uniform_camp Cyclops |> on_layout (:< terrain ;; ArenaSpot)
+    :~ ^ sum (i : i32) (ms : i32) (potions : i32) (deaths : i32) (hits : i32) (taken : i32) : i32 * i32 * i32 * i32 =
+        ? i >= 20
+        ?> ms / 20, potions * 10 / 20, deaths, taken * 100 / hits
+        |:
+            ?= clear_run spot (cavebot_with_heal 160) (first + conv i) 6000 ?|
             | elapsed, p =>
                 sum
                     (i + 1)
@@ -238,22 +238,22 @@ test the_arena_spot_clear_takes_the_live_clear_time =
 
 ///> c
 test on_the_arena_spot_retreating_at_two_attackers_saves_potions =
-    open hunting_pack
-    open creatures
-    inl ~first = 1u32
-    inl spot = uniform_camp Cyclops |> on_layout (open terrain in ArenaSpot)
-    let rec sum (t : tactic) (i : i32) (ms : i32) (potions : i32) (deaths : i32) : i32 * i32 * i32 =
-        if i >= 20 then ms / 20, potions * 10 / 20, deaths
-        else
-            match clear_run spot t (first + conv i) 6000 with
+    :< hunting_pack
+    :< creatures
+    := ~first = 1u32
+    := spot = uniform_camp Cyclops |> on_layout (:< terrain ;; ArenaSpot)
+    :~ ^ sum (t : tactic) (i : i32) (ms : i32) (potions : i32) (deaths : i32) : i32 * i32 * i32 =
+        ? i >= 20 ?> ms / 20, potions * 10 / 20, deaths
+        |:
+            ?= clear_run spot t (first + conv i) 6000 ?|
             | elapsed, p => sum t (i + 1) (ms + elapsed) (potions + p.hunter.potions) (deaths + p.deaths)
-    inl rules order n = tactic_with_order order { first = 160; second = 0; third = n }
-    inl kite order n =
-        inl t = network_tactic (cavebot_network spot 160 |> network.with_kiting n)
-        { t with order = order }
-    open policy
-    inl cavebot = sum (cavebot_with_heal 160) 0 0 0 0
-    inl retreating = sum (rules ReachFirst 2) 0 0 0 0
+    := rules order n = tactic_with_order order { first = 160; second = 0; third = n }
+    := kite order n =
+        := t = network_tactic (cavebot_network spot 160 |> network.with_kiting n)
+        { t ?| order = order }
+    :< policy
+    := cavebot = sum (cavebot_with_heal 160) 0 0 0 0
+    := retreating = sum (rules ReachFirst 2) 0 0 0 0
     (
         cavebot,
         retreating,
@@ -268,88 +268,88 @@ test on_the_arena_spot_retreating_at_two_attackers_saves_potions =
         (98605i32, 153i32, 0i32),
         (87500i32, 154i32, 0i32)
     )
-    inl _, cavebot_potions, cavebot_deaths = cavebot
-    inl _, retreat_potions, retreat_deaths = retreating
-    (retreat_potions < cavebot_potions, retreat_deaths <= cavebot_deaths) |> _assert_eq (true, true)
+    := _, cavebot_potions, cavebot_deaths = cavebot
+    := _, retreat_potions, retreat_deaths = retreating
+    (retreat_potions < cavebot_potions, retreat_deaths <= cavebot_deaths) |> _assert_eq (!+, !+)
 
 ///> c
 test on_the_real_arena_map_evolved_rules_save_potions_at_a_slightly_slower_clear =
-    open hunting_pack
-    open creatures
-    inl ~search = 31u32
-    inl spot = uniform_camp Cyclops |> on_layout (open terrain in ArenaSpot)
-    inl tf = training_first ()
-    inl tc = training_count ()
-    inl heal = tuned_cavebot_heal_for (CheapClearWithin 1000000) spot tf tc
-    inl cavebot_ms = (clear_ledger_of spot (cavebot_with_heal heal) tf tc).clear_ms / tc
-    inl objective = CheapClearWithin (cavebot_ms * 115 / 100)
-    inl training t = worth objective spot t tf tc
-    inl evolve order = evolve_rules_for objective order { first = heal; second = 0; third = 4 } spot search tf tc 6 6
-    inl current = evolve (open policy in CurrentFirst)
-    inl reach = evolve (open policy in ReachFirst)
-    inl reach_wins =
-        training (tactic_with_order (open policy in ReachFirst) reach)
-        > training (tactic_with_order (open policy in CurrentFirst) current)
-    inl genes = if reach_wins then reach else current
-    inl evolved =
-        if reach_wins
-        then tactic_with_order (open policy in ReachFirst) reach
-        else tactic_with_order (open policy in CurrentFirst) current
-    inl held t =
-        inl l = clears_judged_on spot t (held_out_block ())
+    :< hunting_pack
+    :< creatures
+    := ~search = 31u32
+    := spot = uniform_camp Cyclops |> on_layout (:< terrain ;; ArenaSpot)
+    := tf = training_first ()
+    := tc = training_count ()
+    := heal = tuned_cavebot_heal_for (CheapClearWithin 1000000) spot tf tc
+    := cavebot_ms = (clear_ledger_of spot (cavebot_with_heal heal) tf tc).clear_ms / tc
+    := objective = CheapClearWithin (cavebot_ms * 115 / 100)
+    := training t = worth objective spot t tf tc
+    := evolve order = evolve_rules_for objective order { first = heal; second = 0; third = 4 } spot search tf tc 6 6
+    := current = evolve (:< policy ;; CurrentFirst)
+    := reach = evolve (:< policy ;; ReachFirst)
+    := reach_wins =
+        training (tactic_with_order (:< policy ;; ReachFirst) reach)
+        > training (tactic_with_order (:< policy ;; CurrentFirst) current)
+    := genes = ? reach_wins ?> reach |: current
+    := evolved =
+        ? reach_wins
+        ?> tactic_with_order (:< policy ;; ReachFirst) reach
+        |: tactic_with_order (:< policy ;; CurrentFirst) current
+    := held t =
+        := l = clears_judged_on spot t (held_out_block ())
         l.clear_potions, l.clear_deaths, l.clear_ms / held_out_count ()
-    inl baseline = held (cavebot_with_heal heal)
-    inl learned = held evolved
+    := baseline = held (cavebot_with_heal heal)
+    := learned = held evolved
     ((heal, cavebot_ms, genes.first, genes.second, genes.third, reach_wins), baseline, learned)
-    |> _assert_eq ((90i32, 88400i32, 88i32, 26i32, 1i32, true), (1702i32, 0i32, 90140i32), (1070i32, 1i32, 95629i32))
-    inl base_potions, base_deaths, base_ms = baseline
-    inl potions, deaths, ms = learned
+    |> _assert_eq ((90i32, 88400i32, 88i32, 26i32, 1i32, !+), (1702i32, 0i32, 90140i32), (1070i32, 1i32, 95629i32))
+    := base_potions, base_deaths, base_ms = baseline
+    := potions, deaths, ms = learned
     (potions < base_potions, deaths <= base_deaths, ms <= base_ms, ms <= cavebot_ms * 115 / 100)
-    |> _assert_eq (true, false, false, true)
+    |> _assert_eq (!+, !-, !-, !+)
 
 ///> c
 test mixed_arena_camp_evolved_rules_dominate_the_tuned_cavebot_and_kind_aware_cyclops_rules_drink_less =
-    open hunting_pack
-    open policy
-    inl ~search_seed = 37u32
-    inl camp = cyclops_and_two_trolls_on_the_arena_spot ()
-    inl tf = training_first ()
-    inl tc = training_count ()
-    inl heal = tuned_cavebot_heal_for (CheapClearWithin 1000000) camp tf tc
-    inl cavebot_ms = (clear_ledger_of camp (cavebot_with_heal heal) tf tc).clear_ms / tc
-    inl objective = CheapClearWithin (cavebot_ms * 115 / 100)
-    inl training t = worth objective camp t tf tc
-    inl blind order =
+    :< hunting_pack
+    :< policy
+    := ~search_seed = 37u32
+    := camp = cyclops_and_two_trolls_on_the_arena_spot ()
+    := tf = training_first ()
+    := tc = training_count ()
+    := heal = tuned_cavebot_heal_for (CheapClearWithin 1000000) camp tf tc
+    := cavebot_ms = (clear_ledger_of camp (cavebot_with_heal heal) tf tc).clear_ms / tc
+    := objective = CheapClearWithin (cavebot_ms * 115 / 100)
+    := training t = worth objective camp t tf tc
+    := blind order =
         evolve_rules_for objective order { first = heal; second = 0; third = 4 } camp search_seed tf tc 6 6
-    inl blind_current = blind CurrentFirst
-    inl blind_reach = blind ReachFirst
-    inl blind_reach_wins =
+    := blind_current = blind CurrentFirst
+    := blind_reach = blind ReachFirst
+    := blind_reach_wins =
         training (tactic_with_order ReachFirst blind_reach) > training (tactic_with_order CurrentFirst blind_current)
-    inl blind_genes = if blind_reach_wins then blind_reach else blind_current
-    inl blind_tactic = tactic_with_order (if blind_reach_wins then ReachFirst else CurrentFirst) blind_genes
-    inl aware order =
+    := blind_genes = ? blind_reach_wins ?> blind_reach |: blind_current
+    := blind_tactic = tactic_with_order (? blind_reach_wins ?> ReachFirst |: CurrentFirst) blind_genes
+    := aware order =
         evolve_temperate_for objective order (temperate_genes heal 0 0 4 4) camp (search_seed + 2u32) tf tc 6 3
-    inl aware_current = aware CurrentFirst
-    inl aware_reach = aware ReachFirst
-    inl aware_reach_wins =
+    := aware_current = aware CurrentFirst
+    := aware_reach = aware ReachFirst
+    := aware_reach_wins =
         training (temperate_tactic ReachFirst aware_reach) > training (temperate_tactic CurrentFirst aware_current)
-    inl aware_genes = if aware_reach_wins then aware_reach else aware_current
-    inl aware_tactic = temperate_tactic (if aware_reach_wins then ReachFirst else CurrentFirst) aware_genes
-    inl gene i = search.gene aware_genes i
-    inl held t =
-        inl l = clears_judged_on camp t (held_out_block ())
+    := aware_genes = ? aware_reach_wins ?> aware_reach |: aware_current
+    := aware_tactic = temperate_tactic (? aware_reach_wins ?> ReachFirst |: CurrentFirst) aware_genes
+    := gene i = search.gene aware_genes i
+    := held t =
+        := l = clears_judged_on camp t (held_out_block ())
         l.clear_potions, l.clear_deaths, l.clear_ms / held_out_count ()
-    inl cavebot = held (cavebot_with_heal heal)
-    inl blind_evolved = held blind_tactic
-    inl cyclops_rules = held (tactic_with_order CurrentFirst (evolved_on_the_cyclops_spot ()))
-    inl cyclops_rules_standing_only =
+    := cavebot = held (cavebot_with_heal heal)
+    := blind_evolved = held blind_tactic
+    := cyclops_rules = held (tactic_with_order CurrentFirst (evolved_on_the_cyclops_spot ()))
+    := cyclops_rules_standing_only =
         held (temperate_tactic CurrentFirst (against_standing_only (evolved_on_the_cyclops_spot ())))
-    inl aware_evolved = held aware_tactic
+    := aware_evolved = held aware_tactic
     (
         (heal, cavebot_ms, blind_genes.first, blind_genes.second, blind_genes.third, blind_reach_wins),
         (gene 0, gene 1, gene 2, gene 3, gene 4, aware_reach_wins)
     )
-    |> _assert_eq ((80i32, 38366i32, 59i32, 5i32, 3i32, false), (0i32, 62i32, 0i32, 4i32, 2i32, false))
+    |> _assert_eq ((80i32, 38366i32, 59i32, 5i32, 3i32, !-), (0i32, 62i32, 0i32, 4i32, 2i32, !-))
     (cavebot, blind_evolved, cyclops_rules, cyclops_rules_standing_only, aware_evolved)
     |> _assert_eq (
         (85i32, 0i32, 37668i32),
@@ -358,49 +358,49 @@ test mixed_arena_camp_evolved_rules_dominate_the_tuned_cavebot_and_kind_aware_cy
         (135i32, 0i32, 37806i32),
         (67i32, 1i32, 37866i32)
     )
-    inl dominates (p, d, ms) (bp, bd, bms) = p <= bp && d <= bd && ms <= bms && (p < bp || d < bd || ms < bms)
+    := dominates (p, d, ms) (bp, bd, bms) = p <= bp && d <= bd && ms <= bms && (p < bp || d < bd || ms < bms)
     (
         dominates aware_evolved cavebot,
         dominates aware_evolved blind_evolved,
         dominates blind_evolved cavebot,
         dominates cyclops_rules_standing_only cyclops_rules
     )
-    |> _assert_eq (false, false, true, true)
+    |> _assert_eq (!-, !-, !+, !+)
 
 ///> c
 test kills_and_gold_do_not_add fails "Unification failure" =
-    open hunting_pack
-    open creatures
-    inl camp = uniform_camp Cyclops
-    inl t = cavebot_with_heal 160
+    :< hunting_pack
+    :< creatures
+    := camp = uniform_camp Cyclops
+    := t = cavebot_with_heal 160
     quantity.plus (measured Kills camp t 1 1) (measured Profit camp t 1 1)
 
 ///> c
 test typed_seed_blocks_give_the_same_numbers_as_raw_ranges =
-    open hunting_pack
-    open creatures
-    inl ~first = 1001u32
-    inl spot = uniform_camp Cyclops |> on_layout (open terrain in ArenaSpot)
-    inl t = cavebot_with_heal 160
-    inl typed = clears_judged_on spot t (held_out_slice 3)
-    inl raw = clear_ledger_of spot t first 3
+    :< hunting_pack
+    :< creatures
+    := ~first = 1001u32
+    := spot = uniform_camp Cyclops |> on_layout (:< terrain ;; ArenaSpot)
+    := t = cavebot_with_heal 160
+    := typed = clears_judged_on spot t (held_out_slice 3)
+    := raw = clear_ledger_of spot t first 3
     (
         typed.clear_potions = raw.clear_potions,
         typed.clear_ms = raw.clear_ms,
         quantity.value_of (judged_on Kills spot t (held_out_slice 1)) = score spot t first 1
     )
-    |> _assert_eq (true, true, true)
+    |> _assert_eq (!+, !+, !+)
 
 ///> c
 test tuning_on_held_out_seeds_does_not_compile fails "Unification failure" =
-    open hunting_pack
-    open creatures
+    :< hunting_pack
+    :< creatures
     cavebot_heal_tuned_on Profit (uniform_camp Cyclops) (held_out_block ())
 
 ///> c
 test a_held_out_block_cannot_be_forged_from_training_seeds fails "The module does not have the key: HeldOutBlock" =
-    open hunting_pack
-    open creatures
+    :< hunting_pack
+    :< creatures
     judged_on Profit
         (uniform_camp Cyclops)
         (cavebot_with_heal 160)
@@ -412,17 +412,17 @@ test a_strike_proof_cannot_be_forged_outside_readiness fails "The module does no
 
 ///> c
 test judging_on_training_seeds_does_not_compile fails "Unification failure" =
-    open hunting_pack
-    open creatures
+    :< hunting_pack
+    :< creatures
     judged_on Profit (uniform_camp Cyclops) (cavebot_with_heal 160) (training_block ())
 
 ///> c
 test on_the_hunting_ground_walking_pays_and_the_evolved_shuttle_edges_the_hand_route =
-    open hunting_pack
-    inl camp = arena_hunt ()
-    inl ~tuned = cavebot_heal_tuned_on Experience camp (training_block ())
-    inl cavebot = cavebot_with_heal tuned
-    inl judged (t : tactic) : i32 = quantity.value_of (judged_on Experience camp t (held_out_block ()))
+    :< hunting_pack
+    := camp = arena_hunt ()
+    := ~tuned = cavebot_heal_tuned_on Experience camp (training_block ())
+    := cavebot = cavebot_with_heal tuned
+    := judged (t : tactic) : i32 = quantity.value_of (judged_on Experience camp t (held_out_block ()))
     (
         tuned,
         judged cavebot,
@@ -435,29 +435,29 @@ test on_the_hunting_ground_walking_pays_and_the_evolved_shuttle_edges_the_hand_r
 
 ///> c
 test the_current_arena_bundle_pins_rules_and_retreat_potions_and_hits_over_the_held_out_block =
-    open hunting_pack
-    inl totals (camp : camp) (t : tactic) : i32 * i32 =
-        let rec each (i : i32) (potions : i32) (hits : i32) : i32 * i32 =
-            if i >= (range_of (held_out_block ())).count then potions, hits
-            else
-                inl elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
+    :< hunting_pack
+    := totals (camp : camp) (t : tactic) : i32 * i32 =
+        :~ ^ each (i : i32) (potions : i32) (hits : i32) : i32 * i32 =
+            ? i >= (range_of (held_out_block ())).count ?> potions, hits
+            |:
+                := elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
                 each (i + 1) (potions + p.hunter.potions) (hits + p.hunter.hits_taken)
         each 0 0 0
-    inl ~kind = open creatures in Cyclops
-    inl arena = uniform_camp kind |> on_layout (open terrain in ArenaSpot) |> mirroring_the_current_arena
+    := ~kind = :< creatures ;; Cyclops
+    := arena = uniform_camp kind |> on_layout (:< terrain ;; ArenaSpot) |> mirroring_the_current_arena
     (totals arena (cavebot_with_heal 160), totals arena (live_retreat_tactic 160 2))
     |> _assert_eq ((1394i32, 6649i32), (1332i32, 6428i32))
 
 ///> c
 test by_canary_formula_a_cyclops_steps_700_ms_on_arena_ground_and_450_on_the_road_and_the_level_30_knight_500_and_300 =
-    open hunting_pack
-    inl camp =
-        uniform_camp (open creatures in Cyclops)
-        |> on_layout (open terrain in ArenaSpot)
+    :< hunting_pack
+    := camp =
+        uniform_camp (:< creatures ;; Cyclops)
+        |> on_layout (:< terrain ;; ArenaSpot)
         |> stepping_by_canary_formula
-    inl ~ground = geometry.position 99 99 7
-    inl road = geometry.position 115 89 7
-    inl cyclops = creatures.stats_of (open creatures in Cyclops)
+    := ~ground = geometry.position 99 99 7
+    := road = geometry.position 115 89 7
+    := cyclops = creatures.stats_of (:< creatures ;; Cyclops)
     (
         step_ms_at camp ground cyclops.speed cyclops.step_ms,
         step_ms_at camp road cyclops.speed cyclops.step_ms,
@@ -468,19 +468,19 @@ test by_canary_formula_a_cyclops_steps_700_ms_on_arena_ground_and_450_on_the_roa
 
 ///> c
 test a_canary_spawn_returns_after_its_cleanup_check_its_spawntime_and_the_teleport_effect =
-    open hunting_pack
-    inl ~spawntime = 60000i32
+    :< hunting_pack
+    := ~spawntime = 60000i32
     (canary_respawn_ms spawntime, canary_respawn_ms (spawntime / 2), canary_respawn_ms (spawntime + 30000))
     |> _assert_eq (94200i32, 64200i32, 124200i32)
 
 ///> c
 test the_random_control_stays_far_below_every_rule =
-    open hunting_pack
-    inl camp = arena_hunt ()
-    inl ~marker = 0i32
-    inl l = ledger_on camp (random_control ()) (held_out_block ())
-    inl spot = uniform_camp (open creatures in Cyclops) |> on_layout (open terrain in ArenaSpot)
-    inl clears = clears_judged_on spot (random_control ()) (held_out_block ())
+    :< hunting_pack
+    := camp = arena_hunt ()
+    := ~marker = 0i32
+    := l = ledger_on camp (random_control ()) (held_out_block ())
+    := spot = uniform_camp (:< creatures ;; Cyclops) |> on_layout (:< terrain ;; ArenaSpot)
+    := clears = clears_judged_on spot (random_control ()) (held_out_block ())
     (
         quantity.value_of (judged_on Experience camp (random_control ()) (held_out_block ())) + marker,
         l.hunt_kills,
@@ -494,16 +494,16 @@ test the_random_control_stays_far_below_every_rule =
 
 ///> c
 test on_the_cyclops_hunting_ground_sweeping_leads_and_stepping_back_buys_cost =
-    open hunting_pack
-    inl camp = cyclops_hunting_ground ()
-    inl ~standing_heal = cavebot_heal_tuned_on Experience camp (training_block ())
-    inl sweeping_heal = shaped_cavebot_heal_tuned_on Experience sweeping_spawns camp (training_block ())
-    inl judged (t : tactic) : i32 * i32 * i32 =
-        inl l = ledger_on camp t (held_out_block ())
+    :< hunting_pack
+    := camp = cyclops_hunting_ground ()
+    := ~standing_heal = cavebot_heal_tuned_on Experience camp (training_block ())
+    := sweeping_heal = shaped_cavebot_heal_tuned_on Experience sweeping_spawns camp (training_block ())
+    := judged (t : tactic) : i32 * i32 * i32 =
+        := l = ledger_on camp t (held_out_block ())
         quantity.value_of (judged_on Experience camp t (held_out_block ())),
         l.hunt_deaths,
         quantity.value_of l.hunt_profit
-    inl retreating = tactic_with_order (open policy in ReachFirst) { first = 154; second = 26; third = 2 }
+    := retreating = tactic_with_order (:< policy ;; ReachFirst) { first = 154; second = 26; third = 2 }
     (
         standing_heal,
         sweeping_heal,
@@ -524,34 +524,34 @@ test on_the_cyclops_hunting_ground_sweeping_leads_and_stepping_back_buys_cost =
     )
 ///> c
 test the_live_wake_delay_brings_the_arena_clears_toward_the_live_potion_counts =
-    open hunting_pack
-    inl ~wake = live_wake_ms ()
-    inl totals (camp : camp) (t : tactic) : i32 * i32 * i32 =
-        let rec each (i : i32) (potions : i32) (ms : i32) (hits : i32) : i32 * i32 * i32 =
-            if i >= (range_of (held_out_block ())).count then potions, ms, hits
-            else
-                inl elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
+    :< hunting_pack
+    := ~wake = live_wake_ms ()
+    := totals (camp : camp) (t : tactic) : i32 * i32 * i32 =
+        :~ ^ each (i : i32) (potions : i32) (ms : i32) (hits : i32) : i32 * i32 * i32 =
+            ? i >= (range_of (held_out_block ())).count ?> potions, ms, hits
+            |:
+                := elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
                 each (i + 1) (potions + p.hunter.potions) (ms + elapsed) (hits + p.hunter.hits_taken)
         each 0 0 0 0
-    inl spot = uniform_camp (open creatures in Cyclops) |> on_layout (open terrain in ArenaSpot) |> waking_at wake
-    inl mixed = cyclops_and_two_trolls_on_the_arena_spot () |> waking_at wake
-    inl retreat = tactic_with_order (open policy in ReachFirst) { first = 154; second = 26; third = 2 }
+    := spot = uniform_camp (:< creatures ;; Cyclops) |> on_layout (:< terrain ;; ArenaSpot) |> waking_at wake
+    := mixed = cyclops_and_two_trolls_on_the_arena_spot () |> waking_at wake
+    := retreat = tactic_with_order (:< policy ;; ReachFirst) { first = 154; second = 26; third = 2 }
     (totals spot (cavebot_with_heal 160), totals spot retreat, totals mixed (cavebot_with_heal 160))
     |> _assert_eq ((1334i32, 8838000i32, 6417i32), (1201i32, 9040500i32, 5835i32), (36i32, 3710300i32, 946i32))
 
 ///> c
 test after_a_step_the_swing_waits_for_a_think_or_a_move_costing_retreat_half_a_potion_and_rules_nothing =
-    open hunting_pack
-    inl totals (camp : camp) (t : tactic) : i32 * i32 * i32 =
-        let rec each (i : i32) (potions : i32) (ms : i32) (hits : i32) : i32 * i32 * i32 =
-            if i >= (range_of (held_out_block ())).count then potions, ms, hits
-            else
-                inl elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
+    :< hunting_pack
+    := totals (camp : camp) (t : tactic) : i32 * i32 * i32 =
+        :~ ^ each (i : i32) (potions : i32) (ms : i32) (hits : i32) : i32 * i32 * i32 =
+            ? i >= (range_of (held_out_block ())).count ?> potions, ms, hits
+            |:
+                := elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
                 each (i + 1) (potions + p.hunter.potions) (ms + elapsed) (hits + p.hunter.hits_taken)
         each 0 0 0 0
-    inl spot =
-        uniform_camp (open creatures in Cyclops) |> on_layout (open terrain in ArenaSpot) |> waking_at (live_wake_ms ())
-    inl live_retreat = tactic_with_order (open policy in ReachFirst) { first = 160; second = 0; third = 2 }
+    := spot =
+        uniform_camp (:< creatures ;; Cyclops) |> on_layout (:< terrain ;; ArenaSpot) |> waking_at (live_wake_ms ())
+    := live_retreat = tactic_with_order (:< policy ;; ReachFirst) { first = 160; second = 0; third = 2 }
     (
         totals spot live_retreat,
         totals (spot |> swinging_like_canary) live_retreat,
@@ -561,17 +561,17 @@ test after_a_step_the_swing_waits_for_a_think_or_a_move_costing_retreat_half_a_p
 
 ///> c
 test mirroring_the_live_arena_predicts_rules_and_retreat_within_the_live_noise_at_two_and_three_cyclops =
-    open hunting_pack
-    inl totals (camp : camp) (t : tactic) : i32 * i32 * i32 =
-        let rec each (i : i32) (potions : i32) (ms : i32) (hits : i32) : i32 * i32 * i32 =
-            if i >= (range_of (held_out_block ())).count then potions, ms, hits
-            else
-                inl elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
+    :< hunting_pack
+    := totals (camp : camp) (t : tactic) : i32 * i32 * i32 =
+        :~ ^ each (i : i32) (potions : i32) (ms : i32) (hits : i32) : i32 * i32 * i32 =
+            ? i >= (range_of (held_out_block ())).count ?> potions, ms, hits
+            |:
+                := elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
                 each (i + 1) (potions + p.hunter.potions) (ms + elapsed) (hits + p.hunter.hits_taken)
         each 0 0 0 0
-    inl three =
-        uniform_camp (open creatures in Cyclops) |> on_layout (open terrain in ArenaSpot) |> mirroring_the_live_arena
-    inl two = { three with size = 2 }
+    := three =
+        uniform_camp (:< creatures ;; Cyclops) |> on_layout (:< terrain ;; ArenaSpot) |> mirroring_the_live_arena
+    := two = { three ?| size = 2 }
     (
         totals three (cavebot_with_heal 160),
         totals three (live_retreat_tactic 160 2),
@@ -587,20 +587,20 @@ test mirroring_the_live_arena_predicts_rules_and_retreat_within_the_live_noise_a
 
 ///> c
 test a_cyclops_first_swing_waits_one_period_after_it_can_target_which_fits_six_live_means_best =
-    open hunting_pack
-    inl totals (camp : camp) (t : tactic) : i32 * i32 =
-        let rec each (i : i32) (potions : i32) (hits : i32) : i32 * i32 =
-            if i >= (range_of (held_out_block ())).count then potions, hits
-            else
-                inl elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
+    :< hunting_pack
+    := totals (camp : camp) (t : tactic) : i32 * i32 =
+        :~ ^ each (i : i32) (potions : i32) (hits : i32) : i32 * i32 =
+            ? i >= (range_of (held_out_block ())).count ?> potions, hits
+            |:
+                := elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
                 each (i + 1) (potions + p.hunter.potions) (hits + p.hunter.hits_taken)
         each 0 0 0
-    inl three =
-        uniform_camp (open creatures in Cyclops) |> on_layout (open terrain in ArenaSpot) |> mirroring_the_live_arena
-    inl two = { three with size = 2 }
-    inl bare = three |> waking_at 0
-    inl reach =
-        tactic_with_order (open policy in ReachFirst) { first = 160; second = 0; third = policy.never_retreat () }
+    := three =
+        uniform_camp (:< creatures ;; Cyclops) |> on_layout (:< terrain ;; ArenaSpot) |> mirroring_the_live_arena
+    := two = { three ?| size = 2 }
+    := bare = three |> waking_at 0
+    := reach =
+        tactic_with_order (:< policy ;; ReachFirst) { first = 160; second = 0; third = policy.never_retreat () }
     (
         totals three (cavebot_with_heal 160),
         totals three reach,
@@ -621,101 +621,101 @@ test a_cyclops_first_swing_waits_one_period_after_it_can_target_which_fits_six_l
 
 ///> c
 test a_hunter_keeping_four_tiles_away_only_falls_where_walls_corner_it_and_walking_beside_the_knight_halves_its_pace =
-    open hunting_pack
-    open creatures
-    inl kills_within (layout : terrain.layout) : i32 * i32 =
-        inl camp = clearing (uniform_camp Hunter |> on_layout layout)
-        let rec each (i : i32) (kills : i32) (hits : i32) : i32 * i32 =
-            if i >= 5 then kills, hits
-            else
-                inl p = simulate camp (cavebot_with_heal 160) (1001u32 + conv i) 1200
+    :< hunting_pack
+    :< creatures
+    := kills_within (layout : terrain.layout) : i32 * i32 =
+        := camp = clearing (uniform_camp Hunter |> on_layout layout)
+        :~ ^ each (i : i32) (kills : i32) (hits : i32) : i32 * i32 =
+            ? i >= 5 ?> kills, hits
+            |:
+                := p = simulate camp (cavebot_with_heal 160) (1001u32 + conv i) 1200
                 each (i + 1) (kills + p.kills) (hits + p.hunter.hits_taken)
         each 0 0 0
-    inl open_kills, open_hits = kills_within (open terrain in OpenField)
-    inl arena_kills, arena_hits = kills_within (open terrain in ArenaSpot)
+    := open_kills, open_hits = kills_within (:< terrain ;; OpenField)
+    := arena_kills, arena_hits = kills_within (:< terrain ;; ArenaSpot)
     (open_kills, open_hits, arena_kills, arena_hits) |> _assert_eq (0i32, 173i32, 11i32, 82i32)
-    (open_kills = 0, arena_kills > 0) |> _assert_eq (true, true)
+    (open_kills = 0, arena_kills > 0) |> _assert_eq (!+, !+)
 
 ///> c
 test a_hunter_beyond_four_tiles_closes_one_tile_per_think_like_canarys_follow_replanning =
-    open hunting_pack
-    open creatures
-    inl camp = clearing (uniform_camp Hunter |> on_layout (open terrain in OpenField))
-    inl begun = start camp
-    inl knight_at = begun.hunter.at
-    inl f = slot 0 begun
-    inl ~gap = 8i32
-    inl placed = with_slot 0 { f with at = { knight_at with x = knight_at.x + gap } } begun
-    let rec turns (tick : i32) (p : pack) : pack =
-        if tick >= 10
-        then p
-        else turns (tick + 1) (foe_turn camp 1001u32 tick (tick * tick_ms ()) 0 p)
-    inl second_later = turns 0 placed
+    :< hunting_pack
+    :< creatures
+    := camp = clearing (uniform_camp Hunter |> on_layout (:< terrain ;; OpenField))
+    := begun = start camp
+    := knight_at = begun.hunter.at
+    := f = slot 0 begun
+    := ~gap = 8i32
+    := placed = with_slot 0 { f ?| at = { knight_at ?| x = knight_at.x + gap } } begun
+    :~ ^ turns (tick : i32) (p : pack) : pack =
+        ? tick >= 10
+        ?> p
+        |: turns (tick + 1) (foe_turn camp 1001u32 tick (tick * tick_ms ()) 0 p)
+    := second_later = turns 0 placed
     (
         geometry.chebyshev_distance (slot 0 second_later).at (slot 0 placed).at,
         (creatures.stats_of Hunter).step_ms < 1000
     )
-    |> _assert_eq (1i32, true)
+    |> _assert_eq (1i32, !+)
 
 ///> c
 test an_adjacent_cyclops_dances_only_along_the_two_sides_that_keep_it_next_to_the_knight_like_canary =
-    open hunting_pack
-    open creatures
-    inl camp = clearing (uniform_camp Cyclops |> on_layout (open terrain in OpenField) |> dancing_like_canary)
-    inl begun = start camp
-    inl knight_at = begun.hunter.at
-    inl f = slot 0 begun
-    inl placed = with_slot 0 { f with at = { knight_at with x = knight_at.x + 1; y = knight_at.y + 1 } } begun
-    let rec tries (i : i32) (allowed : bool) (north : bool) (west : bool) : bool * bool * bool =
-        if i >= 20
-        then allowed, north, west
-        else
-            inl moved = (slot 0 (dance_step camp 0 0 (key 1001u32 i 200 (purpose_dance ())) placed)).at
-            inl went_north = moved.x = knight_at.x + 1 && moved.y = knight_at.y
-            inl went_west = moved.x = knight_at.x && moved.y = knight_at.y + 1
+    :< hunting_pack
+    :< creatures
+    := camp = clearing (uniform_camp Cyclops |> on_layout (:< terrain ;; OpenField) |> dancing_like_canary)
+    := begun = start camp
+    := knight_at = begun.hunter.at
+    := f = slot 0 begun
+    := placed = with_slot 0 { f ?| at = { knight_at ?| x = knight_at.x + 1; y = knight_at.y + 1 } } begun
+    :~ ^ tries (i : i32) (allowed : bool) (north : bool) (west : bool) : bool * bool * bool =
+        ? i >= 20
+        ?> allowed, north, west
+        |:
+            := moved = (slot 0 (dance_step camp 0 0 (key 1001u32 i 200 (purpose_dance ())) placed)).at
+            := went_north = moved.x = knight_at.x + 1 && moved.y = knight_at.y
+            := went_west = moved.x = knight_at.x && moved.y = knight_at.y + 1
             tries (i + 1) (allowed && (went_north || went_west)) (north || went_north) (west || went_west)
-    tries 0 true false false |> _assert_eq (true, true, true)
+    tries 0 !+ !- !- |> _assert_eq (!+, !+, !+)
 
 ///> c
 test an_adjacent_cyclops_dances_on_about_one_think_in_ten_like_canarys_static_attack_chance_of_90 =
-    open hunting_pack
-    open creatures
-    inl camp = clearing (uniform_camp Cyclops |> on_layout (open terrain in OpenField) |> dancing_like_canary)
-    inl begun = start camp
-    inl knight_at = begun.hunter.at
-    inl f = slot 0 begun
-    inl placed = with_slot 0 { f with at = { knight_at with x = knight_at.x + 1; y = knight_at.y + 1 } } begun
-    inl ~seed = 1001u32
-    inl phase = creature_think_phase_ms seed 0
-    let rec thinks (k : i32) (danced : i32) : i32 =
-        if k >= 200
-        then danced
-        else
-            inl now = phase + k * player_think_ms ()
-            inl after = dances camp seed (now / tick_ms ()) now 0 placed
-            inl moved = geometry.same_tile (slot 0 after).at (slot 0 placed).at = false
-            thinks (k + 1) (if moved then danced + 1 else danced)
-    inl danced = thinks 0 0
-    (danced >= 10, danced <= 30) |> _assert_eq (true, true)
+    :< hunting_pack
+    :< creatures
+    := camp = clearing (uniform_camp Cyclops |> on_layout (:< terrain ;; OpenField) |> dancing_like_canary)
+    := begun = start camp
+    := knight_at = begun.hunter.at
+    := f = slot 0 begun
+    := placed = with_slot 0 { f ?| at = { knight_at ?| x = knight_at.x + 1; y = knight_at.y + 1 } } begun
+    := ~seed = 1001u32
+    := phase = creature_think_phase_ms seed 0
+    :~ ^ thinks (k : i32) (danced : i32) : i32 =
+        ? k >= 200
+        ?> danced
+        |:
+            := now = phase + k * player_think_ms ()
+            := after = dances camp seed (now / tick_ms ()) now 0 placed
+            := moved = geometry.same_tile (slot 0 after).at (slot 0 placed).at = !-
+            thinks (k + 1) (? moved ?> danced + 1 |: danced)
+    := danced = thinks 0 0
+    (danced >= 10, danced <= 30) |> _assert_eq (!+, !+)
 
 ///> c
 test a_compass_direction_is_not_a_router_step fails "Unification failure" =
-    terrain.route_offset (open geometry in NorthEast)
+    terrain.route_offset (:< geometry ;; NorthEast)
 
 ///> c
 test raw_weights_are_not_a_tactic_brain fails "Unification failure" =
-    open hunting_pack
-    { brain = network.zero_weights (); order = open policy in CurrentFirst; footing = StepAway; patrol = Stays }
-    |> fun (t : tactic) => t
+    :< hunting_pack
+    { brain = network.zero_weights (); order = :< policy ;; CurrentFirst; footing = StepAway; patrol = Stays }
+    |> \ (t : tactic) => t
 
 ///> c
 test a_patrol_route_is_not_a_patrol_without_its_case fails "Unification failure" =
-    open hunting_pack
-    inl here = geometry.position 1936 1349 7
+    :< hunting_pack
+    := here = geometry.position 1936 1349 7
     {
         brain = RandomControl
-        order = open policy in CurrentFirst
+        order = :< policy ;; CurrentFirst
         footing = StepAway
         patrol = { points = views.band_of here; count = 1 }
     }
-    |> fun (t : tactic) => t
+    |> \ (t : tactic) => t

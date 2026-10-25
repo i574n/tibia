@@ -1,172 +1,139 @@
-///- --package .
-test measure static =
-    open testing
+:< sm'_operators
+:= health_potion () : i32 = 266
+:= swing_ms () : i32 = 2000
+:= potion_gap_ms () : i32 = 1000
+:= tick_ms () : i32 = 100
+:= run_ms () : i32 = 200000
 
-open sm'_operators
-inl health_potion () : i32 = 266
-inl swing_ms () : i32 = 2000
-inl potion_gap_ms () : i32 = 1000
-inl tick_ms () : i32 = 100
-inl run_ms () : i32 = 200000
-
-type bench =
+:== bench =
     {
         hits : lua.native_table
         taken : lua.native_table
-        misses : lua.native_table
-        kills : lua.native_table
-        potions : lua.native_table
-        pending_hit : lua.native_table
+        misses : mut i32
+        kills : mut i32
+        potions : mut i32
+        pending_hit : mut i32
         target : lua.native_table
-        start_experience : lua.native_table
-        started_at : lua.native_table
-        done : lua.native_table
+        start_experience : mut i32
+        started_at : mut i32
+        done : mut i32
     }
 
-inl bump (cell : lua.native_table) : () = lua.set_cell cell (lua.cell_value cell + 1)
+:= bump (cell : mut i32) : () = cell <- (*cell + 1)
 
-inl swings_line
-    (label : string) (landed : i32) (misses : i32) (total : i32) (median : i32) (kills : i32) (plus : i32)
-    (health : i32)
-    : string
-    =
-    inl swings = landed + misses
-    inl landed_share = if swings > 0 then (conv landed : f64) * 100.0 / (conv swings : f64) else 0.0
-    inl mean_landed = if landed > 0 then (conv total : f64) / (conv landed : f64) else 0.0
-    label ++# ": swings " ++#? swings ++# " landed " ++#? landed ++# " (" ++# sm'.format_fixed 1 landed_share
-    ++# "%) mean landed " ++# sm'.format_fixed 2 mean_landed ++# " median " ++#? median ++# " total " ++#? total
-    ++# " kills " ++#? kills ++# " experience +" ++#? plus ++# " health " ++#? health
-
-inl taken_line (count : i32) (taken_total : i32) (taken_median : i32) (taken_max : i32) : string =
-    inl taken_mean = if count > 0 then (conv taken_total : f64) / (conv count : f64) else 0.0
-    "taken: count " ++#? count ++# " mean " ++# sm'.format_fixed 2 taken_mean ++# " median " ++#? taken_median
-    ++# " max " ++#? taken_max ++# " total " ++#? taken_total
-
-inl kill_line (kills : i32) (plus : i32) : string =
-    "kill " ++#? kills ++# " confirmed dead, experience +" ++#? plus
-
-inl report (b : bench) (label : string) : () =
-    inl potions = lua.cell_value b.potions
+:= report (b : bench) (label : string) : () =
+    := potions = *b.potions
     probe.note (("potions " ++#? potions))
-    inl landed, misses, kills = lua.sample_count b.hits, lua.cell_value b.misses, lua.cell_value b.kills
-    inl total, median = lua.sample_total b.hits, lua.sample_median b.hits
-    inl plus, health = client.player_experience () - lua.cell_value b.start_experience, client.player_health ()
-    probe.note (swings_line label landed misses total median kills plus health)
-    probe.note (lua.joined "hits " (lua.samples_joined b.hits))
-    inl count, taken_total, taken_median, taken_max =
+    := landed, misses, kills = lua.sample_count b.hits, *b.misses, *b.kills
+    := total, median = lua.sample_total b.hits, lua.sample_median b.hits
+    := plus, health = client.player_experience () - *b.start_experience, client.player_health ()
+    := swings = landed + misses
+    := landed_share = ? swings > 0 ?> (conv landed : f64) * 100.0 / (conv swings : f64) |: 0.0
+    := mean_landed = ? landed > 0 ?> (conv total : f64) / (conv landed : f64) |: 0.0
+    probe.note (
+        label ++# ": swings " ++#? swings ++# " landed " ++#? landed ++# " (" ++# sm'.format_fixed 1 landed_share
+        ++# "%) mean landed " ++# sm'.format_fixed 2 mean_landed ++# " median " ++#? median ++# " total " ++#? total
+        ++# " kills " ++#? kills ++# " experience +" ++#? plus ++# " health " ++#? health
+    )
+    probe.note ("hits " ++# lua.samples_joined b.hits)
+    := count, taken_total, taken_median, taken_max =
         lua.sample_count b.taken, lua.sample_total b.taken, lua.sample_median b.taken, lua.sample_max b.taken
-    probe.note (taken_line count taken_total taken_median taken_max)
-    probe.note (lua.joined "taken " (lua.samples_joined b.taken))
+    := taken_mean = ? count > 0 ?> (conv taken_total : f64) / (conv count : f64) |: 0.0
+    probe.note (
+        "taken: count " ++#? count ++# " mean " ++# sm'.format_fixed 2 taken_mean ++# " median " ++#? taken_median
+        ++# " max " ++#? taken_max ++# " total " ++#? taken_total
+    )
+    probe.note ("taken " ++# lua.samples_joined b.taken)
 
-inl tick (b : bench) (potion_below : i32) : () =
-    let rec go (last_swing_at : i32) (last_potion_at : i32) : () =
-        if client.player_present () = false
-        then probe.finish_once_without_parity b.done "offline"
-        else
-            inl now = client.now_ms ()
-            if client.slot_occupied b.target && client.creature_dead (client.slot_creature b.target)
-            then
+:= tick (b : bench) (potion_below : i32) : () =
+    :~ ^ go (last_swing_at : i32) (last_potion_at : i32) : () =
+        ? client.player_present () = !-
+        ?> probe.finish_once_without_parity b.done "offline"
+        |:
+            := now = client.now_ms ()
+            ? client.slot_occupied b.target && client.creature_dead (client.slot_creature b.target)
+            ?>
                 bump b.kills
-                inl kills, plus =
-                    lua.cell_value b.kills, client.player_experience () - lua.cell_value b.start_experience
-                probe.note (kill_line kills plus)
+                := kills, plus =
+                    *b.kills, client.player_experience () - *b.start_experience
+                probe.note (("kill " ++#? kills ++# " confirmed dead, experience +" ++#? plus))
                 client.empty_slot b.target
-            inl last_swing_at =
-                if client.slot_occupied b.target = false
-                then
-                    inl here = client.player_spot ()
-                    inl people = client.spectators here
-                    inl seen = probe.nearest_monster here people
-                    if seen.found && seen.distance <= 1 then
-                        inl target = client.member people seen.index
+            := last_swing_at =
+                ? client.slot_occupied b.target = !-
+                ?>
+                    := here = client.player_spot ()
+                    := people = client.spectators here
+                    := seen = probe.nearest_monster here people
+                    ? seen.found && seen.distance <= 1 ?>
+                        := target = client.member people seen.index
                         client.occupy_slot b.target target
                         client.attack target
-                        lua.set_cell b.pending_hit 0
+                        probe.stored b.pending_hit 0
                         now
-                    else last_swing_at
-                elif now - last_swing_at >= swing_ms ()
-                then
-                    inl target = client.slot_creature b.target
-                    if
+                    |: last_swing_at
+                |? now - last_swing_at >= swing_ms ()
+                ?>
+                    := target = client.slot_creature b.target
+                    ?
                         client.creature_positioned target
                         && probe.chebyshev (client.creature_spot target) (client.player_spot ()) <= 1
                         && client.player_health () > 0
-                        && lua.cell_value b.pending_hit = 0
-                    then bump b.misses
-                    lua.set_cell b.pending_hit 0
+                        && *b.pending_hit = 0
+                    ?> bump b.misses
+                    probe.stored b.pending_hit 0
                     now
-                else last_swing_at
-            inl last_potion_at =
-                if client.player_health () < potion_below && now - last_potion_at >= potion_gap_ms () then
+                |: last_swing_at
+            := last_potion_at =
+                ? client.player_health () < potion_below && now - last_potion_at >= potion_gap_ms () ?>
                     client.drink (health_potion ()) |> ignore
                     bump b.potions
                     now
-                else last_potion_at
-            if now - lua.cell_value b.started_at > run_ms () then
+                |: last_potion_at
+            ? now - *b.started_at > run_ms () ?>
                 report b "end"
                 probe.finish_once_without_parity b.done "measure complete"
-            else client.after (tick_ms ()) (fun () => go last_swing_at last_potion_at)
-    go (lua.cell_value b.started_at) 0
+            |: client.after (tick_ms ()) (\ () => go last_swing_at last_potion_at)
+    go (*b.started_at) 0
 
-///> lua
-///> c
-test swings_line_reports_landed_share_and_mean =
-    (swings_line "end" 7 3 700 95 2 540 377, swings_line "death" 0 0 0 0 0 0 0)
-    |> _assert_eq (
-        "end: swings 10 landed 7 (70.0%) mean landed 100.00 median 95 total 700 kills 2 experience +540 health 377",
-        "death: swings 0 landed 0 (0.0%) mean landed 0.00 median 0 total 0 kills 0 experience +0 health 0"
-    )
-
-///> lua
-///> c
-test taken_line_reports_the_mean_with_two_decimals =
-    (taken_line 3 41 12 20, taken_line 0 0 0 0, kill_line 2 540)
-    |> _assert_eq (
-        "taken: count 3 mean 13.67 median 12 max 20 total 41",
-        "taken: count 0 mean 0.00 median 0 max 0 total 0",
-        "kill 2 confirmed dead, experience +540"
-    )
-
-///> _
-inl main () =
-    inl b : bench =
+:= main () =
+    := b : bench =
         {
             hits = lua.new_table ()
             taken = lua.new_table ()
-            misses = lua.new_cell 0
-            kills = lua.new_cell 0
-            potions = lua.new_cell 0
-            pending_hit = lua.new_cell 0
+            misses = mut 0
+            kills = mut 0
+            potions = mut 0
+            pending_hit = mut 0
             target = client.new_creature_slot ()
-            start_experience = lua.new_cell 0
-            started_at = lua.new_cell 0
-            done = lua.new_cell 0
+            start_experience = mut 0
+            started_at = mut 0
+            done = mut 0
         }
-    inl potion_below = client.env_i32 "TIBIA_MEASURE_POTION_BELOW" 90
-    inl on_text (mode : string) (text : string) : () =
-        inl amount = lua.matched_number text "loses (%d+) hitpoints? due to your"
-        inl lost = lua.matched_number text "You lose (%d+) hitpoints? due to an attack"
-        if lost >= 0 then lua.sample b.taken lost
-        elif amount >= 0 then
+    := potion_below = client.env_i32 "TIBIA_MEASURE_POTION_BELOW" 90
+    := on_text (mode : string) (text : string) : () =
+        := amount = lua.matched_number text "loses (%d+) hitpoints? due to your"
+        := lost = lua.matched_number text "You lose (%d+) hitpoints? due to an attack"
+        ? lost >= 0 ?> lua.sample b.taken lost
+        |? amount >= 0 ?>
             lua.sample b.hits amount
-            lua.set_cell b.pending_hit 1
-            if lua.contains text "critical" then probe.note (lua.joined "critical: " text)
-        elif lua.contains text "You died" then
-            if client.player_present () then report b "death"
-            client.after 500 (fun () => probe.finish_once_without_parity b.done "death")
+            probe.stored b.pending_hit 1
+            ? sm'.contains "critical" text ?> probe.note ("critical: " ++# text)
+        |? sm'.contains "You died" text ?>
+            ? client.player_present () ?> report b "death"
+            client.after 500 (\ () => probe.finish_once_without_parity b.done "death")
             probe.note (("server text [" ++# mode ++# "]: " ++# text))
-        elif lua.contains text "You lose" = false then probe.note (("server text [" ++# mode ++# "]: " ++# text))
-    inl ready () =
-        inl name, health = client.player_name (), client.player_health ()
+        |? sm'.contains "You lose" text = !- ?> probe.note (("server text [" ++# mode ++# "]: " ++# text))
+    := ready () =
+        := name, health = client.player_name (), client.player_health ()
         probe.note (("in game as " ++# name ++# " health " ++#? health))
-        client.after 1000 (fun () =>
-            client.chasing false
+        client.after 1000 (\ () =>
+            client.chasing !-
             client.fight_balanced ()
-            inl mode, at = client.fight_mode_text (), probe.described (client.player_spot ())
+            := mode, at = client.fight_mode_text (), probe.described (client.player_spot ())
             probe.note (("fight mode " ++# mode ++# " at " ++# at))
-            lua.set_cell b.start_experience (client.player_experience ())
-            lua.set_cell b.started_at (client.now_ms ())
+            probe.stored b.start_experience (client.player_experience ())
+            probe.stored b.started_at (client.now_ms ())
             tick b potion_below
             )
-    probe.started_as (probe.knight ()) on_text ready 260000 fun () => probe.finish_once_without_parity b.done "timeout"
+    probe.started_as (probe.knight ()) on_text ready 260000 \ () => probe.finish_once_without_parity b.done "timeout"
     0i32

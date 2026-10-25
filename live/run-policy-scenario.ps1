@@ -175,7 +175,7 @@ try {
         New-Item -ItemType Directory -Force $allyProfile | Out-Null
         if (Test-Path -LiteralPath $gateFile) { Remove-Item -LiteralPath $gateFile -Force }
         $env:TIBIA_ARENA_CHARACTER = $Ally
-        $env:TIBIA_LOGIN_GATE = 'login-gate'
+        $env:TIBIA_LOGIN_GATE = $gateFile
         $allyRun = Start-Process pwsh -ArgumentList '-NoProfile', '-File', (Join-Path $TibiaLive 'run-probe.ps1'), '-Script', $probe, '-TimeoutSeconds', $TimeoutSeconds, '-UserDir', $allyProfile -RedirectStandardOutput $allyOut -WindowStyle Hidden -PassThru
         $env:TIBIA_ARENA_CHARACTER = $null
         $env:TIBIA_LOGIN_GATE = $null

@@ -1,16 +1,16 @@
 ///- --package .
 test live static =
-    open testing
+    :< testing
 
-inl reach_of_code (code : i32) : policy.reach =
-    open policy
-    if code = 1 then InReach elif code = 2 then OutOfReach else NoTarget
+:= reach_of_code (code : i32) : policy.reach =
+    :< policy
+    ? code = 1 ?> InReach |? code = 2 ?> OutOfReach |: NoTarget
 
-inl observation_of (health : i32) (heal_ready : bool) (strike_ready : bool) (target_code : i32) : policy.observation =
+:= observation_of (health : i32) (heal_ready : bool) (strike_ready : bool) (target_code : i32) : policy.observation =
     { health = health; heal_ready = heal_ready; strike_ready = strike_ready; target = reach_of_code target_code }
 
-inl main () =
-    inl heals
+:= main () =
+    := heals
         (heal_below : i32) (strike_above : i32) (health : i32) (heal_ready : bool) (strike_ready : bool)
         (target_code : i32)
         : bool
@@ -18,7 +18,7 @@ inl main () =
         policy.heals
             { heal_below = heal_below; strike_above = strike_above }
             (observation_of health heal_ready strike_ready target_code)
-    inl engagement
+    := engagement
         (heal_below : i32) (strike_above : i32) (health : i32) (heal_ready : bool) (strike_ready : bool)
         (target_code : i32)
         : i32
@@ -28,22 +28,22 @@ inl main () =
                 { heal_below = heal_below; strike_above = strike_above }
                 (observation_of health heal_ready strike_ready target_code)
         )
-    inl prefers
+    := prefers
         (a_current : bool) (a_distance : i32) (a_health : i32) (b_current : bool) (b_distance : i32) (b_health : i32)
         : bool
         =
         policy.prefers_by
-            (open policy in CurrentFirst)
+            (:< policy ;; CurrentFirst)
             { is_current = a_current; distance = a_distance; health_percent = a_health }
             { is_current = b_current; distance = b_distance; health_percent = b_health }
-    inl network_decision
+    := network_decision
         (heal_below : i32) (max_health : i32) (kite_at : i32) (health : i32) (attackers : i32)
         (target_health_percent : i32) (target_distance : i32) (heal_ready : bool) (strike_ready : bool)
         : i32
         =
-        inl healer = network.threshold_healer (network.fraction_below heal_below max_health)
-        inl w = if kite_at > 0 then network.with_kiting kite_at healer else healer
-        inl x =
+        := healer = network.threshold_healer (network.fraction_below heal_below max_health)
+        := w = ? kite_at > 0 ?> network.with_kiting kite_at healer |: healer
+        := x =
             network.inputs_of
                 (health * network.one () / max_health)
                 attackers
@@ -51,17 +51,17 @@ inl main () =
                 target_distance
                 heal_ready
                 strike_ready
-                false
-        inl d = network.decide w x
-        (if d.heal then 1 else 0) + (if d.engage then 2 else 0) + (if d.retreat then 4 else 0)
-    inl retreats (retreat_at : i32) (attackers : i32) : bool =
+                !-
+        := d = network.decide w x
+        (? d.heal ?> 1 |: 0) + (? d.engage ?> 2 |: 0) + (? d.retreat ?> 4 |: 0)
+    := retreats (retreat_at : i32) (attackers : i32) : bool =
         policy.retreats { heal_base = 0; heal_per_attacker = 0; strike_above = 0; retreat_at = retreat_at } attackers
-    inl prefers_reach
+    := prefers_reach
         (a_current : bool) (a_distance : i32) (a_health : i32) (b_current : bool) (b_distance : i32) (b_health : i32)
         : bool
         =
         policy.prefers_by
-            (open policy in ReachFirst)
+            (:< policy ;; ReachFirst)
             { is_current = a_current; distance = a_distance; health_percent = a_health }
             { is_current = b_current; distance = b_distance; health_percent = b_health }
     heals, engagement, prefers, network_decision, retreats, prefers_reach
@@ -69,40 +69,40 @@ inl main () =
 ///> c
 ///> lua
 test probe_rules_follow_the_policy_thresholds =
-    inl heals, engagement, _, _, retreats, _ = main ()
-    inl ~health = 159i32
-    heals 160 0 health true true 1 |> _assert_eq true
-    heals 160 0 (health + 1) true true 1 |> _assert_eq false
-    heals 160 0 health false true 1 |> _assert_eq false
-    engagement 160 0 health true true 1 |> _assert_eq 1i32
-    engagement 160 0 health true false 1 |> _assert_eq 0i32
-    engagement 160 0 health true true 2 |> _assert_eq 2i32
-    engagement 160 0 health true true 0 |> _assert_eq 0i32
-    engagement 160 (health + 1) health true true 1 |> _assert_eq 0i32
-    retreats 2 2 |> _assert_eq true
-    retreats 2 1 |> _assert_eq false
+    := heals, engagement, _, _, retreats, _ = main ()
+    := ~health = 159i32
+    heals 160 0 health !+ !+ 1 |> _assert_eq !+
+    heals 160 0 (health + 1) !+ !+ 1 |> _assert_eq !-
+    heals 160 0 health !- !+ 1 |> _assert_eq !-
+    engagement 160 0 health !+ !+ 1 |> _assert_eq 1i32
+    engagement 160 0 health !+ !- 1 |> _assert_eq 0i32
+    engagement 160 0 health !+ !+ 2 |> _assert_eq 2i32
+    engagement 160 0 health !+ !+ 0 |> _assert_eq 0i32
+    engagement 160 (health + 1) health !+ !+ 1 |> _assert_eq 0i32
+    retreats 2 2 |> _assert_eq !+
+    retreats 2 1 |> _assert_eq !-
 
 ///> c
 ///> lua
 test probe_targeting_orders =
-    inl _, _, prefers, _, _, prefers_reach = main ()
-    inl ~far = 3i32
-    prefers true far 100 false 1 10 |> _assert_eq true
-    prefers false 1 10 true far 100 |> _assert_eq false
-    prefers_reach false 1 100 true far 10 |> _assert_eq true
-    prefers_reach true far 10 false 1 100 |> _assert_eq false
+    := _, _, prefers, _, _, prefers_reach = main ()
+    := ~far = 3i32
+    prefers !+ far 100 !- 1 10 |> _assert_eq !+
+    prefers !- 1 10 !+ far 100 |> _assert_eq !-
+    prefers_reach !- 1 100 !+ far 10 |> _assert_eq !+
+    prefers_reach !+ far 10 !- 1 100 |> _assert_eq !-
 
 ///> c
 ///> lua
 test probe_network_heals_at_the_rules_threshold_and_kites =
-    inl heals, _, _, network_decision, _, _ = main ()
-    inl ~max_health = 300i32
-    network_decision 160 max_health 0 100 1 50 1 true true |> _assert_eq 3i32
-    network_decision 160 max_health 0 250 1 50 1 true true |> _assert_eq 2i32
-    inl heal_bit_at_159 : bool = network_decision 160 max_health 0 159 1 50 1 true true % 2 = 1
-    heal_bit_at_159 |> _assert_eq (heals 160 0 159 true true 1)
-    inl heal_bit_at_160 : bool = network_decision 160 max_health 0 160 1 50 1 true true % 2 = 1
-    heal_bit_at_160 |> _assert_eq (heals 160 0 160 true true 1)
-    network_decision 160 max_health 2 250 2 50 1 true false |> _assert_eq 4i32
-    network_decision 160 max_health 2 250 2 50 1 true true |> _assert_eq 2i32
-    network_decision 160 max_health 2 250 1 50 1 true false |> _assert_eq 2i32
+    := heals, _, _, network_decision, _, _ = main ()
+    := ~max_health = 300i32
+    network_decision 160 max_health 0 100 1 50 1 !+ !+ |> _assert_eq 3i32
+    network_decision 160 max_health 0 250 1 50 1 !+ !+ |> _assert_eq 2i32
+    := heal_bit_at_159 : bool = network_decision 160 max_health 0 159 1 50 1 !+ !+ % 2 = 1
+    heal_bit_at_159 |> _assert_eq (heals 160 0 159 !+ !+ 1)
+    := heal_bit_at_160 : bool = network_decision 160 max_health 0 160 1 50 1 !+ !+ % 2 = 1
+    heal_bit_at_160 |> _assert_eq (heals 160 0 160 !+ !+ 1)
+    network_decision 160 max_health 2 250 2 50 1 !+ !- |> _assert_eq 4i32
+    network_decision 160 max_health 2 250 2 50 1 !+ !+ |> _assert_eq 2i32
+    network_decision 160 max_health 2 250 1 50 1 !+ !- |> _assert_eq 2i32

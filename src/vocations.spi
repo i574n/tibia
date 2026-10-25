@@ -1,25 +1,25 @@
 ///- --package .
 test vocations static =
-    open testing
+    :< testing
 
-nominal knight = ()
-nominal paladin = ()
-nominal sorcerer = ()
-nominal druid = ()
+:! knight = ()
+:! paladin = ()
+:! sorcerer = ()
+:! druid = ()
 
-union healer v =
+:| healer v =
     | PaladinHeals :: healer paladin
     | SorcererHeals :: healer sorcerer
     | DruidHeals :: healer druid
 
-union spell v =
+:| spell v =
     | WoundCleansing :: spell knight
     | Berserk :: spell knight
     | DivineHealing :: spell paladin
-    | LightHealing :: forall v. healer v -> spell v
-    | IntenseHealing :: forall v. healer v -> spell v
+    | LightHealing :: \* v. healer v -> spell v
+    | IntenseHealing :: \* v. healer v -> spell v
 
-type spell_data =
+:== spell_data =
     {
         words : string
         level : i32
@@ -29,9 +29,9 @@ type spell_data =
         group : cooldowns.spell_group
     }
 
-inl data_of forall v. (s : spell v) : spell_data =
-    open cooldowns
-    match s with
+:= data_of \* v. (s : spell v) : spell_data =
+    :< cooldowns
+    ?= s ?|
     | WoundCleansing =>
         {
             words = "exura ico"
@@ -64,47 +64,47 @@ inl data_of forall v. (s : spell v) : spell_data =
             group = HealingGroup
         }
 
-inl cooldown_id_of forall v. (s : spell v) : cooldowns.spell_id =
-    open cooldowns
-    match s with
+:= cooldown_id_of \* v. (s : spell v) : cooldowns.spell_id =
+    :< cooldowns
+    ?= s ?|
     | WoundCleansing => WoundCleansingSpell
     | Berserk => StrikeSpell
     | DivineHealing => LightHealingSpell
     | LightHealing _ => LightHealingSpell
     | IntenseHealing _ => LightHealingSpell
 
-inl as_cooldown forall v. (s : spell v) : cooldowns.spell =
-    inl d = data_of s
+:= as_cooldown \* v. (s : spell v) : cooldowns.spell =
+    := d = data_of s
     { id = cooldown_id_of s; group = d.group; own_ms = d.cooldown_ms; group_ms = d.group_cooldown_ms }
 
-inl castable forall v. (level : i32) (mana : i32) (s : spell v) : bool =
-    inl d = data_of s
+:= castable \* v. (level : i32) (mana : i32) (s : spell v) : bool =
+    := d = data_of s
     level >= d.level && mana >= d.mana
 
-inl knight_heal () : spell knight = WoundCleansing
+:= knight_heal () : spell knight = WoundCleansing
 
 ///> c
 test spell_data_matches_canary_scripts =
-    inl ~level = 8i32
-    castable level 90 WoundCleansing |> _assert_eq true
-    castable level 90 Berserk |> _assert_eq false
-    castable (level + 12) 70 (IntenseHealing DruidHeals) |> _assert_eq true
+    := ~level = 8i32
+    castable level 90 WoundCleansing |> _assert_eq !+
+    castable level 90 Berserk |> _assert_eq !-
+    castable (level + 12) 70 (IntenseHealing DruidHeals) |> _assert_eq !+
     (data_of (LightHealing PaladinHeals)).mana |> _assert_eq 20i32
     (data_of Berserk).cooldown_ms |> _assert_eq 4000i32
 
 ///> c
 test a_knight_cannot_cast_light_healing fails "Unification failure" =
-    inl s : spell knight = LightHealing PaladinHeals
+    := s : spell knight = LightHealing PaladinHeals
     (data_of s).mana
 
 ///> c
 test a_paladin_cannot_cast_wound_cleansing fails "Unification failure" =
-    inl s : spell paladin = WoundCleansing
+    := s : spell paladin = WoundCleansing
     (data_of s).mana
 
 ///> wgsl
 test spell_data_on_gpu =
-    inl ~level = 8i32
-    if castable level 90 WoundCleansing && castable level 90 Berserk = false && (data_of Berserk).cooldown_ms = 4000i32
-    then 0i32
-    else 1i32
+    := ~level = 8i32
+    ? castable level 90 WoundCleansing && castable level 90 Berserk = !- && (data_of Berserk).cooldown_ms = 4000i32
+    ?> 0i32
+    |: 1i32

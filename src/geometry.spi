@@ -1,8 +1,8 @@
 ///- --package .
 test geometry static =
-    open testing
+    :< testing
 
-union direction =
+:| direction =
     | North
     | NorthEast
     | East
@@ -12,12 +12,12 @@ union direction =
     | West
     | NorthWest
 
-type position = { x : i32; y : i32; z : i32 }
+:== position = { x : i32; y : i32; z : i32 }
 
-inl position x y z : position = { x y z }
+:= position x y z : position = { x y z }
 
-inl offset (heading : direction) : i32 * i32 =
-    match heading with
+:= offset (heading : direction) : i32 * i32 =
+    ?= heading ?|
     | North => 0, -1
     | NorthEast => 1, -1
     | East => 1, 0
@@ -27,59 +27,59 @@ inl offset (heading : direction) : i32 * i32 =
     | West => -1, 0
     | NorthWest => -1, -1
 
-inl is_diagonal (heading : direction) : bool =
-    match heading with
-    | NorthEast | SouthEast | SouthWest | NorthWest => true
-    | _ => false
+:= is_diagonal (heading : direction) : bool =
+    ?= heading ?|
+    | NorthEast | SouthEast | SouthWest | NorthWest => !+
+    | _ => !-
 
-inl step (heading : direction) (from : position) : position =
-    inl dx, dy = offset heading
-    { from with x = from.x + dx; y = from.y + dy }
+:= step (heading : direction) (from : position) : position =
+    := dx, dy = offset heading
+    { from ?| x = from.x + dx; y = from.y + dy }
 
-inl magnitude (n : i32) : i32 =
-    if n < 0 then -n else n
+:= magnitude (n : i32) : i32 =
+    ? n < 0 ?> -n |: n
 
-inl larger (a : i32) (b : i32) : i32 =
-    if a < b then b else a
+:= larger (a : i32) (b : i32) : i32 =
+    ? a < b ?> b |: a
 
-inl same_floor (a : position) (b : position) : bool =
+:= same_floor (a : position) (b : position) : bool =
     a.z = b.z
 
-inl chebyshev_distance (a : position) (b : position) : i32 =
+:= chebyshev_distance (a : position) (b : position) : i32 =
     larger (magnitude (a.x - b.x)) (magnitude (a.y - b.y))
 
-inl within_range (reach : i32) (a : position) (b : position) : bool =
+:= within_range (reach : i32) (a : position) (b : position) : bool =
     same_floor a b && chebyshev_distance a b <= reach
 
-inl straight_step (sign : i32) (target : position) (from : position) : position =
-    inl dx = target.x - from.x
-    inl dy = target.y - from.y
-    if magnitude dx >= magnitude dy && dx <> 0 then { from with x = from.x + sign * (if dx > 0 then 1 else -1) }
-    elif dy <> 0 then { from with y = from.y + sign * (if dy > 0 then 1 else -1) }
-    else { from with x = from.x + sign }
+:= straight_step (sign : i32) (target : position) (from : position) : position =
+    := dx = target.x - from.x
+    := dy = target.y - from.y
+    ? magnitude dx >= magnitude dy && dx <> 0 ?> { from ?| x = from.x + sign * (? dx > 0 ?> 1 |: -1) }
+    |? dy <> 0 ?> { from ?| y = from.y + sign * (? dy > 0 ?> 1 |: -1) }
+    |: { from ?| x = from.x + sign }
 
-inl step_toward (target : position) (from : position) : position = straight_step 1 target from
+:= step_toward (target : position) (from : position) : position = straight_step 1 target from
 
-inl monster_view_range () : i32 = 11
+:= monster_view_range () : i32 = 11
 
-inl sees (watcher : position) (seen : position) : bool =
+:= sees (watcher : position) (seen : position) : bool =
     watcher.z = seen.z
     && magnitude (watcher.x - seen.x) <= monster_view_range ()
     && magnitude (watcher.y - seen.y) <= monster_view_range ()
 
-inl same_tile (a : position) (b : position) : bool = a.x = b.x && a.y = b.y && a.z = b.z
+:= same_tile (a : position) (b : position) : bool = a.x = b.x && a.y = b.y && a.z = b.z
 
-inl diagonal_step_factor () : i32 = 3
+:= diagonal_step_factor () : i32 = 3
 
-inl moved_diagonally (from : position) (to : position) : bool = from.x <> to.x && from.y <> to.y
+:= moved_diagonally (from : position) (to : position) : bool = from.x <> to.x && from.y <> to.y
 
-inl step_cost (straight_ms : i32) (from : position) (to : position) : i32 =
-    if moved_diagonally from to
-    then straight_ms * diagonal_step_factor ()
-    else straight_ms
-inl step_away (threat : position) (from : position) : position = straight_step -1 threat from
+:= step_cost (straight_ms : i32) (from : position) (to : position) : i32 =
+    ? moved_diagonally from to
+    ?> straight_ms * diagonal_step_factor ()
+    |: straight_ms
+:= step_away (threat : position) (from : position) : position = straight_step -1 threat from
 
-union up_ramp =
+:| up_ramp =
     | RampNorth
     | RampSouth
     | RampEast
@@ -87,8 +87,8 @@ union up_ramp =
     | RampSouthAlt
     | RampEastAlt
 
-inl up_ramp_offset (ramp : up_ramp) : i32 * i32 =
-    match ramp with
+:= up_ramp_offset (ramp : up_ramp) : i32 * i32 =
+    ?= ramp ?|
     | RampNorth => 0, -1
     | RampSouth => 0, 1
     | RampEast => 1, 0
@@ -96,72 +96,72 @@ inl up_ramp_offset (ramp : up_ramp) : i32 * i32 =
     | RampSouthAlt => 0, 2
     | RampEastAlt => 2, 0
 
-inl climbed (ramp : up_ramp) (onto : position) : position =
-    inl dx, dy = up_ramp_offset ramp
+:= climbed (ramp : up_ramp) (onto : position) : position =
+    := dx, dy = up_ramp_offset ramp
     { x = onto.x + dx; y = onto.y + dy; z = onto.z - 1 }
 
-inl sixteen_bits (n : u32) : u32 = n &&& 65535u32
+:= sixteen_bits (n : u32) : u32 = n &&& 65535u32
 
-inl sight_line_clear (blocks : position -> bool) (from : position) (to : position) : bool =
-    inl distance_x = magnitude (from.x - to.x)
-    inl distance_y = magnitude (from.y - to.y)
-    inl near (a : position) (b : position) : bool = magnitude (a.x - b.x) <= 1 && magnitude (a.y - b.y) <= 1
-    if distance_x = 0 && distance_y = 0 then true
-    elif from.y = to.y then
-        inl delta = if from.x < to.x then 1 else -1
-        let rec walk (x : i32) (left : i32) : bool =
-            if left <= 0 then true elif blocks { from with x = x } then false else walk (x + delta) (left - 1)
+:= sight_line_clear (blocks : position -> bool) (from : position) (to : position) : bool =
+    := distance_x = magnitude (from.x - to.x)
+    := distance_y = magnitude (from.y - to.y)
+    := near (a : position) (b : position) : bool = magnitude (a.x - b.x) <= 1 && magnitude (a.y - b.y) <= 1
+    ? distance_x = 0 && distance_y = 0 ?> !+
+    |? from.y = to.y ?>
+        := delta = ? from.x < to.x ?> 1 |: -1
+        :~ ^ walk (x : i32) (left : i32) : bool =
+            ? left <= 0 ?> !+ |? blocks { from ?| x = x } ?> !- |: walk (x + delta) (left - 1)
         walk (from.x + delta) (distance_x - 1)
-    elif from.x = to.x then
-        inl delta = if from.y < to.y then 1 else -1
-        let rec walk (y : i32) (left : i32) : bool =
-            if left <= 0 then true elif blocks { from with y = y } then false else walk (y + delta) (left - 1)
+    |? from.x = to.x ?>
+        := delta = ? from.y < to.y ?> 1 |: -1
+        :~ ^ walk (y : i32) (left : i32) : bool =
+            ? left <= 0 ?> !+ |? blocks { from ?| y = y } ?> !- |: walk (y + delta) (left - 1)
         walk (from.y + delta) (distance_y - 1)
-    elif distance_y > distance_x then
-        inl start, finish = if from.y > to.y then to, from else from, to
-        inl adjust : u32 = (conv distance_x <<< 16) / conv distance_y
-        inl delta_x = if start.x > finish.x then -1 else 1
-        let rec walk (x : i32) (y : i32) (accumulated : u32) (left : i32) : bool =
-            if left <= 0 then true
-            else
-                inl next = sixteen_bits (accumulated + adjust)
-                inl increase = if next <= accumulated then delta_x else 0
-                if blocks { x = x + increase; y = y + 1; z = start.z } then near { x = x; y = y; z = start.z } finish
-                else walk (x + increase) (y + 1) next (left - 1)
-        walk start.x start.y (if delta_x < 0 then sixteen_bits (65536u32 - adjust) else 0u32) (distance_y - 1)
-    else
-        inl start, finish = if from.x > to.x then to, from else from, to
-        inl adjust : u32 = (conv distance_y <<< 16) / conv distance_x
-        inl delta_y = if start.y > finish.y then -1 else 1
-        let rec walk (x : i32) (y : i32) (accumulated : u32) (left : i32) : bool =
-            if left <= 0 then true
-            else
-                inl next = sixteen_bits (accumulated + adjust)
-                inl increase = if next <= accumulated then delta_y else 0
-                if blocks { x = x + 1; y = y + increase; z = start.z } then near { x = x; y = y; z = start.z } finish
-                else walk (x + 1) (y + increase) next (left - 1)
-        walk start.x start.y (if delta_y < 0 then sixteen_bits (65536u32 - adjust) else 0u32) (distance_x - 1)
+    |? distance_y > distance_x ?>
+        := start, finish = ? from.y > to.y ?> to, from |: from, to
+        := adjust : u32 = (conv distance_x <<< 16) / conv distance_y
+        := delta_x = ? start.x > finish.x ?> -1 |: 1
+        :~ ^ walk (x : i32) (y : i32) (accumulated : u32) (left : i32) : bool =
+            ? left <= 0 ?> !+
+            |:
+                := next = sixteen_bits (accumulated + adjust)
+                := increase = ? next <= accumulated ?> delta_x |: 0
+                ? blocks { x = x + increase; y = y + 1; z = start.z } ?> near { x = x; y = y; z = start.z } finish
+                |: walk (x + increase) (y + 1) next (left - 1)
+        walk start.x start.y (? delta_x < 0 ?> sixteen_bits (65536u32 - adjust) |: 0u32) (distance_y - 1)
+    |:
+        := start, finish = ? from.x > to.x ?> to, from |: from, to
+        := adjust : u32 = (conv distance_y <<< 16) / conv distance_x
+        := delta_y = ? start.y > finish.y ?> -1 |: 1
+        :~ ^ walk (x : i32) (y : i32) (accumulated : u32) (left : i32) : bool =
+            ? left <= 0 ?> !+
+            |:
+                := next = sixteen_bits (accumulated + adjust)
+                := increase = ? next <= accumulated ?> delta_y |: 0
+                ? blocks { x = x + 1; y = y + increase; z = start.z } ?> near { x = x; y = y; z = start.z } finish
+                |: walk (x + 1) (y + increase) next (left - 1)
+        walk start.x start.y (? delta_y < 0 ?> sixteen_bits (65536u32 - adjust) |: 0u32) (distance_x - 1)
 
 ///> c
 test step_north_decrements_y =
-    inl moved = position 100 100 7 |> step North
+    := moved = position 100 100 7 |> step North
     moved.y |> _assert_eq 99i32
 
 ///> c
 test step_south_east_moves_both_axes =
-    inl moved = position 100 100 7 |> step SouthEast
+    := moved = position 100 100 7 |> step SouthEast
     moved.x |> _assert_eq 101i32
     moved.y |> _assert_eq 101i32
 
 ///> c
 test step_keeps_floor =
-    inl moved = position 100 100 7 |> step West
+    := moved = position 100 100 7 |> step West
     moved.z |> _assert_eq 7i32
 
 ///> c
 test diagonal_headings =
-    is_diagonal NorthWest |> _assert_eq true
-    is_diagonal East |> _assert_eq false
+    is_diagonal NorthWest |> _assert_eq !+
+    is_diagonal East |> _assert_eq !-
 
 ///> c
 test chebyshev_counts_diagonals_as_one =
@@ -169,18 +169,18 @@ test chebyshev_counts_diagonals_as_one =
 
 ///> c
 test opposite_steps_cancel =
-    inl start = position 50 60 7
-    inl back = start |> step NorthEast |> step SouthWest
+    := start = position 50 60 7
+    := back = start |> step NorthEast |> step SouthWest
     back.x |> _assert_eq start.x
     back.y |> _assert_eq start.y
 
 ///> c
 test steps_match_canary_walk_probe_2026_10_12 =
-    inl ~start = position 1942 1346 7
-    inl north = start |> step North
-    inl east = north |> step East
-    inl south = east |> step South
-    inl west = south |> step West
+    := ~start = position 1942 1346 7
+    := north = start |> step North
+    := east = north |> step East
+    := south = east |> step South
+    := west = south |> step West
     north.x |> _assert_eq 1942i32
     north.y |> _assert_eq 1345i32
     east.x |> _assert_eq 1943i32
@@ -193,11 +193,11 @@ test steps_match_canary_walk_probe_2026_10_12 =
 
 ///> c
 test diagonal_steps_match_canary_walk_probe_2026_10_12 =
-    inl ~start = position 1932 1352 7
-    inl north_east = start |> step NorthEast
-    inl south_east = north_east |> step SouthEast
-    inl south_west = south_east |> step SouthWest
-    inl north_west = south_west |> step NorthWest
+    := ~start = position 1932 1352 7
+    := north_east = start |> step NorthEast
+    := south_east = north_east |> step SouthEast
+    := south_west = south_east |> step SouthWest
+    := north_west = south_west |> step NorthWest
     north_east.x |> _assert_eq 1933i32
     north_east.y |> _assert_eq 1351i32
     south_east.x |> _assert_eq 1934i32
@@ -209,32 +209,32 @@ test diagonal_steps_match_canary_walk_probe_2026_10_12 =
 
 ///> c
 test stepping_onto_the_south_ramp_matches_the_live_floor_change_2026_10_15 =
-    inl ~ramp = position 1940 1372 7
-    inl landed = climbed RampSouth ramp
+    := ~ramp = position 1940 1372 7
+    := landed = climbed RampSouth ramp
     (landed.x, landed.y, landed.z, chebyshev_distance ramp landed, same_floor ramp landed)
-    |> _assert_eq (1940i32, 1373i32, 6i32, 1, false)
+    |> _assert_eq (1940i32, 1373i32, 6i32, 1, !-)
 
 ///> c
 test every_up_ramp_climbs_one_floor_and_shifts_like_canary_query_destination =
-    inl ~onto = position 100 100 7
-    inl shifted r =
-        inl p = climbed r onto
+    := ~onto = position 100 100 7
+    := shifted r =
+        := p = climbed r onto
         p.x - onto.x, p.y - onto.y, p.z
     (shifted RampNorth, shifted RampEast, shifted RampWest, shifted RampSouthAlt, shifted RampEastAlt)
     |> _assert_eq ((0i32, -1i32, 6i32), (1i32, 0i32, 6i32), (-1i32, 0i32, 6i32), (0i32, 2i32, 6i32), (2i32, 0i32, 6i32))
 
 ///> c
 test sight_lines_match_canary_check_sight_line_on_a_walled_grid =
-    inl ~source_x = 0i32
-    inl blocks (p : position) = (p.x = 5 && p.y >= 2 && p.y <= 8) || (p.x = 2 && p.y = 6)
-    inl count_from (s : position) : i32 * i32 =
-        let rec scan (i : i32) (clear : i32) (hash : i32) : i32 * i32 =
-            if i >= 121 then clear, hash
-            else
-                inl p = position (i % 11) (i / 11) 7
-                if blocks p then scan (i + 1) clear hash
-                elif sight_line_clear blocks s p then scan (i + 1) (clear + 1) ((hash * 31 + p.y * 11 + p.x) % 1000003)
-                else scan (i + 1) clear hash
+    := ~source_x = 0i32
+    := blocks (p : position) = (p.x = 5 && p.y >= 2 && p.y <= 8) || (p.x = 2 && p.y = 6)
+    := count_from (s : position) : i32 * i32 =
+        :~ ^ scan (i : i32) (clear : i32) (hash : i32) : i32 * i32 =
+            ? i >= 121 ?> clear, hash
+            |:
+                := p = position (i % 11) (i / 11) 7
+                ? blocks p ?> scan (i + 1) clear hash
+                |? sight_line_clear blocks s p ?> scan (i + 1) (clear + 1) ((hash * 31 + p.y * 11 + p.x) % 1000003)
+                |: scan (i + 1) clear hash
         scan 0 0 0
     (
         count_from (position source_x 5 7),
@@ -245,44 +245,44 @@ test sight_lines_match_canary_check_sight_line_on_a_walled_grid =
 
 ///> c
 test sight_lines_are_blocked_or_clear_like_canary_for_named_pairs =
-    inl ~x = 0i32
-    inl blocks (p : position) = (p.x = 5 && p.y >= 2 && p.y <= 8) || (p.x = 2 && p.y = 6)
-    inl clear a b c d = sight_line_clear blocks (position a b 7) (position c d 7)
+    := ~x = 0i32
+    := blocks (p : position) = (p.x = 5 && p.y >= 2 && p.y <= 8) || (p.x = 2 && p.y = 6)
+    := clear a b c d = sight_line_clear blocks (position a b 7) (position c d 7)
     (clear x 5 10 5, clear x 5 10 1, clear x 0 10 1, clear 4 4 6 9, clear 6 9 4 4)
-    |> _assert_eq (false, false, true, false, false)
+    |> _assert_eq (!-, !-, !+, !-, !-)
 
 ///> wgsl
 test sight_lines_on_gpu =
-    inl ~x = 0i32
-    inl blocks (p : position) = (p.x = 5 && p.y >= 2 && p.y <= 8) || (p.x = 2 && p.y = 6)
-    if
+    := ~x = 0i32
+    := blocks (p : position) = (p.x = 5 && p.y >= 2 && p.y <= 8) || (p.x = 2 && p.y = 6)
+    ?
         sight_line_clear blocks (position x 0 7) (position 10 1 7)
-        && sight_line_clear blocks (position x 5 7) (position 10 5 7) = false
-    then 0i32
-    else 1i32
+        && sight_line_clear blocks (position x 5 7) (position 10 5 7) = !-
+    ?> 0i32
+    |: 1i32
 
 ///> c
 test range_needs_same_floor =
-    within_range 7 (position 0 0 7) (position 1 1 6) |> _assert_eq false
-    within_range 7 (position 0 0 7) (position 7 7 7) |> _assert_eq true
-    within_range 7 (position 0 0 7) (position 8 0 7) |> _assert_eq false
+    within_range 7 (position 0 0 7) (position 1 1 6) |> _assert_eq !-
+    within_range 7 (position 0 0 7) (position 7 7 7) |> _assert_eq !+
+    within_range 7 (position 0 0 7) (position 8 0 7) |> _assert_eq !-
 
 ///> wgsl
 test distance_and_steps_on_gpu =
-    inl ~x = 1942i32
-    inl moved = position x 1346 7 |> step NorthEast
-    if
+    := ~x = 1942i32
+    := moved = position x 1346 7 |> step NorthEast
+    ?
         moved.x = 1943i32
         && moved.y = 1345i32
         && chebyshev_distance (position 0 0 7) (position x 2 7) = 1942i32
         && within_range 1 (position x 0 7) (position (x + 1) 1 7)
-    then 0i32
-    else 1i32
+    ?> 0i32
+    |: 1i32
 
 ///> c
 test straight_steps_take_the_longer_axis_first =
-    inl ~x = 100i32
-    inl from = position x 100 7
+    := ~x = 100i32
+    := from = position x 100 7
     (step_toward (position (x + 3) 101 7) from).x |> _assert_eq 101i32
     (step_toward (position x 95 7) from).y |> _assert_eq 99i32
     (step_away (position (x + 3) 101 7) from).x |> _assert_eq 99i32

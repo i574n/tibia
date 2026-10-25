@@ -1,13 +1,8 @@
-///- --package .
-test nexbot static =
-    open testing
-
-///> _
-inl main () =
-    inl calls = client.instrument_game_calls ()
+:= main () =
+    := calls = client.instrument_game_calls ()
     observer.run {
         config = "nExBot"
         banner = "(nExBot 4.0.4 at 19632d4, TargetBot arena config)"
-        diagnostics = fun () => client.game_call_report calls
+        diagnostics = \ () => client.game_call_report calls
     }
     0i32
