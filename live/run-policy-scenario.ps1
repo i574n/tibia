@@ -23,7 +23,7 @@ $policySource = [IO.File]::ReadAllText($policyLua)
 Update-ArenaProbes
 $bodyPath = if ([IO.Path]::IsPathRooted($ProbeBody)) { $ProbeBody } elseif (Test-Path (Join-Path $TibiaArena "$ProbeBody.spi")) { Join-Path $TibiaArenaTarget "$ProbeBody.lua" } else { Join-Path $TibiaLive $ProbeBody }
 $body = [IO.File]::ReadAllText($bodyPath)
-$parity = if ($NoParity) { '' } else { [IO.File]::ReadAllText((Join-Path $TibiaLive 'parity.lua')) + "`n" }
+$parity = if ($NoParity) { '' } else { "do`n(function()`n" + [IO.File]::ReadAllText((Join-Path $TibiaArenaTarget 'parity.lua')) + "`nend)()`nend`n" }
 [IO.File]::WriteAllText($probe, "SpiralPolicy = (function()`n$policySource`nend)()`n$parity$body")
 $syntax = lua -e "local f, e = loadfile([[$probe]]); if not f then print(e); os.exit(1) end"
 if ($LASTEXITCODE -ne 0) { throw "probe does not parse: $syntax" }
@@ -115,40 +115,19 @@ try {
         if (Test-Path $botDir) { Remove-Item $botDir -Recurse -Force }
         Copy-Item (Join-Path $root 'bots\nExBot-19632d4') $botDir -Recurse
         $loader = Join-Path $botDir '_Loader.lua'
-        $luaDofile = if ($env:TIBIA_NEXBOT_LUA_DOFILE -ne '0') { [IO.File]::ReadAllText((Join-Path $TibiaLive 'bot-lua-dofile.lua')) + "`n" } else { '' }
-        if ($luaDofile) { Set-Content (Join-Path $botDir 'bot_env_probe.lua') 'return getfenv and getfenv(1) or _G' -NoNewline }
-        [IO.File]::WriteAllText($loader, [IO.File]::ReadAllText((Join-Path $TibiaLive 'bot-network-sandbox.lua')) + "`n" + $luaDofile + [IO.File]::ReadAllText($loader))
+        $wrap = { param($name) "do`n(function()`n" + [IO.File]::ReadAllText((Join-Path $TibiaArenaTarget "$name.lua")) + "`nend)()`nend`n" }
+        $luaDofile = if ($env:TIBIA_NEXBOT_LUA_DOFILE -ne '0') { & $wrap 'bot_dofile' } else { '' }
+        if ($luaDofile) { Copy-Item (Join-Path $TibiaArenaTarget 'bot_env.lua') (Join-Path $botDir 'bot_env_probe.lua') -Force }
+        [IO.File]::WriteAllText($loader, (& $wrap 'bot_prelude') + $luaDofile + [IO.File]::ReadAllText($loader))
         $shimmed = 0
         foreach ($script in Get-ChildItem $botDir -Recurse -Filter '*.lua') {
             $source = [IO.File]::ReadAllText($script.FullName)
             if ($source.Contains('pcall(dofile, ')) {
-                [IO.File]::WriteAllText($script.FullName, $source.Replace('pcall(dofile, ', 'pcall(function(path) return dofile(path) end, '))
+                [IO.File]::WriteAllText($script.FullName, $source.Replace('pcall(dofile, ', 'pcall(SpiralBotDofile, '))
                 $shimmed++
             }
         }
-        "== nExBot: pcall(dofile, ...) wrapped in a Lua function in $shimmed files (the client's native dofile crashes when pcall calls it directly)"
-        if ($env:TIBIA_NEXBOT_TRACE -eq '1') {
-            $traceFunction = 'function nexbotTrace(message) pcall(function() local path = "/nexbot-trace.log"; local previous = g_resources.fileExists(path) and g_resources.readFileContents(path) or ""; g_resources.writeFileContents(path, previous .. tostring(os.clock()) .. " " .. message .. "\n") end) end' + "`n" + 'nexbotTrace("loader start")' + "`n"
-            $traced = [IO.File]::ReadAllText($loader).Replace('  local scriptStart = os.clock()', '  nexbotTrace("load " .. tostring(basePath) .. tostring(name))' + "`n" + '  local scriptStart = os.clock()').Replace('  local elapsed = math.floor((os.clock() - scriptStart) * 1000)', '  nexbotTrace("done " .. tostring(name) .. " " .. tostring(status))' + "`n" + '  local elapsed = math.floor((os.clock() - scriptStart) * 1000)')
-            [IO.File]::WriteAllText($loader, $traceFunction + $traced + "`n" + 'nexbotTrace("loader end")' + "`n")
-            if ($env:TIBIA_NEXBOT_SKIP_FLOOR -eq '1') {
-                foreach ($nestedFile in @(Get-ChildItem $botDir -Recurse -Filter '*.lua' | Where-Object { (Get-Content $_.FullName -Raw).Contains('floor_items.lua")') })) {
-                    $nestedPath = $nestedFile.FullName
-                    $nestedSource = [IO.File]::ReadAllText($nestedPath)
-                    $nestedSource = [regex]::Replace($nestedSource, 'local ok, fi = pcall\([^\n]*floor_items\.lua"\)', 'local ok, fi = false, nil')
-                    $nestedSource = [regex]::Replace($nestedSource, '(?m)^(\s*)ok, fi = pcall\([^\n]*floor_items\.lua"\)', '$1ok, fi = false, nil')
-                    [IO.File]::WriteAllText($nestedPath, $nestedSource)
-                }
-                "== nExBot diagnostic: nested floor_items dofile skipped"
-            }
-            $pathUtils = Join-Path $botDir 'utils\path_utils.lua'
-            $pathLines = [System.Collections.Generic.List[string]]::new([string[]](Get-Content $pathUtils))
-            foreach ($lineNumber in @(500, 482, 452, 316, 184, 163, 125, 120, 111, 76, 66, 36, 30)) { $pathLines.Insert($lineNumber - 1, "nexbotTrace('path_utils line $lineNumber')") }
-            [IO.File]::WriteAllLines($pathUtils, $pathLines)
-            $traceFile = Join-Path $clientHome 'nexbot-trace.log'
-            if (Test-Path $traceFile) { Remove-Item $traceFile -Force }
-            "== nExBot load tracing on ($traceFile)"
-        }
+        "== nExBot: pcall(dofile, ...) routed through SpiralBotDofile (apps/arena/bot_prelude.spi) in $shimmed files (the client's native dofile crashes when pcall calls it directly)"
         New-Item -ItemType Directory -Force (Join-Path $botDir 'targetbot_configs'), (Join-Path $botDir 'storage') | Out-Null
         $targeting = [IO.File]::ReadAllText((Join-Path $TibiaLive 'vbot-arena.json')).Replace('"name":"troll"', "`"name`":`"$($kinds[0])`"").Replace('"regex":"^troll$"', "`"regex`":`"^($($kinds -join '|'))`$`"")
         [IO.File]::WriteAllText((Join-Path $botDir 'targetbot_configs\arena.json'), $targeting)

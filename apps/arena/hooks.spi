@@ -1,0 +1,108 @@
+:! host = $'any'
+
+:! host_fn = $'any'
+
+:= game () : host = $'g_game' : host
+
+:= map_api () : host = $'g_map' : host
+
+:= local_player_class () : host = $'LocalPlayer' : host
+
+:= present (h : host) : bool = $'(!h) ~= nil' : bool
+
+:= field_function (owner : host) (name : string) : host_fn = $'(!owner)[!name]' : host_fn
+
+:= is_function (f : host_fn) : bool = $'type(!f) == "function"' : bool
+
+:= replace0 (owner : host) (name : string) (f : () -> bool) : () = $'(!owner)[!name] = !f' : ()
+
+:= replace1 (owner : host) (name : string) (f : host -> bool) : () = $'(!owner)[!name] = !f' : ()
+
+:= replace2 (owner : host) (name : string) (f : host * host -> bool) : () =
+    $'(!owner)[!name] = function(a, b) return (!f)({ a, b }) end' : ()
+
+:= replace3 (owner : host) (name : string) (f : host * host * host -> bool) : () =
+    $'(!owner)[!name] = function(a, b, c) return (!f)({ a, b, c }) end' : ()
+
+:= replace_spectators (f : host * bool -> host) : () =
+    $'g_map.getSpectators = function(a, b) return (!f)({ a, b }) end' : ()
+
+:= call0 (f : host_fn) : () = $'(!f)()' : ()
+
+:= call1 (f : host_fn) (a : host) : () = $'(!f)(!a)' : ()
+
+:= call2 (f : host_fn) (a : host) (b : host) : () = $'(!f)(!a, !b)' : ()
+
+:= call3 (f : host_fn) (a : host) (b : host) (c : host) : () = $'(!f)(!a, !b, !c)' : ()
+
+:= spectators_of (f : host_fn) (center : host) (multi : bool) : host = $'(!f)(!center, !multi)' : host
+
+:= list_length (xs : host) : i32 = $'##(!xs)' : i32
+
+:= list_at (xs : host) (i : i32) : host = $'(!xs)[!i]' : host
+
+:= new_list () : host = $'{}' : host
+
+:= list_push (xs : host) (x : host) : () = $'table.insert(!xs, !x)' : ()
+
+:= clock_ms () : i32 = $'g_clock.millis()' : i32
+
+:= local_player () : host = $'g_game.getLocalPlayer()' : host
+
+:= position_of (c : host) : host = $'(!c):getPosition()' : host
+
+:= position_x (p : host) : i32 = $'(!p).x' : i32
+
+:= position_y (p : host) : i32 = $'(!p).y' : i32
+
+:= position_z (p : host) : i32 = $'(!p).z' : i32
+
+:= online () : bool = $'g_game.isOnline()' : bool
+
+:= turn_south (turn : host_fn) : () = $'(!turn)(South)' : ()
+
+:= on_game_start (f : () -> ()) : () = $'connect(g_game, { onGameStart = !f })' : ()
+
+:= after (ms : i32) (f : () -> ()) : () = $'scheduleEvent(!f, !ms)' : ()
+
+:= log_info (text : string) : () = $'g_logger.info(!text)' : ()
+
+:= publish_parity (summary : () -> string) : () = $'ArenaParity = { summary = !summary }' : ()
+
+:= set_field \* t. (owner : host) (name : string) (value : t) : () = $'(!owner)[!name] = !value' : ()
+
+:= set_g_http (value : host) : () = $'g_http = !value' : ()
+
+:= set_http (value : host) : () = $'HTTP = !value' : ()
+
+:= set_spiral_bot_dofile (f : string -> host) : () = $'SpiralBotDofile = !f' : ()
+
+:= current_dofile () : host_fn = $'dofile' : host_fn
+
+:= call_for_value (f : host_fn) (a : string) : host = $'(!f)(!a)' : host
+
+:= resource_exists (path : string) : bool = $'g_resources.fileExists(!path)' : bool
+
+:= resource_text (path : string) : string = $'g_resources.readFileContents(!path)' : string
+
+:= load_chunk (source : string) (name : string) : host_fn = $'loadstring(!source, !name)' : host_fn
+
+:= load_error (source : string) (name : string) : string = $'select(2, loadstring(!source, !name))' : string
+
+:= raise_error_for_dofile_caller (message : string) : () = $'error(!message, 3)' : ()
+
+:= function_present (f : host_fn) : bool = $'(!f) ~= nil' : bool
+
+:= setfenv_available () : bool = $'setfenv ~= nil' : bool
+
+:= set_chunk_env (chunk : host_fn) (env : host) : () = $'setfenv(!chunk, !env)' : ()
+
+:= run_chunk (chunk : host_fn) : host = $'{ (!chunk)() }' : host
+
+:= replace_dofile (f : string -> host) : () = $'dofile = function(path) return unpack((!f)(path)) end' : ()
+
+:= getfenv_available () : bool = $'getfenv ~= nil' : bool
+
+:= level_env () : host = $'getfenv(1)' : host
+
+:= globals () : host = $'_G' : host

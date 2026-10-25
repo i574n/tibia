@@ -7,8 +7,8 @@
 
 :== bench =
     {
-        hits : lua.native_table
-        taken : lua.native_table
+        hits : mut (list i32)
+        taken : mut (list i32)
         misses : mut i32
         kills : mut i32
         potions : mut i32
@@ -24,8 +24,8 @@
 := report (b : bench) (label : string) : () =
     := potions = *b.potions
     probe.note (("potions " ++#? potions))
-    := landed, misses, kills = lua.sample_count b.hits, *b.misses, *b.kills
-    := total, median = lua.sample_total b.hits, lua.sample_median b.hits
+    := landed, misses, kills = samples.sample_count b.hits, *b.misses, *b.kills
+    := total, median = samples.sample_total b.hits, samples.sample_median b.hits
     := plus, health = client.player_experience () - *b.start_experience, client.player_health ()
     := swings = landed + misses
     := landed_share = ? swings > 0 ?> (conv landed : f64) * 100.0 / (conv swings : f64) |: 0.0
@@ -35,15 +35,18 @@
         ++# "%) mean landed " ++# sm'.format_fixed 2 mean_landed ++# " median " ++#? median ++# " total " ++#? total
         ++# " kills " ++#? kills ++# " experience +" ++#? plus ++# " health " ++#? health
     )
-    probe.note ("hits " ++# lua.samples_joined b.hits)
+    probe.note ("hits " ++# samples.samples_joined b.hits)
     := count, taken_total, taken_median, taken_max =
-        lua.sample_count b.taken, lua.sample_total b.taken, lua.sample_median b.taken, lua.sample_max b.taken
+        samples.sample_count b.taken,
+        samples.sample_total b.taken,
+        samples.sample_median b.taken,
+        samples.sample_max b.taken
     := taken_mean = ? count > 0 ?> (conv taken_total : f64) / (conv count : f64) |: 0.0
     probe.note (
         "taken: count " ++#? count ++# " mean " ++# sm'.format_fixed 2 taken_mean ++# " median " ++#? taken_median
         ++# " max " ++#? taken_max ++# " total " ++#? taken_total
     )
-    probe.note ("taken " ++# lua.samples_joined b.taken)
+    probe.note ("taken " ++# samples.samples_joined b.taken)
 
 := tick (b : bench) (potion_below : i32) : () =
     :~ ^ go (last_swing_at : i32) (last_potion_at : i32) : () =
@@ -98,8 +101,8 @@
 := main () =
     := b : bench =
         {
-            hits = lua.new_table ()
-            taken = lua.new_table ()
+            hits = samples.new_samples ()
+            taken = samples.new_samples ()
             misses = mut 0
             kills = mut 0
             potions = mut 0
@@ -113,9 +116,9 @@
     := on_text (mode : string) (text : string) : () =
         := amount = lua.matched_number text "loses (%d+) hitpoints? due to your"
         := lost = lua.matched_number text "You lose (%d+) hitpoints? due to an attack"
-        ? lost >= 0 ?> lua.sample b.taken lost
+        ? lost >= 0 ?> samples.sample b.taken lost
         |? amount >= 0 ?>
-            lua.sample b.hits amount
+            samples.sample b.hits amount
             probe.stored b.pending_hit 1
             ? sm'.contains "critical" text ?> probe.note ("critical: " ++# text)
         |? sm'.contains "You died" text ?>

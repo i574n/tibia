@@ -30,6 +30,8 @@ test hunting_pack static =
 := purpose_creature_shot () : u32 = 17
 := purpose_dance () : u32 = 18
 := purpose_poll () : u32 = 19
+
+:= purpose_entry () : u32 = 20
 := client_lag_ms () : i32 = 8
 
 := target_nearby_step_factor () : i32 = 2
@@ -47,6 +49,14 @@ test hunting_pack static =
         check_until : i32
         nearby : i32
         acquired_at : i32
+        aims_at : i32
+        entrant : i32
+        in_view : i32
+        damage_first : i32
+        damage_second : i32
+        retarget_at : i32
+        last_x : i32
+        last_y : i32
     }
 
 :== hunter =
@@ -73,6 +83,7 @@ test hunting_pack static =
     {
         hunter : hunter
         ally : hunter
+        ally_in_world : bool
         foes : views.band foe
         kills : i32
         experience : i32
@@ -82,6 +93,10 @@ test hunting_pack static =
     }
 
 := with_hunter (h : hunter) (p : pack) : pack = { p ?| hunter = h }
+
+:= with_ally (h : hunter) (p : pack) : pack = { p ?| ally = h }
+
+:= now_in_world (p : pack) : pack = { p ?| ally_in_world = !+ }
 
 := turned (p : pack) : pack = { p ?| hunter = p.ally; ally = p.hunter }
 
@@ -155,6 +170,14 @@ test hunting_pack static =
         check_until = 0
         nearby = 0
         acquired_at = never ()
+        aims_at = -1
+        entrant = 0
+        in_view = 0
+        damage_first = 0
+        damage_second = 0
+        retarget_at = 0
+        last_x = -1
+        last_y = -1
     }
 
 := buried_foe (kind : creatures.arena_creature) : foe =
@@ -225,6 +248,10 @@ test hunting_pack static =
     | RetreatsAtTheServerPace
     | RetreatsAtTheProbePace
 
+:| ally_entry =
+    | EntersWithTheKnight
+    | EntersAfterMeasuredDelay
+
 :== camp =
     {
         kinds : views.band creatures.arena_creature
@@ -234,6 +261,8 @@ test hunting_pack static =
         layout : terrain.layout
         potion_budget : i32
         party : i32
+        ally_enters : ally_entry
+        party_targeting : bool
         wakes_at : i32
         swing : swing_after_step
         melee : melee_timing
@@ -279,6 +308,8 @@ test hunting_pack static =
             OpenField
         potion_budget = unlimited_potions ()
         party = 1
+        ally_enters = EntersWithTheKnight
+        party_targeting = !-
         wakes_at = 0
         swing = SwingKeepsItsTime
         melee = MeleeWhenReady
@@ -302,6 +333,17 @@ test hunting_pack static =
 := with_potion_budget (count : i32) (c : camp) : camp = { c ?| potion_budget = count }
 
 := with_party (knights : i32) (c : camp) : camp = { c ?| party = knights }
+
+:= with_delayed_ally_entry (c : camp) : camp = { c ?| ally_enters = EntersAfterMeasuredDelay }
+
+:= ally_enters_with_the_knight (c : camp) : bool =
+    ?= c.ally_enters ?|
+    | EntersWithTheKnight => !+
+    | EntersAfterMeasuredDelay => !-
+
+:= ally_starts_in_world (c : camp) : bool = c.party > 1 && ally_enters_with_the_knight c
+
+:= targeting_like_canary (c : camp) : camp = { c ?| party_targeting = !+ }
 
 := waking_at (ms : i32) (c : camp) : camp = { c ?| wakes_at = ms }
 
@@ -433,6 +475,8 @@ test hunting_pack static =
             OpenField
         potion_budget = unlimited_potions ()
         party = 1
+        ally_enters = EntersWithTheKnight
+        party_targeting = !-
         wakes_at = 0
         swing = SwingKeepsItsTime
         melee = MeleeWhenReady
@@ -512,7 +556,8 @@ test hunting_pack static =
     := second = knight 1
     {
         hunter = knight 0
-        ally = ? camp.party > 1 ?> second |: { second ?| at = terrain.grave () }
+        ally = ? ally_starts_in_world camp ?> second |: { second ?| at = terrain.grave () }
+        ally_in_world = ally_starts_in_world camp
         foes = views.band (placed 0 a, placed 1 b, placed 2 c, placed 3 d, placed 4 e, placed 5 g)
         kills = 0
         experience = 0
@@ -824,6 +869,72 @@ test hunting_pack static =
                         moved
             |: moved
 
+:= purpose_search_target () : u32 = 40
+:= purpose_change_target () : u32 = 41
+
+:= change_target_percent (kind : creatures.arena_creature) : i32 =
+    ?= kind ?|
+    | Cyclops => 10
+    | Hunter => 10
+    | _ => 0
+
+:= damage_strategy_percent (kind : creatures.arena_creature) : i32 =
+    ?= kind ?|
+    | Cyclops => 30
+    | _ => 0
+
+:= aimed_by_canary (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : foe =
+    := f = slot index p
+    := kind = kind_of index camp
+    := sees_first = ? geometry.sees f.at p.hunter.at ?> 1 |: 0
+    := sees_second = ? geometry.sees f.at p.ally.at ?> 2 |: 0
+    := seen = sees_first + sees_second
+    := entered_second = sees_second = 2 && (f.in_view &&& 2) = 0
+    := entered_first = sees_first = 1 && (f.in_view &&& 1) = 0
+    := appeared = f.last_x < 0
+    := foe_moved = appeared = !- && (f.at.x <> f.last_x || f.at.y <> f.last_y)
+    := sector_rank (at : geometry.position) : i32 = (at.y / 16) * 65536 + at.x / 16
+    := knight_scanned_first = sector_rank p.hunter.at <= sector_rank p.ally.at
+    := appended (newcomer : i32) : i32 = ? f.in_view = 0 ?> newcomer |: f.entrant
+    := entrant =
+        ? entered_first && entered_second ?>
+            ? appeared && now < 1000 ?> 1
+            |? knight_scanned_first ?> 0
+            |: 1
+        |? entered_second ?> (? appeared || foe_moved ?> appended 1 |: 1)
+        |? entered_first ?> (? appeared || foe_moved ?> appended 0 |: 0)
+        |: f.entrant
+    := due = now >= f.retarget_at
+    := rolled = conv (rng.roll_between 1 100 (key seed tick index (purpose_change_target ())))
+    := acquiring = f.aims_at < 0
+    := changing = acquiring = !- && due && rolled <= change_target_percent kind
+    := next_due = ? due ?> now + 4000 |: f.retarget_at
+    := strategy = conv (rng.roll_between 1 100 (key seed tick index (purpose_search_target ())))
+    := other = 1 - entrant
+    := other_dealt = ? other = 0 ?> f.damage_first |: f.damage_second
+    := d_entrant = geometry.chebyshev_distance (? entrant = 0 ?> p.hunter.at |: p.ally.at) f.at
+    := d_other = geometry.chebyshev_distance (? other = 0 ?> p.hunter.at |: p.ally.at) f.at
+    := nearest = ? d_other < d_entrant ?> other |: entrant
+    := melee = (creatures.stats_of kind).target_distance <= 1
+    := aims_at =
+        ? seen = 0 || acquiring = !- && changing = !-
+        ?> f.aims_at
+        |? changing && melee
+        ?> (? strategy <= 50 ?> entrant |: other)
+        |? changing
+        ?> nearest
+        |? strategy > 100 - damage_strategy_percent kind
+        ?> (? other_dealt > 0 ?> other |: entrant)
+        |: nearest
+    { f ?|
+        aims_at = aims_at
+        entrant = entrant
+        in_view = seen
+        retarget_at = next_due
+        last_x = f.at.x
+        last_y = f.at.y
+    }
+
 := ally_is_nearer (f : foe) (p : pack) : bool =
     geometry.chebyshev_distance p.ally.at f.at < geometry.chebyshev_distance p.hunter.at f.at
 
@@ -833,6 +944,13 @@ test hunting_pack static =
         ?= camp.idle ?|
         | StandsStill => p
         | WandersLikeCanary => wanders camp seed tick now index p
+    |? camp.party > 1 && camp.party_targeting
+    ?>
+        := aimed = aimed_by_canary camp seed tick now index p
+        := q = with_slot index aimed p
+        ? aimed.aims_at = 1
+        ?> turned (foe_turn camp seed tick now index (turned q))
+        |: foe_turn camp seed tick now index q
     |? camp.party > 1 && ally_is_nearer (slot index p) p
     ?> turned (foe_turn camp seed tick now index (turned p))
     |: foe_turn camp seed tick now index p
@@ -934,7 +1052,12 @@ test hunting_pack static =
     := timed_hunter = { h ?| timers = cooldowns.after_cast now (cooldowns.strike_spell ()) h.timers }
     := timed = p |> with_hunter timed_hunter
     ?= strike hit f.life ?|
-    | Survived wounded => with_slot target { f ?| life = wounded } timed
+    | Survived wounded =>
+        := dealt = vitality.health f.life - vitality.health wounded
+        := credited =
+            ? h.call_sign = 0 ?> { f ?| life = wounded; damage_first = f.damage_first + dealt }
+            |: { f ?| life = wounded; damage_second = f.damage_second + dealt }
+        with_slot target credited timed
     | Slain _ =>
         := awaiting = buried_foe kind
         := reset =
@@ -1290,13 +1413,37 @@ test hunting_pack static =
     |? now < h.next_decision_at ?> p
     |: player_acts camp t seed tick now (p |> with_hunter { h ?| next_decision_at = now + client_decision_ms () })
 
+:= measured_entry_ms (index : i32) : i32 =
+    ? index = 0 ?> 746
+    |? index = 1 ?> 745
+    |? index = 2 ?> 618
+    |? index = 3 ?> 934
+    |? index = 4 ?> 1116
+    |? index = 5 ?> 1193
+    |? index = 6 ?> 1318
+    |? index = 7 ?> 2346
+    |? index = 8 ?> 1847
+    |: 1520
+
+:= ally_entry_ms (seed : u32) : i32 = measured_entry_ms (conv (rng.roll_between 0 9 (key seed 0 0 (purpose_entry ()))))
+
+:= ally_entered (camp : camp) (seed : u32) (now : i32) (p : pack) : pack =
+    ? camp.party > 1 && p.ally_in_world = !- && now >= ally_entry_ms seed
+    ?>
+        := waiting = p.ally
+        := entered = { waiting ?| at = knight_start camp 1; next_decision_at = now }
+        now_in_world (with_ally entered p)
+    |: p
+
 := advance (camp : camp) (t : tactic) (seed : u32) (tick : i32) (p : pack) : pack =
     := now = tick * tick_ms ()
-    := charged = p |> recharged now
+    := charged = p |> ally_entered camp seed now |> recharged now
     := both_charged = ? camp.party > 1 ?> turned (recharged now (turned charged)) |: charged
     := knights_act (q : pack) : pack =
         := after_lead = knight_turn camp t seed tick now q
-        ? camp.party > 1 ?> turned (knight_turn camp t seed tick now (turned after_lead)) |: after_lead
+        ? camp.party > 1 && q.ally_in_world
+        ?> turned (knight_turn camp t seed tick now (turned after_lead))
+        |: after_lead
     ?= camp.view ?|
     | SeesThisTick => both_charged |> foes_act camp seed tick now |> knights_act
     | SeesLastTick => both_charged |> knights_act |> foes_act camp seed tick now
@@ -1589,6 +1736,8 @@ test hunting_pack static =
             ArenaHunt
         potion_budget = unlimited_potions ()
         party = 1
+        ally_enters = EntersWithTheKnight
+        party_targeting = !-
         wakes_at = 0
         swing = SwingKeepsItsTime
         melee = MeleeWhenReady

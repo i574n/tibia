@@ -1,0 +1,58 @@
+///- --package .
+test samples static =
+    :< testing
+
+:< sm'_operators
+
+:= new_samples () : mut (list i32) = mut Nil
+
+:= sample (s : mut (list i32)) (value : i32) : () = s <- Cons (value, *s)
+
+:= in_order (s : mut (list i32)) : list i32 = listm.rev *s
+
+:= sample_count (s : mut (list i32)) : i32 = listm.length *s
+
+:= sample_total (s : mut (list i32)) : i32 = listm.fold (\ total value => total + value) 0i32 *s
+
+:= sample_max (s : mut (list i32)) : i32 = listm.fold (\ most value => ? value > most ?> value |: most) 0i32 *s
+
+:~ ^ insert_sorted (value : i32) (xs : list i32) : list i32 =
+    ?= xs ?|
+    | Nil => Cons (value, Nil)
+    | Cons (head, rest) => ? value <= head ?> Cons (value, xs) |: Cons (head, insert_sorted value rest)
+
+:= sorted (xs : list i32) : list i32 = listm.fold (\ acc value => insert_sorted value acc) Nil xs
+
+:~ ^ nth (index : i32) (xs : list i32) : i32 =
+    ?= xs ?|
+    | Nil => 0i32
+    | Cons (head, rest) => ? index = 0i32 ?> head |: nth (index - 1i32) rest
+
+:= sample_median (s : mut (list i32)) : i32 =
+    := n = sample_count s
+    ? n = 0i32 ?> 0i32 |: nth ((n + 1i32) / 2i32 - 1i32) (sorted *s)
+
+:= samples_joined (s : mut (list i32)) : string = in_order s |> listm.map (\ v => "" ++#? v) |> sm'.concat_list ","
+
+///> lua
+///> c
+test samples_count_total_max_and_median =
+    := s = new_samples ()
+    sample s 7i32
+    sample s 3i32
+    sample s 9i32
+    sample s 1i32
+    (sample_count s, sample_total s, sample_max s, sample_median s) |> _assert_eq (4i32, 20i32, 9i32, 3i32)
+
+///> lua
+test samples_join_in_insertion_order =
+    := s = new_samples ()
+    sample s 7i32
+    sample s 3i32
+    samples_joined s |> _assert_eq "7,3"
+
+///> lua
+///> c
+test empty_samples_report_zero =
+    := s = new_samples ()
+    (sample_count s, sample_total s, sample_max s, sample_median s) |> _assert_eq (0i32, 0i32, 0i32, 0i32)

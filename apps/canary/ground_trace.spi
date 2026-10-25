@@ -1,0 +1,109 @@
+///- --package .
+test ground_trace static =
+    :< testing
+
+:< sm'_operators
+
+:== watch = { id : u32; x : i32; y : i32 }
+
+:= emit (line : string) : () = file_system.append_all_text "ground-trace.log" (line ++# "\n")
+
+:= spot_text (x : i32) (y : i32) : string = "" ++#? x ++# "," ++#? y
+
+:= watch_of (id : u32) (watched : list watch) : option watch =
+    listm.fold (\ found (w : watch) =>
+        ?= found ?|
+        | Some _ => found
+        | None => ? w.id = id ?> Some w |: None
+        ) None watched
+
+:= holds (id : u32) (ids : list u32) : bool = listm.fold (\ seen i => seen || i = id) !- ids
+
+:= moved_to (id : u32) (x : i32) (y : i32) (watched : list watch) : list watch =
+    listm.map (\ (w : watch) => ? w.id = id ?> { id = w.id; x = x; y = y } |: w) watched
+
+:= still_present (present : list u32) (watched : list watch) : list watch =
+    listm.fold (\ kept (w : watch) => ? holds w.id present ?> Cons (w, kept) |: kept) Nil watched |> listm.rev
+
+///> lua
+///> c
+test watches_follow_moves_and_departures =
+    := watched = Cons ({ id = 201u32; x = 1950i32; y = 1345i32 }, Cons ({ id = 202u32; x = 1953i32; y = 1346i32 }, Nil))
+    := moved = moved_to 201u32 1949i32 1344i32 watched
+    := kept = still_present (Cons (202u32, Nil)) moved
+    := moved_x = ?= watch_of 201u32 moved ?| Some w => w.x | None => 0i32
+    (moved_x, holds 202u32 (Cons (202u32, Nil)), holds 7u32 Nil, (listm.length kept : i32))
+    |> _assert_eq (1949i32, !+, !-, 1i32)
+
+///> lua
+test spot_text_joins_coordinates =
+    spot_text 1949i32 1344i32 |> _assert_eq "1949,1344"
+
+:= main () : () =
+    := centre = canary.position 1947 1345 7
+    := reach = 16i32
+    := knight_since : mut (option f64) = mut None
+    := knight_away = mut !-
+    := watched : mut (list watch) = mut Nil
+    := since () : i32 =
+        ?= *knight_since ?|
+        | Some t => conv (canary.system_time () - t)
+        | None => -1i32
+    := death = canary.creature_event "GroundTraceDeath"
+    canary.on_death death (\ c =>
+        := at = canary.creature_position c
+        emit (
+            "ground-trace death " ++#? canary.creature_id c ++# " " ++# canary.creature_name c ++# " at "
+            ++# spot_text (canary.position_x at) (canary.position_y at) ++# " @knight+" ++#? since ()
+        )
+        !+
+        )
+    canary.register_creature_event death
+    := poll = canary.global_event "GroundTracePoll"
+    canary.on_think poll (\ _ =>
+        := present : mut (list u32) = mut Nil
+        := knight_present = mut !-
+        := crowd = canary.spectators centre reach
+        loop.for' { from = 0i32; nearTo = am'.length crowd } (\ i =>
+            := c = am'.index i crowd
+            := at = canary.creature_position c
+            := x, y = canary.position_x at, canary.position_y at
+            ? canary.creature_is_player c ?>
+                ? canary.creature_name c = "Knight Sample" ?>
+                    knight_present <- !+
+                    ?= *knight_since ?|
+                    | None =>
+                        knight_since <- Some (canary.system_time ())
+                        := stamp = date_time.now () |> date_time.format "%Y%m%d-%H%M%S"
+                        emit ("ground-trace run " ++# stamp ++# " knight seen at " ++# spot_text x y ++# " @knight+0")
+                    | Some _ => ()
+            |? canary.creature_is_monster c ?>
+                := id = canary.creature_id c
+                present <- Cons (id, *present)
+                ?= watch_of id *watched ?|
+                | None =>
+                    canary.creature_register_event c "GroundTraceDeath"
+                    watched <- Cons ({ id = id; x = x; y = y }, *watched)
+                    emit (
+                        "ground-trace appear " ++#? id ++# " " ++# canary.creature_name c ++# " at " ++# spot_text x y
+                        ++# " @knight+" ++#? since ()
+                    )
+                | Some seen =>
+                    ? seen.x <> x || seen.y <> y ?>
+                        emit ("ground-trace move " ++#? id ++# " to " ++# spot_text x y ++# " @knight+" ++#? since ())
+                        watched <- moved_to id x y *watched
+            )
+        *watched
+        |> listm.iter (\ (w : watch) =>
+            ? holds w.id *present = !- ?> emit ("ground-trace gone " ++#? w.id ++# " @knight+" ++#? since ())
+            )
+        watched <- still_present *present *watched
+        := knight_known = ?= *knight_since ?| Some _ => !+ | None => !-
+        ? knight_known && *knight_present = *knight_away ?>
+            knight_away <- *knight_present = !-
+            := view = ? *knight_away ?> "out of view" |: "back in view"
+            emit ("ground-trace knight " ++# view ++# " @knight+" ++#? since ())
+        !+
+        )
+    canary.think_interval poll 250
+    canary.register_global_event poll

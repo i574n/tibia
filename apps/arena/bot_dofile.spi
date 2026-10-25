@@ -1,0 +1,26 @@
+:< sm'_operators
+
+:= bot_root () : string = "/bot/nExBot"
+
+:= resolve (path : string) : string = ? sm'.starts_with "/" path ?> bot_root () ++# path |: bot_root () ++# "/" ++# path
+
+:= route_dofile () : () =
+    := native = hooks.current_dofile ()
+    := module_env = hooks.call_for_value native "/bot_env_probe.lua"
+    hooks.replace_dofile (\ path =>
+        := full = resolve path
+        ? hooks.resource_exists full = !- ?> hooks.new_list ()
+        |:
+            := source = hooks.resource_text full
+            := name = "@" ++# full
+            := chunk = hooks.load_chunk source name
+            ? hooks.function_present chunk = !- ?>
+                hooks.raise_error_for_dofile_caller (hooks.load_error source name)
+                hooks.new_list ()
+            |:
+                ? hooks.setfenv_available () && hooks.present module_env ?> hooks.set_chunk_env chunk module_env
+                hooks.run_chunk chunk
+        )
+    ? hooks.present module_env ?> hooks.set_field module_env "dofile" (hooks.current_dofile ())
+
+:= main () : () = route_dofile ()
