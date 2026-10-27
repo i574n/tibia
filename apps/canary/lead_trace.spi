@@ -3,10 +3,11 @@ test lead_trace static =
     :< testing
 
 :< sm'_operators
+:< canary
 
 :== watch = { id : u32; x : i32; y : i32 }
 
-:= emit (line : string) : () = file_system.append_all_text "lead-trace.log" (line ++# "\n")
+:= emit (line : string) : () = file_system.append_all_text "lead-trace.log" ("lead-trace " ++# line ++# "\n")
 
 := spot_text (x : i32) (y : i32) : string = "" ++#? x ++# "," ++#? y
 
@@ -20,115 +21,172 @@ test lead_trace static =
 := moved_to (id : u32) (x : i32) (y : i32) (watched : list watch) : list watch =
     listm.map (\ (w : watch) => ? w.id = id ?> { id = w.id; x = x; y = y } |: w) watched
 
-:= holder_of (p : canary.position) : string =
-    := t = canary.tile_at p
-    ? canary.tile_present t = !- ?> "none"
+:= holder_of (p : position) : string =
+    := t = tile_at p
+    ? tile_present t = !- ?> "none"
     |:
-        := top = canary.tile_top_creature t
-        ? canary.creature_present top ?> "" ++#? canary.creature_id top |: "free"
+        := top = tile_top_creature t
+        ? creature_present top ?> "" ++#? creature_id top |: "free"
 
 ///> lua
 ///> c
 test watches_follow_moves =
-    := watched = Cons ({ id = 301u32; x = 1931i32; y = 1353i32 }, Nil)
+    := watched = [ { id = 301u32; x = 1931i32; y = 1353i32 } ]
     := moved = moved_to 301u32 1931i32 1352i32 watched
     (?= watch_of 301u32 moved ?| Some w => w.y | None => 0i32) |> _assert_eq 1352i32
 
+:== lead =
+    {
+        centre : position
+        exit : position
+        knight_since : mut (option f64)
+        knight_at : mut (option (i32 * i32))
+        knight_targeted : mut bool
+        watched : mut (list watch)
+    }
+
+:= trace_ms () : i32 = 10000
+
+:= boxed_at (x : i32) (y : i32) : bool = x = 1931 && y = 1353
+
+:= since (g : lead) : i32 =
+    ?= *g.knight_since ?|
+    | Some t => conv (system_time () - t)
+    | None => -1i32
+
+:= knight_known (g : lead) : bool = ?= *g.knight_since ?| Some _ => !+ | None => !-
+
+:= emit_now (line : string) (now : i32) : () = emit (line ++# " @knight+" ++#? now)
+
+:= emit_at (g : lead) (line : string) : () = emit_now line (since g)
+
+:= boxed_where (id : u32) (at : position) (exit : position) : string =
+    "boxed-check " ++#? id ++# " at " ++# spot_text (position_x at) (position_y at) ++# " exit " ++# holder_of exit
+
+:= boxed_check_text (id : u32) (at : position) (exit : position) (think_exit : string) (think_since : i32) : string =
+    boxed_where id at exit ++# " think-exit " ++# think_exit ++# " think @knight+" ++#? think_since
+
+:= check_boxed (g : lead) (id : u32) (think_since : i32) (think_exit : string) : () =
+    := c = creature_by_id id
+    := now = since g
+    ? creature_present c && now >= 0 ?>
+        emit_now (boxed_check_text id (creature_position c) g.exit think_exit think_since) now
+
+:= boxed_think (g : lead) (id : u32) (now : i32) : () =
+    := think_exit = holder_of g.exit
+    emit_now ("boxed-think " ++#? id ++# " exit " ++# think_exit) now
+    add_event (\ () => check_boxed g id now think_exit) 750
+
+:= traced_think (g : lead) (c : creature) (now : i32) : () =
+    := at = creature_position c
+    := x, y = position_x at, position_y at
+    := id = creature_id c
+    emit_now ("think " ++#? id ++# " at " ++# spot_text x y) now
+    ? boxed_at x y ?> boxed_think g id now
+
+:= on_lead_think (g : lead) (c : creature) : bool =
+    := now = since g
+    ? now >= 0 && now <= trace_ms () ?> traced_think g c now
+    !+
+
+:= knight_targets (g : lead) (c : creature) : () =
+    := target, targeted = creature_target c, g.knight_targeted
+    ? knight_known g && creature_present target && *targeted = !- ?>
+        targeted <- !+
+        emit_at g ("knight targets " ++#? creature_id target)
+
+:= knight_seen_line (x : i32) (y : i32) : string =
+    := stamp = date_time.now () |> date_time.format "%Y%m%d-%H%M%S"
+    "run " ++# stamp ++# " knight seen at " ++# spot_text x y ++# " @knight+0"
+
+:= knight_first (g : lead) (x : i32) (y : i32) : () =
+    := knight_since, knight_at = g.knight_since, g.knight_at
+    knight_since <- Some (system_time ())
+    knight_at <- Some (x, y)
+    emit (knight_seen_line x y)
+
+:= knight_moved (g : lead) (x : i32) (y : i32) : () =
+    := now, knight_at = since g, g.knight_at
+    ? now <= trace_ms () ?> emit_now ("knight moved to " ++# spot_text x y) now
+    knight_at <- Some (x, y)
+
+:= knight_step (g : lead) (knight : bool) (x : i32) (y : i32) : () =
+    ?= *g.knight_since, *g.knight_at ?|
+    | None, _ ?& knight => knight_first g x y
+    | _, Some (kx, ky) ?& knight && (kx <> x || ky <> y) => knight_moved g x y
+    | _ => ()
+
+:= saw_player (g : lead) (present : mut bool) (c : creature) (x : i32) (y : i32) : () =
+    := knight = creature_name c = "Knight Sample"
+    ? knight ?>
+        present <- !+
+        knight_targets g c
+    knight_step g knight x y
+
+:= starts_line (c : creature) (id : u32) (x : i32) (y : i32) : string =
+    "monster " ++#? id ++# " " ++# creature_name c ++# " starts at " ++# spot_text x y
+
+:= first_monster (g : lead) (c : creature) (id : u32) (x : i32) (y : i32) : () =
+    := watched = g.watched
+    creature_register_event c "LeadTraceThink"
+    watched <- { id = id; x = x; y = y } :: *watched
+    emit_at g (starts_line c id x y)
+
+:= moved_monster (g : lead) (id : u32) (x : i32) (y : i32) : () =
+    := now, watched = since g, g.watched
+    ? now <= trace_ms () ?> emit_now ("monster " ++#? id ++# " moved to " ++# spot_text x y) now
+    watched <- moved_to id x y *watched
+
+:= saw_monster (g : lead) (c : creature) (id : u32) (x : i32) (y : i32) : () =
+    ?= watch_of id *g.watched ?|
+    | None => first_monster g c id x y
+    | Some seen => ? seen.x <> x || seen.y <> y ?> moved_monster g id x y
+
+:= saw (g : lead) (present : mut bool) (c : creature) : () =
+    := id, at = creature_id c, creature_position c
+    := x, y = position_x at, position_y at
+    ? creature_is_player c ?> saw_player g present c x y
+    |? creature_is_monster c ?> saw_monster g c id x y
+
+:= saw_all (g : lead) (present : mut bool) (crowd : array creature) : () =
+    loop.for' { from = 0i32; nearTo = am'.length crowd } (\ i => saw g present (am'.index i crowd))
+
+:= knight_gone (g : lead) : () =
+    := knight_since, knight_at, targeted, watched = g.knight_since, g.knight_at, g.knight_targeted, g.watched
+    emit_at g "knight gone"
+    knight_since <- None
+    knight_at <- None
+    targeted <- !-
+    watched <- Nil
+
+:= poll_once (g : lead) : bool =
+    := knight_present = mut !-
+    saw_all g knight_present (spectators g.centre 11)
+    ? knight_known g && *knight_present = !- ?> knight_gone g
+    !+
+
+:= new_lead () : lead =
+    {
+        centre = position 1931 1352 7
+        exit = position 1931 1352 7
+        knight_since = mut None
+        knight_at = mut None
+        knight_targeted = mut !-
+        watched = mut Nil
+    }
+
+:= watch_thinks (g : lead) : () =
+    := think = creature_event "LeadTraceThink"
+    on_creature_think think (on_lead_think g)
+    register_creature_event think
+
+:= watch_lead (g : lead) : () =
+    := poll = global_event "LeadTracePoll"
+    on_think poll (\ _ => poll_once g)
+    think_interval poll 50
+    register_global_event poll
+
 := main () : () =
-    := centre = canary.position 1931 1352 7
-    := reach = 11i32
-    := trace_ms = 10000i32
-    := boxed_x, boxed_y = 1931i32, 1353i32
-    := exit = canary.position 1931 1352 7
-    := walk_check_ms = 750i32
-    := knight_since : mut (option f64) = mut None
-    := knight_at : mut (option (i32 * i32)) = mut None
-    := knight_targeted = mut !-
-    := watched : mut (list watch) = mut Nil
-    := since () : i32 =
-        ?= *knight_since ?|
-        | Some t => conv (canary.system_time () - t)
-        | None => -1i32
-    := check_boxed (id : u32) (think_since : i32) (think_exit : string) : () =
-        := c = canary.creature_by_id id
-        := now = since ()
-        ? canary.creature_present c && now >= 0i32 ?>
-            := at = canary.creature_position c
-            emit (
-                "lead-trace boxed-check " ++#? id ++# " at " ++# spot_text (canary.position_x at) (canary.position_y at)
-                ++# " exit " ++# holder_of exit ++# " think-exit " ++# think_exit ++# " think @knight+" ++#? think_since
-                ++# " @knight+" ++#? now
-            )
-    := think = canary.creature_event "LeadTraceThink"
-    canary.on_creature_think think (\ c =>
-        := now = since ()
-        ? now >= 0i32 && now <= trace_ms ?>
-            := at = canary.creature_position c
-            := x, y = canary.position_x at, canary.position_y at
-            := id = canary.creature_id c
-            emit ("lead-trace think " ++#? id ++# " at " ++# spot_text x y ++# " @knight+" ++#? now)
-            ? x = boxed_x && y = boxed_y ?>
-                := think_exit = holder_of exit
-                emit ("lead-trace boxed-think " ++#? id ++# " exit " ++# think_exit ++# " @knight+" ++#? now)
-                canary.add_event (\ () => check_boxed id now think_exit) walk_check_ms
-        !+
-        )
-    canary.register_creature_event think
-    := poll = canary.global_event "LeadTracePoll"
-    canary.on_think poll (\ _ =>
-        := knight_present = mut !-
-        := crowd = canary.spectators centre reach
-        loop.for' { from = 0i32; nearTo = am'.length crowd } (\ i =>
-            := c = am'.index i crowd
-            := id = canary.creature_id c
-            := at = canary.creature_position c
-            := x, y = canary.position_x at, canary.position_y at
-            ? canary.creature_is_player c ?>
-                := knight = canary.creature_name c = "Knight Sample"
-                ? knight ?>
-                    knight_present <- !+
-                    := target = canary.creature_target c
-                    := known = ?= *knight_since ?| Some _ => !+ | None => !-
-                    ? known && canary.creature_present target && *knight_targeted = !- ?>
-                        knight_targeted <- !+
-                        emit ("lead-trace knight targets " ++#? canary.creature_id target ++# " @knight+" ++#? since ())
-                ?= *knight_since, *knight_at ?|
-                | None, _ ?& knight =>
-                    knight_since <- Some (canary.system_time ())
-                    knight_at <- Some (x, y)
-                    := stamp = date_time.now () |> date_time.format "%Y%m%d-%H%M%S"
-                    emit ("lead-trace run " ++# stamp ++# " knight seen at " ++# spot_text x y ++# " @knight+0")
-                | _, Some (kx, ky) ?& knight && (kx <> x || ky <> y) =>
-                    := now = since ()
-                    ? now <= trace_ms ?> emit ("lead-trace knight moved to " ++# spot_text x y ++# " @knight+" ++#? now)
-                    knight_at <- Some (x, y)
-                | _ => ()
-            |? canary.creature_is_monster c ?>
-                ?= watch_of id *watched ?|
-                | None =>
-                    canary.creature_register_event c "LeadTraceThink"
-                    watched <- Cons ({ id = id; x = x; y = y }, *watched)
-                    emit (
-                        "lead-trace monster " ++#? id ++# " " ++# canary.creature_name c ++# " starts at "
-                        ++# spot_text x y ++# " @knight+" ++#? since ()
-                    )
-                | Some seen =>
-                    ? seen.x <> x || seen.y <> y ?>
-                        := now = since ()
-                        ? now <= trace_ms ?>
-                            emit (
-                                "lead-trace monster " ++#? id ++# " moved to " ++# spot_text x y ++# " @knight+" ++#? now
-                            )
-                        watched <- moved_to id x y *watched
-            )
-        := known = ?= *knight_since ?| Some _ => !+ | None => !-
-        ? known && *knight_present = !- ?>
-            emit ("lead-trace knight gone @knight+" ++#? since ())
-            knight_since <- None
-            knight_at <- None
-            knight_targeted <- !-
-            watched <- Nil
-        !+
-        )
-    canary.think_interval poll 50
-    canary.register_global_event poll
+    := g = new_lead ()
+    watch_thinks g
+    watch_lead g

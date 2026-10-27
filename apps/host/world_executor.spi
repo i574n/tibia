@@ -1,0 +1,182 @@
+///- --package .
+test world_executor static =
+    :< testing
+
+:< sm'_operators
+
+:== executor_programs =
+    {
+        world : world_port.world_programs
+        database : string
+        database_args : list string
+        client : string
+        client_args : list string
+    }
+
+:== executor_files = { run_log : string; block_log : string; experience_prefix : string }
+
+:== executor_limits = { run_ms : i32; start_ms : i32 }
+
+:== executor =
+    {
+        programs : executor_programs
+        files : executor_files
+        limits : executor_limits
+        character : character.character
+    }
+
+:== command = arena_host.host_command
+
+:== event = arena_host.host_event
+
+:== maybe_world = option world_port.world
+
+:== stepped = maybe_world * list event
+
+:= first_line (text : string) : string =
+    := stop : i32 = sm'.index_of "\n" text
+    ? stop < 0i32 ?> sm'.trim text |: sm'.trim (sm'.substring 0i32 stop text)
+
+:= rest_from (at : i32) (text : string) : string = sm'.substring at (sm'.length text - at) text
+
+:= line_after (prefix : string) (text : string) : string =
+    := at : i32 = sm'.index_of prefix text
+    ? at < 0i32 ?> "" |: first_line (rest_from (at + sm'.length prefix) text)
+
+:~ ^ awaited_start (w : world_port.world) (left_ms : i32) : event =
+    ?= world_port.world_event_within w 50i32 ?|
+    | Some e => e
+    | None => ? left_ms <= 0i32 ?> arena_host.WorldCrashed |: awaited_start w (left_ms - 50i32)
+
+:= obeyed (x : executor) (current : maybe_world) (c : command) : maybe_world =
+    world_port.world_obeyed x.programs.world current c
+
+:= started_world (x : executor) (current : maybe_world) (c : command) : stepped =
+    := next = obeyed x current c
+    ?= next ?|
+    | Some w => next, [ awaited_start w x.limits.start_ms ]
+    | None => next, [ arena_host.WorldCrashed ]
+
+:= reset_events (x : executor) : list event =
+    := args = listm.rev (character.reset_sql x.character :: listm.rev x.programs.database_args)
+    ? process.capture_status_within x.programs.database args 30000i32 = 0i32 ?> [] |: [ arena_host.WorldCrashed ]
+
+:= logged_experience (x : executor) : string =
+    line_after x.files.experience_prefix (file_system.read_all_text x.files.run_log)
+
+:= run_ended (x : executor) (code : i32) : list event =
+    ? code = -1i32 ?> [ arena_host.RunTimedOut ]
+    |? code = 0i32 ?> [ arena_host.RunEnded (block_plan.outcome_of_experience (logged_experience x)) ]
+    |: [ arena_host.RunEnded (:< block_plan ;; Crashed) ]
+
+:= run_events (x : executor) : list event =
+    file_system.write_all_text x.files.run_log ""
+    run_ended x (process.capture_status_within x.programs.client x.programs.client_args x.limits.run_ms)
+
+:= recorded (x : executor) (fate : block_plan.run_fate) : list event =
+    file_system.append_all_text x.files.block_log (arena_host.fate_text fate ++# "\n")
+    []
+
+:= run_command_events (x : executor) (c : command) : list event =
+    :< arena_host
+    ?= c ?|
+    | ResetCharacter => reset_events x
+    | StartRun _ => run_events x
+    | Record fate => recorded x fate
+    | _ => []
+
+:= executed (x : executor) (current : maybe_world) (c : command) : stepped =
+    :< arena_host
+    ?= c ?|
+    | StartWorld | RestartWorld => started_world x current c
+    | ReleaseWindow => obeyed x current c, []
+    | _ => current, run_command_events x c
+
+:= prepended (events : list event) (produced : list event) : list event =
+    listm.fold (\ acc e => e :: acc) events produced
+
+:= executed_all (x : executor) (current : maybe_world) (commands : list command) : stepped =
+    := step (now, events) c =
+        := next, produced = executed x now c
+        next, prepended events produced
+    listm.fold step (current, []) commands
+
+:== drive = { host : arena_host.host; current : maybe_world; log : string }
+
+:= enqueued (rest : list event) (produced : list event) : list event =
+    listm.fold (\ queue y => y :: queue) (listm.rev produced) (listm.rev rest)
+
+:= advanced (x : executor) (d : drive) (e : event) : drive * list event =
+    := next, commands = arena_host.step d.host e
+    := after, produced = executed_all x d.current commands
+    { host = next; current = after; log = arena_host.logged d.log commands }, produced
+
+:= finished (d : drive) : string =
+    world_port.stopped_if_running d.current
+    d.log
+
+:~ ^ driven (x : executor) (d : drive) (pending : list event) : string =
+    ?= pending ?|
+    | [] => finished d
+    | e :: rest =>
+        := moved, produced = advanced x d e
+        driven x moved (enqueued rest produced)
+
+:= fake_database_args () : list string = [ "-c"; "import sys; sys.exit(0)"; "--" ]
+
+:= fake_world () : world_port.world_programs = world_port.fake_server ">> server online!"
+
+:= fake_programs (run_script : string) : executor_programs =
+    {
+        world = fake_world ()
+        database = "python"
+        database_args = fake_database_args ()
+        client = "python"
+        client_args = [ "-c"; run_script ]
+    }
+
+:= fake_files () : executor_files =
+    { run_log = "world-executor-run.log"; block_log = "world-executor-block.log"; experience_prefix = "experience " }
+
+:= fake_character () : character.character = { name = "Knight"; level = 8; axe_skill = 10; x = 100; y = 100 }
+
+:= fake_executor (run_script : string) : executor =
+    {
+        programs = fake_programs run_script
+        files = fake_files ()
+        limits = { run_ms = 3000i32; start_ms = 20000i32 }
+        character = fake_character ()
+    }
+
+:= block_run (first : i32) (x : executor) : string =
+    := h = arena_host.opened (block_plan.stages_of first 1)
+    driven x { host = h; current = None; log = "" } [ arena_host.WindowGranted ]
+
+:= counted_run_script () : string = "open('world-executor-run.log', 'w').write('experience 120\\n')"
+
+:= counted_block (first : i32) : string * string =
+    := x = fake_executor (counted_run_script ())
+    file_system.write_all_text x.files.block_log ""
+    := trace = block_run first x
+    trace, file_system.read_all_text x.files.block_log
+
+:= three_counted_trace () : string =
+    "start-world | reset, run 0.0 | counted, reset, run 0.1 | counted, reset, run 1.0 | counted, release"
+
+:= sleeping_executor () : executor =
+    := x = fake_executor "import time; time.sleep(30)"
+    { x ?| limits = { (x.limits) ?| run_ms = 500i32 } }
+
+:= stop_rerun_trace () : string =
+    "start-world | reset, run 0.0 | stop, rerun, reset, run 0.0 | stop, missing, reset, run 1.0 | "
+    ^^ "stop, rerun, reset, run 1.0 | stop, missing, release"
+
+///> gleam
+test a_block_runs_through_real_programs_and_matches_the_simulated_trace =
+    := ~first = 2i32
+    counted_block first |> _assert_eq (three_counted_trace (), "counted\ncounted\ncounted\n")
+
+///> gleam
+test a_run_past_its_deadline_is_stopped_and_rerun =
+    := ~first = 1i32
+    block_run first (sleeping_executor ()) |> _assert_eq (stop_rerun_trace ())

@@ -29,49 +29,28 @@ test vocations static =
         group : cooldowns.spell_group
     }
 
-:= data_of \* v. (s : spell v) : spell_data =
+:= healing (words : string) (level : i32) (mana : i32) : spell_data =
     :< cooldowns
+    { words = words; level = level; mana = mana; cooldown_ms = 1000; group_cooldown_ms = 1000; group = HealingGroup }
+
+:= berserk () : spell_data =
+    :< cooldowns
+    { words = "exori"; level = 35; mana = 115; cooldown_ms = 4000; group_cooldown_ms = 2000; group = AttackGroup }
+
+:= data_of \* v. (s : spell v) =
     ?= s ?|
-    | WoundCleansing =>
-        {
-            words = "exura ico"
-            level = 8
-            mana = 40
-            cooldown_ms = 1000
-            group_cooldown_ms = 1000
-            group = HealingGroup
-        }
-    | Berserk =>
-        { words = "exori"; level = 35; mana = 115; cooldown_ms = 4000; group_cooldown_ms = 2000; group = AttackGroup }
-    | DivineHealing =>
-        {
-            words = "exura san"
-            level = 35
-            mana = 160
-            cooldown_ms = 1000
-            group_cooldown_ms = 1000
-            group = HealingGroup
-        }
-    | LightHealing _ =>
-        { words = "exura"; level = 8; mana = 20; cooldown_ms = 1000; group_cooldown_ms = 1000; group = HealingGroup }
-    | IntenseHealing _ =>
-        {
-            words = "exura gran"
-            level = 20
-            mana = 70
-            cooldown_ms = 1000
-            group_cooldown_ms = 1000
-            group = HealingGroup
-        }
+    | WoundCleansing => healing "exura ico" 8 40
+    | Berserk => berserk ()
+    | DivineHealing => healing "exura san" 35 160
+    | LightHealing _ => healing "exura" 8 20
+    | IntenseHealing _ => healing "exura gran" 20 70
 
 := cooldown_id_of \* v. (s : spell v) : cooldowns.spell_id =
     :< cooldowns
     ?= s ?|
     | WoundCleansing => WoundCleansingSpell
     | Berserk => StrikeSpell
-    | DivineHealing => LightHealingSpell
-    | LightHealing _ => LightHealingSpell
-    | IntenseHealing _ => LightHealingSpell
+    | _ => LightHealingSpell
 
 := as_cooldown \* v. (s : spell v) : cooldowns.spell =
     := d = data_of s
@@ -84,12 +63,16 @@ test vocations static =
 := knight_heal () : spell knight = WoundCleansing
 
 ///> c
-test spell_data_matches_canary_scripts =
+test spell_levels_and_mana_gate_casting_like_canary =
     := ~level = 8i32
     castable level 90 WoundCleansing |> _assert_eq !+
     castable level 90 Berserk |> _assert_eq !-
     castable (level + 12) 70 (IntenseHealing DruidHeals) |> _assert_eq !+
-    (data_of (LightHealing PaladinHeals)).mana |> _assert_eq 20i32
+
+///> c
+test spell_data_matches_canary_scripts =
+    := ~healer = PaladinHeals
+    (data_of (LightHealing healer)).mana |> _assert_eq 20i32
     (data_of Berserk).cooldown_ms |> _assert_eq 4000i32
 
 ///> c

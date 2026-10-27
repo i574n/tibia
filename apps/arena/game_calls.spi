@@ -1,0 +1,84 @@
+///- --package .
+test game_calls static =
+    :< testing
+
+:< sm'_operators
+
+:== counts = { attack : mut i32; cancel : mut i32; guarded : mut i32; other : list (string * mut i32) }
+
+:= counted_names () : list string =
+    := late = [ "setChaseMode"; "setFightMode"; "stop"; "talk"; "turn"; "useInventoryItemWith"; "useWith"; "walk" ]
+    "autoWalk" :: "cancelFollow" :: "equipItem" :: "follow" :: "forceWalk" :: "look" :: "move" :: late
+
+:= bumped (cell : mut i32) (f : hooks.host_fn) : hooks.host_fn =
+    cell <- *cell + 1
+    f
+
+:~ ^ counting (name : string) (cell : mut i32) : () =
+    := native = hooks.field_function (hooks.game ()) name
+    hooks.replace_dispatch (hooks.game ()) name (\ () => bumped cell native)
+
+:~ ^ counting_if_present (name : string) (cell : mut i32) : () =
+    ? hooks.is_function (hooks.field_function (hooks.game ()) name) ?> counting name cell
+
+:~ ^ guarded_pick (cell : mut i32) (native : hooks.host_fn) : hooks.host_fn =
+    ? client.following_someone () ?> native |: bumped cell (hooks.ignoring ())
+
+:~ ^ guarding_cancel_follow (cell : mut i32) : () =
+    := native = hooks.field_function (hooks.game ()) "cancelFollow"
+    hooks.replace_dispatch (hooks.game ()) "cancelFollow" (\ () => guarded_pick cell native)
+
+:~ ^ fresh_counts () : counts =
+    := other = listm.map (\ (name : string) => name, mut 0i32) (counted_names ())
+    { attack = mut 0i32; cancel = mut 0i32; guarded = mut 0i32; other = other }
+
+:~ ^ wrapped_attack_calls (s : counts) : () =
+    counting "attack" s.attack
+    counting_if_present "cancelAttack" s.cancel
+    counting_if_present "cancelAttackAndFollow" s.cancel
+    guarding_cancel_follow s.guarded
+
+:~ ^ instrument () : counts =
+    := s = fresh_counts ()
+    wrapped_attack_calls s
+    listm.iter (\ (name, cell) => counting_if_present name cell) s.other
+    s
+
+:~ ^ held_text (slot : i32) : string =
+    := i = client.inventory_item (client.local_player ()) slot
+    ? client.item_present i ?> "" ++#? client.item_id i |: "-"
+
+:~ ^ target_distance_text () : string =
+    := a = client.attacking ()
+    ? client.creature_present a ?> "" ++#? probe.chebyshev (client.creature_spot a) (client.player_spot ()) |: "-"
+
+:~ ^ called_text (s : counts) : string =
+    := parts = listm.fold (\ acc (name, cell) => ? *cell > 0i32 ?> (name ++# "=" ++#? *cell) :: acc |: acc) [] s.other
+    sm'.concat_list " " (listm.rev parts)
+
+:~ ^ calls_head (s : counts) : string =
+    := hands = held_text (client.left_hand_slot ()) ++# "/" ++# held_text (client.right_hand_slot ())
+    "diag attack calls " ++#? *s.attack ++# " cancels " ++#? *s.cancel ++# " hands " ++# hands
+
+:~ ^ modes_text () : string = " chase " ++#? client.chase_mode () ++# " fight " ++# client.fight_mode_text ()
+
+:~ ^ report (s : counts) : string =
+    := head, modes = calls_head s, modes_text ()
+    := calls = " calls " ++# called_text s ++# " guarded cancelFollow " ++#? *s.guarded
+    head ++# " target distance " ++# target_distance_text () ++# modes ++# calls
+
+///> lua
+test called_text_lists_called_names_in_order =
+    := s = fresh_counts ()
+    listm.iter (\ (name, cell) => ? name = "walk" || name = "autoWalk" ?> probe.stored cell (*cell + 2i32)) s.other
+    called_text s |> _assert_eq "autoWalk=2 walk=2"
+
+///> lua
+test called_text_is_empty_before_any_call =
+    called_text (fresh_counts ()) |> _assert_eq ""
+
+///> lua
+test counted_names_are_fifteen_distinct_names =
+    := names = counted_names ()
+    := pairs = listm.fold (\ n a => listm.fold (\ m b => ? a = b ?> m + 1i32 |: m) n names) 0i32 names
+    (listm.length names, pairs) |> _assert_eq (15i32, 15i32)

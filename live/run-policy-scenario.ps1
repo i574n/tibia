@@ -1,30 +1,17 @@
-param([int] $TimeoutSeconds = 240, [int] $AxeSkill = 30, [string] $Monster = 'troll', [int] $MonsterCount = 3, [string] $ProbeBody = 'competitor', [int] $SpawnRadius = 2, [ValidateSet('none', 'vBot', 'nExBot')] [string] $Bot = 'none', [switch] $NoParity, [string] $TibiaDir = (Join-Path (Split-Path $PSScriptRoot -Parent) 'src'), [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [string] $SummonAt = '1932,1352', [string] $KnightAt = '1932,1349', [string] $SpawnFile = '', [string] $Ally = '', [string] $AllyAt = '')
+param([int] $TimeoutSeconds = 240, [int] $AxeSkill = 30, [string] $Monster = 'troll', [int] $MonsterCount = 3, [string] $ProbeBody = 'competitor', [int] $SpawnRadius = 2, [ValidateSet('none', 'vBot', 'nExBot')] [string] $Bot = 'none', [switch] $NoParity, [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [string] $SummonAt = '1932,1352', [string] $KnightAt = '1932,1349', [string] $SpawnFile = '', [string] $Ally = '', [string] $AllyAt = '')
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'paths.ps1')
 $root = $TibiaWorld
 $canaryDir = Join-Path $root 'canary'
 $worldLog = Join-Path $canaryDir 'world.log'
 $mariadb = (Join-Path $MariaDbBin 'mariadb.exe')
-$env:SPIRAL_COMPILER_PACKAGE_DIR = (Join-Path $SpiralRoot 'deps\The-Spiral-Language\VS Code Plugin')
-$dotnet = "$env:LOCALAPPDATA\spiral-bin\toolchains\dotnet\dotnet.exe"
-$compiler = "$env:LOCALAPPDATA\spiral-bin\bin\single-flight\SpiralCompiler\Release\net11.0\SpiralCompiler.dll"
-
-$policyLua = Join-Path $root 'policy.lua'
-$frozenPolicy = Join-Path $root 'policy-frozen.lua'
-if (Test-Path $frozenPolicy) {
-    Copy-Item $frozenPolicy $policyLua -Force
-    "== policy: frozen Lua, SHA-256 $((Get-FileHash $policyLua).Hash)"
-} else {
-    & $dotnet $compiler --backend Lua (Join-Path $TibiaDir 'live.spi') $policyLua | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'live.spi did not compile to Lua' }
-}
 $probe = Join-Path $root 'probe-policy.lua'
-$policySource = [IO.File]::ReadAllText($policyLua)
+
 Update-ArenaProbes
 $bodyPath = if ([IO.Path]::IsPathRooted($ProbeBody)) { $ProbeBody } elseif (Test-Path (Join-Path $TibiaArena "$ProbeBody.spi")) { Join-Path $TibiaArenaTarget "$ProbeBody.lua" } else { Join-Path $TibiaLive $ProbeBody }
 $body = [IO.File]::ReadAllText($bodyPath)
 $parity = if ($NoParity) { '' } else { "do`n(function()`n" + [IO.File]::ReadAllText((Join-Path $TibiaArenaTarget 'parity.lua')) + "`nend)()`nend`n" }
-[IO.File]::WriteAllText($probe, "SpiralPolicy = (function()`n$policySource`nend)()`n$parity$body")
+[IO.File]::WriteAllText($probe, "$parity$body")
 $syntax = lua -e "local f, e = loadfile([[$probe]]); if not f then print(e); os.exit(1) end"
 if ($LASTEXITCODE -ne 0) { throw "probe does not parse: $syntax" }
 $mix = @(if ($Monster -match ':') { $Monster -split ',' | ForEach-Object { $name, $count = $_ -split ':'; [pscustomobject]@{ Name = $name.Trim(); Count = [int]$count } } } else { [pscustomobject]@{ Name = $Monster; Count = $MonsterCount } })

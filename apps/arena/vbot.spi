@@ -1,3 +1,8 @@
+///- --package .
+test vbot static =
+    :< testing
+
+///> _
 := main () =
     observer.run { config = "vBot_4.8"; banner = "(vBot_4.8 TargetBot arena config)"; diagnostics = \ () => "" }
     0i32

@@ -1,3 +1,7 @@
+///- --package .
+test summon static =
+    :< testing
+
 :< sm'_operators
 := orders_of (text : string) : array string =
     text |> sm'.split ";" |> array |> am'.choose \ part => ? part = "" ?> None |: Some part
@@ -6,39 +10,62 @@
 
 := order_at (orders : array string) (position : i32) : string = am'.index (position - 1) orders
 
+:= creature_line (c : client.creature) : string =
+    := name = client.creature_name c
+    := monster = ? client.creature_is_monster c ?> "true" |: "false"
+    "sees " ++# name ++# " monster=" ++# monster ++# " at " ++# probe.described (client.creature_spot c)
+
+:~ ^ creatures_from (people : client.crowd) (size : i32) (index : i32) : () =
+    ? index <= size ?>
+        probe.note (creature_line (client.member people index))
+        creatures_from people size (index + 1)
+
 := list_creatures () : () =
     := people = client.spectators (client.player_spot ())
-    := size = client.crowd_size people
-    :~ ^ each (index : i32) : () =
-        ? index <= size ?>
-            := c = client.member people index
-            := name = client.creature_name c
-            := monster = ? client.creature_is_monster c ?> "true" |: "false"
-            := at = probe.described (client.creature_spot c)
-            probe.note (("sees " ++# name ++# " monster=" ++# monster ++# " at " ++# at))
-            each (index + 1)
-    each 1
+    creatures_from people (client.crowd_size people) 1
 
+:= order_scheduled (orders : array string) (index : i32) : () =
+    := order = order_at orders index
+    client.after (1200 + 500 * (index - 1)) (\ () => client.talk ("/m " ++# order))
+
+:= orders_scheduled (orders : array string) : () =
+    := count = order_count orders
+    :~ ^ schedule (index : i32) : () =
+        ? index <= count ?>
+            order_scheduled orders index
+            schedule (index + 1)
+    schedule 1
+
+:= listed_then_finish () : () =
+    list_creatures ()
+    probe.finish "summoned"
+
+:= summon_orders (summon_at : string) (orders : array string) : () =
+    probe.note ("at " ++# probe.described (client.player_spot ()))
+    client.talk ("/pos " ++# summon_at ++# ", 7")
+    orders_scheduled orders
+    client.after 4000 listed_then_finish
+
+:= summon_ready (summon_at : string) (orders : array string) : () =
+    probe.note ("in game as " ++# client.player_name ())
+    client.after 1500 (\ () => summon_orders summon_at orders)
+
+:= server_text_noted (mode : string) (text : string) : () = probe.note ("server text: " ++# text)
+
+:= summon_place () : string = client.env_text "TIBIA_SUMMON_AT" "1932, 1352"
+
+:= wanted_orders () : array string = orders_of (client.env_text "TIBIA_SUMMON_ORDERS" "green frog,3,,2")
+
+:= timed_out () : () = probe.finish "timeout"
+
+///> lua
+///> c
+test orders_drop_empty_parts_like_gmatch =
+    (orders_of "green frog,3,,2", orders_of ";wolf;;troll,2;")
+    |> _assert_eq (;[ "green frog,3,,2" ], ;[ "wolf"; "troll,2" ])
+
+///> _
 := main () =
-    := summon_at = client.env_text "TIBIA_SUMMON_AT" "1932, 1352"
-    := orders = orders_of (client.env_text "TIBIA_SUMMON_ORDERS" "green frog,3,,2")
-    := on_text (mode : string) (text : string) : () = probe.note ("server text: " ++# text)
-    := ready () =
-        probe.note ("in game as " ++# client.player_name ())
-        client.after 1500 (\ () =>
-            probe.note ("at " ++# probe.described (client.player_spot ()))
-            client.talk ("/pos " ++# summon_at ++# ", 7")
-            := count = order_count orders
-            :~ ^ schedule (index : i32) : () =
-                ? index <= count ?>
-                    := order = order_at orders index
-                    client.after (1200 + 500 * (index - 1)) (\ () => client.talk ("/m " ++# order))
-                    schedule (index + 1)
-            schedule 1
-            client.after 4000 (\ () =>
-                list_creatures ()
-                probe.finish "summoned"
-                )
-            )
-    probe.started_as (probe.game_master ()) on_text ready 60000 (\ () => probe.finish "timeout")
+    := summon_at, orders = summon_place (), wanted_orders ()
+    probe.started_as (probe.game_master ()) server_text_noted (\ () => summon_ready summon_at orders) 60000 timed_out
     0i32

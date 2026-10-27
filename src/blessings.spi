@@ -26,14 +26,15 @@ test blessings static =
 
 := roll_scale () : i32 = 10000
 
+:= item_chance (blessings : i32) (item : carried) : i32 =
+    := chance = item_loss_percent blessings * 100
+    ?= item ?| | ContainerItem => chance | EquippedItem => chance / 10
+
 := dropped (cover : death_cover) (item : carried) (roll : i32) : bool =
     ?= cover ?|
     | Skulled => !+
     | AmuletOfLoss => !-
-    | Unprotected blessings =>
-        := chance = item_loss_percent blessings * 100
-        := item_chance = ?= item ?| | ContainerItem => chance | EquippedItem => chance / 10
-        roll <= item_chance
+    | Unprotected blessings => roll <= item_chance blessings item
 
 := drops_over_every_roll (cover : death_cover) (item : carried) : i32 =
     :~ ^ count (roll : i32) (total : i32) : i32 =
@@ -47,17 +48,24 @@ test an_unblessed_knight_always_drops_the_backpack_and_each_other_item_one_time_
     |> _assert_eq (10000i32, 1000i32)
 
 ///> c
-test blessings_amulet_of_loss_and_skulls_follow_canary_blessing_lua =
+test one_blessing_cuts_the_drop_chance_like_canary_blessing_lua =
+    := ~one = 1i32
+    (drops_over_every_roll (Unprotected one) ContainerItem, drops_over_every_roll (Unprotected one) EquippedItem)
+    |> _assert_eq (7000i32, 700i32)
+
+///> c
+test four_and_five_blessings_follow_canary_blessing_lua =
     := ~one = 1i32
     (
-        drops_over_every_roll (Unprotected one) ContainerItem,
-        drops_over_every_roll (Unprotected one) EquippedItem,
         drops_over_every_roll (Unprotected (one + 3)) EquippedItem,
-        drops_over_every_roll (Unprotected (one + 4)) ContainerItem,
-        drops_over_every_roll AmuletOfLoss ContainerItem,
-        drops_over_every_roll Skulled EquippedItem
+        drops_over_every_roll (Unprotected (one + 4)) ContainerItem
     )
-    |> _assert_eq (7000i32, 700i32, 100i32, 0i32, 0i32, 10000i32)
+    |> _assert_eq (100i32, 0i32)
+
+///> c
+test the_amulet_of_loss_keeps_everything_and_a_skull_drops_everything =
+    (drops_over_every_roll AmuletOfLoss ContainerItem, drops_over_every_roll Skulled EquippedItem)
+    |> _assert_eq (0i32, 10000i32)
 
 ///> wgsl
 test unblessed_drops_on_gpu =

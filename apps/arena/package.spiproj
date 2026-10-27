@@ -21,6 +21,7 @@ modules:
     competitor
     random
     vbot
+    game_calls
     nexbot
     path
     samples

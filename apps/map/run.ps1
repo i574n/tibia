@@ -69,31 +69,61 @@ foreach ($line in $scan[($marker + 2)..($marker + 26)]) {
 "map / live client scan: $cells cells, agree $agree, disagree $($cells - $agree)"
 $terrainPath = Join-Path $repo 'src/terrain.spi'
 $terrain = [Collections.Generic.List[string]]::new([string[]](Get-Content $terrainPath))
-$differ = @()
-$scratch = Join-Path $out 'generated-definition.spi'
-for ($k = 0; $k -lt $generated.Count; $k += 2) {
-    $name = ($generated[$k] -split ' ')[1]
-    [IO.File]::WriteAllText($scratch, $generated[$k] + "`n" + $generated[$k + 1] + "`n")
-    & $dotnet $compiler format $scratch | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "map / formatting the generated $name failed ($LASTEXITCODE)" }
-    & $dotnet $compiler format --spelling symbols $scratch | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "map / respelling the generated $name failed ($LASTEXITCODE)" }
-    $laidOut = @(Get-Content $scratch | Where-Object { $_ -ne '' })
-    $at = $terrain.FindIndex([Predicate[string]] { param($line) $line.StartsWith(":~ $name ") })
-    if ($at -lt 0) { throw "map / src/terrain.spi has no definition of $name" }
+$differ = [Collections.Generic.List[string]]::new()
+$scratch = Join-Path $out 'generated-definitions.spi'
+[IO.File]::WriteAllText($scratch, ($generated -join "`n") + "`n")
+& $dotnet $compiler format $scratch | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "map / formatting the generated definitions failed ($LASTEXITCODE)" }
+& $dotnet $compiler format --spelling symbols $scratch | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "map / respelling the generated definitions failed ($LASTEXITCODE)" }
+$definitions = [Collections.Generic.List[object]]::new()
+foreach ($line in Get-Content $scratch) {
+    if ($line -eq '') { continue }
+    if (!$line.StartsWith(' ')) { $definitions.Add([pscustomobject]@{ Name = ($line -split ' ')[1]; Lines = [Collections.Generic.List[string]]::new() }) }
+    $definitions[$definitions.Count - 1].Lines.Add($line)
+}
+$names = @($definitions | ForEach-Object Name)
+$roots = @($names | Where-Object { $name = $_; !($names | Where-Object { $name.StartsWith($_ + '_') }) })
+function Find-Definition([string] $name) { $terrain.FindIndex([Predicate[string]] { param($line) $line.StartsWith(":~ $name ") }) }
+function Get-DefinitionEnd([int] $at) {
     $end = $at + 1
     while ($end -lt $terrain.Count -and $terrain[$end] -ne '' -and $terrain[$end].StartsWith(' ')) { $end++ }
-    $current = @($terrain.GetRange($at, $end - $at))
-    if (($current -join "`n") -ne ($laidOut -join "`n")) {
-        $differ += $name
+    $end
+}
+foreach ($root in $roots) {
+    $parts = @($terrain | Where-Object { $_.StartsWith(":~ $($root)_") } | ForEach-Object { ($_ -split ' ')[1] })
+    foreach ($stale in @($parts | Where-Object { $_ -notin $names })) {
+        $at = Find-Definition $stale
+        $end = Get-DefinitionEnd $at
+        if ($end -lt $terrain.Count -and $terrain[$end] -eq '') { $end++ }
         $terrain.RemoveRange($at, $end - $at)
-        $terrain.InsertRange($at, [string[]]$laidOut)
+        $differ.Add($stale)
     }
 }
-if (!$differ) { "map / src/terrain.spi matches the server map ($($generated.Count / 2) definitions)"; return }
+foreach ($definition in $definitions) {
+    $name = $definition.Name
+    $laidOut = [string[]]$definition.Lines
+    $at = Find-Definition $name
+    if ($at -lt 0) {
+        $root = $roots | Where-Object { $name.StartsWith($_ + '_') } | Select-Object -First 1
+        $rootAt = if ($root) { Find-Definition $root } else { -1 }
+        if ($rootAt -lt 0) { throw "map / src/terrain.spi has no definition of $name or of its table" }
+        $terrain.InsertRange($rootAt, [string[]]($laidOut + ''))
+        $differ.Add($name)
+        continue
+    }
+    $end = Get-DefinitionEnd $at
+    if ((@($terrain.GetRange($at, $end - $at)) -join "`n") -ne ($laidOut -join "`n")) {
+        $differ.Add($name)
+        $terrain.RemoveRange($at, $end - $at)
+        $terrain.InsertRange($at, $laidOut)
+    }
+}
+if (!$differ.Count) { "map / src/terrain.spi matches the server map ($($definitions.Count) definitions)"; return }
+$summary = "$($differ.Count) of $($definitions.Count) definitions ($(@($differ | Select-Object -First 6) -join ', ')$(if ($differ.Count -gt 6) { ', ...' }))"
 if ($Update) {
     [IO.File]::WriteAllText($terrainPath, ($terrain -join "`n") + "`n")
-    "map / rewrote $($differ -join ', ') in src/terrain.spi from the server map"
+    "map / rewrote $summary in src/terrain.spi from the server map"
 } else {
-    throw "map / src/terrain.spi differs from the server map in $($differ -join ', '); rerun with -Update to rewrite them"
+    throw "map / src/terrain.spi differs from the server map in $summary; rerun with -Update to rewrite them"
 }

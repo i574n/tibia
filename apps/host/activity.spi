@@ -22,22 +22,31 @@ test activity static =
     | Some allowed, Some dropped => Some (allowed + dropped - own_actions c)
     | _ => None
 
+:= checked_counts (server : i32) : counts =
+    {
+        server_potions = server
+        own_potions = 5
+        own_other = 9
+        retreats = 2
+        gated_walks = 1
+        allowed = Some 15
+        dropped = Some 2
+    }
+
 ///> c
 ///> lua
 ///> gleam
 test foreign_activity_follows_the_arena_check =
     := ~server = 6i32
-    := c =
-        {
-            server_potions = server
-            own_potions = 5
-            own_other = 9
-            retreats = 2
-            gated_walks = 1
-            allowed = Some 15
-            dropped = Some 2
-        }
+    := c = checked_counts server
     foreign_potions c |> _assert_eq 1i32
     own_actions c |> _assert_eq 17i32
+
+///> c
+///> lua
+///> gleam
+test foreign_actions_need_both_parity_counters =
+    := ~server = 6i32
+    := c = checked_counts server
     foreign_actions c |> _assert_eq (Some 0i32)
     foreign_actions { c ?| allowed = None } |> _assert_eq None

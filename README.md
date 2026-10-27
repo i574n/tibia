@@ -1,5 +1,7 @@
 # tibia
 
+[![깃허브 코드스페이스](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=1423729610)
+
 A typed Tibia-rules simulator in Spiral, compiled to C, Rust and WGSL (GPU) from one source, used to train agents that
 are measured against the best open-source Tibia bots on a public, reproducible benchmark: the **OT Agent Arena**.
 
@@ -12,7 +14,7 @@ are measured against the best open-source Tibia bots on a public, reproducible b
   spells), catalog (existential spawns), views (HKT `mapped` and `counted`), terrain (layouts, incl. the scanned arena spot).
 - **Decisions:** policy, network (integer neural policy), search (evolution).
 - **Simulators and entries:** hunt with its hunt_sim tests, hunting_pack (the multi-creature simulator) with its pack_sim
-  and gpu_sim tests, and `live.spi` (the Lua entry for OTClient).
+  and gpu_sim tests.
 
 Tests name their targets with a reason: C as the oracle, WGSL for the GPU path, Lua for the live client, and Rust only
 where a test needs the training host.

@@ -2,7 +2,8 @@ param(
     [string] $Label = 'bundle',
     [string[]] $Candidate = @(),
     [int] $Shield = 11,
-    [string] $Out = ''
+    [string] $Out = '',
+    [string] $Module = 'predict'
 )
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -18,6 +19,7 @@ function Set-Text([string] $path, [string] $old, [string] $new) {
 }
 $lib = (Resolve-Path (Join-Path $repo 'deps/spiral/lib')).Path -replace '\\', '/'
 Set-Text (Join-Path $work 'apps/predict/package.spiproj') 'packageDir: ../../deps/spiral/lib' "packageDir: $lib"
+if ($Module -ne 'predict') { Set-Text (Join-Path $work 'apps/predict/package.spiproj') '    predict' "    predict`n    $Module" }
 if ($Candidate.Count) {
     $chain = ($Candidate | ForEach-Object { "|> $_" }) -join ' '
     $predict = Join-Path $work 'apps/predict/predict.spi'
@@ -31,7 +33,7 @@ $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path (Resolve-Path (Join-Path $repo 'dep
 $dotnet = Join-Path $env:LOCALAPPDATA "spiral-bin/toolchains/dotnet/dotnet$(if ($IsWindows) { '.exe' })"
 $compiler = Join-Path $env:LOCALAPPDATA 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'
 $c = Join-Path $work 'predict.c'
-& $dotnet $compiler --backend C (Join-Path $work 'apps/predict/predict.spi') $c 2>&1 | Select-Object -Last 2 | Write-Host
+& $dotnet $compiler --backend C (Join-Path $work "apps/predict/$Module.spi") $c 2>&1 | Select-Object -Last 2 | Write-Host
 if ($LASTEXITCODE -ne 0) { throw "predict / $Label / compile failed" }
 $exe = Join-Path $work "predict$(if ($IsWindows) { '.exe' })"
 & gcc -O2 -o $exe $c -lm

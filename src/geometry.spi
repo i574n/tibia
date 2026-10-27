@@ -51,12 +51,16 @@ test geometry static =
 := within_range (reach : i32) (a : position) (b : position) : bool =
     same_floor a b && chebyshev_distance a b <= reach
 
+:= unit (n : i32) : i32 = ? n > 0 ?> 1 |? n < 0 ?> -1 |: 0
+
+:= straight_offset (dx : i32) (dy : i32) : i32 * i32 =
+    ? magnitude dx >= magnitude dy && dx <> 0 ?> unit dx, 0
+    |? dy <> 0 ?> 0, unit dy
+    |: 1, 0
+
 := straight_step (sign : i32) (target : position) (from : position) : position =
-    := dx = target.x - from.x
-    := dy = target.y - from.y
-    ? magnitude dx >= magnitude dy && dx <> 0 ?> { from ?| x = from.x + sign * (? dx > 0 ?> 1 |: -1) }
-    |? dy <> 0 ?> { from ?| y = from.y + sign * (? dy > 0 ?> 1 |: -1) }
-    |: { from ?| x = from.x + sign }
+    := ox, oy = straight_offset (target.x - from.x) (target.y - from.y)
+    { from ?| x = from.x + sign * ox; y = from.y + sign * oy }
 
 := step_toward (target : position) (from : position) : position = straight_step 1 target from
 
@@ -102,45 +106,63 @@ test geometry static =
 
 := sixteen_bits (n : u32) : u32 = n &&& 65535u32
 
-:= sight_line_clear (blocks : position -> bool) (from : position) (to : position) : bool =
-    := distance_x = magnitude (from.x - to.x)
-    := distance_y = magnitude (from.y - to.y)
-    := near (a : position) (b : position) : bool = magnitude (a.x - b.x) <= 1 && magnitude (a.y - b.y) <= 1
-    ? distance_x = 0 && distance_y = 0 ?> !+
-    |? from.y = to.y ?>
-        := delta = ? from.x < to.x ?> 1 |: -1
-        :~ ^ walk (x : i32) (left : i32) : bool =
-            ? left <= 0 ?> !+ |? blocks { from ?| x = x } ?> !- |: walk (x + delta) (left - 1)
-        walk (from.x + delta) (distance_x - 1)
-    |? from.x = to.x ?>
-        := delta = ? from.y < to.y ?> 1 |: -1
-        :~ ^ walk (y : i32) (left : i32) : bool =
-            ? left <= 0 ?> !+ |? blocks { from ?| y = y } ?> !- |: walk (y + delta) (left - 1)
-        walk (from.y + delta) (distance_y - 1)
-    |? distance_y > distance_x ?>
-        := start, finish = ? from.y > to.y ?> to, from |: from, to
-        := adjust : u32 = (conv distance_x <<< 16) / conv distance_y
-        := delta_x = ? start.x > finish.x ?> -1 |: 1
-        :~ ^ walk (x : i32) (y : i32) (accumulated : u32) (left : i32) : bool =
-            ? left <= 0 ?> !+
-            |:
-                := next = sixteen_bits (accumulated + adjust)
-                := increase = ? next <= accumulated ?> delta_x |: 0
-                ? blocks { x = x + increase; y = y + 1; z = start.z } ?> near { x = x; y = y; z = start.z } finish
-                |: walk (x + increase) (y + 1) next (left - 1)
-        walk start.x start.y (? delta_x < 0 ?> sixteen_bits (65536u32 - adjust) |: 0u32) (distance_y - 1)
-    |:
-        := start, finish = ? from.x > to.x ?> to, from |: from, to
-        := adjust : u32 = (conv distance_y <<< 16) / conv distance_x
-        := delta_y = ? start.y > finish.y ?> -1 |: 1
-        :~ ^ walk (x : i32) (y : i32) (accumulated : u32) (left : i32) : bool =
-            ? left <= 0 ?> !+
-            |:
-                := next = sixteen_bits (accumulated + adjust)
-                := increase = ? next <= accumulated ?> delta_y |: 0
-                ? blocks { x = x + 1; y = y + increase; z = start.z } ?> near { x = x; y = y; z = start.z } finish
-                |: walk (x + 1) (y + increase) next (left - 1)
-        walk start.x start.y (? delta_y < 0 ?> sixteen_bits (65536u32 - adjust) |: 0u32) (distance_x - 1)
+:== blocker = position -> bool
+
+:= sight_near (a : position) (b : position) : bool = magnitude (a.x - b.x) <= 1 && magnitude (a.y - b.y) <= 1
+
+:= swapped_axes (swap : bool) (p : position) : position = ? swap ?> { x = p.y; y = p.x; z = p.z } |: p
+
+:= stepped (p : position) (d : position) : position = { p ?| x = p.x + d.x; y = p.y + d.y }
+
+:= unit_toward (from : position) (to : position) : position =
+    { x = unit (to.x - from.x); y = unit (to.y - from.y); z = 0 }
+
+:= cells_between (from : position) (to : position) : i32 = chebyshev_distance from to - 1
+
+:= straight_clear (blocks : blocker) (from : position) (to : position) : bool =
+    := d = unit_toward from to
+    :~ ^ run (p : position) (n : i32) : bool = ? n <= 0 ?> !+ |? blocks p ?> !- |: run (stepped p d) (n - 1)
+    run (stepped from d) (cells_between from to)
+
+:== slope = { swap : bool; finish : position; adjust : u32; drift : i32 }
+
+:= slope_of (swap : bool) (start : position) (finish : position) : slope =
+    := adjust : u32 = (conv (magnitude (start.x - finish.x)) <<< 16) / conv (finish.y - start.y)
+    { swap = swap; finish = finish; adjust = adjust; drift = ? start.x > finish.x ?> -1 |: 1 }
+
+:== ray = { at : position; accumulated : u32; left : i32 }
+
+:= ray_from (s : slope) (start : position) : ray =
+    := accumulated = ? s.drift < 0 ?> sixteen_bits (65536u32 - s.adjust) |: 0u32
+    { at = start; accumulated = accumulated; left = s.finish.y - start.y - 1 }
+
+:= ray_step (s : slope) (r : ray) : ray =
+    := next = sixteen_bits (r.accumulated + s.adjust)
+    := drift = ? next <= r.accumulated ?> s.drift |: 0
+    { at = { x = r.at.x + drift; y = r.at.y + 1; z = r.at.z }; accumulated = next; left = r.left - 1 }
+
+:= ordered_by_y (a : position) (b : position) : position * position = ? a.y > b.y ?> b, a |: a, b
+
+:= sloped_start (swap : bool) (from : position) (to : position) : slope * ray =
+    := start, finish = ordered_by_y (swapped_axes swap from) (swapped_axes swap to)
+    := s = slope_of swap start finish
+    s, ray_from s start
+
+:= blocked_at (blocks : blocker) (s : slope) (p : position) : bool = blocks (swapped_axes s.swap p)
+
+:= sloped_clear (blocks : blocker) (start : slope * ray) : bool =
+    := s, first = start
+    :~ ^ run (r : ray) : bool =
+        := ahead = ray_step s r
+        ? r.left <= 0 ?> !+ |? blocked_at blocks s ahead.at ?> sight_near r.at s.finish |: run ahead
+    run first
+
+:= x_major (from : position) (to : position) : bool = magnitude (from.x - to.x) >= magnitude (from.y - to.y)
+
+:= sight_line_clear (blocks : blocker) (from : position) (to : position) : bool =
+    ? from.x = to.x && from.y = to.y ?> !+
+    |? from.x = to.x || from.y = to.y ?> straight_clear blocks from to
+    |: sloped_clear blocks (sloped_start (x_major from to) from to)
 
 ///> c
 test step_north_decrements_y =
@@ -174,92 +196,86 @@ test opposite_steps_cancel =
     back.x |> _assert_eq start.x
     back.y |> _assert_eq start.y
 
+:= xy (p : position) : i32 * i32 = p.x, p.y
+
 ///> c
 test steps_match_canary_walk_probe_2026_10_12 =
     := ~start = position 1942 1346 7
-    := north = start |> step North
-    := east = north |> step East
-    := south = east |> step South
-    := west = south |> step West
-    north.x |> _assert_eq 1942i32
-    north.y |> _assert_eq 1345i32
-    east.x |> _assert_eq 1943i32
-    east.y |> _assert_eq 1345i32
-    south.x |> _assert_eq 1943i32
-    south.y |> _assert_eq 1346i32
-    west.x |> _assert_eq start.x
-    west.y |> _assert_eq start.y
-    west.z |> _assert_eq 7i32
+    := north = step North start
+    (xy north, xy (step East north)) |> _assert_eq ((1942i32, 1345i32), (1943i32, 1345i32))
+
+///> c
+test steps_close_the_canary_walk_probe_loop_2026_10_12 =
+    := ~start = position 1942 1346 7
+    := south = start |> step North |> step East |> step South
+    (xy south, same_tile start (step West south)) |> _assert_eq ((1943i32, 1346i32), !+)
 
 ///> c
 test diagonal_steps_match_canary_walk_probe_2026_10_12 =
     := ~start = position 1932 1352 7
-    := north_east = start |> step NorthEast
-    := south_east = north_east |> step SouthEast
-    := south_west = south_east |> step SouthWest
-    := north_west = south_west |> step NorthWest
-    north_east.x |> _assert_eq 1933i32
-    north_east.y |> _assert_eq 1351i32
-    south_east.x |> _assert_eq 1934i32
-    south_east.y |> _assert_eq 1352i32
-    south_west.x |> _assert_eq 1933i32
-    south_west.y |> _assert_eq 1353i32
-    north_west.x |> _assert_eq start.x
-    north_west.y |> _assert_eq start.y
+    := north_east = step NorthEast start
+    (xy north_east, xy (step SouthEast north_east)) |> _assert_eq ((1933i32, 1351i32), (1934i32, 1352i32))
+
+///> c
+test diagonal_steps_close_the_canary_walk_loop_2026_10_12 =
+    := ~start = position 1932 1352 7
+    := third = start |> step NorthEast |> step SouthEast |> step SouthWest
+    (xy third, same_tile start (step NorthWest third)) |> _assert_eq ((1933i32, 1353i32), !+)
 
 ///> c
 test stepping_onto_the_south_ramp_matches_the_live_floor_change_2026_10_15 =
     := ~ramp = position 1940 1372 7
-    := landed = climbed RampSouth ramp
-    (landed.x, landed.y, landed.z, chebyshev_distance ramp landed, same_floor ramp landed)
-    |> _assert_eq (1940i32, 1373i32, 6i32, 1, !-)
+    := up = climbed RampSouth ramp
+    (xy up, up.z, chebyshev_distance ramp up, same_floor ramp up) |> _assert_eq ((1940i32, 1373i32), 6i32, 1, !-)
+
+:= ramp_shift (ramp : up_ramp) (onto : position) : i32 * i32 * i32 =
+    := p = climbed ramp onto
+    p.x - onto.x, p.y - onto.y, p.z
 
 ///> c
-test every_up_ramp_climbs_one_floor_and_shifts_like_canary_query_destination =
+test cardinal_up_ramps_shift_like_canary_query_destination =
     := ~onto = position 100 100 7
-    := shifted r =
-        := p = climbed r onto
-        p.x - onto.x, p.y - onto.y, p.z
-    (shifted RampNorth, shifted RampEast, shifted RampWest, shifted RampSouthAlt, shifted RampEastAlt)
-    |> _assert_eq ((0i32, -1i32, 6i32), (1i32, 0i32, 6i32), (-1i32, 0i32, 6i32), (0i32, 2i32, 6i32), (2i32, 0i32, 6i32))
+    (ramp_shift RampNorth onto, ramp_shift RampEast onto, ramp_shift RampWest onto)
+    |> _assert_eq ((0i32, -1i32, 6i32), (1i32, 0i32, 6i32), (-1i32, 0i32, 6i32))
+
+///> c
+test alt_up_ramps_shift_two_tiles_like_canary_query_destination =
+    := ~onto = position 100 100 7
+    (ramp_shift RampSouthAlt onto, ramp_shift RampEastAlt onto) |> _assert_eq ((0i32, 2i32, 6i32), (2i32, 0i32, 6i32))
+
+:= walled_grid (p : position) : bool = (p.x = 5 && p.y >= 2 && p.y <= 8) || (p.x = 2 && p.y = 6)
+
+:= grid_cell (i : i32) : position = position (i % 11) (i / 11) 7
+
+:= grid_hash (hash : i32) (p : position) : i32 = (hash * 31 + p.y * 11 + p.x) % 1000003
+
+:= grid_sees (s : position) (p : position) : bool = walled_grid p = !- && sight_line_clear walled_grid s p
+
+:~ ^ grid_scan (s : position) (i : i32) (clear : i32) (hash : i32) : i32 * i32 =
+    := p = grid_cell i
+    ? i >= 121 ?> clear, hash
+    |? grid_sees s p ?> grid_scan s (i + 1) (clear + 1) (grid_hash hash p)
+    |: grid_scan s (i + 1) clear hash
 
 ///> c
 test sight_lines_match_canary_check_sight_line_on_a_walled_grid =
     := ~source_x = 0i32
-    := blocks (p : position) = (p.x = 5 && p.y >= 2 && p.y <= 8) || (p.x = 2 && p.y = 6)
-    := count_from (s : position) : i32 * i32 =
-        :~ ^ scan (i : i32) (clear : i32) (hash : i32) : i32 * i32 =
-            ? i >= 121 ?> clear, hash
-            |:
-                := p = position (i % 11) (i / 11) 7
-                ? blocks p ?> scan (i + 1) clear hash
-                |? sight_line_clear blocks s p ?> scan (i + 1) (clear + 1) ((hash * 31 + p.y * 11 + p.x) % 1000003)
-                |: scan (i + 1) clear hash
-        scan 0 0 0
-    (
-        count_from (position source_x 5 7),
-        count_from (position (source_x + 9) 0 7),
-        count_from (position (source_x + 7) 10 7)
-    )
-    |> _assert_eq ((55i32, 733935i32), (75i32, 978411i32), (73i32, 128078i32))
+    := from x y = grid_scan (position (source_x + x) y 7) 0 0 0
+    (from 0 5, from 9 0, from 7 10) |> _assert_eq ((55i32, 733935i32), (75i32, 978411i32), (73i32, 128078i32))
+
+:= grid_clear (a : i32) (b : i32) (c : i32) (d : i32) : bool =
+    sight_line_clear walled_grid (position a b 7) (position c d 7)
 
 ///> c
 test sight_lines_are_blocked_or_clear_like_canary_for_named_pairs =
     := ~x = 0i32
-    := blocks (p : position) = (p.x = 5 && p.y >= 2 && p.y <= 8) || (p.x = 2 && p.y = 6)
-    := clear a b c d = sight_line_clear blocks (position a b 7) (position c d 7)
-    (clear x 5 10 5, clear x 5 10 1, clear x 0 10 1, clear 4 4 6 9, clear 6 9 4 4)
+    (grid_clear x 5 10 5, grid_clear x 5 10 1, grid_clear x 0 10 1, grid_clear 4 4 6 9, grid_clear 6 9 4 4)
     |> _assert_eq (!-, !-, !+, !-, !-)
 
 ///> wgsl
 test sight_lines_on_gpu =
     := ~x = 0i32
-    := blocks (p : position) = (p.x = 5 && p.y >= 2 && p.y <= 8) || (p.x = 2 && p.y = 6)
-    ?
-        sight_line_clear blocks (position x 0 7) (position 10 1 7)
-        && sight_line_clear blocks (position x 5 7) (position 10 5 7) = !-
-    ?> 0i32
-    |: 1i32
+    ? grid_clear x 0 10 1 && grid_clear x 5 10 5 = !- ?> 0i32 |: 1i32
 
 ///> c
 test range_needs_same_floor =
@@ -268,21 +284,21 @@ test range_needs_same_floor =
     within_range 7 (position 0 0 7) (position 8 0 7) |> _assert_eq !-
 
 ///> wgsl
-test distance_and_steps_on_gpu =
+test steps_on_gpu =
     := ~x = 1942i32
     := moved = position x 1346 7 |> step NorthEast
-    ?
-        moved.x = 1943i32
-        && moved.y = 1345i32
-        && chebyshev_distance (position 0 0 7) (position x 2 7) = 1942i32
-        && within_range 1 (position x 0 7) (position (x + 1) 1 7)
-    ?> 0i32
-    |: 1i32
+    ? moved.x = 1943i32 && moved.y = 1345i32 ?> 0i32 |: 1i32
+
+///> wgsl
+test distance_on_gpu =
+    := ~x = 1942i32
+    := far = chebyshev_distance (position 0 0 7) (position x 2 7)
+    ? far = 1942i32 && within_range 1 (position x 0 7) (position (x + 1) 1 7) ?> 0i32 |: 1i32
 
 ///> c
 test straight_steps_take_the_longer_axis_first =
     := ~x = 100i32
-    := from = position x 100 7
-    (step_toward (position (x + 3) 101 7) from).x |> _assert_eq 101i32
-    (step_toward (position x 95 7) from).y |> _assert_eq 99i32
-    (step_away (position (x + 3) 101 7) from).x |> _assert_eq 99i32
+    := p = position x 100 7
+    := ahead = position (x + 3) 101 7
+    ((step_toward ahead p).x, (step_toward (position x 95 7) p).y, (step_away ahead p).x)
+    |> _assert_eq (101i32, 99i32, 99i32)

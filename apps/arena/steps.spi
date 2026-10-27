@@ -1,3 +1,7 @@
+///- --package .
+test steps static =
+    :< testing
+
 :< sm'_operators
 := walk_away_ms () : i32 = 1300
 := measure_ms () : i32 = 45000
@@ -6,105 +10,160 @@
     := base = (? is_knight ?> "knight-" |: "") ++# (? diagonal ?> "diagonal" |: "straight")
     ? chasing && is_knight = !- ?> base ++# (? near ?> "-adjacent" |: "-chasing") |: base
 
-:= record
-    (chasing : bool) (stamps : mut (list (i32 * i32 * string))) (intervals : mut (list (string * list i32)))
-    (c : client.creature) (new_position : client.native_position) (old_position : client.native_position)
-    : ()
-    =
-    ? client.position_known new_position && client.position_known old_position ?>
-        := is_knight = client.creature_is_local_player c
-        ? client.creature_is_monster c || is_knight ?>
-            := n, o = client.spot_of new_position, client.spot_of old_position
-            := dx = ? n.x > o.x ?> n.x - o.x |: o.x - n.x
-            := dy = ? n.y > o.y ?> n.y - o.y |: o.y - n.y
-            ? n.z = o.z && dx + dy <> 0 && dx <= 1 && dy <= 1 ?>
-                := now = client.now_ms ()
-                := id = client.creature_id c
-                := near = client.player_present () && probe.chebyshev n (client.player_spot ()) <= 1
-                := kind = step_kind chasing is_knight (dx = 1 && dy = 1) near
-                := previous_at, measured = samples.last_stamp stamps id
-                samples.stamp stamps id now kind
-                ? previous_at >= 0 ?>
-                    := interval = now - previous_at
-                    samples.labeled_sample intervals measured interval
-                    := name, from, to = client.creature_name c, probe.described o, probe.described n
-                    probe.note (
-                        name
-                        ++# " "
-                        ++#? id
-                        ++# " "
-                        ++# kind
-                        ++# " step "
-                        ++# from
-                        ++# " -> "
-                        ++# to
-                        ++# "; interval after its "
-                        ++# measured
-                        ++# " step "
-                        ++#? interval
-                        ++# " ms"
-                    )
+:== step_log = { chasing : bool; stamps : mut (list (i32 * i32 * string)); intervals : mut (list (string * list i32)) }
+
+:== step_seen = { c : client.creature; id : i32; kind : string; o : client.spot; n : client.spot }
+
+:= axis_gap (a : i32) (b : i32) : i32 = ? a > b ?> a - b |: b - a
+
+:= one_tile (n : client.spot) (o : client.spot) : bool =
+    := dx, dy = axis_gap n.x o.x, axis_gap n.y o.y
+    n.z = o.z && dx + dy <> 0 && dx <= 1 && dy <= 1
+
+:= diagonal_move (n : client.spot) (o : client.spot) : bool = axis_gap n.x o.x = 1 && axis_gap n.y o.y = 1
+
+:= near_player (n : client.spot) : bool = client.player_present () && probe.chebyshev n (client.player_spot ()) <= 1
+
+:= step_head (s : step_seen) : string =
+    := name, from, to = client.creature_name s.c, probe.described s.o, probe.described s.n
+    name ++# " " ++#? s.id ++# " " ++# s.kind ++# " step " ++# from ++# " -> " ++# to
+
+:= interval_noted (log : step_log) (s : step_seen) (measured : string) (interval : i32) : () =
+    samples.labeled_sample log.intervals measured interval
+    probe.note (step_head s ++# "; interval after its " ++# measured ++# " step " ++#? interval ++# " ms")
+
+:= step_logged (log : step_log) (s : step_seen) (now : i32) : () =
+    := previous_at, measured = samples.last_stamp log.stamps s.id
+    samples.stamp log.stamps s.id now s.kind
+    ? previous_at >= 0 ?> interval_noted log s measured (now - previous_at)
+
+:= kind_of (log : step_log) (is_knight : bool) (n : client.spot) (o : client.spot) : string =
+    step_kind log.chasing is_knight (diagonal_move n o) (near_player n)
+
+:= seen_step (log : step_log) (c : client.creature) (is_knight : bool) (n : client.spot) (o : client.spot) : step_seen =
+    := id = client.creature_id c
+    { c = c; id = id; kind = kind_of log is_knight n o; o = o; n = n }
+
+:= tile_step (log : step_log) (c : client.creature) (is_knight : bool) (n : client.spot) (o : client.spot) : () =
+    := now = client.now_ms ()
+    step_logged log (seen_step log c is_knight n o) now
+
+:= creature_moved (log : step_log) (c : client.creature) (n : client.spot) (o : client.spot) : () =
+    := is_knight = client.creature_is_local_player c
+    ? (client.creature_is_monster c || is_knight) && one_tile n o ?> tile_step log c is_knight n o
+
+:== position = client.native_position
+
+:= record (log : step_log) (c : client.creature) (to : position) (from : position) : () =
+    ? client.position_known to && client.position_known from
+    ?> creature_moved log c (client.spot_of to) (client.spot_of from)
 
 := direction_of (n : i32) : i32 = ? n > 0 ?> 1 |? n < 0 ?> -1 |: 0
 
-:= walk_away () : () =
-    :~ ^ go () : () =
-        ? client.player_present () ?>
-            := here = client.player_spot ()
-            := people = client.spectators here
-            := seen = probe.nearest_monster here people
-            ? seen.found && seen.distance <= 2 && client.player_walking () = !- ?>
-                := there = client.creature_spot (client.member people seen.index)
-                := sx, sy = direction_of (here.x - there.x), direction_of (here.y - there.y)
-                ? sx <> 0 || sy <> 0 ?> client.step sx sy |> ignore
-            client.after (walk_away_ms ()) go
-    go ()
+:= step_from (here : client.spot) (there : client.spot) : () =
+    := sx, sy = direction_of (here.x - there.x), direction_of (here.y - there.y)
+    ? sx <> 0 || sy <> 0 ?> client.step sx sy |> ignore
+
+:= away_from_seen (here : client.spot) (people : client.crowd) (seen : probe.nearest) : () =
+    ? seen.found && seen.distance <= 2 && client.player_walking () = !- ?>
+        step_from here (client.creature_spot (client.member people seen.index))
+
+:= away_once () : () =
+    := here = client.player_spot ()
+    := people = client.spectators here
+    away_from_seen here people (probe.nearest_monster here people)
+
+:~ ^ walk_away () : () =
+    ? client.player_present () ?>
+        away_once ()
+        client.after (walk_away_ms ()) walk_away
 
 := knight_walk_poll_ms () : i32 = 50
 := knight_walk_leg () : i32 = 5
 
-:= walk_back_and_forth () : () =
-    :~ ^ go (dx : i32) (left : i32) (waits : i32) : () =
-        ? client.player_present () ?>
-            ? client.player_walking () ?>
-                ? waits % 40 = 39 ?>
-                    probe.note (
-                        "knight walk still walking at " ++# probe.described (client.player_spot ()) ++# " after "
-                        ++#? (waits + 1) ++# " polls"
-                    )
-                client.after (knight_walk_poll_ms ()) (\ () => go dx left (waits + 1))
-            |? left = 0 ?> go (0 - dx) (knight_walk_leg ()) 0
-            |:
-                ? client.step dx 0 = !- ?>
-                    probe.note (
-                        "knight walk step " ++#? dx ++# " refused at " ++# probe.described (client.player_spot ())
-                    )
-                client.after (knight_walk_poll_ms ()) (\ () => go dx (left - 1) 0)
-        |: probe.note "knight walk stopped: no player in game"
-    := start_at = ? client.player_positioned () ?> probe.described (client.player_spot ()) |: "nil"
-    := walking = ? client.player_walking () ?> "yes" |: "no"
-    probe.note (
-        "knight walk starts at " ++# start_at ++# " speed " ++# client.player_speed () ++# " walking " ++# walking
-    )
-    go (0 - 1) (knight_walk_leg ()) 0
+:= poll_later (next : () -> ()) : () = client.after (knight_walk_poll_ms ()) next
 
+:= player_at () : string = probe.described (client.player_spot ())
+
+:= walking_note (waits : i32) : () =
+    ? waits % 40 = 39
+    ?> probe.note ("knight walk still walking at " ++# player_at () ++# " after " ++#? (waits + 1) ++# " polls")
+
+:= still_walking (waits : i32) (again : () -> ()) : () =
+    walking_note waits
+    poll_later again
+
+:= stepped_or_noted (dx : i32) : () =
+    ? client.step dx 0 = !- ?> probe.note ("knight walk step " ++#? dx ++# " refused at " ++# player_at ())
+
+:= leg_turn (dx : i32) (left : i32) (again : i32 -> i32 -> i32 -> ()) : () =
+    ? left = 0 ?> again (0 - dx) (knight_walk_leg ()) 0
+    |:
+        stepped_or_noted dx
+        poll_later (\ () => again dx (left - 1) 0)
+
+:= walk_stopped () : () = probe.note "knight walk stopped: no player in game"
+
+:~ ^ walk_leg (dx : i32) (left : i32) (waits : i32) : () =
+    ? client.player_present () = !- ?> walk_stopped ()
+    |? client.player_walking () ?> still_walking waits (\ () => walk_leg dx left (waits + 1))
+    |: leg_turn dx left walk_leg
+
+:= start_spot () : string = ? client.player_positioned () ?> player_at () |: "nil"
+
+:= walk_start_line () : string =
+    := start_at = start_spot ()
+    := walking = ? client.player_walking () ?> "yes" |: "no"
+    "knight walk starts at " ++# start_at ++# " speed " ++# client.player_speed () ++# " walking " ++# walking
+
+:= walk_back_and_forth () : () =
+    probe.note (walk_start_line ())
+    walk_leg (0 - 1) (knight_walk_leg ()) 0
+
+///> lua
+///> c
+test step_kind_names_knight_and_monster_steps =
+    (step_kind !- !+ !- !-, step_kind !+ !+ !+ !+, step_kind !+ !- !- !+)
+    |> _assert_eq ("knight-straight", "knight-diagonal", "straight-adjacent")
+
+///> lua
+///> c
+test step_kind_names_chasing_and_plain_monster_steps =
+    (step_kind !+ !- !+ !-, step_kind !- !- !+ !+) |> _assert_eq ("diagonal-chasing", "diagonal")
+
+///> lua
+///> c
+test direction_of_is_the_sign =
+    (direction_of 7, direction_of 0, direction_of (0 - 3)) |> _assert_eq (1i32, 0i32, -1i32)
+
+:= fresh_step_log (chasing : bool) : step_log =
+    { chasing = chasing; stamps = samples.new_stamps (); intervals = samples.new_labeled_samples () }
+
+:= steps_flags () : bool * bool = client.env_is "TIBIA_STEPS_CHASE" "1", client.env_is "TIBIA_STEPS_KNIGHT_WALK" "1"
+
+:= timed_out () : () = probe.finish "timeout"
+
+:= text_noted (mode : string) (text : string) : () = probe.note (("server text [" ++# mode ++# "]: " ++# text))
+
+:= ready_line () : string =
+    := name = client.player_name ()
+    := at = start_spot ()
+    "in game as " ++# name ++# " at " ++# at ++# " speed " ++# client.player_speed ()
+
+:= measure_end (log : step_log) : () =
+    probe.note ("end: " ++# samples.labeled_summary log.intervals)
+    probe.finish "steps measured"
+
+:= ready (log : step_log) (walking : bool) : () =
+    probe.note (ready_line ())
+    ? log.chasing ?> client.after 2000 walk_away
+    ? walking ?> client.after 2000 walk_back_and_forth
+    client.after (measure_ms ()) (\ () => measure_end log)
+
+///> _
 := main () =
-    := chasing = client.env_is "TIBIA_STEPS_CHASE" "1"
-    := walking = client.env_is "TIBIA_STEPS_KNIGHT_WALK" "1"
-    := stamps, intervals = samples.new_stamps (), samples.new_labeled_samples ()
-    client.on_position_change (record chasing stamps intervals)
-    := on_text (mode : string) (text : string) : () =
-        probe.note (("server text [" ++# mode ++# "]: " ++# text))
-    := ready () =
-        := name = client.player_name ()
-        := at = ? client.player_positioned () ?> probe.described (client.player_spot ()) |: "nil"
-        := speed = client.player_speed ()
-        probe.note (("in game as " ++# name ++# " at " ++# at ++# " speed " ++# speed))
-        ? chasing ?> client.after 2000 walk_away
-        ? walking ?> client.after 2000 walk_back_and_forth
-        client.after (measure_ms ()) (\ () =>
-            probe.note ("end: " ++# samples.labeled_summary intervals)
-            probe.finish "steps measured"
-            )
-    probe.started_as (probe.knight ()) on_text ready 90000 (\ () => probe.finish "timeout")
+    := chasing, walking = steps_flags ()
+    := log = fresh_step_log chasing
+    client.on_position_change (record log)
+    probe.started_as (probe.knight ()) text_noted (\ () => ready log walking) 90000 timed_out
     0i32

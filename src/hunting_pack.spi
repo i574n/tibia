@@ -2,20 +2,23 @@
 test hunting_pack static =
     :< testing
 
-:= tick_ms () : i32 = 100
-:= band_size () : i32 = 6
+:~ ^ tick_ms () : i32 = 100
+:~ ^ band_size () : i32 = 6
 := scenario_ticks () : i32 = 3000
 := escape_distance () : i32 = 8
 := sight_range () : i32 = 7
+
 := knight_max_health (level : i32) : i32 = 185 + 15 * (level - 8)
-:= training_first () : u32 = 1
-:= training_count () : i32 = 100
-:= held_out_first () : u32 = 1001
-:= resampled_first (block : i32) (generation : i32) : u32 = 10001u32 + conv (generation * block)
-:= held_out_count () : i32 = 100
 := creature_strike_ms () : i32 = 2000
 := chase_step_factor () : i32 = 1
 := knight_sample_step_ms () : i32 = 650
+
+:= training_first () : u32 = 1
+:= training_count () : i32 = 100
+:~ ^ held_out_first () : u32 = 1001
+:~ ^ held_out_count () : i32 = 100
+:= resampled_first (block : i32) (generation : i32) : u32 = 10001u32 + conv (generation * block)
+
 := parity_action_gap_ms () : i32 = 250
 := client_decision_ms () : i32 = 100
 := death_penalty () : i32 = 50
@@ -24,31 +27,30 @@ test hunting_pack static =
 := purpose_player_hit () : u32 = 11
 := purpose_player_heal () : u32 = 12
 := purpose_creature_hit () : u32 = 13
-:= purpose_loot () : u32 = 14
-:= purpose_random_control () : u32 = 15
+:~ ^ purpose_loot () : u32 = 14
+:~ ^ purpose_random_control () : u32 = 15
+
 := purpose_wander () : u32 = 16
-:= purpose_creature_shot () : u32 = 17
-:= purpose_dance () : u32 = 18
+:~ ^ purpose_creature_shot () : u32 = 17
+:~ ^ purpose_dance () : u32 = 18
 := purpose_poll () : u32 = 19
 
 := purpose_entry () : u32 = 20
 := client_lag_ms () : i32 = 8
 
-:= target_nearby_step_factor () : i32 = 2
+:~ ^ target_nearby_step_factor () : i32 = 2
 := canary_static_attack_chance () : i32 = 90
 
-:== foe =
+:== living = vitality.vitality vitality.alive
+
+:== hit_points = quantity.amount quantity.hitpoints
+
+:== foe_chase = { met_target : bool; nearby : i32; acquired_at : i32 }
+
+:== foe_respawn = { returns_at : i32; check_until : i32 }
+
+:== foe_aim =
     {
-        at : geometry.position
-        spawn : geometry.position
-        life : vitality.vitality vitality.alive
-        strikes_at : i32
-        next_step_at : i32
-        met_target : bool
-        returns_at : i32
-        check_until : i32
-        nearby : i32
-        acquired_at : i32
         aims_at : i32
         entrant : i32
         in_view : i32
@@ -59,32 +61,50 @@ test hunting_pack static =
         last_y : i32
     }
 
-:== hunter =
+:== foe =
     {
         at : geometry.position
-        health : quantity.amount quantity.hitpoints
+        spawn : geometry.position
+        life : living
+        strikes_at : i32
         next_step_at : i32
+        chase : foe_chase
+        respawn : foe_respawn
+        aim : foe_aim
+    }
+
+:== hunter_clock =
+    {
         timers : cooldowns.timers
-        target : i32
-        potions : i32
         block_charges : i32
         next_charge_at : i32
         next_action_at : quantity.amount quantity.milliseconds
         next_decision_at : i32
+    }
+
+:== hunter_tally =
+    {
+        potions : i32
         hits_taken : i32
-        damage_taken : quantity.amount quantity.hitpoints
-        waypoint : i32
+        damage_taken : hit_points
         retreats : i32
         cornered : i32
+    }
+
+:== hunter =
+    {
+        at : geometry.position
+        health : hit_points
+        next_step_at : i32
+        target : i32
+        clock : hunter_clock
+        tally : hunter_tally
+        waypoint : i32
         call_sign : i32
     }
 
-:== pack =
+:== pack_score =
     {
-        hunter : hunter
-        ally : hunter
-        ally_in_world : bool
-        foes : views.band foe
         kills : i32
         experience : i32
         escapes : i32
@@ -92,15 +112,25 @@ test hunting_pack static =
         gold : quantity.amount quantity.gold_coins
     }
 
-:= with_hunter (h : hunter) (p : pack) : pack = { p ?| hunter = h }
+:== pack = { hunter : hunter; ally : hunter; ally_in_world : bool; foes : views.band foe; score : pack_score }
+
+:~ ^ with_hunter (h : hunter) (p : pack) : pack = { p ?| hunter = h }
 
 := with_ally (h : hunter) (p : pack) : pack = { p ?| ally = h }
 
+:= with_clock (c : hunter_clock) (h : hunter) : hunter = { h ?| clock = c }
+
+:= with_timers (held : cooldowns.timers) (h : hunter) : hunter = h |> with_clock { (h.clock) ?| timers = held }
+
+:= with_tally (t : hunter_tally) (h : hunter) : hunter = { h ?| tally = t }
+
+:= with_score (s : pack_score) (p : pack) : pack = { p ?| score = s }
+
 := now_in_world (p : pack) : pack = { p ?| ally_in_world = !+ }
 
-:= turned (p : pack) : pack = { p ?| hunter = p.ally; ally = p.hunter }
+:~ ^ turned (p : pack) : pack = { p ?| hunter = p.ally; ally = p.hunter }
 
-:= party_potions (p : pack) : i32 = p.hunter.potions + p.ally.potions
+:~ ^ party_potions (p : pack) : i32 = p.hunter.tally.potions + p.ally.tally.potions
 
 :| brain =
     | Rules : policy.adaptive
@@ -125,51 +155,30 @@ test hunting_pack static =
 
 :== offense = { level : i32; weapon_attack : i32; weapon_skill : i32; step_ms : i32; heal_low : i32; heal_high : i32 }
 
-:= offense_against (kind : creatures.arena_creature) : offense =
+:~ ^ offense_of (level : i32) (attack : i32) (skill : i32) (low : i32) (high : i32) =
+    {
+        level = level
+        weapon_attack = attack
+        weapon_skill = skill
+        step_ms = knight_sample_step_ms ()
+        heal_low = low
+        heal_high = high
+    }
+
+:~ ^ offense_against (kind : creatures.arena_creature) : offense =
     :< creatures
     ?= kind ?|
-    | Cyclops =>
-        {
-            level = 30
-            weapon_attack = 21
-            weapon_skill = 60
-            step_ms = knight_sample_step_ms ()
-            heal_low = 125
-            heal_high = 175
-        }
-    | Hunter =>
-        {
-            level = 30
-            weapon_attack = 21
-            weapon_skill = 60
-            step_ms = knight_sample_step_ms ()
-            heal_low = 125
-            heal_high = 175
-        }
-    | _ =>
-        {
-            level = 8
-            weapon_attack = 20
-            weapon_skill = 30
-            step_ms = knight_sample_step_ms ()
-            heal_low = 30
-            heal_high = 60
-        }
+    | Cyclops | Hunter => offense_of 30 21 60 125 175
+    | _ => offense_of 8 20 30 30 60
 
-:= never () : i32 = 2147483647
+:~ ^ never () : i32 = 2147483647
 
-:= fresh_foe (kind : creatures.arena_creature) (spawn : geometry.position) : foe =
+:= fresh_chase () : foe_chase = { met_target = !-; nearby = 0; acquired_at = never () }
+
+:= fresh_respawn () : foe_respawn = { returns_at = never (); check_until = 0 }
+
+:= fresh_aim () : foe_aim =
     {
-        at = spawn
-        spawn = spawn
-        life = vitality.spawn (creatures.stats_of kind).max_health
-        strikes_at = 0
-        next_step_at = 0
-        met_target = !-
-        returns_at = never ()
-        check_until = 0
-        nearby = 0
-        acquired_at = never ()
         aims_at = -1
         entrant = 0
         in_view = 0
@@ -180,7 +189,22 @@ test hunting_pack static =
         last_y = -1
     }
 
-:= buried_foe (kind : creatures.arena_creature) : foe =
+:= foe_at (at : geometry.position) (life : living) : foe =
+    {
+        at = at
+        spawn = at
+        life = life
+        strikes_at = 0
+        next_step_at = 0
+        chase = fresh_chase ()
+        respawn = fresh_respawn ()
+        aim = fresh_aim ()
+    }
+
+:~ ^ fresh_foe (kind : creatures.arena_creature) (spawn : geometry.position) : foe =
+    foe_at spawn (vitality.spawn (creatures.stats_of kind).max_health)
+
+:~ ^ buried_foe (kind : creatures.arena_creature) : foe =
     := grave = fresh_foe kind (geometry.position 0 0 15)
     { grave ?| strikes_at = never (); next_step_at = never () }
 
@@ -252,18 +276,8 @@ test hunting_pack static =
     | EntersWithTheKnight
     | EntersAfterMeasuredDelay
 
-:== camp =
+:== camp_timing =
     {
-        kinds : views.band creatures.arena_creature
-        size : i32
-        hunter_level : i32
-        rule : respawn_rule
-        layout : terrain.layout
-        potion_budget : i32
-        party : i32
-        ally_enters : ally_entry
-        party_targeting : bool
-        wakes_at : i32
         swing : swing_after_step
         melee : melee_timing
         idle : idle_behavior
@@ -271,46 +285,53 @@ test hunting_pack static =
         pace : knight_pace
         dance : dance_rule
         view : knight_view
+    }
+
+:== camp_motion =
+    {
         ground : ground_timing
         acquisition : acquisition_rule
         approach : approach_rule
         sight : sight_rule
-        retreat_pace : retreat_pace
-        chase_pace : chase_pace
-        placement : knight_placement
-        ranged : bool
     }
 
-:= unlimited_potions () : i32 = 1000000
+:== camp_knight = { retreat_pace : retreat_pace; chase_pace : chase_pace; placement : knight_placement }
 
-:= hardest_kind (kinds : views.band creatures.arena_creature) (size : i32) : creatures.arena_creature =
-    := harder (a : creatures.arena_creature) (b : creatures.arena_creature) =
-        ? (offense_against b).level > (offense_against a).level
-        ?> b
-        |: a
-    :~ ^ pick (i : i32) (best : creatures.arena_creature) : creatures.arena_creature =
-        ? i >= size
-        ?> best
-        |: pick (i + 1) (harder best (views.band_at i kinds))
-    pick 1 (views.band_at 0 kinds)
+:== foe_kind = creatures.arena_creature
 
-:= default_hunter_level (kinds : views.band creatures.arena_creature) (size : i32) : i32 =
-    (offense_against (hardest_kind kinds size)).level
+:== camp_foes = { kinds : views.band foe_kind; size : i32; ranged : bool; rule : respawn_rule; wakes_at : i32 }
 
-:= uniform_camp (kind : creatures.arena_creature) : camp =
+:== camp_crew =
     {
-        kinds = views.band_of kind
-        size = 3
-        hunter_level = default_hunter_level (views.band_of kind) 3
-        rule = Respawning
-        layout =
-            :< terrain
-            OpenField
-        potion_budget = unlimited_potions ()
-        party = 1
-        ally_enters = EntersWithTheKnight
-        party_targeting = !-
-        wakes_at = 0
+        party : i32
+        ally_enters : ally_entry
+        party_targeting : bool
+        potion_budget : i32
+        hunter_level : i32
+    }
+
+:== camp =
+    {
+        foes : camp_foes
+        crew : camp_crew
+        layout : terrain.layout
+        timing : camp_timing
+        motion : camp_motion
+        knight : camp_knight
+    }
+
+:~ ^ unlimited_potions () : i32 = 1000000
+
+:= harder (a : foe_kind) (b : foe_kind) : foe_kind = ? (offense_against b).level > (offense_against a).level ?> b |: a
+
+:~ ^ hardest_from (kinds : views.band foe_kind) (size : i32) (i : i32) (best : foe_kind) : foe_kind =
+    ? i >= size ?> best |: hardest_from kinds size (i + 1) (harder best (views.band_at i kinds))
+
+:~ ^ hardest_kind (kinds : views.band foe_kind) (size : i32) : foe_kind =
+    hardest_from kinds size 1 (views.band_at 0 kinds)
+
+:= sample_timing () : camp_timing =
+    {
         swing = SwingKeepsItsTime
         melee = MeleeWhenReady
         idle = StandsStill
@@ -318,48 +339,98 @@ test hunting_pack static =
         pace = SamplePace
         dance = NeverDances
         view = SeesThisTick
+    }
+
+:= sample_motion () : camp_motion =
+    {
         ground = ScaledFromGrass
         acquisition = ChasesAtOnce
         approach = ApproachesAtOnce
         sight = SightStopsAtUnpassableTiles
+    }
+
+:= sample_knight () : camp_knight =
+    {
         retreat_pace = RetreatsAtTheServerPace
         chase_pace = ChasesAtTheServerPace
         placement = AtLayoutStart
-        ranged = creatures.is_ranged kind
     }
 
-:= with_hunter_level (level : i32) (c : camp) : camp = { c ?| hunter_level = level }
+:~ ^ default_hunter_level (kinds : views.band foe_kind) (size : i32) : i32 =
+    (offense_against (hardest_kind kinds size)).level
 
-:= with_potion_budget (count : i32) (c : camp) : camp = { c ?| potion_budget = count }
+:= foes_of (kinds : views.band foe_kind) (size : i32) (rule : respawn_rule) : camp_foes =
+    { kinds = kinds; size = size; ranged = views.counted creatures.is_ranged kinds > 0; rule = rule; wakes_at = 0 }
 
-:= with_party (knights : i32) (c : camp) : camp = { c ?| party = knights }
+:= crew_of (foes : camp_foes) : camp_crew =
+    {
+        party = 1
+        ally_enters = EntersWithTheKnight
+        party_targeting = !-
+        potion_budget = unlimited_potions ()
+        hunter_level = default_hunter_level foes.kinds foes.size
+    }
 
-:= with_delayed_ally_entry (c : camp) : camp = { c ?| ally_enters = EntersAfterMeasuredDelay }
+:= sample_camp (foes : camp_foes) (layout : terrain.layout) : camp =
+    {
+        foes = foes
+        crew = crew_of foes
+        layout = layout
+        timing = sample_timing ()
+        motion = sample_motion ()
+        knight = sample_knight ()
+    }
 
-:= ally_enters_with_the_knight (c : camp) : bool =
-    ?= c.ally_enters ?|
+:= uniform_camp (kind : creatures.arena_creature) : camp =
+    sample_camp (foes_of (views.band_of kind) 3 Respawning) (:< terrain ;; OpenField)
+
+:= with_crew (crew : camp_crew) (c : camp) : camp = { c ?| crew = crew }
+
+:= with_foes (foes : camp_foes) (c : camp) : camp = { c ?| foes = foes }
+
+:= sized (size : i32) (c : camp) : camp = c |> with_foes { (c.foes) ?| size = size }
+
+:= with_hunter_level (level : i32) (c : camp) : camp = c |> with_crew { (c.crew) ?| hunter_level = level }
+
+:= with_potion_budget (count : i32) (c : camp) : camp = c |> with_crew { (c.crew) ?| potion_budget = count }
+
+:= with_party (knights : i32) (c : camp) : camp = c |> with_crew { (c.crew) ?| party = knights }
+
+:= with_delayed_ally_entry (c : camp) : camp = c |> with_crew { (c.crew) ?| ally_enters = EntersAfterMeasuredDelay }
+
+:~ ^ ally_enters_with_the_knight (c : camp) : bool =
+    ?= c.crew.ally_enters ?|
     | EntersWithTheKnight => !+
     | EntersAfterMeasuredDelay => !-
 
-:= ally_starts_in_world (c : camp) : bool = c.party > 1 && ally_enters_with_the_knight c
+:~ ^ ally_starts_in_world (c : camp) : bool = c.crew.party > 1 && ally_enters_with_the_knight c
 
-:= targeting_like_canary (c : camp) : camp = { c ?| party_targeting = !+ }
+:= targeting_like_canary (c : camp) : camp = c |> with_crew { (c.crew) ?| party_targeting = !+ }
 
-:= waking_at (ms : i32) (c : camp) : camp = { c ?| wakes_at = ms }
+:= duo_default (c : camp) : camp = c |> with_party 2 |> targeting_like_canary |> with_delayed_ally_entry
+
+///> c
+test the_duo_default_is_candidate_2_with_measured_entry =
+    := ~c = duo_default (uniform_camp (:< creatures ;; Troll))
+    (c.crew.party, c.crew.party_targeting, ally_enters_with_the_knight c) |> _assert_eq (2, !+, !-)
+
+:~ ^ waking_at (ms : i32) (c : camp) : camp = c |> with_foes { (c.foes) ?| wakes_at = ms }
 
 := live_wake_ms () : i32 = 10000
 
-:= swinging_like_canary (c : camp) : camp = { c ?| swing = SwingWaitsForThinkOrMove }
+:= swinging_like_canary (c : camp) : camp = { c ?| timing = { (c.timing) ?| swing = SwingWaitsForThinkOrMove } }
 
-:= wandering_while_idle (c : camp) : camp = { c ?| idle = WandersLikeCanary }
+:= wandering_while_idle (c : camp) : camp = { c ?| timing = { (c.timing) ?| idle = WandersLikeCanary } }
 
-:= knight_standing_at (at : geometry.position) (c : camp) : camp = { c ?| placement = StandsAt at }
+:= knight_standing_at (at : geometry.position) (c : camp) : camp =
+    { c ?| knight = { (c.knight) ?| placement = StandsAt at } }
 
-:= live_creature_strike_ms () : i32 = 2166
+:~ ^ live_creature_strike_ms () : i32 = 2166
 
-:= meleeing_every (ms : i32) (c : camp) : camp = { c ?| melee = MeleeWhenReadyEvery ms }
+:= meleeing_every (ms : i32) (c : camp) : camp = { c ?| timing = { (c.timing) ?| melee = MeleeWhenReadyEvery ms } }
 
-:= meleeing_every_once_targeted (ms : i32) (c : camp) : camp = { c ?| melee = MeleeEveryOnceTargeted ms }
+:= meleeing_every_once_targeted (ms : i32) (c : camp) : camp =
+    { c ?| timing = { (c.timing) ?| melee = MeleeEveryOnceTargeted ms } }
 
 := mirroring_the_live_arena (c : camp) : camp =
     c
@@ -368,38 +439,43 @@ test hunting_pack static =
     |> meleeing_every_once_targeted (live_creature_strike_ms ())
     |> swinging_like_canary
 
-:= following_on_think (c : camp) : camp = { c ?| follow = FollowsOnThink }
+:= following_on_think (c : camp) : camp = { c ?| timing = { (c.timing) ?| follow = FollowsOnThink } }
 
-:= meleeing_on_canary_rounds (ms : i32) (c : camp) : camp = { c ?| melee = MeleeOnCanaryRounds ms }
+:= meleeing_on_canary_rounds (ms : i32) (c : camp) : camp =
+    { c ?| timing = { (c.timing) ?| melee = MeleeOnCanaryRounds ms } }
 
-:= paced_like_canary (c : camp) : camp = { c ?| pace = PacedLikeCanary }
+:= paced_like_canary (c : camp) : camp = { c ?| timing = { (c.timing) ?| pace = PacedLikeCanary } }
 
-:= dancing_like_canary (c : camp) : camp = { c ?| dance = DancesLikeCanary }
+:= dancing_like_canary (c : camp) : camp = { c ?| timing = { (c.timing) ?| dance = DancesLikeCanary } }
 
-:= seeing_a_tick_late (c : camp) : camp = { c ?| view = SeesLastTick }
+:= seeing_a_tick_late (c : camp) : camp = { c ?| timing = { (c.timing) ?| view = SeesLastTick } }
 
-:= seeing_at_its_poll (c : camp) : camp = { c ?| view = SeesAtItsPoll }
+:= seeing_at_its_poll (c : camp) : camp = { c ?| timing = { (c.timing) ?| view = SeesAtItsPoll } }
 
-:= stepping_by_canary_formula (c : camp) : camp = { c ?| ground = SteppedByCanaryFormula }
+:= stepping_by_canary_formula (c : camp) : camp = { c ?| motion = { (c.motion) ?| ground = SteppedByCanaryFormula } }
 
-:= acquiring_like_canary (c : camp) : camp = { c ?| acquisition = ChasesAThinkAfterAcquiring }
+:= acquiring_like_canary (c : camp) : camp =
+    { c ?| motion = { (c.motion) ?| acquisition = ChasesAThinkAfterAcquiring } }
 
-:= following_like_canary (c : camp) : camp = { c ?| approach = ApproachesAfterAFreshWalkDelay }
+:= following_like_canary (c : camp) : camp =
+    { c ?| motion = { (c.motion) ?| approach = ApproachesAfterAFreshWalkDelay } }
 
-:= sighting_like_canary (c : camp) : camp = { c ?| sight = SightStopsAtProjectileBlockers }
+:= sighting_like_canary (c : camp) : camp = { c ?| motion = { (c.motion) ?| sight = SightStopsAtProjectileBlockers } }
 
-:= live_probe_step_ms () : i32 = 650
-:= live_chase_step_ms () : i32 = 558
-:= chasing_at_the_live_probe_pace (c : camp) : camp = { c ?| chase_pace = ChasesAtTheProbePace }
+:~ ^ live_probe_step_ms () : i32 = 650
+:~ ^ live_chase_step_ms () : i32 = 558
+:= chasing_at_the_live_probe_pace (c : camp) : camp =
+    { c ?| knight = { (c.knight) ?| chase_pace = ChasesAtTheProbePace } }
 
-:= pacing_retreats_like_the_live_probe (c : camp) : camp = { c ?| retreat_pace = RetreatsAtTheProbePace }
+:= pacing_retreats_like_the_live_probe (c : camp) : camp =
+    { c ?| knight = { (c.knight) ?| retreat_pace = RetreatsAtTheProbePace } }
 
 := blocks_sight (camp : camp) (p : geometry.position) : bool =
-    ?= camp.sight ?|
+    ?= camp.motion.sight ?|
     | SightStopsAtUnpassableTiles => terrain.walls camp.layout p
     | SightStopsAtProjectileBlockers => terrain.sight_blocks camp.layout p
 
-:= mirroring_the_current_arena (c : camp) : camp =
+:= canary_timing (c : camp) : camp =
     c
     |> mirroring_the_live_arena
     |> waking_at 0
@@ -407,6 +483,9 @@ test hunting_pack static =
     |> meleeing_on_canary_rounds (live_creature_strike_ms ())
     |> paced_like_canary
     |> dancing_like_canary
+
+:= mirroring_the_current_arena (c : camp) : camp =
+    canary_timing c
     |> seeing_at_its_poll
     |> stepping_by_canary_formula
     |> acquiring_like_canary
@@ -414,9 +493,9 @@ test hunting_pack static =
     |> sighting_like_canary
     |> pacing_retreats_like_the_live_probe
 
-:= canary_spawn_check_ms () : i32 = 30000
+:~ ^ canary_spawn_check_ms () : i32 = 30000
 
-:= canary_unblockable_spawn_delay_ms () : i32 = 3 * 1400
+:~ ^ canary_unblockable_spawn_delay_ms () : i32 = 3 * 1400
 
 :~ ^ greatest_common_divisor (a : i32) (b : i32) : i32 = ? b = 0 ?> a |: greatest_common_divisor b (a % b)
 
@@ -425,242 +504,257 @@ test hunting_pack static =
     (1 + (spawntime_ms + check - 1) / check) * check + canary_unblockable_spawn_delay_ms ()
 
 := respawning_like_canary (spawntime_ms : i32) (c : camp) : camp =
-    { c ?| rule = RespawningAfter (canary_respawn_ms spawntime_ms) }
+    c |> with_foes { (c.foes) ?| rule = RespawningAfter (canary_respawn_ms spawntime_ms) }
 
-:= player_think_ms () : i32 = 1000
+:~ ^ player_think_ms () : i32 = 1000
 
-:= live_think_period_ms () : i32 = live_creature_strike_ms () / 2
+:~ ^ live_think_period_ms () : i32 = live_creature_strike_ms () / 2
 
 := next_think_at (ms : i32) : i32 =
     (ms + live_think_period_ms () - 1) / live_think_period_ms () * live_think_period_ms ()
 
-:= swing_is_waiting (held : cooldowns.timers) : bool = held.strike_ready_at > held.attack_ready_at
+:~ ^ swing_is_waiting (held : cooldowns.timers) : bool = held.strike_ready_at > held.attack_ready_at
 
-:= swing_resumes_at (now : i32) (held : cooldowns.timers) : cooldowns.timers =
+:~ ^ swing_resumes_at (now : i32) (held : cooldowns.timers) : cooldowns.timers =
     ? swing_is_waiting held && now >= held.attack_ready_at ?> { held ?| strike_ready_at = now } |: held
 
-:= swing_after_step (camp : camp) (now : i32) (held : cooldowns.timers) : cooldowns.timers =
-    ?= camp.swing ?|
+:= deferred_swing (held : cooldowns.timers) (due : i32) : cooldowns.timers =
+    { held ?| attack_ready_at = due; strike_ready_at = next_think_at due }
+
+:= swing_waits (now : i32) (held : cooldowns.timers) : cooldowns.timers =
+    := due = cooldowns.ready_at (cooldowns.strike_spell ()) held
+    ? swing_is_waiting held ?> swing_resumes_at now held |? due <= now ?> held |: deferred_swing held due
+
+:~ ^ swing_after_step (camp : camp) (now : i32) (held : cooldowns.timers) : cooldowns.timers =
+    ?= camp.timing.swing ?|
     | SwingKeepsItsTime => held
-    | SwingWaitsForThinkOrMove =>
-        := due = cooldowns.ready_at (cooldowns.strike_spell ()) held
-        ? swing_is_waiting held ?> swing_resumes_at now held
-        |? due <= now ?> held
-        |: { held ?| attack_ready_at = due; strike_ready_at = next_think_at due }
+    | SwingWaitsForThinkOrMove => swing_waits now held
 
 := swing_after_target_moves (camp : camp) (now : i32) (held : cooldowns.timers) : cooldowns.timers =
-    ?= camp.swing ?|
+    ?= camp.timing.swing ?|
     | SwingKeepsItsTime => held
     | SwingWaitsForThinkOrMove => swing_resumes_at now held
 
-:= clearing (c : camp) : camp = { c ?| rule = Clearing }
+:= clearing (c : camp) : camp = c |> with_foes { (c.foes) ?| rule = Clearing }
 
 := on_layout (l : terrain.layout) (c : camp) : camp = { c ?| layout = l }
 
 := spawns_of (c : camp) : geometry.position * geometry.position * geometry.position =
-    ?= c.rule, c.layout ?|
+    ?= c.foes.rule, c.layout ?|
     | Clearing, OpenField => geometry.position 100 102 7, geometry.position 99 103 7, geometry.position 99 104 7
     | _ => terrain.spawn_points c.layout
 
-:= camp_of_entries (entries : catalog.entry * catalog.entry * catalog.entry) : camp =
+:= kinds_of_entries (entries : catalog.entry * catalog.entry * catalog.entry) : views.band foe_kind =
     := a, b, c = entries
-    := first, second, third = catalog.entry_creature a, catalog.entry_creature b, catalog.entry_creature c
-    {
-        kinds = views.band (first, second, third, first, first, first)
-        size = 3
-        hunter_level = default_hunter_level (views.band (first, second, third, first, first, first)) 3
-        rule = Respawning
-        layout =
-            :< terrain
-            OpenField
-        potion_budget = unlimited_potions ()
-        party = 1
-        ally_enters = EntersWithTheKnight
-        party_targeting = !-
-        wakes_at = 0
-        swing = SwingKeepsItsTime
-        melee = MeleeWhenReady
-        idle = StandsStill
-        follow = FollowsAtOnce
-        pace = SamplePace
-        dance = NeverDances
-        view = SeesThisTick
-        ground = ScaledFromGrass
-        acquisition = ChasesAtOnce
-        approach = ApproachesAtOnce
-        sight = SightStopsAtUnpassableTiles
-        retreat_pace = RetreatsAtTheServerPace
-        chase_pace = ChasesAtTheServerPace
-        placement = AtLayoutStart
-        ranged = creatures.is_ranged first || creatures.is_ranged second || creatures.is_ranged third
-    }
+    := first = catalog.entry_creature a
+    views.band (first, catalog.entry_creature b, catalog.entry_creature c, first, first, first)
 
-:= hunter_of (c : camp) : offense =
-    := base = offense_against (hardest_kind c.kinds c.size)
-    := step_ms =
-        ?= c.pace ?|
-        | SamplePace => base.step_ms
-        | PacedLikeCanary => creatures.player_step_ms c.hunter_level
-    { base ?| level = c.hunter_level; step_ms = step_ms }
+:= camp_of_entries (entries : catalog.entry * catalog.entry * catalog.entry) : camp =
+    sample_camp (foes_of (kinds_of_entries entries) 3 Respawning) (:< terrain ;; OpenField)
 
-:= step_ms_at (camp : camp) (at : geometry.position) (speed : i32) (grass_step_ms : i32) : i32 =
-    ?= camp.ground ?|
+:= hunter_step_pace (c : camp) (base : offense) : i32 =
+    ?= c.timing.pace ?|
+    | SamplePace => base.step_ms
+    | PacedLikeCanary => creatures.player_step_ms c.crew.hunter_level
+
+:~ ^ hunter_of (c : camp) : offense =
+    := base = offense_against (hardest_kind c.foes.kinds c.foes.size)
+    { base ?| level = c.crew.hunter_level; step_ms = hunter_step_pace c base }
+
+:= canary_step_ms (camp : camp) (at : geometry.position) (speed : i32) : i32 =
+    creatures.step_ms_from_canary_formula speed (terrain.ground_speed_at camp.layout at)
+
+:~ ^ step_ms_at (camp : camp) (at : geometry.position) (speed : i32) (grass_step_ms : i32) : i32 =
+    ?= camp.motion.ground ?|
     | ScaledFromGrass => terrain.on_ground_at camp.layout at grass_step_ms
-    | SteppedByCanaryFormula => creatures.step_ms_from_canary_formula speed (terrain.ground_speed_at camp.layout at)
+    | SteppedByCanaryFormula => canary_step_ms camp at speed
 
-:= hunter_step_ms_at (camp : camp) (at : geometry.position) : i32 =
-    step_ms_at camp at (creatures.knight_speed camp.hunter_level) (hunter_of camp).step_ms
+:~ ^ hunter_step_ms_at (camp : camp) (at : geometry.position) : i32 =
+    step_ms_at camp at (creatures.knight_speed camp.crew.hunter_level) (hunter_of camp).step_ms
+
+:= no_faster_than_probe (server : i32) : i32 = ? server > live_probe_step_ms () ?> server |: live_probe_step_ms ()
 
 := retreat_step_ms_at (camp : camp) (at : geometry.position) : i32 =
     := server = hunter_step_ms_at camp at
-    ?= camp.retreat_pace ?|
+    ?= camp.knight.retreat_pace ?|
     | RetreatsAtTheServerPace => server
-    | RetreatsAtTheProbePace => ? server > live_probe_step_ms () ?> server |: live_probe_step_ms ()
+    | RetreatsAtTheProbePace => no_faster_than_probe server
 
-:= player_max_health (c : camp) : quantity.amount quantity.hitpoints =
+:~ ^ player_max_health (c : camp) : quantity.amount quantity.hitpoints =
     quantity.hp (knight_max_health (hunter_of c).level)
 
-:= kind_of (index : i32) (c : camp) : creatures.arena_creature =
-    views.band_at index c.kinds
+:~ ^ kind_of (index : i32) (c : camp) : creatures.arena_creature =
+    views.band_at index c.foes.kinds
 
-:= knight_start (camp : camp) (sign : i32) : geometry.position =
-    := first = ?= camp.placement ?| AtLayoutStart => terrain.player_start camp.layout | StandsAt at => at
+:~ ^ knight_start (camp : camp) (sign : i32) : geometry.position =
+    := first = ?= camp.knight.placement ?| AtLayoutStart => terrain.player_start camp.layout | StandsAt at => at
     ? sign = 0 ?> first |: geometry.position (first.x + 1) first.y first.z
 
-:~ start (camp : camp) : pack =
+:= idle_clock () : hunter_clock =
+    {
+        timers = cooldowns.idle_timers ()
+        block_charges = combat.max_block_charges ()
+        next_charge_at = combat.block_charge_ms ()
+        next_action_at = quantity.ms 0
+        next_decision_at = 0
+    }
+
+:= zero_tally () : hunter_tally =
+    { potions = 0; hits_taken = 0; damage_taken = quantity.hp 0; retreats = 0; cornered = 0 }
+
+:= idle_knight (sign : i32) : hunter =
+    {
+        at = terrain.grave ()
+        health = quantity.hp 0
+        next_step_at = 0
+        target = -1
+        clock = idle_clock ()
+        tally = zero_tally ()
+        waypoint = 0
+        call_sign = sign
+    }
+
+:= knight_of (camp : camp) (sign : i32) : hunter =
+    { (idle_knight sign) ?| at = knight_start camp sign; health = player_max_health camp }
+
+:= zero_score () : pack_score = { kills = 0; experience = 0; escapes = 0; deaths = 0; gold = quantity.gp 0 }
+
+:= placed_foe (camp : camp) (i : i32) (at : geometry.position) : foe =
+    ? i < camp.foes.size ?> fresh_foe (kind_of i camp) at |: buried_foe (kind_of i camp)
+
+:= placed_foes (camp : camp) : views.band foe =
     := a, b, c = spawns_of camp
     := d, e, g = terrain.more_spawn_points camp.layout
-    := placed (i : i32) (at : geometry.position) : foe =
-        ? i < camp.size
-        ?> fresh_foe (kind_of i camp) at
-        |: buried_foe (kind_of i camp)
-    := knight (sign : i32) : hunter =
-        {
-            at = knight_start camp sign
-            health = player_max_health camp
-            next_step_at = 0
-            timers = cooldowns.idle_timers ()
-            target = -1
-            potions = 0
-            block_charges = combat.max_block_charges ()
-            next_charge_at = combat.block_charge_ms ()
-            next_action_at = quantity.ms 0
-            next_decision_at = 0
-            hits_taken = 0
-            damage_taken = quantity.hp 0
-            waypoint = 0
-            retreats = 0
-            cornered = 0
-            call_sign = sign
-        }
-    := second = knight 1
+    := placed = placed_foe camp
+    views.band (placed 0 a, placed 1 b, placed 2 c, placed 3 d, placed 4 e, placed 5 g)
+
+:= ally_at_start (camp : camp) : hunter =
+    := ally = knight_of camp 1
+    ? ally_starts_in_world camp ?> ally |: { ally ?| at = terrain.grave () }
+
+:~ start (camp : camp) : pack =
     {
-        hunter = knight 0
-        ally = ? ally_starts_in_world camp ?> second |: { second ?| at = terrain.grave () }
+        hunter = knight_of camp 0
+        ally = ally_at_start camp
         ally_in_world = ally_starts_in_world camp
-        foes = views.band (placed 0 a, placed 1 b, placed 2 c, placed 3 d, placed 4 e, placed 5 g)
-        kills = 0
-        experience = 0
-        escapes = 0
-        deaths = 0
-        gold = quantity.gp 0
+        foes = placed_foes camp
+        score = zero_score ()
     }
 
-:= slot (index : i32) (p : pack) : foe =
+:~ ^ slot (index : i32) (p : pack) : foe =
     views.band_at index p.foes
 
-:= with_slot (index : i32) (f : foe) (p : pack) : pack =
+:~ ^ with_slot (index : i32) (f : foe) (p : pack) : pack =
     { p ?| foes = views.band_with index f p.foes }
 
-:= taken_by_others (index : i32) (p : pack) (q : geometry.position) : bool =
-    :~ ^ other (i : i32) : bool =
-        ? i >= band_size ()
-        ?> !-
-        |? i <> index && geometry.same_tile q (slot i p).at
-        ?> !+
-        |: other (i + 1)
-    geometry.same_tile q p.hunter.at || geometry.same_tile q p.ally.at || other 0
+:~ ^ other_on (index : i32) (p : pack) (q : geometry.position) (i : i32) : bool =
+    ? i >= band_size () ?> !- |? i <> index && geometry.same_tile q (slot i p).at ?> !+ |: other_on index p q (i + 1)
 
-:= taken_by_foes (p : pack) (q : geometry.position) : bool =
+:~ ^ taken_by_others (index : i32) (p : pack) (q : geometry.position) : bool =
+    geometry.same_tile q p.hunter.at || geometry.same_tile q p.ally.at || other_on index p q 0
+
+:~ ^ taken_by_foes (p : pack) (q : geometry.position) : bool =
     views.counted (\ (f : foe) => geometry.same_tile q f.at) p.foes > 0 || geometry.same_tile q p.ally.at
 
-:= key (seed : u32) (tick : i32) (entity : i32) (purpose : u32) : rng.roll_key =
+:~ ^ key (seed : u32) (tick : i32) (entity : i32) (purpose : u32) : rng.roll_key =
     rng.roll_key seed (conv tick) (conv entity) purpose
 
-:= distance_to (f : foe) (p : pack) : i32 = geometry.chebyshev_distance p.hunter.at f.at
+:~ ^ distance_to (f : foe) (p : pack) : i32 = geometry.chebyshev_distance p.hunter.at f.at
 
-:= creature_hits_hunter (camp : camp) (seed : u32) (tick : i32) (index : i32) (struck : foe) (p : pack) : pack =
-    := stats = creatures.stats_of (kind_of index camp)
-    := h = p.hunter
-    := shielded = h.block_charges > 0
-    := hurt =
-        combat.creature_hit stats.melee_max
-            (combat.knight_sample_gear ())
-            shielded
-            (key seed tick index (purpose_creature_hit ()))
-    with_slot index struck (
-        p
-        |> with_hunter { h ?|
-            health = quantity.minus h.health (quantity.hp hurt)
-            block_charges =
-                ? shielded
-                ?> h.block_charges - 1
-                |: h.block_charges
-            hits_taken =
-                ? hurt > 0
-                ?> h.hits_taken + 1
-                |: h.hits_taken
-            damage_taken = quantity.plus h.damage_taken (quantity.hp hurt)
-        }
-    )
+:== turn = { camp : camp; seed : u32; tick : i32; now : i32; index : i32 }
+
+:~ ^ turn_at (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) : turn =
+    { camp = camp; seed = seed; tick = tick; now = now; index = index }
+
+:== beat = { camp : camp; seed : u32; tick : i32; now : i32 }
+
+:~ ^ beat_at (camp : camp) (seed : u32) (tick : i32) (now : i32) : beat =
+    { camp = camp; seed = seed; tick = tick; now = now }
+
+:~ ^ turn_kind (t : turn) : creatures.arena_creature = kind_of t.index t.camp
+
+:~ ^ turn_stats (t : turn) = creatures.stats_of (turn_kind t)
+
+:~ ^ foe_step_ms (t : turn) (f : foe) : i32 =
+    := stats = turn_stats t
+    step_ms_at t.camp f.at stats.speed stats.step_ms
+
+:~ ^ free_for (t : turn) (p : pack) (q : geometry.position) : bool =
+    terrain.free t.camp.layout (taken_by_others t.index p) q
+
+:= stepped_to (t : turn) (f : foe) (toward : geometry.position) : foe =
+    { f ?| at = toward; next_step_at = t.now + geometry.step_cost (foe_step_ms t f) f.at toward }
+
+:~ ^ retimed_if_target (t : turn) (moved : pack) : pack =
+    := h = moved.hunter
+    ? h.target = t.index
+    ?> moved |> with_hunter (h |> with_timers (swing_after_target_moves t.camp t.now h.clock.timers))
+    |: moved
+
+:= tallied_hurt (hurt : i32) (t : hunter_tally) : hunter_tally =
+    := hits = ? hurt > 0 ?> t.hits_taken + 1 |: t.hits_taken
+    { t ?| hits_taken = hits; damage_taken = quantity.plus t.damage_taken (quantity.hp hurt) }
+
+:~ ^ hurt_by (hurt : i32) (h : hunter) : hunter =
+    { h ?| health = quantity.minus h.health (quantity.hp hurt); tally = tallied_hurt hurt h.tally }
+
+:= melee_hurt (camp : camp) (seed : u32) (tick : i32) (index : i32) (shield : bool) : i32 =
+    := roll = key seed tick index (purpose_creature_hit ())
+    combat.creature_hit (creatures.stats_of (kind_of index camp)).melee_max (combat.knight_sample_gear ()) shield roll
+
+:= spent_charge (shielded : bool) (h : hunter) : hunter =
+    := c = h.clock
+    h |> with_clock { c ?| block_charges = ? shielded ?> c.block_charges - 1 |: c.block_charges }
+
+:= melee_struck (camp : camp) (seed : u32) (tick : i32) (index : i32) (h : hunter) : hunter =
+    := shielded = h.clock.block_charges > 0
+    hurt_by (melee_hurt camp seed tick index shielded) (spent_charge shielded h)
+
+:~ ^ creature_hits_hunter (camp : camp) (seed : u32) (tick : i32) (index : i32) (struck : foe) (p : pack) : pack =
+    with_slot index struck (p |> with_hunter (melee_struck camp seed tick index p.hunter))
+
+:= arrow_hurt (arrow : combat.ranged_attack) (seed : u32) (tick : i32) (index : i32) (charges : i32) : i32 * i32 =
+    := roll = key seed tick index (purpose_creature_shot ())
+    combat.ranged_hit_spending_a_charge arrow (combat.knight_sample_gear ()) charges roll
+
+:= arrow_struck (arrow : combat.ranged_attack) (seed : u32) (tick : i32) (index : i32) (h : hunter) : hunter =
+    := c = h.clock
+    := hurt, charges = arrow_hurt arrow seed tick index c.block_charges
+    hurt_by hurt (h |> with_clock { c ?| block_charges = charges })
 
 := hunter_takes_arrow (arrow : combat.ranged_attack) (seed : u32) (tick : i32) (index : i32) (p : pack) : pack =
-    := h = p.hunter
-    := hurt, charges =
-        combat.ranged_hit_spending_a_charge arrow
-            (combat.knight_sample_gear ())
-            h.block_charges
-            (key seed tick index (purpose_creature_shot ()))
-    p
-    |> with_hunter { h ?|
-        health = quantity.minus h.health (quantity.hp hurt)
-        block_charges = charges
-        hits_taken =
-            ? hurt > 0
-            ?> h.hits_taken + 1
-            |: h.hits_taken
-        damage_taken = quantity.plus h.damage_taken (quantity.hp hurt)
-    }
+    p |> with_hunter (arrow_struck arrow seed tick index p.hunter)
+
+:= sight_clear (t : turn) (g : foe) (p : pack) : bool = geometry.sight_line_clear (blocks_sight t.camp) g.at p.hunter.at
+
+:= cannot_shoot (t : turn) (arrow : combat.ranged_attack) (g : foe) (p : pack) : bool =
+    g.strikes_at > t.now || combat.ranged_in_reach arrow (distance_to g p) (sight_clear t g p) = !-
+
+:= shot_timed (t : turn) (arrow : combat.ranged_attack) (g : foe) (p : pack) : pack =
+    := timed = { g ?| strikes_at = t.now + arrow.every_ms }
+    ? distance_to g p <= 1 ?> creature_hits_hunter t.camp t.seed t.tick t.index timed p |: with_slot t.index timed p
+
+:= fires (t : turn) (arrow : combat.ranged_attack) : bool =
+    combat.ranged_fires arrow (key t.seed t.tick (t.index + 100) (purpose_creature_shot ()))
+
+:= shot_at (t : turn) (arrow : combat.ranged_attack) (g : foe) (p : pack) : pack =
+    := meleed = shot_timed t arrow g p
+    ? fires t arrow ?> hunter_takes_arrow arrow t.seed t.tick t.index meleed |: meleed
 
 := creature_shoots
     (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (arrow : combat.ranged_attack) (g : foe)
     (p : pack)
     : pack
     =
-    := distance = distance_to g p
-    ?
-        g.strikes_at > now
-        || combat.ranged_in_reach arrow distance (
-            geometry.sight_line_clear (blocks_sight camp) g.at p.hunter.at
-           )
-           = !-
-    ?> p
-    |:
-        := timed = { g ?| strikes_at = now + arrow.every_ms }
-        := meleed =
-            ? distance <= 1
-            ?> creature_hits_hunter camp seed tick index timed p
-            |: with_slot index timed p
-        ? combat.ranged_fires arrow (key seed tick (index + 100) (purpose_creature_shot ()))
-        ?> hunter_takes_arrow arrow seed tick index meleed
-        |: meleed
+    := t = turn_at camp seed tick now index
+    ? cannot_shoot t arrow g p ?> p |: shot_at t arrow g p
 
 := creature_think_phase_ms (seed : u32) (index : i32) : i32 = conv ((seed + conv index * 7u32) % 10u32) * tick_ms ()
 
-:= thinks_now (seed : u32) (index : i32) (now : i32) : bool =
+:~ ^ thinks_now (seed : u32) (index : i32) (now : i32) : bool =
     now % player_think_ms () = creature_think_phase_ms seed index
 
-:= cardinal_step (k : i32) (from : geometry.position) : geometry.position =
+:~ ^ cardinal_step (k : i32) (from : geometry.position) : geometry.position =
     ? k = 0
     ?> terrain.shifted 0 -1 from
     |? k = 1
@@ -688,186 +782,229 @@ test hunting_pack static =
         |: nth (k + 1) left
     nth 0 pick
 
-:= wanders (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
-    := f = slot index p
-    := open_step k = terrain.free camp.layout (taken_by_others index p) (cardinal_step k f.at)
-    := count_open = open_cardinal_count open_step
-    ? f.next_step_at >= never () || thinks_now seed index now = !- || now < f.next_step_at || count_open = 0
-    ?> p
-    |:
-        := pick : i32 = conv (rng.roll_between 1 (conv count_open) (key seed tick index (purpose_wander ())))
-        := toward = cardinal_step (nth_open_cardinal open_step pick) f.at
-        := stats = creatures.stats_of (kind_of index camp)
-        with_slot index
-            { f ?|
-                at = toward
-                next_step_at =
-                    now + geometry.step_cost (step_ms_at camp f.at stats.speed stats.step_ms) f.at toward
-            }
-            p
+:= open_step_of (t : turn) (f : foe) (p : pack) : i32 -> bool = \ k => free_for t p (cardinal_step k f.at)
 
-:= dance_step (camp : camp) (now : i32) (index : i32) (pick_key : rng.roll_key) (p : pack) : pack =
-    := f = slot index p
+:= wander_blocked (t : turn) (f : foe) (count_open : i32) : bool =
+    f.next_step_at >= never () || thinks_now t.seed t.index t.now = !- || t.now < f.next_step_at || count_open = 0
+
+:= wander_pick (t : turn) (count_open : i32) : i32 =
+    conv (rng.roll_between 1 (conv count_open) (key t.seed t.tick t.index (purpose_wander ())))
+
+:= wandered (t : turn) (f : foe) (p : pack) (count_open : i32) : pack =
+    := toward = cardinal_step (nth_open_cardinal (open_step_of t f p) (wander_pick t count_open)) f.at
+    with_slot t.index (stepped_to t f toward) p
+
+:~ ^ wander_turn (t : turn) (p : pack) : pack =
+    := f = slot t.index p
+    := count_open = open_cardinal_count (open_step_of t f p)
+    ? wander_blocked t f count_open ?> p |: wandered t f p count_open
+
+:= wanders (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
+    wander_turn (turn_at camp seed tick now index) p
+
+:= side_keeps (k : i32) (at : geometry.position) (centre : geometry.position) : bool =
+    := offset_x, offset_y = at.x - centre.x, at.y - centre.y
+    ? k = 0 ?> offset_y >= 0 |? k = 1 ?> offset_x >= 0 |? k = 2 ?> offset_x <= 0 |: offset_y <= 0
+
+:= reach_kept (at : geometry.position) (centre : geometry.position) (q : geometry.position) : bool =
+    := reach = geometry.chebyshev_distance at centre
+    geometry.chebyshev_distance q centre = reach && (reach <= 1 || geometry.sees q centre)
+
+:= keeps_its_reach (t : turn) (f : foe) (p : pack) : i32 -> bool =
     := centre = p.hunter.at
-    := offset_x, offset_y = f.at.x - centre.x, f.at.y - centre.y
-    := reach = geometry.chebyshev_distance f.at centre
-    := keeps_its_reach k =
+    := keeps k =
         := q = cardinal_step k f.at
-        (? k = 0 ?> offset_y >= 0 |? k = 1 ?> offset_x >= 0 |? k = 2 ?> offset_x <= 0 |: offset_y <= 0)
-        && geometry.chebyshev_distance q centre = reach
-        && terrain.free camp.layout (taken_by_others index p) q
-        && (reach <= 1 || geometry.sees q centre)
-    := count_open = open_cardinal_count keeps_its_reach
-    ? count_open = 0
-    ?> p
-    |:
-        := pick : i32 = conv (rng.roll_between 1 (conv count_open) pick_key)
-        := toward = cardinal_step (nth_open_cardinal keeps_its_reach pick) f.at
-        := stats = creatures.stats_of (kind_of index camp)
-        := cost =
-            geometry.step_cost (step_ms_at camp f.at stats.speed stats.step_ms) f.at toward
-            * target_nearby_step_factor ()
-        := danced = with_slot index { f ?| at = toward; next_step_at = now + cost } p
-        := h = danced.hunter
-        ? h.target = index
-        ?> danced |> with_hunter { h ?| timers = swing_after_target_moves camp now h.timers }
-        |: danced
+        side_keeps k f.at centre && reach_kept f.at centre q && free_for t p q
+    keeps
+
+:= dance_cost (t : turn) (f : foe) (toward : geometry.position) : i32 =
+    geometry.step_cost (foe_step_ms t f) f.at toward * target_nearby_step_factor ()
+
+:= dance_pick (t : turn) (count_open : i32) : i32 =
+    conv (rng.roll_between 1 (conv count_open) (key t.seed t.tick (t.index + 200) (purpose_dance ())))
+
+:= danced_foe (t : turn) (f : foe) (toward : geometry.position) : foe =
+    { f ?| at = toward; next_step_at = t.now + dance_cost t f toward }
+
+:= danced_to (t : turn) (f : foe) (p : pack) (count_open : i32) : pack =
+    := toward = cardinal_step (nth_open_cardinal (keeps_its_reach t f p) (dance_pick t count_open)) f.at
+    retimed_if_target t (with_slot t.index (danced_foe t f toward) p)
+
+:= dance_step (t : turn) (p : pack) : pack =
+    := f = slot t.index p
+    := count_open = open_cardinal_count (keeps_its_reach t f p)
+    ? count_open = 0 ?> p |: danced_to t f p count_open
+
+:= dance_rolls (t : turn) : bool =
+    thinks_now t.seed t.index t.now
+    && rng.roll_between 1 100 (key t.seed t.tick t.index (purpose_dance ())) > conv (canary_static_attack_chance ())
 
 := dances (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
-    ?= camp.dance ?|
+    := t = turn_at camp seed tick now index
+    ?= camp.timing.dance ?|
     | NeverDances => p
-    | DancesLikeCanary =>
-        ?
-            thinks_now seed index now
-            && rng.roll_between 1 100 (key seed tick index (purpose_dance ())) > conv (canary_static_attack_chance ())
-        ?> dance_step camp now index (key seed tick (index + 200) (purpose_dance ())) p
-        |: p
+    | DancesLikeCanary => ? dance_rolls t ?> dance_step t p |: p
 
-:= foe_turn (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
-    := kind = kind_of index camp
-    := stats = creatures.stats_of kind
-    := f = slot index p
-    := moved =
-        ? f.returns_at <= now
-        ?>
-            with_slot index
-                { (fresh_foe kind f.spawn) ?|
-                    check_until = f.returns_at - canary_unblockable_spawn_delay_ms () + canary_spawn_check_ms ()
-                }
-                p
-        |? now < f.next_step_at
-        ?> p
-        |? vitality.health f.life <= stats.run_health
-        ?>
-            := away = terrain.step_away camp.layout (taken_by_others index p) p.hunter.at f.at
-            := fled =
-                { f ?|
-                    at = away
-                    next_step_at =
-                        now + geometry.step_cost (step_ms_at camp f.at stats.speed stats.step_ms) f.at away
-                }
-            ? geometry.chebyshev_distance p.hunter.at fled.at >= escape_distance ()
-            ?>
-                := reset = with_slot index (fresh_foe kind f.spawn) p
-                := h = p.hunter
-                { reset ?|
-                    escapes = p.escapes + 1
-                    hunter = { h ?| target = ? h.target = index ?> -1 |: h.target }
-                }
-            |: with_slot index fled p
-        |?
-            camp.ranged
-            && stats.target_distance > 1
-            && distance_to f p <= stats.target_distance
-            && geometry.sees f.at p.hunter.at
-        ?>
-            ? distance_to f p < stats.target_distance
-            ?>
-                := counted =
-                    ? geometry.chebyshev_distance f.at p.hunter.at <= 1
-                    ?>
-                        ? f.nearby < 2
-                        ?> f.nearby + 1
-                        |: 2
-                    |? f.nearby > 0
-                    ?> f.nearby - 1
-                    |: 0
-                := away = terrain.step_away camp.layout (taken_by_others index p) p.hunter.at f.at
-                := cost = geometry.step_cost (step_ms_at camp f.at stats.speed stats.step_ms) f.at away
-                := slowed =
-                    ? geometry.moved_diagonally f.at away = !- && counted >= 1
-                    ?> cost * target_nearby_step_factor ()
-                    |: cost
-                with_slot index { f ?| at = away; met_target = !+; nearby = counted; next_step_at = now + slowed } p
-            |: dances camp seed tick now index (with_slot index { f ?| met_target = !+ } p)
-        |? distance_to f p <= 1
-        ?> dances camp seed tick now index (with_slot index { f ?| met_target = !+ } p)
-        |? geometry.sees f.at p.hunter.at = !-
-        ?>
-            ? f.acquired_at >= never ()
-            ?> p
-            |: with_slot index { f ?| acquired_at = never () } p
-        |?
-            (?= camp.acquisition ?|
-                | ChasesAThinkAfterAcquiring => !+
-                | ChasesAtOnce => !-)
-            && f.acquired_at >= never ()
-        ?>
-            ? thinks_now seed index now
-            ?>
-                := first_step_at = now + player_think_ms () + step_ms_at camp f.at stats.speed stats.step_ms
-                with_slot index { f ?| acquired_at = now; next_step_at = first_step_at } p
-            |: p
-        |? camp.ranged && stats.target_distance > 1 && thinks_now seed index now = !-
-        ?> p
-        |?
-            (?= camp.follow ?|
-                | FollowsOnThink => !+
-                | FollowsAtOnce => !-)
-            && now - f.next_step_at >= tick_ms ()
-            && thinks_now seed index now = !-
-        ?> p
-        |:
-            := toward = terrain.step_toward camp.layout (taken_by_others index p) p.hunter.at f.at
-            := base = step_ms_at camp f.at stats.speed stats.step_ms
-            := straight = ? f.met_target ?> base * chase_step_factor () |: base
-            := chased =
-                with_slot index { f ?| at = toward; next_step_at = now + geometry.step_cost straight f.at toward } p
-            := h = chased.hunter
-            ? h.target = index
-            ?> chased |> with_hunter { h ?| timers = swing_after_target_moves camp now h.timers }
-            |: chased
-    := g = slot index moved
-    ? vitality.health g.life <= stats.run_health
-    ?> moved
-    |? camp.ranged && creatures.is_ranged kind
-    ?> creature_shoots camp seed tick now index (creatures.ranged_attack_of kind) g moved
-    |:
-        ?= camp.melee ?|
-        | MeleeWhenReady =>
-            ? distance_to g moved <= 1 && g.strikes_at <= now
-            ?> creature_hits_hunter camp seed tick index { g ?| strikes_at = now + creature_strike_ms () } moved
-            |: moved
-        | MeleeEveryOnceTargeted period =>
-            ? distance_to g moved <= 1 && g.strikes_at <= now && now >= camp.wakes_at + period ?>
-                := paced = ? now - g.strikes_at < tick_ms () ?> g.strikes_at |: now
-                creature_hits_hunter camp seed tick index { g ?| strikes_at = paced + period } moved
-            |: moved
-        | MeleeWhenReadyEvery period =>
-            ? distance_to g moved <= 1 && g.strikes_at <= now ?>
-                := paced = ? now - g.strikes_at < tick_ms () ?> g.strikes_at |: now
-                creature_hits_hunter camp seed tick index { g ?| strikes_at = paced + period } moved
-            |: moved
-        | MeleeOnCanaryRounds period =>
-            ? distance_to g moved <= 1 && g.strikes_at <= now && now >= camp.wakes_at + period
-            ?>
-                ? now - g.strikes_at < tick_ms ()
-                ?> creature_hits_hunter camp seed tick index { g ?| strikes_at = g.strikes_at + period } moved
-                |:
-                    with_slot index
-                        { g ?| strikes_at = g.strikes_at + (now - g.strikes_at + period - 1) / period * period }
-                        moved
-            |: moved
+
+:= returned_check_ms (f : foe) : i32 =
+    f.respawn.returns_at - canary_unblockable_spawn_delay_ms () + canary_spawn_check_ms ()
+
+:= respawn_on_return (t : turn) (f : foe) (p : pack) : pack =
+    := fresh = fresh_foe (turn_kind t) f.spawn
+    with_slot t.index { fresh ?| respawn = { (fresh.respawn) ?| check_until = returned_check_ms f } } p
+
+:~ ^ away_from_hunter (t : turn) (f : foe) (p : pack) : geometry.position =
+    terrain.step_away t.camp.layout (taken_by_others t.index p) p.hunter.at f.at
+
+:= fled_foe (t : turn) (f : foe) (p : pack) : foe =
+    := away = away_from_hunter t f p
+    { f ?| at = away; next_step_at = t.now + geometry.step_cost (foe_step_ms t f) f.at away }
+
+:= untargeted (index : i32) (h : hunter) : hunter = { h ?| target = ? h.target = index ?> -1 |: h.target }
+
+:= escaped_slot (t : turn) (f : foe) (p : pack) : pack =
+    := reset = with_slot t.index (fresh_foe (turn_kind t) f.spawn) p
+    := s = p.score
+    { reset ?| score = { s ?| escapes = s.escapes + 1 }; hunter = untargeted t.index p.hunter }
+
+:= flees (t : turn) (f : foe) (p : pack) : pack =
+    := fled = fled_foe t f p
+    ? geometry.chebyshev_distance p.hunter.at fled.at >= escape_distance () ?> escaped_slot t f p
+    |: with_slot t.index fled p
+
+:= nearby_count (f : foe) (p : pack) : i32 =
+    ? geometry.chebyshev_distance f.at p.hunter.at <= 1 ?> (? f.chase.nearby < 2 ?> f.chase.nearby + 1 |: 2)
+    |? f.chase.nearby > 0 ?> f.chase.nearby - 1
+    |: 0
+
+:= slowed_cost (t : turn) (f : foe) (away : geometry.position) (counted : i32) : i32 =
+    := cost = geometry.step_cost (foe_step_ms t f) f.at away
+    ? geometry.moved_diagonally f.at away = !- && counted >= 1 ?> cost * target_nearby_step_factor () |: cost
+
+:= met_with (counted : i32) (c : foe_chase) : foe_chase = { c ?| met_target = !+; nearby = counted }
+
+:= acquired (now : i32) (c : foe_chase) : foe_chase = { c ?| acquired_at = now }
+
+:= unacquired (f : foe) : bool = f.chase.acquired_at >= never ()
+
+:= backed_off_foe (t : turn) (f : foe) (p : pack) : foe =
+    := counted, away = nearby_count f p, away_from_hunter t f p
+    := slowed = slowed_cost t f away counted
+    { f ?| at = away; chase = met_with counted f.chase; next_step_at = t.now + slowed }
+
+:~ ^ met_and_dances (t : turn) (f : foe) (p : pack) : pack =
+    dances t.camp t.seed t.tick t.now t.index (with_slot t.index { f ?| chase = { (f.chase) ?| met_target = !+ } } p)
+
+:= keeps_range (t : turn) (f : foe) (p : pack) : pack =
+    ? distance_to f p < (turn_stats t).target_distance ?> with_slot t.index (backed_off_foe t f p) p
+    |: met_and_dances t f p
+
+:= in_range_to_shoot (t : turn) (f : foe) (p : pack) : bool =
+    := stats = turn_stats t
+    t.camp.foes.ranged && stats.target_distance > 1 && distance_to f p <= stats.target_distance
+    && geometry.sees f.at p.hunter.at
+
+:= loses_sight (t : turn) (f : foe) (p : pack) : pack =
+    ? unacquired f ?> p |: with_slot t.index { f ?| chase = acquired (never ()) f.chase } p
+
+
+:= waits_to_chase (camp : camp) : bool =
+    ?= camp.motion.acquisition ?|
+    | ChasesAThinkAfterAcquiring => !+
+    | ChasesAtOnce => !-
+
+:= acquires (t : turn) (f : foe) (p : pack) : pack =
+    := chasing = { f ?| chase = acquired t.now f.chase; next_step_at = t.now + player_think_ms () + foe_step_ms t f }
+
+    ? thinks_now t.seed t.index t.now ?> with_slot t.index chasing p
+    |: p
+
+:= ranged_waits (t : turn) : bool =
+    t.camp.foes.ranged && (turn_stats t).target_distance > 1 && thinks_now t.seed t.index t.now = !-
+
+:= follows_on_think (camp : camp) : bool =
+    ?= camp.timing.follow ?|
+    | FollowsOnThink => !+
+    | FollowsAtOnce => !-
+
+:= holds_still (t : turn) (f : foe) : bool =
+    follows_on_think t.camp && t.now - f.next_step_at >= tick_ms () && thinks_now t.seed t.index t.now = !-
+
+:= chase_step_ms (t : turn) (f : foe) : i32 =
+    := base = foe_step_ms t f
+    ? f.chase.met_target ?> base * chase_step_factor () |: base
+
+:= chased_foe (t : turn) (f : foe) (p : pack) : foe =
+    := toward = terrain.step_toward t.camp.layout (taken_by_others t.index p) p.hunter.at f.at
+    { f ?| at = toward; next_step_at = t.now + geometry.step_cost (chase_step_ms t f) f.at toward }
+
+:= chases (t : turn) (f : foe) (p : pack) : pack = retimed_if_target t (with_slot t.index (chased_foe t f p) p)
+
+:= foe_engages (t : turn) (f : foe) (p : pack) : pack =
+    ? geometry.sees f.at p.hunter.at = !- ?> loses_sight t f p
+    |? waits_to_chase t.camp && unacquired f ?> acquires t f p
+    |? ranged_waits t ?> p
+    |? holds_still t f ?> p
+    |: chases t f p
+
+:= foe_reacts (t : turn) (f : foe) (p : pack) : pack =
+    ? vitality.health f.life <= (turn_stats t).run_health ?> flees t f p
+    |? in_range_to_shoot t f p ?> keeps_range t f p
+    |? distance_to f p <= 1 ?> met_and_dances t f p
+    |: foe_engages t f p
+
+:= foe_moves (t : turn) (p : pack) : pack =
+    := f = slot t.index p
+    ? f.respawn.returns_at <= t.now ?> respawn_on_return t f p |? t.now < f.next_step_at ?> p |: foe_reacts t f p
+
+:~ ^ in_strike_reach (t : turn) (g : foe) (p : pack) : bool = distance_to g p <= 1 && g.strikes_at <= t.now
+
+:~ ^ hits (t : turn) (g : foe) (p : pack) : pack = creature_hits_hunter t.camp t.seed t.tick t.index g p
+
+:= paced_at (t : turn) (g : foe) : i32 = ? t.now - g.strikes_at < tick_ms () ?> g.strikes_at |: t.now
+
+:~ ^ awake_for (t : turn) (period : i32) : bool = t.now >= t.camp.foes.wakes_at + period
+
+:= rounds_skipped (t : turn) (period : i32) (g : foe) : foe =
+    { g ?| strikes_at = g.strikes_at + (t.now - g.strikes_at + period - 1) / period * period }
+
+:= on_canary_round (t : turn) (period : i32) (g : foe) (p : pack) : pack =
+    ? t.now - g.strikes_at < tick_ms () ?> hits t { g ?| strikes_at = g.strikes_at + period } p
+    |: with_slot t.index (rounds_skipped t period g) p
+
+:= melee_when_ready (t : turn) (g : foe) (p : pack) : pack =
+    ? in_strike_reach t g p ?> hits t { g ?| strikes_at = t.now + creature_strike_ms () } p |: p
+
+:~ ^ melee_paced (t : turn) (awake : bool) (period : i32) (g : foe) (p : pack) : pack =
+    ? in_strike_reach t g p && awake ?> hits t { g ?| strikes_at = paced_at t g + period } p |: p
+
+:= melee_on_rounds (t : turn) (period : i32) (g : foe) (p : pack) : pack =
+    ? in_strike_reach t g p && awake_for t period ?> on_canary_round t period g p |: p
+
+:= paced_melee_turn (t : turn) (g : foe) (p : pack) : pack =
+    ?= t.camp.timing.melee ?|
+    | MeleeEveryOnceTargeted period => melee_paced t (awake_for t period) period g p
+    | MeleeWhenReadyEvery period => melee_paced t !+ period g p
+    | _ => p
+
+:= melee_turn (t : turn) (g : foe) (p : pack) : pack =
+    ?= t.camp.timing.melee ?|
+    | MeleeWhenReady => melee_when_ready t g p
+    | MeleeOnCanaryRounds period => melee_on_rounds t period g p
+    | _ => paced_melee_turn t g p
+
+:= shoots (t : turn) (g : foe) (p : pack) : pack =
+    creature_shoots t.camp t.seed t.tick t.now t.index (creatures.ranged_attack_of (turn_kind t)) g p
+
+:= foe_strikes (t : turn) (p : pack) : pack =
+    := kind, g = turn_kind t, slot t.index p
+    ? vitality.health g.life <= (creatures.stats_of kind).run_health ?> p
+    |? t.camp.foes.ranged && creatures.is_ranged kind ?> shoots t g p
+    |: melee_turn t g p
+
+:~ ^ foe_turn (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
+    := t = turn_at camp seed tick now index
+    foe_strikes t (foe_moves t p)
 
 := purpose_search_target () : u32 = 40
 := purpose_change_target () : u32 = 41
@@ -883,420 +1020,507 @@ test hunting_pack static =
     | Cyclops => 30
     | _ => 0
 
-:= aimed_by_canary (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : foe =
-    := f = slot index p
-    := kind = kind_of index camp
-    := sees_first = ? geometry.sees f.at p.hunter.at ?> 1 |: 0
-    := sees_second = ? geometry.sees f.at p.ally.at ?> 2 |: 0
-    := seen = sees_first + sees_second
-    := entered_second = sees_second = 2 && (f.in_view &&& 2) = 0
-    := entered_first = sees_first = 1 && (f.in_view &&& 1) = 0
-    := appeared = f.last_x < 0
-    := foe_moved = appeared = !- && (f.at.x <> f.last_x || f.at.y <> f.last_y)
-    := sector_rank (at : geometry.position) : i32 = (at.y / 16) * 65536 + at.x / 16
-    := knight_scanned_first = sector_rank p.hunter.at <= sector_rank p.ally.at
-    := appended (newcomer : i32) : i32 = ? f.in_view = 0 ?> newcomer |: f.entrant
-    := entrant =
-        ? entered_first && entered_second ?>
-            ? appeared && now < 1000 ?> 1
-            |? knight_scanned_first ?> 0
-            |: 1
-        |? entered_second ?> (? appeared || foe_moved ?> appended 1 |: 1)
-        |? entered_first ?> (? appeared || foe_moved ?> appended 0 |: 0)
-        |: f.entrant
-    := due = now >= f.retarget_at
-    := rolled = conv (rng.roll_between 1 100 (key seed tick index (purpose_change_target ())))
-    := acquiring = f.aims_at < 0
-    := changing = acquiring = !- && due && rolled <= change_target_percent kind
-    := next_due = ? due ?> now + 4000 |: f.retarget_at
-    := strategy = conv (rng.roll_between 1 100 (key seed tick index (purpose_search_target ())))
+:= sight_bits (f : foe) (p : pack) : i32 =
+    (? geometry.sees f.at p.hunter.at ?> 1 |: 0) + (? geometry.sees f.at p.ally.at ?> 2 |: 0)
+
+:~ ^ sector_rank (at : geometry.position) : i32 = (at.y / 16) * 65536 + at.x / 16
+
+:= foe_moved (f : foe) : bool = f.aim.last_x >= 0 && (f.at.x <> f.aim.last_x || f.at.y <> f.aim.last_y)
+
+:~ ^ entered (f : foe) (seen : i32) (bit : i32) : bool = (seen &&& bit) = bit && (f.aim.in_view &&& bit) = 0
+
+:= both_entered_entrant (now : i32) (f : foe) (p : pack) : i32 =
+    ? f.aim.last_x < 0 && now < 1000 ?> 1 |? sector_rank p.hunter.at <= sector_rank p.ally.at ?> 0 |: 1
+
+:~ ^ newcomer_entrant (f : foe) (newcomer : i32) : i32 =
+    ? f.aim.last_x < 0 || foe_moved f ?> (? f.aim.in_view = 0 ?> newcomer |: f.aim.entrant) |: newcomer
+
+:= entrant_of (now : i32) (f : foe) (p : pack) (seen : i32) : i32 =
+    := one, two = entered f seen 1, entered f seen 2
+    ? one && two ?> both_entered_entrant now f p
+    |? two ?> newcomer_entrant f 1
+    |? one ?> newcomer_entrant f 0
+    |: f.aim.entrant
+
+:~ ^ roll_percent (t : turn) (purpose : u32) : i32 = conv (rng.roll_between 1 100 (key t.seed t.tick t.index purpose))
+
+:~ ^ changes_target (t : turn) (f : foe) : bool =
+    f.aim.aims_at >= 0 && t.now >= f.aim.retarget_at
+    && roll_percent t (purpose_change_target ()) <= change_target_percent (turn_kind t)
+
+:= knight_or_ally (p : pack) (who : i32) : geometry.position = ? who = 0 ?> p.hunter.at |: p.ally.at
+
+:~ ^ nearest_of (f : foe) (p : pack) (entrant : i32) : i32 =
+    := reach who = geometry.chebyshev_distance (knight_or_ally p who) f.at
+    ? reach (1 - entrant) < reach entrant ?> 1 - entrant |: entrant
+
+:= dealt_by (f : foe) (who : i32) : i32 = ? who = 0 ?> f.aim.damage_first |: f.aim.damage_second
+
+:= changed_target (t : turn) (f : foe) (p : pack) (entrant : i32) (strategy : i32) : i32 =
+    ? (turn_stats t).target_distance <= 1 ?> (? strategy <= 50 ?> entrant |: 1 - entrant) |: nearest_of f p entrant
+
+:= kept_strategy (t : turn) (f : foe) (p : pack) (entrant : i32) (strategy : i32) : i32 =
     := other = 1 - entrant
-    := other_dealt = ? other = 0 ?> f.damage_first |: f.damage_second
-    := d_entrant = geometry.chebyshev_distance (? entrant = 0 ?> p.hunter.at |: p.ally.at) f.at
-    := d_other = geometry.chebyshev_distance (? other = 0 ?> p.hunter.at |: p.ally.at) f.at
-    := nearest = ? d_other < d_entrant ?> other |: entrant
-    := melee = (creatures.stats_of kind).target_distance <= 1
-    := aims_at =
-        ? seen = 0 || acquiring = !- && changing = !-
-        ?> f.aims_at
-        |? changing && melee
-        ?> (? strategy <= 50 ?> entrant |: other)
-        |? changing
-        ?> nearest
-        |? strategy > 100 - damage_strategy_percent kind
-        ?> (? other_dealt > 0 ?> other |: entrant)
-        |: nearest
-    { f ?|
-        aims_at = aims_at
-        entrant = entrant
-        in_view = seen
-        retarget_at = next_due
-        last_x = f.at.x
-        last_y = f.at.y
-    }
+    ? strategy > 100 - damage_strategy_percent (turn_kind t) ?> (? dealt_by f other > 0 ?> other |: entrant)
+    |: nearest_of f p entrant
+
+:= retargeted (t : turn) (f : foe) (p : pack) (entrant : i32) : i32 =
+    := strategy = roll_percent t (purpose_search_target ())
+    ? changes_target t f ?> changed_target t f p entrant strategy |: kept_strategy t f p entrant strategy
+
+:= aims_of (t : turn) (f : foe) (p : pack) (seen : i32) (entrant : i32) : i32 =
+    ? seen = 0 || f.aim.aims_at >= 0 && changes_target t f = !- ?> f.aim.aims_at |: retargeted t f p entrant
+
+:= viewed (f : foe) (seen : i32) : foe = { f ?| aim = { (f.aim) ?| in_view = seen; last_x = f.at.x; last_y = f.at.y } }
+
+:= next_retarget (t : turn) (f : foe) : i32 = ? t.now >= f.aim.retarget_at ?> t.now + 4000 |: f.aim.retarget_at
+
+:= reaimed (aims_at : i32) (entrant : i32) (retarget_at : i32) (a : foe_aim) : foe_aim =
+    { a ?| aims_at = aims_at; entrant = entrant; retarget_at = retarget_at }
+
+:~ ^ aimed_foe (t : turn) (f : foe) (p : pack) : foe =
+    := seen = sight_bits f p
+    := entrant = entrant_of t.now f p seen
+    := looked = viewed f seen
+    { looked ?| aim = reaimed (aims_of t f p seen entrant) entrant (next_retarget t f) looked.aim }
+
+:= aimed_by_canary (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : foe =
+    aimed_foe (turn_at camp seed tick now index) (slot index p) p
 
 := ally_is_nearer (f : foe) (p : pack) : bool =
     geometry.chebyshev_distance p.ally.at f.at < geometry.chebyshev_distance p.hunter.at f.at
 
-:= foe_acts (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
-    ? now < camp.wakes_at
-    ?>
-        ?= camp.idle ?|
-        | StandsStill => p
-        | WandersLikeCanary => wanders camp seed tick now index p
-    |? camp.party > 1 && camp.party_targeting
-    ?>
-        := aimed = aimed_by_canary camp seed tick now index p
-        := q = with_slot index aimed p
-        ? aimed.aims_at = 1
-        ?> turned (foe_turn camp seed tick now index (turned q))
-        |: foe_turn camp seed tick now index q
-    |? camp.party > 1 && ally_is_nearer (slot index p) p
-    ?> turned (foe_turn camp seed tick now index (turned p))
-    |: foe_turn camp seed tick now index p
+:~ ^ foe_turn_at (t : turn) (p : pack) : pack = foe_turn t.camp t.seed t.tick t.now t.index p
+
+:= idles_while_asleep (t : turn) (p : pack) : pack =
+    ?= t.camp.timing.idle ?|
+    | StandsStill => p
+    | WandersLikeCanary => wander_turn t p
+
+:~ ^ turned_turn (t : turn) (p : pack) : pack = turned (foe_turn_at t (turned p))
+
+:= aimed_turn (t : turn) (p : pack) : pack =
+    := aimed = aimed_foe t (slot t.index p) p
+    := q = with_slot t.index aimed p
+    ? aimed.aim.aims_at = 1 ?> turned_turn t q |: foe_turn_at t q
+
+:= party_turn (t : turn) (p : pack) : pack =
+    ? t.camp.crew.party_targeting ?> aimed_turn t p
+    |? ally_is_nearer (slot t.index p) p ?> turned_turn t p
+    |: foe_turn_at t p
+
+:= foe_acts (b : beat) (index : i32) (p : pack) : pack =
+    := t = turn_at b.camp b.seed b.tick b.now index
+    ? t.now < t.camp.foes.wakes_at ?> idles_while_asleep t p
+    |? t.camp.crew.party > 1 ?> party_turn t p
+    |: foe_turn_at t p
+
+:= foes_where (b : beat) (picked : i32 -> bool) (p : pack) : pack =
+    :~ ^ foes_from (i : i32) (q : pack) : pack =
+        ? i >= band_size () ?> q
+        |? picked i ?> foes_from (i + 1) (foe_acts b i q)
+        |: foes_from (i + 1) q
+    foes_from 0 p
 
 := foes_act_where (camp : camp) (seed : u32) (tick : i32) (now : i32) (picked : i32 -> bool) (p : pack) : pack =
-    :~ ^ each (i : i32) (q : pack) : pack =
-        ? i >= band_size ()
-        ?> q
-        |? picked i
-        ?> each (i + 1) (foe_acts camp seed tick now i q)
-        |: each (i + 1) q
-    each 0 p
+    foes_where (beat_at camp seed tick now) picked p
 
 := foes_act (camp : camp) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
-    :~ ^ each (i : i32) (q : pack) : pack =
-        ? i >= band_size ()
-        ?> q
-        |: each (i + 1) (foe_acts camp seed tick now i q)
-    each 0 p
+    foes_act_where camp seed tick now (\ _ => !+) p
 
-:= candidate_of (index : i32) (p : pack) (camp : camp) : policy.candidate =
-    := kind = kind_of index camp
+:= health_percent_of (camp : camp) (index : i32) (f : foe) : i32 =
+    vitality.health f.life * 100 / (creatures.stats_of (kind_of index camp)).max_health
+
+:~ ^ candidate_of (index : i32) (p : pack) (camp : camp) : policy.candidate =
     := f = slot index p
     {
         is_current = p.hunter.target = index
         distance = distance_to f p
-        health_percent = vitality.health f.life * 100 / (creatures.stats_of kind).max_health
+        health_percent = health_percent_of camp index f
     }
 
-:= choose_target (camp : camp) (order : policy.targeting) (p : pack) : i32 =
-    := visible index = distance_to (slot index p) p <= sight_range ()
-    := better (a : i32) (b : i32) : i32 =
-        ? a < 0 ?> b
-        |? b < 0 ?> a
-        |? policy.prefers_by order (candidate_of a p camp) (candidate_of b p camp) ?> a
-        |: b
-    := pick index = ? visible index ?> index |: -1
-    :~ ^ fold (i : i32) (best : i32) : i32 = ? i >= band_size () ?> best |: fold (i + 1) (better best (pick i))
-    fold 1 (pick 0)
+:= better_target (camp : camp) (order : policy.targeting) (p : pack) (a : i32) (b : i32) : i32 =
+    ? a < 0 ?> b |? b < 0 ?> a |? policy.prefers_by order (candidate_of a p camp) (candidate_of b p camp) ?> a |: b
 
-:= aimed_by (camp : camp) (order : policy.targeting) (p : pack) : pack =
+:~ ^ visible_pick (p : pack) (index : i32) : i32 = ? distance_to (slot index p) p <= sight_range () ?> index |: -1
+
+:~ ^ target_from (camp : camp) (order : policy.targeting) (p : pack) (i : i32) (best : i32) : i32 =
+    ? i >= band_size () ?> best |: target_from camp order p (i + 1) (better_target camp order p best (visible_pick p i))
+
+:= choose_target (camp : camp) (order : policy.targeting) (p : pack) : i32 =
+    target_from camp order p 1 (visible_pick p 0)
+
+:~ ^ aimed_by (camp : camp) (order : policy.targeting) (p : pack) : pack =
     := h = p.hunter
     p |> with_hunter { h ?| target = choose_target camp order p }
 
-:= observe (now : i32) (p : pack) : policy.observation =
+:~ ^ heal_cooldown () = vocations.as_cooldown (vocations.knight_heal ())
+
+:= heal_castable (now : i32) (h : hunter) : bool = cooldowns.can_cast now (heal_cooldown ()) h.clock.timers
+
+:= strike_castable (now : i32) (h : hunter) : bool = cooldowns.can_cast now (cooldowns.strike_spell ()) h.clock.timers
+
+:= reach_of (p : pack) =
     :< policy
     := h = p.hunter
-    := reach = ? h.target < 0 ?> NoTarget |? distance_to (slot h.target p) p <= 1 ?> InReach |: OutOfReach
+    ? h.target < 0 ?> NoTarget |? distance_to (slot h.target p) p <= 1 ?> InReach |: OutOfReach
+
+:~ ^ observe (now : i32) (p : pack) : policy.observation =
+    := h = p.hunter
     {
         health = quantity.value_of h.health
-        heal_ready = cooldowns.can_cast now (vocations.as_cooldown (vocations.knight_heal ())) h.timers
-        strike_ready = cooldowns.can_cast now (cooldowns.strike_spell ()) h.timers
-        target = reach
+        heal_ready = heal_castable now h
+        strike_ready = strike_castable now h
+        target = reach_of p
     }
 
-:= player_heals
-    (camp : camp) (seed : u32) (tick : i32) (slot : readiness.ready readiness.action_slot) (p : pack)
-    : pack
-    =
-    := now = quantity.value_of (readiness.since slot)
-    := offense = hunter_of camp
-    := amount : i32 =
-        conv (
-            rng.roll_between
-                (conv offense.heal_low)
-                (conv offense.heal_high)
-                (key seed tick (99 + 100 * p.hunter.call_sign) (purpose_player_heal ()))
-        )
-    := h = p.hunter
-    p
-    |> with_hunter { h ?|
-        health = quantity.capped (player_max_health camp) (quantity.plus h.health (quantity.hp amount))
-        timers = cooldowns.after_cast now (vocations.as_cooldown (vocations.knight_heal ())) h.timers
-        potions = h.potions + 1
-        next_action_at = quantity.plus (readiness.since slot) (quantity.ms (parity_action_gap_ms ()))
-    }
+:== action_proof = readiness.ready readiness.action_slot
 
-:= player_strikes
-    (camp : camp) (seed : u32) (tick : i32) (proof : readiness.ready readiness.attack_group) (p : pack)
-    : pack
-    =
-    :< vitality
-    := now = quantity.value_of (readiness.since proof)
-    := h = p.hunter
-    := target = h.target
-    := kind = kind_of target camp
-    := stats = creatures.stats_of kind
+:~ ^ action_gap_after since = quantity.plus since (quantity.ms (parity_action_gap_ms ()))
+
+:= heal_amount (camp : camp) (seed : u32) (tick : i32) (p : pack) : i32 =
     := o = hunter_of camp
-    := f = slot target p
-    := hit =
-        combat.melee_hit
-            (:< damage ;; Balanced)
-            o.level
-            o.weapon_attack
-            o.weapon_skill
-            stats.defense
-            stats.armor
-            (key seed tick (target + 100 * h.call_sign) (purpose_player_hit ()))
-    := timed_hunter = { h ?| timers = cooldowns.after_cast now (cooldowns.strike_spell ()) h.timers }
-    := timed = p |> with_hunter timed_hunter
-    ?= strike hit f.life ?|
-    | Survived wounded =>
-        := dealt = vitality.health f.life - vitality.health wounded
-        := credited =
-            ? h.call_sign = 0 ?> { f ?| life = wounded; damage_first = f.damage_first + dealt }
-            |: { f ?| life = wounded; damage_second = f.damage_second + dealt }
-        with_slot target credited timed
-    | Slain _ =>
-        := awaiting = buried_foe kind
-        := reset =
-            with_slot target
-                (
-                    ?= camp.rule ?|
-                    | Respawning => fresh_foe kind f.spawn
-                    | Clearing => buried_foe kind
-                    | RespawningAfter delay =>
-                        := returns =
-                            ? now < f.check_until ?> f.check_until + delay - canary_spawn_check_ms ()
-                            |: now + delay
-                        { awaiting ?| spawn = f.spawn; returns_at = returns }
-                )
-                timed
-        := drop = creatures.gold_drop_of kind
-        := lucky = conv (rng.roll_between 1 100000 (key seed tick target (purpose_loot ()))) <= drop.chance_per_100000
-        := coins : i32 =
-            ? lucky
-            ?> conv (rng.roll_between 1 (conv drop.max_count) (key seed (tick + 1) target (purpose_loot ())))
-            |: 0
-        { reset ?|
-            kills = timed.kills + 1
-            experience = timed.experience + stats.experience
-            hunter = { timed_hunter ?| target = -1 }
-            gold = quantity.plus timed.gold (quantity.gp coins)
-        }
+    := roll = key seed tick (99 + 100 * p.hunter.call_sign) (purpose_player_heal ())
+    conv (rng.roll_between (conv o.heal_low) (conv o.heal_high) roll)
 
-:= hunter_steps (camp : camp) (now : i32) (toward : geometry.position) (p : pack) : pack =
+:= healed_health (camp : camp) (amount : i32) (h : hunter) =
+    quantity.capped (player_max_health camp) (quantity.plus h.health (quantity.hp amount))
+
+:= counted_heal since (h : hunter) : hunter =
+    := c = h.clock
+    := t = h.tally
+    { h ?| tally = { t ?| potions = t.potions + 1 }; clock = { c ?| next_action_at = action_gap_after since } }
+
+:= healed_hunter (camp : camp) since (amount : i32) (h : hunter) : hunter =
+    := timers = cooldowns.after_cast (quantity.value_of since) (heal_cooldown ()) h.clock.timers
+    counted_heal since ({ h ?| health = healed_health camp amount h } |> with_timers timers)
+
+:~ ^ player_heals (camp : camp) (seed : u32) (tick : i32) (slot : action_proof) (p : pack) : pack =
+    p |> with_hunter (healed_hunter camp (readiness.since slot) (heal_amount camp seed tick p) p.hunter)
+
+:== strike_proof = readiness.ready readiness.attack_group
+
+:= swing_of (o : offense) : combat.swinger =
+    { mode = (:< damage ;; Balanced); level = o.level; attack_value = o.weapon_attack; attack_skill = o.weapon_skill }
+
+:= foe_gear (kind : creatures.arena_creature) : combat.gear =
+    := stats = creatures.stats_of kind
+    { armor = stats.armor; defense = stats.defense }
+
+:= hunter_hit (camp : camp) (seed : u32) (tick : i32) (h : hunter) : i32 =
+    := roll = key seed tick (h.target + 100 * h.call_sign) (purpose_player_hit ())
+    combat.melee_hit (swing_of (hunter_of camp)) (foe_gear (kind_of h.target camp)) roll
+
+:= swung (t : turn) (p : pack) : pack =
     := h = p.hunter
-    p
-    |> with_hunter { h ?|
-        at = toward
-        next_step_at =
-            now + geometry.step_cost (hunter_step_ms_at camp h.at) h.at toward
-        timers = swing_after_step camp now h.timers
-    }
+    p |> with_hunter (h |> with_timers (cooldowns.after_cast t.now (cooldowns.strike_spell ()) h.clock.timers))
+
+:= with_damage (f : foe) (call_sign : i32) (dealt : i32) : foe =
+    ? call_sign = 0 ?> { f ?| aim = { (f.aim) ?| damage_first = f.aim.damage_first + dealt } }
+    |: { f ?| aim = { (f.aim) ?| damage_second = f.aim.damage_second + dealt } }
+
+:= credited (f : foe) (call_sign : i32) (wounded : living) : foe =
+    with_damage { f ?| life = wounded } call_sign (vitality.health f.life - vitality.health wounded)
+
+:= returns_after (now : i32) (delay : i32) (f : foe) : i32 =
+    ? now < f.respawn.check_until ?> f.respawn.check_until + delay - canary_spawn_check_ms () |: now + delay
+
+:= buried_until_return (now : i32) (delay : i32) (kind : creatures.arena_creature) (f : foe) : foe =
+    := buried = buried_foe kind
+    { buried ?| spawn = f.spawn; respawn = { (buried.respawn) ?| returns_at = returns_after now delay f } }
+
+:= slain_slot (camp : camp) (now : i32) (kind : creatures.arena_creature) (f : foe) : foe =
+    ?= camp.foes.rule ?|
+    | Respawning => fresh_foe kind f.spawn
+    | Clearing => buried_foe kind
+    | RespawningAfter delay => buried_until_return now delay kind f
+
+:= lucky_drop (t : turn) (drop : creatures.gold_drop) : bool =
+    conv (rng.roll_between 1 100000 (key t.seed t.tick t.index (purpose_loot ()))) <= drop.chance_per_100000
+
+:= coin_count (t : turn) (drop : creatures.gold_drop) : i32 =
+    conv (rng.roll_between 1 (conv drop.max_count) (key t.seed (t.tick + 1) t.index (purpose_loot ())))
+
+:= coins_dropped (t : turn) (kind : creatures.arena_creature) : i32 =
+    := drop = creatures.gold_drop_of kind
+    ? lucky_drop t drop ?> coin_count t drop |: 0
+
+:= kill_counted (p : pack) (kind : creatures.arena_creature) : pack =
+    := s = p.score
+    p |> with_score { s ?| kills = s.kills + 1; experience = s.experience + (creatures.stats_of kind).experience }
+
+:= kill_paid (p : pack) (coins : i32) : pack =
+    := h, s = p.hunter, p.score
+    { p ?| hunter = { h ?| target = -1 }; score = { s ?| gold = quantity.plus s.gold (quantity.gp coins) } }
+
+:= slain (t : turn) (f : foe) (timed : pack) : pack =
+    := kind = turn_kind t
+    := reset = with_slot t.index (slain_slot t.camp t.now kind f) timed
+    kill_paid (kill_counted reset kind) (coins_dropped t kind)
+
+:= strike_lands (t : turn) (hit : i32) (timed : pack) : pack =
+    :< vitality
+    := f = slot t.index timed
+    ?= strike hit f.life ?|
+    | Survived wounded => with_slot t.index (credited f timed.hunter.call_sign wounded) timed
+    | Slain _ => slain t f timed
+
+:= player_strikes (camp : camp) (seed : u32) (tick : i32) (proof : strike_proof) (p : pack) : pack =
+    := t = turn_at camp seed tick (quantity.value_of (readiness.since proof)) p.hunter.target
+    strike_lands t (hunter_hit camp seed tick p.hunter) (swung t p)
+
+:= stepped_hunter (camp : camp) (now : i32) (to : geometry.position) (h : hunter) : hunter =
+    := moved = { h ?| at = to; next_step_at = now + geometry.step_cost (hunter_step_ms_at camp h.at) h.at to }
+    moved |> with_timers (swing_after_step camp now h.clock.timers)
+
+:~ ^ hunter_steps (camp : camp) (now : i32) (toward : geometry.position) (p : pack) : pack =
+    p |> with_hunter (stepped_hunter camp now toward p.hunter)
+
+:= no_faster_than_live_chase (server : i32) : i32 = ? server > live_chase_step_ms () ?> server |: live_chase_step_ms ()
 
 := chase_step_ms_at (camp : camp) (at : geometry.position) : i32 =
     := server = hunter_step_ms_at camp at
-    ?= camp.chase_pace ?|
+    ?= camp.knight.chase_pace ?|
     | ChasesAtTheServerPace => server
-    | ChasesAtTheProbePace => ? server > live_chase_step_ms () ?> server |: live_chase_step_ms ()
+    | ChasesAtTheProbePace => no_faster_than_live_chase server
 
-:= player_approaches (camp : camp) (now : i32) (p : pack) : pack =
+:= toward_goal (camp : camp) (goal : geometry.position) (p : pack) : geometry.position =
+    terrain.step_toward camp.layout (taken_by_foes p) goal p.hunter.at
+
+:= delays_a_fresh_walk (camp : camp) : bool =
+    ?= camp.motion.approach ?|
+    | ApproachesAfterAFreshWalkDelay => !+
+    | ApproachesAtOnce => !-
+
+:~ ^ chase_due (camp : camp) (now : i32) (h : hunter) (toward : geometry.position) : i32 =
+    now + geometry.step_cost (chase_step_ms_at camp h.at) h.at toward
+
+:= approach_waits (camp : camp) (now : i32) (toward : geometry.position) (p : pack) : bool =
     := h = p.hunter
-    := toward = terrain.step_toward camp.layout (taken_by_foes p) (slot h.target p).at h.at
-    := delays_a_fresh_walk =
-        ?= camp.approach ?|
-        | ApproachesAfterAFreshWalkDelay => !+
-        | ApproachesAtOnce => !-
-    ? now < h.next_step_at
-    ?> p
-    |? delays_a_fresh_walk && now - h.next_step_at >= tick_ms () && geometry.same_tile toward h.at = !-
-    ?> p |> with_hunter { h ?| next_step_at = now + geometry.step_cost (chase_step_ms_at camp h.at) h.at toward }
-    |:
-        := q = hunter_steps camp now toward p
-        := k = q.hunter
-        q |> with_hunter { k ?| next_step_at = now + geometry.step_cost (chase_step_ms_at camp h.at) h.at toward }
+    delays_a_fresh_walk camp && now - h.next_step_at >= tick_ms () && geometry.same_tile toward h.at = !-
 
-:= threat_rank (f : foe) : i32 = f.at.x * 100000 + f.at.y
+:= approach_stepped (camp : camp) (now : i32) (toward : geometry.position) (p : pack) : pack =
+    := h = p.hunter
+    := q = hunter_steps camp now toward p
+    := k = q.hunter
+    q |> with_hunter { k ?| next_step_at = chase_due camp now h toward }
+
+:= approach_toward (camp : camp) (p : pack) : geometry.position =
+    terrain.step_toward camp.layout (taken_by_foes p) (slot p.hunter.target p).at p.hunter.at
+
+:= approach_delayed (camp : camp) (now : i32) (toward : geometry.position) (p : pack) : pack =
+    := h = p.hunter
+    p |> with_hunter { h ?| next_step_at = chase_due camp now h toward }
+
+:~ ^ player_approaches (camp : camp) (now : i32) (p : pack) : pack =
+    := toward = approach_toward camp p
+    ? now < p.hunter.next_step_at ?> p
+    |? approach_waits camp now toward p ?> approach_delayed camp now toward p
+    |: approach_stepped camp now toward p
+
+:~ ^ threat_rank (f : foe) : i32 = f.at.x * 100000 + f.at.y
+
+:~ ^ adjacent_pick (p : pack) (index : i32) : i32 = ? distance_to (slot index p) p <= 1 ?> index |: -1
+
+:= earlier_threat (p : pack) (a : i32) (b : i32) : i32 =
+    ? a < 0 ?> b |? b < 0 ?> a |? threat_rank (slot b p) < threat_rank (slot a p) ?> b |: a
+
+:~ ^ nearest_from (p : pack) (i : i32) (best : i32) : i32 =
+    ? i >= band_size () ?> best |: nearest_from p (i + 1) (earlier_threat p best (adjacent_pick p i))
 
 := slot_of_nearest_attacker (p : pack) : foe =
-    := adjacent index = distance_to (slot index p) p <= 1
-    := earlier (a : i32) (b : i32) : i32 =
-        ? a < 0 ?> b |? b < 0 ?> a |? threat_rank (slot b p) < threat_rank (slot a p) ?> b |: a
-    := pick index = ? adjacent index ?> index |: -1
-    :~ ^ fold (i : i32) (best : i32) : i32 = ? i >= band_size () ?> best |: fold (i + 1) (earlier best (pick i))
-    := chosen = fold 1 (pick 0)
+    := chosen = nearest_from p 1 (adjacent_pick p 0)
     slot (? chosen < 0 ?> 0 |: chosen) p
 
-:= player_retreats
-    (camp : camp) (rule : footing_rule) (slot : readiness.ready readiness.action_slot) (p : pack)
-    : pack
-    =
-    := now = quantity.value_of (readiness.since slot)
-    := threat = slot_of_nearest_attacker p
-    := foes_near (q : geometry.position) : i32 =
-        views.counted (\ (f : foe) => geometry.chebyshev_distance f.at q <= 1) p.foes
-    := away =
-        ?= rule ?|
-        | StepAway => terrain.step_away camp.layout (taken_by_foes p) threat.at p.hunter.at
-        | StepAwayLikeTheLiveProbe =>
-            terrain.step_away_like_the_live_probe camp.layout (taken_by_foes p) threat.at p.hunter.at
-        | ScoredStep w => terrain.scored_step camp.layout (taken_by_foes p) foes_near w threat.at p.hunter.at
-    := h = p.hunter
-    := stuck = geometry.same_tile away h.at
-    p
-    |> with_hunter { h ?|
-        at = away
-        next_step_at =
-            now + geometry.step_cost (retreat_step_ms_at camp h.at) h.at away
-        next_action_at = quantity.plus (readiness.since slot) (quantity.ms (parity_action_gap_ms ()))
-        retreats =
-            ? stuck
-            ?> h.retreats
-            |: h.retreats + 1
-        cornered =
-            ? stuck
-            ?> h.cornered + 1
-            |: h.cornered
-        timers =
-            ? stuck
-            ?> h.timers
-            |: swing_after_step camp now h.timers
-    }
+:= foes_near_of (p : pack) : geometry.position -> i32 =
+    \ q => views.counted (\ (f : foe) => geometry.chebyshev_distance f.at q <= 1) p.foes
 
-:= features (camp : camp) (attackers : i32) (now : i32) (p : pack) : network.inputs =
-    := health_fraction =
-        quantity.value_of p.hunter.health * network.one () / quantity.value_of (player_max_health camp)
-    ? p.hunter.target < 0
-    ?> network.inputs_of health_fraction attackers 0 0 !- !- !-
-    |:
-        := f = slot p.hunter.target p
-        := stats = creatures.stats_of (kind_of p.hunter.target camp)
-        := o = observe now p
-        network.inputs_of health_fraction attackers
-            (vitality.health f.life * network.one () / stats.max_health)
-            (distance_to f p)
-            o.heal_ready
-            o.strike_ready
-            (vitality.health f.life <= stats.run_health)
+:~ ^ nearest_threat_at (p : pack) : geometry.position = (slot_of_nearest_attacker p).at
+
+:= plain_retreat (camp : camp) (p : pack) : geometry.position =
+    terrain.step_away camp.layout (taken_by_foes p) (nearest_threat_at p) p.hunter.at
+
+:= live_probe_retreat (camp : camp) (p : pack) : geometry.position =
+    terrain.step_away_like_the_live_probe camp.layout (taken_by_foes p) (nearest_threat_at p) p.hunter.at
+
+:= scored_retreat (camp : camp) (w : terrain.footing) (p : pack) : geometry.position =
+    terrain.scored_step camp.layout (taken_by_foes p) (foes_near_of p) w (nearest_threat_at p) p.hunter.at
+
+:= retreat_to (camp : camp) (rule : footing_rule) (p : pack) : geometry.position =
+    ?= rule ?|
+    | StepAway => plain_retreat camp p
+    | StepAwayLikeTheLiveProbe => live_probe_retreat camp p
+    | ScoredStep w => scored_retreat camp w p
+
+:= tallied_retreat (stuck : bool) (t : hunter_tally) : hunter_tally =
+    ? stuck ?> { t ?| cornered = t.cornered + 1 } |: { t ?| retreats = t.retreats + 1 }
+
+:= retreat_counted (stuck : bool) since (h : hunter) : hunter =
+    := c = h.clock
+    { h ?| tally = tallied_retreat stuck h.tally; clock = { c ?| next_action_at = action_gap_after since } }
+
+:= retreat_timers (camp : camp) (now : i32) (stuck : bool) (h : hunter) : cooldowns.timers =
+    ? stuck ?> h.clock.timers |: swing_after_step camp now h.clock.timers
+
+:= stepped_back_to (camp : camp) (now : i32) (away : geometry.position) (h : hunter) : hunter =
+    { h ?| at = away; next_step_at = now + geometry.step_cost (retreat_step_ms_at camp h.at) h.at away }
+
+:= retreated (camp : camp) since (away : geometry.position) (h : hunter) : hunter =
+    := now, stuck = quantity.value_of since, geometry.same_tile away h.at
+    retreat_counted stuck since (stepped_back_to camp now away h) |> with_timers (retreat_timers camp now stuck h)
+
+:= player_retreats (camp : camp) (rule : footing_rule) (slot : action_proof) (p : pack) : pack =
+    p |> with_hunter (retreated camp (readiness.since slot) (retreat_to camp rule p) p.hunter)
+
+:= health_share (health : i32) (max : i32) : i32 = health * network.one () / max
+
+:= player_share (camp : camp) (p : pack) : i32 =
+    health_share (quantity.value_of p.hunter.health) (quantity.value_of (player_max_health camp))
+
+:= target_facts (camp : camp) (p : pack) : i32 * i32 * bool =
+    := f = slot p.hunter.target p
+    := stats, life = creatures.stats_of (kind_of p.hunter.target camp), vitality.health f.life
+    health_share life stats.max_health, distance_to f p, life <= stats.run_health
+
+:= targeted (o : policy.observation) (health : i32) (attackers : i32) (facts : i32 * i32 * bool) : network.inputs =
+    := share, distance, fleeing = facts
+    network.inputs_of health attackers share distance o.heal_ready o.strike_ready fleeing
+
+:~ ^ features (camp : camp) (attackers : i32) (now : i32) (p : pack) : network.inputs =
+    := health = player_share camp p
+    ? p.hunter.target < 0 ?> network.inputs_of health attackers 0 0 !- !- !-
+    |: targeted (observe now p) health attackers (target_facts camp p)
 
 := temperament_of (kind : creatures.arena_creature) : policy.temperament =
     :< policy
     ? (creatures.stats_of kind).run_health > 0 ?> Flees |: Stands
 
-:= crowd_of (camp : camp) (p : pack) : policy.by_temperament i32 =
-    :< policy
-    := joined (index : i32) (crowd : by_temperament i32) : by_temperament i32 =
-        ? distance_to (slot index p) p > 1 ?> crowd
-        |:
-            ?= temperament_of (kind_of index camp) ?|
-            | Stands => { crowd ?| standing = crowd.standing + 1 }
-            | Flees => { crowd ?| fleeing = crowd.fleeing + 1 }
-    :~ ^ fold (i : i32) (crowd : by_temperament i32) : by_temperament i32 =
-        ? i >= band_size ()
-        ?> crowd
-        |: fold (i + 1) (joined i crowd)
-    fold 0 { standing = 0; fleeing = 0 }
+:== temper_count = policy.by_temperament i32
 
-:= wants_heal (camp : camp) (b : brain) (attackers : i32) (now : i32) (p : pack) : bool =
-    ?= b ?|
-    | Rules a => policy.heals (policy.thresholds_of a attackers) (observe now p)
-    | Network w => (observe now p).heal_ready && (network.decide w (features camp attackers now p)).heal
-    | Temperate r => policy.heals (policy.temperate_thresholds r (crowd_of camp p)) (observe now p)
+:= counted_temper (kind : creatures.arena_creature) (crowd : temper_count) : temper_count =
+    :< policy
+    ?= temperament_of kind ?|
+    | Stands => { crowd ?| standing = crowd.standing + 1 }
+    | Flees => { crowd ?| fleeing = crowd.fleeing + 1 }
+
+:= joined_crowd (camp : camp) (p : pack) (index : i32) (crowd : temper_count) : temper_count =
+    ? distance_to (slot index p) p > 1 ?> crowd |: counted_temper (kind_of index camp) crowd
+
+:~ ^ crowd_from (camp : camp) (p : pack) (i : i32) (crowd : temper_count) : temper_count =
+    ? i >= band_size () ?> crowd |: crowd_from camp p (i + 1) (joined_crowd camp p i crowd)
+
+:~ ^ crowd_of (camp : camp) (p : pack) : temper_count = crowd_from camp p 0 { standing = 0; fleeing = 0 }
+
+:= rules_heal (b : beat) (a : policy.adaptive) (attackers : i32) (p : pack) : bool =
+    policy.heals (policy.thresholds_of a attackers) (observe b.now p)
+
+:= network_heals (b : beat) (w : network.weights) (attackers : i32) (p : pack) : bool =
+    (observe b.now p).heal_ready && (network.decide w (features b.camp attackers b.now p)).heal
+
+:= temperate_heals (b : beat) (r : policy.temperate) (p : pack) : bool =
+    policy.heals (policy.temperate_thresholds r (crowd_of b.camp p)) (observe b.now p)
+
+:= wants_heal (b : beat) (d : brain) (attackers : i32) (p : pack) : bool =
+    ?= d ?|
+    | Rules a => rules_heal b a attackers p
+    | Network w => network_heals b w attackers p
+    | Temperate r => temperate_heals b r p
     | RandomControl => !-
 
-:= after_heal_plan (camp : camp) (b : brain) (attackers : i32) (now : i32) (p : pack) : bool * policy.engagement =
+:== plan = bool * policy.engagement
+
+:= network_engagement (o : policy.observation) (engage : bool) : policy.engagement =
     :< policy
-    ?= b ?|
-    | Rules a => retreats a attackers, engages (thresholds_of a attackers) (observe now p)
-    | Network w =>
-        := o = observe now p
-        := d = network.decide w (features camp attackers now p)
-        := engagement =
-            ? d.engage ?>
-                ?= o.target ?|
-                | InReach => ? o.strike_ready ?> Strike |: Hold
-                | OutOfReach => Approach
-                | NoTarget => Hold
-            |: Hold
-        d.retreat, engagement
-    | Temperate r =>
-        := crowd = crowd_of camp p
-        temperate_retreats r crowd, engages (temperate_thresholds r crowd) (observe now p)
-    | RandomControl => !-, Hold
+    ? engage ?>
+        ?= o.target ?|
+        | InReach => ? o.strike_ready ?> Strike |: Hold
+        | OutOfReach => Approach
+        | NoTarget => Hold
+    |: Hold
+
+:= rules_plan (b : beat) (a : policy.adaptive) (attackers : i32) (p : pack) : plan =
+    policy.retreats a attackers, policy.engages (policy.thresholds_of a attackers) (observe b.now p)
+
+:= network_plan (b : beat) (w : network.weights) (attackers : i32) (p : pack) : plan =
+    := d = network.decide w (features b.camp attackers b.now p)
+    d.retreat, network_engagement (observe b.now p) d.engage
+
+:= temperate_plan (b : beat) (r : policy.temperate) (p : pack) : plan =
+    := crowd = crowd_of b.camp p
+    policy.temperate_retreats r crowd, policy.engages (policy.temperate_thresholds r crowd) (observe b.now p)
+
+:= after_heal_plan (b : beat) (d : brain) (attackers : i32) (p : pack) : plan =
+    ?= d ?|
+    | Rules a => rules_plan b a attackers p
+    | Network w => network_plan b w attackers p
+    | Temperate r => temperate_plan b r p
+    | RandomControl => !-, (:< policy ;; Hold)
 
 := next_waypoint (route : patrol_route) (p : pack) : pack =
     := h = p.hunter
     p |> with_hunter { h ?| waypoint = ? h.waypoint + 1 >= route.count ?> 0 |: h.waypoint + 1 }
 
-:= patrol_step (camp : camp) (route : patrol_route) (now : i32) (p : pack) : pack =
-    ? now < p.hunter.next_step_at ?> p
-    |:
-        := goal = views.band_at p.hunter.waypoint route.points
-        ? geometry.chebyshev_distance goal p.hunter.at <= 1 ?> next_waypoint route p
-        |:
-            := toward = terrain.step_toward camp.layout (taken_by_foes p) goal p.hunter.at
-            ? geometry.same_tile toward p.hunter.at ?> next_waypoint route p
-            |: hunter_steps camp now toward p
+:= walk_or_arrive (camp : camp) (now : i32) (goal : geometry.position) (arrived : pack) (p : pack) : pack =
+    := toward = toward_goal camp goal p
+    ? geometry.same_tile toward p.hunter.at ?> arrived |: hunter_steps camp now toward p
 
-:= awaiting_return (f : foe) : bool = f.returns_at < never ()
+:= step_or_arrive (camp : camp) (now : i32) (goal : geometry.position) (arrived : pack) (p : pack) : pack =
+    ? geometry.chebyshev_distance goal p.hunter.at <= 1 ?> arrived |: walk_or_arrive camp now goal arrived p
+
+:= patrol_step (camp : camp) (route : patrol_route) (now : i32) (p : pack) : pack =
+    := goal = views.band_at p.hunter.waypoint route.points
+    ? now < p.hunter.next_step_at ?> p |: step_or_arrive camp now goal (next_waypoint route p) p
+
+:= awaiting_return (f : foe) : bool = f.respawn.returns_at < never ()
 
 := east_of (border : i32) (f : foe) : bool = f.spawn.x >= border
 
 := in_territory (border : i32) (index : i32) (p : pack) : bool =
     east_of border (slot index p) = (p.hunter.call_sign = 0)
 
+:= travel_ms (camp : camp) (f : foe) (p : pack) : i32 =
+    geometry.chebyshev_distance f.spawn p.hunter.at * terrain.on_ground camp.layout (hunter_of camp).step_ms
+
+:= return_wait (f : foe) (now : i32) (travel : i32) : i32 =
+    ? f.respawn.returns_at - now > travel ?> f.respawn.returns_at - now |: travel
+
+:= at_spawn (f : foe) (p : pack) : bool = geometry.chebyshev_distance f.spawn p.hunter.at <= 1
+
+:= foe_wait_ms (camp : camp) (now : i32) (f : foe) (p : pack) : i32 =
+    := travel = travel_ms camp f p
+    ? awaiting_return f ?> return_wait f now travel |? at_spawn f p ?> never () |: travel
+
 := expected_wait_ms (camp : camp) (now : i32) (index : i32) (p : pack) : i32 =
-    := f = slot index p
-    := travel =
-        geometry.chebyshev_distance f.spawn p.hunter.at * terrain.on_ground camp.layout (hunter_of camp).step_ms
-    ? index >= camp.size ?> never ()
-    |? awaiting_return f ?> (? f.returns_at - now > travel ?> f.returns_at - now |: travel)
-    |? geometry.chebyshev_distance f.spawn p.hunter.at <= 1 ?> never ()
-    |: travel
+    ? index >= camp.foes.size ?> never () |: foe_wait_ms camp now (slot index p) p
 
 := claimed_wait_ms (camp : camp) (claims : i32 -> bool) (now : i32) (index : i32) (p : pack) : i32 =
     ? claims index
     ?> expected_wait_ms camp now index p
     |: never ()
 
-:= soonest_claimed_spawn (camp : camp) (claims : i32 -> bool) (now : i32) (p : pack) : i32 =
-    := sooner (a : i32) (b : i32) : i32 =
-        ? claimed_wait_ms camp claims now b p < claimed_wait_ms camp claims now a p
-        ?> b
-        |: a
-    :~ ^ fold (i : i32) (best : i32) : i32 = ? i >= band_size () ?> best |: fold (i + 1) (sooner best i)
-    fold 1 0
+:= sooner (camp : camp) (claims : i32 -> bool) (now : i32) (p : pack) (a : i32) (b : i32) : i32 =
+    ? claimed_wait_ms camp claims now b p < claimed_wait_ms camp claims now a p ?> b |: a
 
-:= soonest_spawn (camp : camp) (now : i32) (p : pack) : i32 =
-    := sooner (a : i32) (b : i32) : i32 =
-        ? expected_wait_ms camp now b p < expected_wait_ms camp now a p
-        ?> b
-        |: a
-    :~ ^ fold (i : i32) (best : i32) : i32 = ? i >= band_size () ?> best |: fold (i + 1) (sooner best i)
-    fold 1 0
+:= soonest_claimed_spawn (camp : camp) (claims : i32 -> bool) (now : i32) (p : pack) : i32 =
+    :~ ^ soonest_from (i : i32) (best : i32) : i32 =
+        ? i >= band_size () ?> best |: soonest_from (i + 1) (sooner camp claims now p best i)
+    soonest_from 1 0
+
+:= soonest_spawn (camp : camp) (now : i32) (p : pack) : i32 = soonest_claimed_spawn camp (\ _ => !+) now p
+
+:= spawn_step (camp : camp) (now : i32) (index : i32) (p : pack) : pack =
+    := toward = terrain.step_toward camp.layout (taken_by_foes p) (slot index p).spawn p.hunter.at
+    ? geometry.same_tile toward p.hunter.at ?> p |: hunter_steps camp now toward p
+
+:= claimed_step (camp : camp) (claims : i32 -> bool) (now : i32) (p : pack) : pack =
+    := index = soonest_claimed_spawn camp claims now p
+    ? claimed_wait_ms camp claims now index p >= never () ?> p |: spawn_step camp now index p
 
 := territory_step (camp : camp) (border : i32) (now : i32) (p : pack) : pack =
-    ? now < p.hunter.next_step_at ?> p
-    |:
-        := claims index = in_territory border index p
-        := index = soonest_claimed_spawn camp claims now p
-        ? claimed_wait_ms camp claims now index p >= never () ?> p
-        |:
-            := toward = terrain.step_toward camp.layout (taken_by_foes p) (slot index p).spawn p.hunter.at
-            ? geometry.same_tile toward p.hunter.at ?> p
-            |: hunter_steps camp now toward p
+    ? now < p.hunter.next_step_at ?> p |: claimed_step camp (\ index => in_territory border index p) now p
 
 := sweep_step (camp : camp) (now : i32) (p : pack) : pack =
-    ? now < p.hunter.next_step_at ?> p
-    |:
-        := index = soonest_spawn camp now p
-        ? expected_wait_ms camp now index p >= never () ?> p
-        |:
-            := toward = terrain.step_toward camp.layout (taken_by_foes p) (slot index p).spawn p.hunter.at
-            ? geometry.same_tile toward p.hunter.at ?> p
-            |: hunter_steps camp now toward p
+    ? now < p.hunter.next_step_at ?> p |: claimed_step camp (\ _ => !+) now p
 
 :| random_move =
     | DrinkPotion
@@ -1308,79 +1532,98 @@ test hunting_pack static =
     := pick = rng.roll_between 0 3 (key seed tick (98 + 100 * sign) (purpose_random_control ()))
     ? pick = 0 ?> DrinkPotion |? pick = 1 ?> EngageTarget |? pick = 2 ?> StepSomewhere |: StandStill
 
-:= random_pick (camp : camp) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
-    ?= random_move_of seed tick p.hunter.call_sign ?|
-    | DrinkPotion =>
-        ?= readiness.action_gate (quantity.ms now) p.hunter.next_action_at ?|
-        | Open slot =>
-            ?
-                p.hunter.potions < camp.potion_budget
-                && cooldowns.can_cast now (vocations.as_cooldown (vocations.knight_heal ())) p.hunter.timers
-            ?> player_heals camp seed tick slot p
-            |: p
-        | ClosedUntil _ => p
-    | EngageTarget =>
-        ? p.hunter.target < 0 ?> p
-        |? distance_to (slot p.hunter.target p) p <= 1 ?>
-            ?= readiness.attack_gate (quantity.ms now) p.hunter.timers ?|
-            | Open proof => player_strikes camp seed tick proof p
-            | ClosedUntil _ => p
-        |: player_approaches camp now p
-    | StepSomewhere =>
-        ? now < p.hunter.next_step_at
-        ?> p
-        |:
-            := k : i32 =
-                conv (rng.roll_between 0 7 (key seed tick (97 + 100 * p.hunter.call_sign) (purpose_random_control ())))
-            := next = terrain.neighbor k p.hunter.at
-            ? terrain.free camp.layout (taken_by_foes p) next ?> hunter_steps camp now next p
-            |: p
+:~ ^ strike_if_ready (b : beat) (p : pack) : pack =
+    ?= readiness.attack_gate (quantity.ms b.now) p.hunter.clock.timers ?|
+    | Open proof => player_strikes b.camp b.seed b.tick proof p
+    | ClosedUntil _ => p
+
+:= can_drink (b : beat) (p : pack) : bool =
+    p.hunter.tally.potions < b.camp.crew.potion_budget
+    && cooldowns.can_cast b.now (vocations.as_cooldown (vocations.knight_heal ())) p.hunter.clock.timers
+
+:= action_gate_at (now : i32) (h : hunter) : readiness.gate readiness.action_slot =
+    readiness.action_gate (quantity.ms now) h.clock.next_action_at
+
+:= drinks (b : beat) (p : pack) : pack =
+    ?= action_gate_at b.now p.hunter ?|
+    | Open slot => ? can_drink b p ?> player_heals b.camp b.seed b.tick slot p |: p
+    | ClosedUntil _ => p
+
+:= engages_target (b : beat) (p : pack) : pack =
+    ? p.hunter.target < 0 ?> p
+    |? distance_to (slot p.hunter.target p) p <= 1 ?> strike_if_ready b p
+    |: player_approaches b.camp b.now p
+
+:= random_step_index (b : beat) (p : pack) : i32 =
+    conv (rng.roll_between 0 7 (key b.seed b.tick (97 + 100 * p.hunter.call_sign) (purpose_random_control ())))
+
+:= steps_somewhere (b : beat) (p : pack) : pack =
+    := next = terrain.neighbor (random_step_index b p) p.hunter.at
+    ? b.now < p.hunter.next_step_at ?> p
+    |? terrain.free b.camp.layout (taken_by_foes p) next ?> hunter_steps b.camp b.now next p
+    |: p
+
+:= random_moved (b : beat) (p : pack) : pack =
+    ?= random_move_of b.seed b.tick p.hunter.call_sign ?|
+    | DrinkPotion => drinks b p
+    | EngageTarget => engages_target b p
+    | StepSomewhere => steps_somewhere b p
     | StandStill => p
+
+:= random_pick (camp : camp) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
+    random_moved (beat_at camp seed tick now) p
 
 := auto_attack (camp : camp) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
     ? p.hunter.target < 0 ?> p
-    |? distance_to (slot p.hunter.target p) p <= 1 ?>
-        ?= readiness.attack_gate (quantity.ms now) p.hunter.timers ?|
-        | Open proof => player_strikes camp seed tick proof p
-        | ClosedUntil _ => p
+    |? distance_to (slot p.hunter.target p) p <= 1 ?> strike_if_ready (beat_at camp seed tick now) p
     |: p
 
 := random_acts (camp : camp) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
     random_pick camp seed tick now p |> auto_attack camp seed tick now
 
-:= ruled_acts (camp : camp) (t : tactic) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
+:= heal_wanted (b : beat) (t : tactic) (crowd : i32) (p : pack) : bool =
+    p.hunter.tally.potions < b.camp.crew.potion_budget && wants_heal b t.brain crowd p
+
+:= heals_if_wanted (b : beat) (t : tactic) (crowd : i32) (p : pack) : pack =
+    ?= action_gate_at b.now p.hunter ?|
+    | Open slot => ? heal_wanted b t crowd p ?> player_heals b.camp b.seed b.tick slot p |: p
+    | ClosedUntil _ => p
+
+:= idles (b : beat) (t : tactic) (p : pack) : pack =
+    ?= t.patrol ?|
+    | Stays => p
+    | Patrols route => patrol_step b.camp route b.now p
+    | SweepsSpawns => sweep_step b.camp b.now p
+    | SweepsTerritory border => territory_step b.camp border b.now p
+
+:~ ^ engaged_by (b : beat) engagement (p : pack) : pack =
     :< policy
-    := attackers = views.counted (\ (f : foe) => distance_to f p <= 1) p.foes
-    := aimed = aimed_by camp t.order p
-    := healed =
-        ?= readiness.action_gate (quantity.ms now) aimed.hunter.next_action_at ?|
-        | Open slot =>
-            ? aimed.hunter.potions < camp.potion_budget && wants_heal camp t.brain attackers now aimed
-            ?> player_heals camp seed tick slot aimed
-            |: aimed
-        | ClosedUntil _ => aimed
-    ? healed.hunter.target < 0 ?>
-        ?= t.patrol ?|
-        | Stays => healed
-        | Patrols route => patrol_step camp route now healed
-        | SweepsSpawns => sweep_step camp now healed
-        | SweepsTerritory border => territory_step camp border now healed
+    ?= engagement ?|
+    | Strike => strike_if_ready b p
+    | Approach => player_approaches b.camp b.now p
+    | Hold => p
+
+:= retreats_now (b : beat) (t : tactic) engagement (p : pack) : pack =
+    ?= action_gate_at b.now p.hunter ?|
+    | Open slot => player_retreats b.camp t.footing slot p
+    | ClosedUntil _ => engaged_by b engagement p
+
+:= retreats_or_engages (b : beat) (t : tactic) (retreat : bool) engagement (p : pack) : pack =
+    ? retreat && b.now >= p.hunter.next_step_at ?> retreats_now b t engagement p |: engaged_by b engagement p
+
+:= decides (b : beat) (t : tactic) (attackers : i32) (p : pack) : pack =
+    ? p.hunter.target < 0 ?> idles b t p
     |:
-        ?= after_heal_plan camp t.brain attackers now healed ?|
-        | retreat, engagement =>
-            := engage () =
-                ?= engagement ?|
-                | Strike =>
-                    ?= readiness.attack_gate (quantity.ms now) healed.hunter.timers ?|
-                    | Open proof => player_strikes camp seed tick proof healed
-                    | ClosedUntil _ => healed
-                | Approach => player_approaches camp now healed
-                | Hold => healed
-            ? retreat && now >= healed.hunter.next_step_at ?>
-                ?= readiness.action_gate (quantity.ms now) healed.hunter.next_action_at ?|
-                | Open slot => player_retreats camp t.footing slot healed
-                | ClosedUntil _ => engage ()
-            |: engage ()
+        := retreat, plan = after_heal_plan b t.brain attackers p
+        retreats_or_engages b t retreat plan p
+
+:= attackers_of (p : pack) : i32 = views.counted (\ (f : foe) => distance_to f p <= 1) p.foes
+
+:= ruled_acts (camp : camp) (t : tactic) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
+    := b = beat_at camp seed tick now
+    := attackers = attackers_of p
+    decides b t attackers (heals_if_wanted b t attackers (aimed_by camp t.order p))
+
 := player_acts (camp : camp) (t : tactic) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
     ?= t.brain ?|
     | RandomControl => random_acts camp seed tick now (aimed_by camp t.order p)
@@ -1390,128 +1633,143 @@ test hunting_pack static =
     := h = p.hunter
     { p ?|
         hunter = { h ?| at = knight_start camp h.call_sign; health = player_max_health camp; target = -1 }
-        deaths = p.deaths + 1
+        score = { (p.score) ?| deaths = p.score.deaths + 1 }
     }
 
-:= recharged (now : i32) (p : pack) : pack =
-    := h = p.hunter
-    ? now < h.next_charge_at
-    ?> p
-    |:
-        p
-        |> with_hunter { h ?|
-            block_charges =
-                ? h.block_charges < combat.max_block_charges ()
-                ?> h.block_charges + 1
-                |: h.block_charges
-            next_charge_at = now + combat.block_charge_ms ()
-        }
+:= one_more_charge (charges : i32) : i32 = ? charges < combat.max_block_charges () ?> charges + 1 |: charges
 
-:= knight_turn (camp : camp) (t : tactic) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
-    := h = p.hunter
-    ? quantity.at_least (quantity.hp 0) h.health ?> respawn_player camp p
-    |? now < h.next_decision_at ?> p
-    |: player_acts camp t seed tick now (p |> with_hunter { h ?| next_decision_at = now + client_decision_ms () })
+:= charged_up (now : i32) (h : hunter) : hunter =
+    := c = h.clock
+    := charges = one_more_charge c.block_charges
+    h |> with_clock { c ?| block_charges = charges; next_charge_at = now + combat.block_charge_ms () }
 
-:= measured_entry_ms (index : i32) : i32 =
-    ? index = 0 ?> 746
-    |? index = 1 ?> 745
-    |? index = 2 ?> 618
-    |? index = 3 ?> 934
-    |? index = 4 ?> 1116
-    |? index = 5 ?> 1193
-    |? index = 6 ?> 1318
-    |? index = 7 ?> 2346
-    |? index = 8 ?> 1847
-    |: 1520
+:~ ^ recharged (now : i32) (p : pack) : pack =
+    ? now < p.hunter.clock.next_charge_at ?> p |: p |> with_hunter (charged_up now p.hunter)
+
+:= knight_down (p : pack) : bool = quantity.at_least (quantity.hp 0) p.hunter.health
+
+:= decided (now : i32) (p : pack) : pack =
+    := h = p.hunter
+    := c = h.clock
+    p |> with_hunter (h |> with_clock { c ?| next_decision_at = now + client_decision_ms () })
+
+:~ ^ knight_turn (camp : camp) (t : tactic) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
+    ? knight_down p ?> respawn_player camp p
+    |? now < p.hunter.clock.next_decision_at ?> p
+    |: player_acts camp t seed tick now (decided now p)
+
+:= early_entry_ms (index : i32) : i32 =
+    ? index = 0 ?> 746 |? index = 1 ?> 745 |? index = 2 ?> 618 |? index = 3 ?> 934 |: 1116
+
+:= late_entry_ms (index : i32) : i32 =
+    ? index = 5 ?> 1193 |? index = 6 ?> 1318 |? index = 7 ?> 2346 |? index = 8 ?> 1847 |: 1520
+
+:= measured_entry_ms (index : i32) : i32 = ? index >= 0 && index <= 4 ?> early_entry_ms index |: late_entry_ms index
 
 := ally_entry_ms (seed : u32) : i32 = measured_entry_ms (conv (rng.roll_between 0 9 (key seed 0 0 (purpose_entry ()))))
 
-:= ally_entered (camp : camp) (seed : u32) (now : i32) (p : pack) : pack =
-    ? camp.party > 1 && p.ally_in_world = !- && now >= ally_entry_ms seed
-    ?>
-        := waiting = p.ally
-        := entered = { waiting ?| at = knight_start camp 1; next_decision_at = now }
-        now_in_world (with_ally entered p)
-    |: p
+:= entered_ally (camp : camp) (now : i32) (p : pack) : pack =
+    := waiting = p.ally
+    := c = waiting.clock
+    now_in_world (with_ally ({ waiting ?| at = knight_start camp 1 } |> with_clock { c ?| next_decision_at = now }) p)
 
-:= advance (camp : camp) (t : tactic) (seed : u32) (tick : i32) (p : pack) : pack =
-    := now = tick * tick_ms ()
-    := charged = p |> ally_entered camp seed now |> recharged now
-    := both_charged = ? camp.party > 1 ?> turned (recharged now (turned charged)) |: charged
-    := knights_act (q : pack) : pack =
-        := after_lead = knight_turn camp t seed tick now q
-        ? camp.party > 1 && q.ally_in_world
-        ?> turned (knight_turn camp t seed tick now (turned after_lead))
-        |: after_lead
-    ?= camp.view ?|
-    | SeesThisTick => both_charged |> foes_act camp seed tick now |> knights_act
-    | SeesLastTick => both_charged |> knights_act |> foes_act camp seed tick now
-    | SeesAtItsPoll =>
-        := phase : i32 = conv (rng.roll_between 0 99 (key seed tick 0 (purpose_poll ())))
-        := landing = now - tick_ms () + phase + client_lag_ms ()
-        := early (i : i32) : bool = (slot i both_charged).next_step_at <= landing
-        both_charged
-        |> foes_act_where camp seed tick now early
-        |> knights_act
-        |> foes_act_where camp seed tick now (\ i => early i = !-)
+:= ally_entered (camp : camp) (seed : u32) (now : i32) (p : pack) : pack =
+    ? camp.crew.party > 1 && p.ally_in_world = !- && now >= ally_entry_ms seed ?> entered_ally camp now p |: p
+
+:= charged_at (b : beat) (p : pack) : pack =
+    := charged = p |> ally_entered b.camp b.seed b.now |> recharged b.now
+    ? b.camp.crew.party > 1 ?> turned (recharged b.now (turned charged)) |: charged
+
+:~ ^ knights_act (b : beat) (t : tactic) (q : pack) : pack =
+    := after_lead = knight_turn b.camp t b.seed b.tick b.now q
+    ? b.camp.crew.party > 1 && q.ally_in_world ?> turned (knight_turn b.camp t b.seed b.tick b.now (turned after_lead))
+    |: after_lead
+
+:~ ^ foes_all (b : beat) (p : pack) : pack = foes_act b.camp b.seed b.tick b.now p
+
+:= poll_landing (b : beat) : i32 =
+    b.now - tick_ms () + conv (rng.roll_between 0 99 (key b.seed b.tick 0 (purpose_poll ()))) + client_lag_ms ()
+
+:= acts_at_poll (b : beat) (t : tactic) (p : pack) : pack =
+    := landing = poll_landing b
+    := early (i : i32) : bool = (slot i p).next_step_at <= landing
+    p |> foes_where b early |> knights_act b t |> foes_where b (\ i => early i = !-)
+
+:= beat_acts (b : beat) (t : tactic) (q : pack) : pack =
+    ?= b.camp.timing.view ?|
+    | SeesThisTick => q |> foes_all b |> knights_act b t
+    | SeesLastTick => q |> knights_act b t |> foes_all b
+    | SeesAtItsPoll => acts_at_poll b t q
+
+:~ ^ advance (camp : camp) (t : tactic) (seed : u32) (tick : i32) (p : pack) : pack =
+    := b = beat_at camp seed tick (tick * tick_ms ())
+    beat_acts b t (charged_at b p)
 
 := simulate (camp : camp) (t : tactic) (seed : u32) (ticks : i32) : pack =
     :~ ^ loop (tick : i32) (p : pack) : pack =
         ? tick >= ticks ?> p |: loop (tick + 1) (advance camp t seed tick p)
     loop 0 (start camp)
 
+:= all_killed (camp : camp) (p : pack) : bool = p.score.kills >= camp.foes.size
+
+:~ ^ cleared_by (camp : camp) (t : tactic) (seed : u32) (max_ticks : i32) (tick : i32) (p : pack) : i32 * pack =
+    ? tick >= max_ticks || all_killed camp p ?> tick * tick_ms (), p
+    |: cleared_by camp t seed max_ticks (tick + 1) (advance camp t seed tick p)
+
 := clear_run (camp : camp) (t : tactic) (seed : u32) (max_ticks : i32) : i32 * pack =
     := cleared = clearing camp
-    :~ ^ loop (tick : i32) (p : pack) : i32 * pack =
-        ? tick >= max_ticks || p.kills >= camp.size
-        ?> tick * tick_ms (), p
-        |: loop (tick + 1) (advance cleared t seed tick p)
-    loop 0 (start cleared)
+    cleared_by cleared t seed max_ticks 0 (start cleared)
+
+:== seed_run = { camp : camp; tactic : tactic; first : u32; count : i32 }
+
+:~ ^ seed_run_of (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : seed_run =
+    { camp = camp; tactic = t; first = first_seed; count = count }
+
+:~ ^ hunt_at (r : seed_run) (index : i32) : pack = simulate r.camp r.tactic (r.first + conv index) (scenario_ticks ())
+
+:= kill_score_of (p : pack) : i32 = p.score.kills - death_penalty () * p.score.deaths
+
+:~ ^ score_from (r : seed_run) (index : i32) (acc : i32) : i32 =
+    ? index >= r.count ?> acc |: score_from r (index + 1) (acc + kill_score_of (hunt_at r index))
 
 := score (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : i32 =
-    :~ ^ loop (index : i32) (acc : i32) : i32 =
-        ? index >= count ?> acc
-        |:
-            := outcome = simulate camp t (first_seed + conv index) (scenario_ticks ())
-            loop (index + 1) (acc + outcome.kills - death_penalty () * outcome.deaths)
-    loop 0 0
+    score_from (seed_run_of camp t first_seed count) 0 0
+
+:= experience_of (p : pack) : i32 = p.score.experience - p.score.deaths * death_experience_penalty ()
+
+:~ ^ experience_from (r : seed_run) (index : i32) (acc : i32) : i32 =
+    ? index >= r.count ?> acc |: experience_from r (index + 1) (acc + experience_of (hunt_at r index))
 
 := hunt_experience (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : i32 =
-    :~ ^ loop (index : i32) (acc : i32) : i32 =
-        ? index >= count ?> acc
-        |:
-            := p = simulate camp t (first_seed + conv index) (scenario_ticks ())
-            loop (index + 1) (acc + p.experience - p.deaths * death_experience_penalty ())
-    loop 0 0
+    experience_from (seed_run_of camp t first_seed count) 0 0
 
 := highest_tuned_heal () : i32 = 400
 
-:= potion_price () : quantity.amount quantity.gold_coins = quantity.gp 50
-:= all_blessings_price_at_level_30 () : quantity.amount quantity.gold_coins = quantity.gp 14000
+:~ ^ potion_price () : quantity.amount quantity.gold_coins = quantity.gp 50
+:~ ^ all_blessings_price_at_level_30 () : quantity.amount quantity.gold_coins = quantity.gp 14000
 
-:= hunt_profit (p : pack) : quantity.amount quantity.gold_coins =
+:~ ^ hunt_profit (p : pack) : quantity.amount quantity.gold_coins =
     quantity.minus
-        (quantity.minus p.gold (quantity.scaled (party_potions p) (potion_price ())))
-        (quantity.scaled p.deaths (all_blessings_price_at_level_30 ()))
+        (quantity.minus p.score.gold (quantity.scaled (party_potions p) (potion_price ())))
+        (quantity.scaled p.score.deaths (all_blessings_price_at_level_30 ()))
 
-:= profit (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : quantity.amount quantity.gold_coins =
-    :~ ^ loop (index : i32) (acc : quantity.amount quantity.gold_coins) : quantity.amount quantity.gold_coins =
-        ? index >= count
-        ?> acc
-        |:
-            loop
-                (index + 1)
-                (quantity.plus acc (hunt_profit (simulate camp t (first_seed + conv index) (scenario_ticks ()))))
-    loop 0 (quantity.gp 0)
+:== gold_amount = quantity.amount quantity.gold_coins
+
+:~ ^ profit_from (r : seed_run) (index : i32) (acc : gold_amount) : gold_amount =
+    ? index >= r.count ?> acc |: profit_from r (index + 1) (quantity.plus acc (hunt_profit (hunt_at r index)))
+
+:= profit (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : gold_amount =
+    profit_from (seed_run_of camp t first_seed count) 0 (quantity.gp 0)
+
+:= tallied (acc : i32 * i32 * i32) (p : pack) : i32 * i32 * i32 =
+    := kills, escapes, deaths = acc
+    kills + p.score.kills, escapes + p.score.escapes, deaths + p.score.deaths
+
+:~ ^ totals_from (r : seed_run) (index : i32) (acc : i32 * i32 * i32) : i32 * i32 * i32 =
+    ? index >= r.count ?> acc |: totals_from r (index + 1) (tallied acc (hunt_at r index))
 
 := totals (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : i32 * i32 * i32 =
-    :~ ^ loop (index : i32) (kills : i32) (escapes : i32) (deaths : i32) : i32 * i32 * i32 =
-        ? index >= count ?> kills, escapes, deaths
-        |:
-            := outcome = simulate camp t (first_seed + conv index) (scenario_ticks ())
-            loop (index + 1) (kills + outcome.kills) (escapes + outcome.escapes) (deaths + outcome.deaths)
-    loop 0 0 0 0
+    totals_from (seed_run_of camp t first_seed count) 0 (0, 0, 0)
 
 := cavebot (order : policy.targeting) : tactic =
     {
@@ -1521,7 +1779,7 @@ test hunting_pack static =
         patrol = Stays
     }
 
-:= cavebot_with_heal (heal : i32) : tactic =
+:~ ^ cavebot_with_heal (heal : i32) : tactic =
     {
         brain = Rules (policy.fixed { heal_below = heal; strike_above = 0 })
         order =
@@ -1533,92 +1791,120 @@ test hunting_pack static =
 
 :== ledger = { hunt_kills : i32; hunt_deaths : i32; hunt_profit : quantity.amount quantity.gold_coins }
 
-:= ledger_of (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : ledger =
-    :~ ^ loop (index : i32) (acc : ledger) : ledger =
-        ? index >= count
-        ?> acc
-        |:
-            := p = simulate camp t (first_seed + conv index) (scenario_ticks ())
-            loop (index + 1) {
-                hunt_kills = acc.hunt_kills + p.kills
-                hunt_deaths = acc.hunt_deaths + p.deaths
-                hunt_profit = quantity.plus acc.hunt_profit (hunt_profit p)
-            }
-    loop 0 { hunt_kills = 0; hunt_deaths = 0; hunt_profit = quantity.gp 0 }
+:= ledgered (acc : ledger) (p : pack) : ledger =
+    {
+        hunt_kills = acc.hunt_kills + p.score.kills
+        hunt_deaths = acc.hunt_deaths + p.score.deaths
+        hunt_profit = quantity.plus acc.hunt_profit (hunt_profit p)
+    }
+
+:~ ^ ledger_from (r : seed_run) (index : i32) (acc : ledger) : ledger =
+    ? index >= r.count ?> acc |: ledger_from r (index + 1) (ledgered acc (hunt_at r index))
+
+:~ ^ ledger_of (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : ledger =
+    ledger_from (seed_run_of camp t first_seed count) 0 { hunt_kills = 0; hunt_deaths = 0; hunt_profit = quantity.gp 0 }
 
 :== clear_ledger = { clear_potions : i32; clear_deaths : i32; clear_ms : i32 }
 
-:= clear_ledger_of (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : clear_ledger =
-    :~ ^ loop (index : i32) (acc : clear_ledger) : clear_ledger =
-        ? index >= count
-        ?> acc
-        |:
-            ?= clear_run camp t (first_seed + conv index) 6000 ?|
-            | elapsed, p =>
-                loop (index + 1) {
-                    clear_potions = acc.clear_potions + party_potions p
-                    clear_deaths = acc.clear_deaths + p.deaths
-                    clear_ms = acc.clear_ms + elapsed
-                }
-    loop 0 { clear_potions = 0; clear_deaths = 0; clear_ms = 0 }
+:= clear_at (r : seed_run) (index : i32) : i32 * pack = clear_run r.camp r.tactic (r.first + conv index) 6000
+
+:= clear_ledgered (acc : clear_ledger) (elapsed : i32) (p : pack) : clear_ledger =
+    {
+        clear_potions = acc.clear_potions + party_potions p
+        clear_deaths = acc.clear_deaths + p.score.deaths
+        clear_ms = acc.clear_ms + elapsed
+    }
+
+:~ ^ clear_ledger_from (r : seed_run) (index : i32) (acc : clear_ledger) : clear_ledger =
+    ? index >= r.count ?> acc
+    |:
+        := elapsed, p = clear_at r index
+        clear_ledger_from r (index + 1) (clear_ledgered acc elapsed p)
+
+:~ ^ clear_ledger_of (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : clear_ledger =
+    clear_ledger_from (seed_run_of camp t first_seed count) 0 { clear_potions = 0; clear_deaths = 0; clear_ms = 0 }
 
 := clear_cost (l : clear_ledger) : quantity.amount quantity.gold_coins =
     quantity.plus
         (quantity.scaled l.clear_potions (potion_price ()))
         (quantity.scaled l.clear_deaths (all_blessings_price_at_level_30 ()))
 
-:= below_the_kill_floor () : i32 = -1000000000
+:~ ^ below_the_kill_floor () : i32 = -1000000000
 
 :! kill_score = ()
 :! experience_score = ()
 
+:== coin_unit = quantity.gold_coins
+
 :| objective unit =
     | Kills :: objective kill_score
     | Experience :: objective experience_score
-    | Profit :: objective quantity.gold_coins
-    | ProfitKeepingKills :: i32 -> objective quantity.gold_coins
-    | CheapClearWithin :: i32 -> objective quantity.gold_coins
+    | Profit :: objective coin_unit
+    | ProfitKeepingKills :: i32 -> objective coin_unit
+    | CheapClearWithin :: i32 -> objective coin_unit
+
+:= run_kills (r : seed_run) : quantity.amount kill_score = quantity.amount_of (score_from r 0 0)
+
+:= run_experience (r : seed_run) : quantity.amount experience_score = quantity.amount_of (experience_from r 0 0)
+
+:= run_profit (r : seed_run) : gold_amount = profit_from r 0 (quantity.gp 0)
+
+:= floor_profit (r : seed_run) (floor : i32) : gold_amount =
+    := l = ledger_of r.camp r.tactic r.first r.count
+    ? l.hunt_kills >= floor ?> l.hunt_profit |: quantity.gp (below_the_kill_floor () + l.hunt_kills * 1000)
+
+:= clear_profit (r : seed_run) (limit : i32) : gold_amount =
+    := l = clear_ledger_of r.camp r.tactic r.first r.count
+    ? l.clear_ms <= limit * r.count ?> quantity.minus (quantity.gp 0) (clear_cost l)
+    |: quantity.gp (below_the_kill_floor () - l.clear_ms / r.count)
+
+:= amount_on \* u. (o : objective u) (r : seed_run) : quantity.amount u =
+    ?= o ?|
+    | Kills => run_kills r
+    | Experience => run_experience r
+    | Profit => run_profit r
+    | ProfitKeepingKills f => floor_profit r f
+    | CheapClearWithin m => clear_profit r m
 
 := measured \* unit.
     (o : objective unit) (camp : camp) (t : tactic) (first_seed : u32) (count : i32)
     : quantity.amount unit
     =
-    ?= o ?|
-    | Kills => quantity.amount_of (score camp t first_seed count)
-    | Experience => quantity.amount_of (hunt_experience camp t first_seed count)
-    | Profit => profit camp t first_seed count
-    | ProfitKeepingKills floor =>
-        := l = ledger_of camp t first_seed count
-        ? l.hunt_kills >= floor ?> l.hunt_profit |: quantity.gp (below_the_kill_floor () + l.hunt_kills * 1000)
-    | CheapClearWithin limit_ms =>
-        := l = clear_ledger_of camp t first_seed count
-        ? l.clear_ms <= limit_ms * count
-        ?> quantity.minus (quantity.gp 0) (clear_cost l)
-        |: quantity.gp (below_the_kill_floor () - l.clear_ms / count)
+    amount_on o (seed_run_of camp t first_seed count)
+
+:== seed_range = { first : u32; count : i32 }
+
+:== trial unit = { o : objective unit; camp : camp; seeds : seed_range }
+
+:== search_plan = { seed : u32; generations : i32; offspring : i32 }
 
 := worth \* unit. (o : objective unit) (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : i32 =
     quantity.value_of (measured o camp t first_seed count)
-:= tuned_cavebot_heal_for \* unit. (o : objective unit) (camp : camp) (first_seed : u32) (count : i32) : i32 =
-    :~ ^ best (heal : i32) (best_heal : i32) (best_score : i32) : i32 =
-        ? heal > highest_tuned_heal () ?> best_heal
-        |:
-            := s = worth o camp (cavebot_with_heal heal) first_seed count
-            ? s > best_score ?> best (heal + 10) heal s |: best (heal + 10) best_heal best_score
-    best 40 40 (worth o camp (cavebot_with_heal 40) first_seed count)
 
-:= tuned_cavebot_heal (camp : camp) (first_seed : u32) (count : i32) : i32 =
-    tuned_cavebot_heal_for Kills camp first_seed count
+:= trial_worth \* unit. (x : trial unit) (t : tactic) : i32 = worth x.o x.camp t x.seeds.first x.seeds.count
+
+:= kept_best (heal : i32) (s : i32) (best : i32 * i32) : i32 * i32 =
+    := best_heal, best_score = best
+    ? s > best_score ?> (heal, s) |: best
+
+
+:= best_tuned_heal (at : i32 -> i32) : i32 =
+    :~ ^ best_from (heal : i32) (best : i32 * i32) : i32 * i32 =
+        ? heal > highest_tuned_heal () ?> best |: best_from (heal + 10) (kept_best heal (at heal) best)
+    := tuned, _ = best_from 50 (40, at 40)
+    tuned
 
 := shaped_heal_tuned_for \* unit.
     (o : objective unit) (shape : tactic -> tactic) (camp : camp) (first_seed : u32) (count : i32)
     : i32
     =
-    :~ ^ best (heal : i32) (best_heal : i32) (best_score : i32) : i32 =
-        ? heal > highest_tuned_heal () ?> best_heal
-        |:
-            := s = worth o camp (cavebot_with_heal heal |> shape) first_seed count
-            ? s > best_score ?> best (heal + 10) heal s |: best (heal + 10) best_heal best_score
-    best 50 40 (worth o camp (cavebot_with_heal 40 |> shape) first_seed count)
+    best_tuned_heal (\ heal => worth o camp (cavebot_with_heal heal |> shape) first_seed count)
+
+:= tuned_cavebot_heal_for \* unit. (o : objective unit) (camp : camp) (first_seed : u32) (count : i32) : i32 =
+    shaped_heal_tuned_for o (\ t => t) camp first_seed count
+
+:= tuned_cavebot_heal (camp : camp) (first_seed : u32) (count : i32) : i32 =
+    tuned_cavebot_heal_for Kills camp first_seed count
 
 := heal_fraction_below (camp : camp) (heal : i32) : i32 =
     network.fraction_below heal (quantity.value_of (player_max_health camp))
@@ -1629,94 +1915,80 @@ test hunting_pack static =
 := cavebot_network (camp : camp) (heal : i32) : network.weights =
     network.threshold_healer (heal_fraction_below camp heal)
 
-:= tactic_with_order (order : policy.targeting) (g : search.genome) : tactic =
-    {
-        brain = Rules { heal_base = g.first; heal_per_attacker = g.second; strike_above = 0; retreat_at = g.third }
-        order = order
-        footing = StepAway
-        patrol = Stays
-    }
+:= genome_brain (g : search.genome) : brain =
+    Rules { heal_base = g.first; heal_per_attacker = g.second; strike_above = 0; retreat_at = g.third }
+
+:~ ^ tactic_with_order (order : policy.targeting) (g : search.genome) : tactic =
+    { brain = genome_brain g; order = order; footing = StepAway; patrol = Stays }
 
 := live_retreat_tactic (heal : i32) (retreat_at : i32) : tactic =
     := evolved_shape : tactic =
         tactic_with_order (:< policy ;; ReachFirst) { first = heal; second = 0; third = retreat_at }
     { evolved_shape ?| footing = StepAwayLikeTheLiveProbe }
 
-:= genes_of
-    (g0 : i32) (g1 : i32) (g2 : i32) (g3 : i32) (g4 : i32) (g5 : i32) (g6 : i32) (g7 : i32) (g8 : i32) (g9 : i32)
-    (g10 : i32) (g11 : i32)
-    : search.vector
-    =
-    search.vector_of 12 0
-    |> search.with_gene 11 g11
-    |> search.with_gene 10 g10
-    |> search.with_gene 0 g0
-    |> search.with_gene 1 g1
-    |> search.with_gene 2 g2
-    |> search.with_gene 3 g3
-    |> search.with_gene 4 g4
-    |> search.with_gene 5 g5
-    |> search.with_gene 6 g6
-    |> search.with_gene 7 g7
-    |> search.with_gene 8 g8
-    |> search.with_gene 9 g9
+:== three = i32 * i32 * i32
 
-:= scored_low () : search.vector = genes_of 40 0 1 -200 -200 -200 -200 -50 -50 -50 -10 -50
-:= scored_high () : search.vector = genes_of 400 80 4 200 200 200 200 50 50 50 10 50
-:= scored_start () : search.vector = genes_of 143 34 1 50 100 -10 -1 0 0 0 0 0
+:~ ^ with_three (at : i32) (values : three) (v : search.vector) : search.vector =
+    := a, b, c = values
+    v |> search.with_gene at a |> search.with_gene (at + 1) b |> search.with_gene (at + 2) c
+
+:~ ^ genes_of (first : three) (second : three) (third : three) (fourth : three) : search.vector =
+    search.vector_of 12 0 |> with_three 0 first |> with_three 3 second |> with_three 6 third |> with_three 9 fourth
+
+:= scored_low () : search.vector = genes_of (40, 0, 1) (-200, -200, -200) (-200, -50, -50) (-50, -10, -50)
+
+:= scored_high () : search.vector = genes_of (400, 80, 4) (200, 200, 200) (200, 50, 50) (50, 10, 50)
+
+:= scored_start () : search.vector = genes_of (143, 34, 1) (50, 100, -10) (-1, 0, 0) (0, 0, 0)
+
+:= scored_brain (g : search.vector) : brain =
+    := at i = search.gene g i
+    Rules { heal_base = at 0; heal_per_attacker = at 1; strike_above = 0; retreat_at = at 2 }
+
+:= scored_order (g : search.vector) : policy.targeting =
+    := at i = search.gene g i
+    policy.Scored { current = at 3; reach = at 4; health = at 5; distance = at 6 }
+
+:= scored_footing (g : search.vector) : footing_rule =
+    := at i = search.gene g i
+    ScoredStep { away = at 7; room = at 8; crowd = at 9; align = at 10; diagonal = at 11 }
 
 := scored_tactic (g : search.vector) : tactic =
-    := at i = search.gene g i
-    {
-        brain = Rules { heal_base = at 0; heal_per_attacker = at 1; strike_above = 0; retreat_at = at 2 }
-        order = policy.Scored { current = at 3; reach = at 4; health = at 5; distance = at 6 }
-        footing = ScoredStep { away = at 7; room = at 8; crowd = at 9; align = at 10; diagonal = at 11 }
-        patrol = Stays
-    }
-:= tactic_of (g : search.genome) : tactic = tactic_with_order (:< policy ;; CurrentFirst) g
+    { brain = scored_brain g; order = scored_order g; footing = scored_footing g; patrol = Stays }
 
-:= temperate_genes
-    (heal_base : i32) (per_standing : i32) (per_fleeing : i32) (retreat_standing : i32) (retreat_fleeing : i32)
+:~ ^ tactic_of (g : search.genome) : tactic = tactic_with_order (:< policy ;; CurrentFirst) g
+
+:~ ^ temperate_genes
+    (heal : i32) (stand : i32) (flee : i32) (retreat_stand : i32) (retreat_flee : i32)
     : search.vector
     =
-    search.vector_of 5 0
-    |> search.with_gene 0 heal_base
-    |> search.with_gene 1 per_standing
-    |> search.with_gene 2 per_fleeing
-    |> search.with_gene 3 retreat_standing
-    |> search.with_gene 4 retreat_fleeing
+    search.vector_of 5 0 |> with_three 0 (heal, stand, flee)
+    |> search.with_gene 3 retreat_stand |> search.with_gene 4 retreat_flee
 
 := temperate_low () : search.vector = temperate_genes 0 0 0 1 1
 := temperate_high () : search.vector = temperate_genes 400 200 200 4 4
 
-:= temperate_tactic (order : policy.targeting) (g : search.vector) : tactic =
+:= temperate_brain (g : search.vector) : brain =
     := at i = search.gene g i
-    {
-        brain =
-            Temperate {
-                heal_base = at 0
-                heal_per = { standing = at 1; fleeing = at 2 }
-                strike_above = 0
-                retreat_at = { standing = at 3; fleeing = at 4 }
-            }
-        order = order
-        footing = StepAway
-        patrol = Stays
+    Temperate {
+        heal_base = at 0
+        heal_per = { standing = at 1; fleeing = at 2 }
+        strike_above = 0
+        retreat_at = { standing = at 3; fleeing = at 4 }
     }
 
+:= temperate_tactic (order : policy.targeting) (g : search.vector) : tactic =
+    { brain = temperate_brain g; order = order; footing = StepAway; patrol = Stays }
+
+:= temperate_search (p : search_plan) : search.vector_search =
+    := low, high = temperate_low (), temperate_high ()
+    { low = low; high = high; seed = p.seed; pairs = p.offspring; generations = p.generations }
+
 := evolve_temperate_for \* unit.
-    (o : objective unit) (order : policy.targeting) (start : search.vector) (camp : camp) (search_seed : u32)
-    (first_seed : u32) (count : i32) (generations : i32) (pairs : i32)
+    (x : trial unit) (order : policy.targeting) (start : search.vector) (p : search_plan)
     : search.vector
     =
-    search.evolve_vector
-        \ g => worth o camp (temperate_tactic order g) first_seed count
-        (temperate_low ())
-        (temperate_high ())
-        start
-        search_seed
-        generations
-        pairs
+    search.evolve_vector (\ g => trial_worth x (temperate_tactic order g)) (temperate_search p) start
 
 := evolved_on_the_cyclops_spot () : search.genome = { first = 143; second = 34; third = 1 }
 
@@ -1726,53 +1998,15 @@ test hunting_pack static =
 := arena_hunt () : camp =
     :< creatures
     := kinds = views.band (Cyclops, Cyclops, Troll, Troll, Troll, Troll)
-    {
-        kinds = kinds
-        size = 6
-        hunter_level = default_hunter_level kinds 6
-        rule = RespawningAfter 60000
-        layout =
-            :< terrain
-            ArenaHunt
-        potion_budget = unlimited_potions ()
-        party = 1
-        ally_enters = EntersWithTheKnight
-        party_targeting = !-
-        wakes_at = 0
-        swing = SwingKeepsItsTime
-        melee = MeleeWhenReady
-        idle = StandsStill
-        follow = FollowsAtOnce
-        pace = SamplePace
-        dance = NeverDances
-        view = SeesThisTick
-        ground = ScaledFromGrass
-        acquisition = ChasesAtOnce
-        approach = ApproachesAtOnce
-        sight = SightStopsAtUnpassableTiles
-        retreat_pace = RetreatsAtTheServerPace
-        chase_pace = ChasesAtTheServerPace
-        placement = AtLayoutStart
-        ranged = views.counted creatures.is_ranged kinds > 0
-    }
+    sample_camp (foes_of kinds 6 (RespawningAfter 60000)) (:< terrain ;; ArenaHunt)
 
 := cyclops_hunting_ground () : camp =
     := ground = arena_hunt ()
-    { ground ?| kinds = views.band_of (:< creatures ;; Cyclops) }
+    ground |> with_foes { (ground.foes) ?| kinds = views.band_of (:< creatures ;; Cyclops) }
 
 := plaza_and_fields_route () : patrol_route =
-    {
-        points =
-            views.band (
-                geometry.position 104 86 7,
-                geometry.position 125 86 7,
-                geometry.position 117 88 7,
-                geometry.position 124 96 7,
-                geometry.position 119 104 7,
-                geometry.position 117 92 7
-            )
-        count = 6
-    }
+    := at x y = geometry.position x y 7
+    { points = views.band (at 104 86, at 125 86, at 117 88, at 124 96, at 119 104, at 117 92); count = 6 }
 
 := patrolling (route : patrol_route) (t : tactic) : tactic = { t ?| patrol = Patrols route }
 
@@ -1785,68 +2019,27 @@ test hunting_pack static =
 
 := cyclops_and_two_trolls_on_the_arena_spot () : camp =
     :< catalog
-    camp_of_entries (
-        pack_entry (spawn_of CyclopsKind 1 2),
-        pack_entry (spawn_of TrollKind 1 2),
-        pack_entry (spawn_of TrollKind 1 2)
-    )
-    |> on_layout (:< terrain ;; ArenaSpot)
+    := entry kind = pack_entry (spawn_of kind 1 2)
+    camp_of_entries (entry CyclopsKind, entry TrollKind, entry TrollKind) |> on_layout (:< terrain ;; ArenaSpot)
+
+:= tactic_bounds () : search.genome * search.genome =
+    { first = 0; second = 0; third = 1 }, { first = 400; second = 60; third = 4 }
+
+:~ ^ tactic_search (p : search_plan) : search.genome_search =
+    := low, high = tactic_bounds ()
+    { low = low; high = high; seed = p.seed; offspring = p.offspring; generations = p.generations; spread = 40 }
 
 := evolve_rules_for \* unit.
-    (o : objective unit) (order : policy.targeting) (start : search.genome) (camp : camp) (search_seed : u32)
-    (first_seed : u32) (count : i32) (generations : i32) (offspring : i32)
+    (x : trial unit) (order : policy.targeting) (start : search.genome) (p : search_plan)
     : search.genome
     =
-    search.evolve
-        \ g => worth o camp (tactic_with_order order g) first_seed count
-        { first = 0; second = 0; third = 1 }
-        { first = 400; second = 60; third = 4 }
-        start
-        search_seed
-        generations
-        offspring
-        40
+    search.evolve (\ g => trial_worth x (tactic_with_order order g)) (tactic_search p) start
 
-:= evolve_tactic_from_for \* unit.
-    (o : objective unit) (start : search.genome) (camp : camp) (search_seed : u32) (first_seed : u32) (count : i32)
-    (generations : i32) (offspring : i32)
-    : search.genome
-    =
-    search.evolve
-        \ g => worth o camp (tactic_of g) first_seed count
-        { first = 0; second = 0; third = 1 }
-        { first = 400; second = 60; third = 4 }
-        start
-        search_seed
-        generations
-        offspring
-        40
-
-:= evolve_tactic_from
-    (start : search.genome) (camp : camp) (search_seed : u32) (first_seed : u32) (count : i32) (generations : i32)
-    (offspring : i32)
-    : search.genome
-    =
-    search.evolve
-        \ g => score camp (tactic_of g) first_seed count
-        { first = 0; second = 0; third = 1 }
-        { first = 400; second = 60; third = 4 }
-        start
-        search_seed
-        generations
-        offspring
-        40
-
-:= evolve_tactic
-    (camp : camp) (search_seed : u32) (first_seed : u32) (count : i32) (generations : i32) (offspring : i32)
-    : search.genome
-    =
-    evolve_tactic_from { first = 120; second = 0; third = 4 } camp search_seed first_seed count generations offspring
+:= evolve_tactic_from_for \* unit. (x : trial unit) (start : search.genome) (p : search_plan) : search.genome =
+    search.evolve (\ g => trial_worth x (tactic_of g)) (tactic_search p) start
 
 :! training = ()
 :! held_out = ()
-
-:== seed_range = { first : u32; count : i32 }
 
 :| private seed_block role =
     | TrainingBlock :: seed_range -> seed_block training
@@ -1858,7 +2051,9 @@ test hunting_pack static =
     | HeldOutBlock r => r
 
 := training_block () : seed_block training = TrainingBlock { first = training_first (); count = training_count () }
+
 := held_out_block () : seed_block held_out = HeldOutBlock { first = held_out_first (); count = held_out_count () }
+
 := held_out_slice (count : i32) : seed_block held_out =
     HeldOutBlock { first = held_out_first (); count = ? count < held_out_count () ?> count |: held_out_count () }
 
@@ -1873,13 +2068,15 @@ test hunting_pack static =
     := r = range_of b
     tuned_cavebot_heal_for o camp r.first r.count
 
+:= trial_on \* unit. (o : objective unit) (camp : camp) (b : seed_block training) : trial unit =
+    { o = o; camp = camp; seeds = range_of b }
+
 := rules_evolved_on \* unit.
-    (o : objective unit) (order : policy.targeting) (start : search.genome) (camp : camp) (search_seed : u32)
-    (b : seed_block training) (generations : i32) (offspring : i32)
+    (o : objective unit) (order : policy.targeting) (start : search.genome) (camp : camp) (b : seed_block training)
+    (p : search_plan)
     : search.genome
     =
-    := r = range_of b
-    evolve_rules_for o order start camp search_seed r.first r.count generations offspring
+    evolve_rules_for (trial_on o camp b) order start p
 
 := judged_on \* unit.
     (o : objective unit) (camp : camp) (t : tactic) (b : seed_block held_out)
@@ -1897,74 +2094,51 @@ test hunting_pack static =
     worth o camp t r.first r.count
 
 := tactic_evolved_on \* unit.
-    (o : objective unit) (start : search.genome) (camp : camp) (search_seed : u32) (b : seed_block training)
-    (generations : i32) (offspring : i32)
+    (o : objective unit) (start : search.genome) (camp : camp) (b : seed_block training) (p : search_plan)
     : search.genome
     =
-    := r = range_of b
-    evolve_tactic_from_for o start camp search_seed r.first r.count generations offspring
+    evolve_tactic_from_for (trial_on o camp b) start p
+
 := clears_judged_on (camp : camp) (t : tactic) (b : seed_block held_out) : clear_ledger =
     := r = range_of b
     clear_ledger_of camp t r.first r.count
 
-:= route_of_genes (v : search.vector) : patrol_route =
+:~ ^ route_of_genes (v : search.vector) : patrol_route =
     := at i = geometry.position (search.gene v (2 * i)) (search.gene v (2 * i + 1)) 7
     { points = views.band (at 0, at 1, at 2, at 3, at 4, at 5); count = search.gene v 12 }
 
-:= route_genes (r : patrol_route) : search.vector =
-    :~ ^ fill (i : i32) (v : search.vector) : search.vector =
-        ? i >= band_size () ?> v
-        |:
-            := point = views.band_at i r.points
-            fill (i + 1) (v |> search.with_gene (2 * i) point.x |> search.with_gene (2 * i + 1) point.y)
-    fill 0 (search.vector_of 13 0) |> search.with_gene 12 r.count
+:= with_point (i : i32) (point : geometry.position) (v : search.vector) : search.vector =
+    v |> search.with_gene (2 * i) point.x |> search.with_gene (2 * i + 1) point.y
+
+:~ ^ route_genes_from (r : patrol_route) (i : i32) (v : search.vector) : search.vector =
+    ? i >= band_size () ?> v |: route_genes_from r (i + 1) (with_point i (views.band_at i r.points) v)
+
+:~ ^ route_genes (r : patrol_route) : search.vector =
+    route_genes_from r 0 (search.vector_of 13 0) |> search.with_gene 12 r.count
 
 := hunt_route_low () : search.vector = route_genes { points = views.band_of (geometry.position 100 82 7); count = 2 }
 := hunt_route_high () : search.vector = route_genes { points = views.band_of (geometry.position 128 108 7); count = 6 }
 
 
+:= route_search (seed : u32) (generations : i32) (pairs : i32) : search.vector_search =
+    { low = hunt_route_low (); high = hunt_route_high (); seed = seed; pairs = pairs; generations = generations }
+
+:= route_experience (camp : camp) (heal : i32) (r : seed_range) (v : search.vector) : i32 =
+    hunt_experience camp (cavebot_with_heal heal |> patrolling (route_of_genes v)) r.first r.count
+
+:= evolved_route (fitness : search.vector -> i32) (s : search.vector_search) (start : patrol_route) : patrol_route =
+    route_of_genes (search.evolve_vector fitness s (route_genes start))
+
 := route_evolved_on
-    (camp : camp) (start : patrol_route) (heal : i32) (search_seed : u32) (b : seed_block training) (generations : i32)
-    (pairs : i32)
+    (camp : camp) (start : patrol_route) (heal : i32) (seed : u32) (b : seed_block training) (gens : i32) (pairs : i32)
     : patrol_route
     =
-    := r = range_of b
-    := fitness (v : search.vector) : i32 =
-        hunt_experience camp (cavebot_with_heal heal |> patrolling (route_of_genes v)) r.first r.count
-    route_of_genes (
-        search.evolve_vector fitness
-            (hunt_route_low ())
-            (hunt_route_high ())
-            (route_genes start)
-            search_seed
-            generations
-            pairs
-    )
+    evolved_route (route_experience camp heal (range_of b)) (route_search seed gens pairs) start
 
 := central_shuttle_route () : patrol_route =
-    {
-        points =
-            views.band (
-                geometry.position 117 92 7,
-                geometry.position 116 96 7,
-                geometry.position 118 88 7,
-                geometry.position 124 92 7,
-                geometry.position 109 93 7,
-                geometry.position 120 92 7
-            )
-        count = 2
-    }
+    := at x y = geometry.position x y 7
+    { points = views.band (at 117 92, at 116 96, at 118 88, at 124 92, at 109 93, at 120 92); count = 2 }
 
 := spawn_side_loop_route () : patrol_route =
-    {
-        points =
-            views.band (
-                geometry.position 117 88 7,
-                geometry.position 124 96 7,
-                geometry.position 117 92 7,
-                geometry.position 117 92 7,
-                geometry.position 117 92 7,
-                geometry.position 117 92 7
-            )
-        count = 3
-    }
+    := at x y = geometry.position x y 7
+    { points = views.band (at 117 88, at 124 96, at 117 92, at 117 92, at 117 92, at 117 92); count = 3 }

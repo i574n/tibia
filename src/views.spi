@@ -14,6 +14,7 @@ test views static =
 :+ mapped one = \ g (one x) => one (g x)
 :+ mapped lanes = \ g (lanes (a, b, c, d)) => lanes (g a, g b, g c, g d)
 :+ mapped duo = \ g (duo (a, b)) => duo (g a, g b)
+
 :+ mapped trio = \ g (trio (a, b, c)) => trio (g a, g b, g c)
 :+ mapped band = \ g (band (a, b, c, d, e, f)) => band (g a, g b, g c, g d, g e, g f)
 
@@ -23,8 +24,10 @@ test views static =
 
 :+ counted one = \ p (one x) => tally (p x)
 :+ counted lanes = \ p (lanes (a, b, c, d)) => tally (p a) + tally (p b) + tally (p c) + tally (p d)
+
 :+ counted duo = \ p (duo (a, b)) => tally (p a) + tally (p b)
 :+ counted trio = \ p (trio (a, b, c)) => tally (p a) + tally (p b) + tally (p c)
+
 :+ counted band =
     \ p (band (a, b, c, d, e, f)) => tally (p a) + tally (p b) + tally (p c) + tally (p d) + tally (p e) + tally (p f)
 
@@ -61,26 +64,16 @@ test one_decision_is_the_live_client_view =
     ?= decide_all (evolved_against_cyclops ()) (one (observed health InReach)) ?|
     | one code => code |> _assert_eq 1i32
 
+:= four_reaches (health : i32) : lanes policy.observation =
+    :< policy
+    := wounded = observed (health - 70) InReach
+    lanes (observed health InReach, observed health OutOfReach, wounded, observed health NoTarget)
+
 ///> c
 test four_lanes_decide_like_four_single_calls =
-    :< policy
     := ~health = 80i32
-    := t = evolved_against_cyclops ()
-    ?=
-        decide_all t (
-            lanes (
-                observed health InReach,
-                observed health OutOfReach,
-                observed (health - 70) InReach,
-                observed health NoTarget
-            )
-        )
-    ?|
-    | lanes (a, b, c, d) =>
-        a |> _assert_eq 1i32
-        b |> _assert_eq 2i32
-        c |> _assert_eq 0i32
-        d |> _assert_eq 0i32
+    ?= decide_all (policy.evolved_against_cyclops ()) (four_reaches health) ?|
+    | lanes (a, b, c, d) => (a, b, c, d) |> _assert_eq (1i32, 2i32, 0i32, 0i32)
 
 ///> c
 test a_view_without_mapped_is_rejected fails "mapped" =
@@ -89,24 +82,9 @@ test a_view_without_mapped_is_rejected fails "mapped" =
 
 ///> wgsl
 test lanes_on_gpu =
-    :< policy
     := ~health = 80i32
-    ?=
-        decide_all
-            (evolved_against_cyclops ())
-            (
-                lanes (
-                    observed health InReach,
-                    observed health OutOfReach,
-                    observed (health - 70) InReach,
-                    observed health NoTarget
-                )
-            )
-    ?|
-    | lanes (a, b, c, d) =>
-        ? a = 1i32 && b = 2i32 && c = 0i32 && d = 0i32
-        ?> 0i32
-        |: 1i32
+    ?= decide_all (policy.evolved_against_cyclops ()) (four_reaches health) ?|
+    | lanes (a, b, c, d) => ? a = 1i32 && b = 2i32 && c = 0i32 && d = 0i32 ?> 0i32 |: 1i32
 
 ///> c
 test counted_folds_every_view_the_same_way =
@@ -126,5 +104,9 @@ test a_band_reads_writes_maps_and_counts =
     := ~x = 5i32
     := b = band_of 0i32 |> band_with 2 x |> band_with 5 7
     ?= mapped (\ v => v * 2) b ?|
-    | band (p, q, r, s, u, v) =>
-        (band_at 2 b, band_at 5 b, counted (\ v => v > 0) b, r, v) |> _assert_eq (5i32, 7i32, 2i32, 10i32, 14i32)
+    | band (p, q, r, s, u, v) => (band_at 2 b, band_at 5 b, r, v) |> _assert_eq (5i32, 7i32, 10i32, 14i32)
+
+///> c
+test a_band_counts_its_matches =
+    := ~x = 5i32
+    counted (\ v => v > 0) (band_of 0i32 |> band_with 2 x |> band_with 5 7) |> _assert_eq 2i32

@@ -7,9 +7,6 @@ $scenarioScript = Join-Path $root 'run-policy-scenario.ps1'
 $env:TIBIA_ARENA_FULL_EXPERIENCE = "$FullExperience"
 if ($RunMs -gt 0) { $env:TIBIA_ARENA_RUN_MS = "$RunMs" }
 $label = if ($Scenario) { $Scenario } else { $Monster -replace '[:,]', '_' }
-$snapshot = Join-Path $env:TEMP ('tibia-arena-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
-New-Item -ItemType Directory -Force $snapshot | Out-Null; Copy-Item (Join-Path $TibiaSource '*') $snapshot -Include '*.spi', 'package.spiproj'
-"policy source snapshot: $snapshot"
 if (-not (Test-Path $Out)) { "timestamp`tcompetitor`trun`tmonster`tcount`texperience`tcleared_ms`tlowest_health`tactions_allowed`tactions_dropped`tpotions`tgold`tdeaths`tforeign_potions`tforeign_actions" | Set-Content $Out }
 . (Join-Path $root 'arena-check.ps1')
 $probeInstalled = ''
@@ -58,24 +55,32 @@ try {
             $env:TIBIA_ARENA_KITE_AT = $competitorKiteAt
             $env:TIBIA_ARENA_RETREAT_AT = $competitorRetreatAt
             $env:TIBIA_ARENA_TARGETING = $competitorTargeting
-            $scenarioArgs = @('-NoProfile', '-File', $scenarioScript, '-Monster', $Monster, '-MonsterCount', $MonsterCount, '-AxeSkill', $AxeSkill, '-TimeoutSeconds', $TimeoutSeconds, '-TibiaDir', $snapshot, '-Level', $Level, '-HealBelow', $HealBelow, '-StrikeAbove', $StrikeAbove)
+            $scenarioArgs = @('-NoProfile', '-File', $scenarioScript, '-Monster', $Monster, '-MonsterCount', $MonsterCount, '-AxeSkill', $AxeSkill, '-TimeoutSeconds', $TimeoutSeconds, '-Level', $Level, '-HealBelow', $HealBelow, '-StrikeAbove', $StrikeAbove)
             if ($SpawnFile) { $scenarioArgs += @('-SpawnFile', $SpawnFile) }
             if ($KnightAt) { $scenarioArgs += @('-KnightAt', $KnightAt) }
             if ($Ally) { $scenarioArgs += @('-Ally', $Ally, '-AllyAt', $AllyAt) }
             if ($competitor -eq 'vbot') { $scenarioArgs += @('-ProbeBody', 'vbot', '-Bot', 'vBot') }
             if ($competitor -eq 'nexbot') { $scenarioArgs += @('-ProbeBody', 'nexbot', '-Bot', 'nExBot') }
             if ($competitor -eq 'random-control') { $scenarioArgs += @('-ProbeBody', 'random') }
-            $lines = @(pwsh @scenarioArgs 2>&1 | ForEach-Object { "$_" })
-            $logDir = $TibiaLogs
-            New-Item -ItemType Directory -Force $logDir | Out-Null
-            $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-            $lines | Set-Content (Join-Path $logDir ("{0}-{1}-{2}-{3}.log" -f $stamp, $label, $competitor, $run))
-            Write-ArenaRow $lines $competitor
-            $allyLog = Read-Number $lines '== ally log (.+)$'
-            if ($allyLog) {
-                $allyLines = @(Get-Content $allyLog)
-                $allyLines | Set-Content (Join-Path $logDir ("{0}-{1}-{2}-ally-{3}.log" -f $stamp, $label, $competitor, $run))
-                Write-ArenaRow $allyLines "$competitor-ally"
+            foreach ($attempt in 1..2) {
+                $lines = @(pwsh @scenarioArgs 2>&1 | ForEach-Object { "$_" })
+                $logDir = $TibiaLogs
+                New-Item -ItemType Directory -Force $logDir | Out-Null
+                $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+                $allyLog = Read-Number $lines '== ally log (.+)$'
+                $allyLines = if ($allyLog) { @(Get-Content $allyLog) } else { @() }
+                $crashed = (Test-CrashedHunt $lines) -or ($allyLog -and (Test-CrashedHunt $allyLines))
+                $tag = if ($crashed) { "crash$attempt-" } else { '' }
+                $lines | Set-Content (Join-Path $logDir ("{0}-{1}-{2}-{3}{4}.log" -f $stamp, $label, $competitor, $tag, $run))
+                if ($allyLog) { $allyLines | Set-Content (Join-Path $logDir ("{0}-{1}-{2}-ally-{3}{4}.log" -f $stamp, $label, $competitor, $tag, $run)) }
+                if ($crashed) {
+                    $verdict = if ($attempt -eq 1) { 'rerun once' } else { 'counted as missing' }
+                    "== crash rule: $competitor run $run attempt $attempt finished '$(Get-FinishReason $lines)', ally '$(if ($allyLog) { Get-FinishReason $allyLines })': $verdict"
+                    continue
+                }
+                Write-ArenaRow $lines $competitor
+                if ($allyLog) { Write-ArenaRow $allyLines "$competitor-ally" }
+                break
             }
         }
     }

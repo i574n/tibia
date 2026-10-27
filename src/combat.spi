@@ -15,21 +15,33 @@ test combat static =
         ? i >= 12u32 ?> total |: sum (i + 1u32) (total + uniform_unit key (attempt * 12u32 + i))
     sum 0u32 0i32
 
+:= normal_attempt (key : rng.roll_key) (n : u32) : i32 = 2048i32 + (irwin_hall_twelve key n - 24576i32) / 4i32
+
+:= clamped_to_unit (v : i32) : i32 = ? v < 0i32 ?> 0i32 |: unit_scale ()
+
 := truncated_normal_unit (key : rng.roll_key) : i32 =
     :~ ^ attempt (n : u32) : i32 =
-        := v = 2048i32 + (irwin_hall_twelve key n - 24576i32) / 4i32
+        := v = normal_attempt key n
         ? v >= 0i32 && v <= unit_scale () ?> v
-        |? n >= 7u32 ?> (? v < 0i32 ?> 0i32 |: unit_scale ())
+        |? n >= 7u32 ?> clamped_to_unit v
         |: attempt (n + 1u32)
     attempt 0u32
 
+:== draw_stats = { total : i32; low : i32; high : i32 }
+
+:= with_draw (v : i32) (d : draw_stats) : draw_stats =
+    { total = d.total + v; low = (? v < d.low ?> v |: d.low); high = (? v > d.high ?> v |: d.high) }
+
+:= stats_draw (seed : u32) (i : i32) : i32 = truncated_normal_unit (rng.roll_key seed (conv i) 0u32 9u32)
+
+:= no_draws () : draw_stats = { total = 0i32; low = unit_scale (); high = 0i32 }
+
+:~ ^ draws_from (seed : u32) (count : i32) (i : i32) (d : draw_stats) : draw_stats =
+    ? i >= count ?> d |: draws_from seed count (i + 1i32) (with_draw (stats_draw seed i) d)
+
 := unit_draw_stats (seed : u32) (count : i32) : i32 * i32 * i32 =
-    :~ ^ loop (i : i32) (total : i32) (low : i32) (high : i32) : i32 * i32 * i32 =
-        ? i >= count ?> total / count, low, high
-        |:
-            := v = truncated_normal_unit (rng.roll_key seed (conv i) 0u32 9u32)
-            loop (i + 1i32) (total + v) (? v < low ?> v |: low) (? v > high ?> v |: high)
-    loop 0i32 0i32 (unit_scale ()) 0i32
+    := d = draws_from seed count 0i32 (no_draws ())
+    d.total / count, d.low, d.high
 
 := melee_roll (low : i32) (high : i32) (key : rng.roll_key) : i32 =
     low + (truncated_normal_unit key * (high - low) + 2048i32) / unit_scale ()
@@ -45,12 +57,13 @@ test combat static =
     |? armor > 0i32 ?> 1i32
     |: 0i32
 
+:= after_armor (hit : i32) (armor : i32) (key : rng.roll_key) : i32 =
+    := left = hit - armor_block armor key
+    ? left <= 0i32 ?> 0i32 |: left
+
 := blocked_hit (raw : i32) (defense : i32) (armor : i32) (has_block_charge : bool) (key : rng.roll_key) : i32 =
     := after_defense = ? has_block_charge ?> raw - defense_block defense key |: raw
-    ? after_defense <= 0i32 ?> 0i32
-    |:
-        := after_armor = after_defense - armor_block armor key
-        ? after_armor <= 0i32 ?> 0i32 |: after_armor
+    ? after_defense <= 0i32 ?> 0i32 |: after_armor after_defense armor key
 
 :== gear = { armor : i32; defense : i32 }
 
@@ -64,13 +77,16 @@ test combat static =
     * shield_scaling_per_mille ()
     / 10000000i32
 
-:= knight_sample_gear () : gear =
+:= knight_sample_armor () : i32 =
     := brass_helmet = 3i32
     := brass_armor = 8i32
     := brass_legs = 5i32
     := leather_boots = 1i32
+    brass_helmet + brass_armor + brass_legs + leather_boots
+
+:= knight_sample_gear () : gear =
     := dwarven_shield = 26i32
-    { armor = brass_helmet + brass_armor + brass_legs + leather_boots; defense = shielded_defense 11i32 dwarven_shield }
+    { armor = knight_sample_armor (); defense = shielded_defense 11i32 dwarven_shield }
 
 := max_block_charges () : i32 = 2i32
 := block_charge_ms () : i32 = 1000i32
@@ -88,160 +104,159 @@ test combat static =
 := ranged_fires (attack : ranged_attack) (key : rng.roll_key) : bool =
     uniform_between 1i32 100i32 key 202u32 <= attack.chance_percent
 
+:= charge_left (charges : i32) : i32 = ? charges > 0i32 ?> charges - 1i32 |: 0i32
+
 := ranged_hit_spending_a_charge
     (attack : ranged_attack) (defender : gear) (charges : i32) (key : rng.roll_key)
     : i32 * i32
     =
-    blocked_hit (melee_roll 0i32 attack.max_damage key) defender.defense defender.armor !- key,
-    ? charges > 0i32
-    ?> charges - 1i32
-    |: 0i32
+    blocked_hit (melee_roll 0i32 attack.max_damage key) defender.defense defender.armor !- key, charge_left charges
 
-:= melee_hit
-    (mode : damage.fight_mode) (level : i32) (attack_value : i32) (attack_skill : i32) (defense : i32) (armor : i32)
-    (key : rng.roll_key)
-    : i32
-    =
-    := high = damage.max_melee_damage mode attack_value attack_skill level
-    := low = ? attack_value > 0i32 ?> level / 5i32 |: 0i32
-    blocked_hit (melee_roll low high key) defense armor !+ key
+:== swinger = { mode : damage.fight_mode; level : i32; attack_value : i32; attack_skill : i32 }
 
-:= swing_stats
-    (mode : damage.fight_mode) (level : i32) (attack_value : i32) (attack_skill : i32) (defense : i32) (armor : i32)
-    (seed : u32) (swings : i32)
-    : i32 * i32
-    =
-    :~ ^ loop (i : i32) (landed : i32) (total : i32) : i32 * i32 =
-        ? i >= swings
-        ?> landed, total
-        |:
-            := hit =
-                melee_hit mode level attack_value attack_skill defense armor (rng.roll_key seed (conv i) 1u32 7u32)
-            loop (i + 1i32) (? hit > 0i32 ?> landed + 1i32 |: landed) (total + hit)
-    loop 0i32 0i32 0i32
+:= swing_floor (s : swinger) : i32 = ? s.attack_value > 0i32 ?> s.level / 5i32 |: 0i32
 
-:= capped_hit_stats
-    (mode : damage.fight_mode) (level : i32) (attack_value : i32) (attack_skill : i32) (defense : i32) (armor : i32)
-    (max_health : i32) (seed : u32) (swings : i32)
-    : i32 * i32
-    =
-    :~ ^ loop (i : i32) (health : i32) (landed : i32) (total : i32) : i32 * i32 =
-        ? i >= swings
-        ?> landed, total
-        |:
-            := hit =
-                melee_hit mode level attack_value attack_skill defense armor (rng.roll_key seed (conv i) 1u32 7u32)
-            := taken = ? hit > health ?> health |: hit
-            := left = health - taken
-            loop
-                (i + 1i32)
-                ? left <= 0i32
-                ?> max_health
-                |: left
-                ? taken > 0i32
-                ?> landed + 1i32
-                |: landed
-                (total + taken)
-    loop 0i32 max_health 0i32 0i32
+:= swing_ceiling (s : swinger) : i32 = damage.max_melee_damage s.mode s.attack_value s.attack_skill s.level
+
+:= melee_hit (s : swinger) (target : gear) (key : rng.roll_key) : i32 =
+    blocked_hit (melee_roll (swing_floor s) (swing_ceiling s) key) target.defense target.armor !+ key
+
+:== bout = { s : swinger; target : gear; seed : u32; swings : i32 }
+
+:= bout_of (s : swinger) (target : gear) (seed : u32) (swings : i32) : bout =
+    { s = s; target = target; seed = seed; swings = swings }
+
+:= bout_hit (b : bout) (i : i32) : i32 = melee_hit b.s b.target (rng.roll_key b.seed (conv i) 1u32 7u32)
+
+:= landed_after (hit : i32) (landed : i32) : i32 = ? hit > 0i32 ?> landed + 1i32 |: landed
+
+:== swing_tally = { landed : i32; total : i32 }
+
+:= tallied_swing (hit : i32) (t : swing_tally) : swing_tally =
+    { landed = landed_after hit t.landed; total = t.total + hit }
+
+:~ ^ swings_from (b : bout) (i : i32) (t : swing_tally) : swing_tally =
+    ? i >= b.swings ?> t |: swings_from b (i + 1i32) (tallied_swing (bout_hit b i) t)
+
+:= swing_stats (s : swinger) (target : gear) (seed : u32) (swings : i32) : i32 * i32 =
+    := t = swings_from (bout_of s target seed swings) 0i32 { landed = 0i32; total = 0i32 }
+    t.landed, t.total
+
+:== capped_tally = { health : i32; landed : i32; total : i32 }
+
+:= taken_from (hit : i32) (health : i32) : i32 = ? hit > health ?> health |: hit
+
+:= health_after (max_health : i32) (left : i32) : i32 = ? left <= 0i32 ?> max_health |: left
+
+:= capped_swing (max_health : i32) (hit : i32) (t : capped_tally) : capped_tally =
+    := taken = taken_from hit t.health
+    := health = health_after max_health (t.health - taken)
+    { health = health; landed = landed_after taken t.landed; total = t.total + taken }
+
+:~ ^ capped_from (b : bout) (max_health : i32) (i : i32) (t : capped_tally) : capped_tally =
+    ? i >= b.swings ?> t |: capped_from b max_health (i + 1i32) (capped_swing max_health (bout_hit b i) t)
+
+:= fresh_capped (max_health : i32) : capped_tally = { health = max_health; landed = 0i32; total = 0i32 }
+
+:= capped_hit_stats (s : swinger) (target : gear) (max_health : i32) (seed : u32) (swings : i32) : i32 * i32 =
+    := t = capped_from (bout_of s target seed swings) max_health 0i32 (fresh_capped max_health)
+    t.landed, t.total
+
+:= level_8_axe (mode : damage.fight_mode) (skill : i32) : swinger =
+    { mode = mode; level = 8i32; attack_value = 21i32; attack_skill = skill }
+
+:= armor_and_defense_10 () : gear = { armor = 10i32; defense = 10i32 }
+
+:= troll_swings (mode : damage.fight_mode) (skill : i32) (seed : u32) : i32 * i32 =
+    swing_stats (level_8_axe mode skill) (armor_and_defense_10 ()) seed 2000i32
+
+:= capped_troll_swings (mode : damage.fight_mode) (skill : i32) (health : i32) (seed : u32) : i32 * i32 =
+    capped_hit_stats (level_8_axe mode skill) (armor_and_defense_10 ()) health seed 2000i32
+
+:= arrow_key (i : i32) : rng.roll_key = rng.roll_key 9u32 (conv i) 2u32 11u32
+
+:= one_if (b : bool) : i32 = ? b ?> 1i32 |: 0i32
+
+:= arrow_outcome (g : gear) (i : i32) : i32 * i32 * i32 =
+    := key = arrow_key i
+    := hurt, left = ranged_hit_spending_a_charge (hunter_arrow ()) g 2i32 key
+    one_if (hurt <> creature_hit (hunter_arrow ()).max_damage g !- key), one_if (left = 1i32), hurt
+
+:= summed (a : i32 * i32 * i32) (b : i32 * i32 * i32) : i32 * i32 * i32 =
+    := a1, a2, a3 = a
+    := b1, b2, b3 = b
+    a1 + b1, a2 + b2, a3 + b3
+
+:~ ^ arrow_totals (g : gear) (shots : i32) (i : i32) (acc : i32 * i32 * i32) : i32 * i32 * i32 =
+    ? i >= shots ?> acc |: arrow_totals g shots (i + 1i32) (summed acc (arrow_outcome g i))
+
+:= arrow_with_no_charge (g : gear) : i32 =
+    := _, left = ranged_hit_spending_a_charge (hunter_arrow ()) g 0i32 (arrow_key 0i32)
+    left
+
+:= arrow_facts (shots : i32) : i32 * i32 * i32 * bool =
+    := g = knight_sample_gear ()
+    := differ, spent, total = arrow_totals g shots 0i32 (0i32, 0i32, 0i32)
+    differ, spent, arrow_with_no_charge g, total > shots * 30i32
+
+:~ ^ fired (arrow : ranged_attack) (i : i32) (count : i32) : i32 =
+    ? i >= 10000i32 ?> count
+    |: fired arrow (i + 1i32) (? ranged_fires arrow (rng.roll_key 3u32 (conv i) 4u32 12u32) ?> count + 1i32 |: count)
+
+:= reach_of (arrow : ranged_attack) (range : i32) : bool * bool * bool =
+    ranged_in_reach arrow range !+, ranged_in_reach arrow (range + 1i32) !+, ranged_in_reach arrow 3i32 !-
+
+:= armor_blocks (armor : i32) (key : rng.roll_key) : bool * i32 * i32 =
+    := block = armor_block armor key
+    (block >= 5i32 && block <= 9i32), armor_block (armor - 7i32) key, armor_block (armor - 10i32) key
+
+:= fires_about_half (arrow : ranged_attack) : bool =
+    := shots = fired arrow 0i32 0i32
+    shots > 4800i32 && shots < 5200i32
 
 ///> c
 test hunter_arrows_skip_the_shield_but_spend_a_block_charge_like_canary_distance_spells =
     := ~shots = 4000i32
-    := gear = knight_sample_gear ()
-    :~ ^ loop (i : i32) (differ : i32) (spent : i32) (total : i32) : i32 * i32 * i32 =
-        ? i >= shots
-        ?> differ, spent, total
-        |:
-            := key = rng.roll_key 9u32 (conv i) 2u32 11u32
-            := hurt, left = ranged_hit_spending_a_charge (hunter_arrow ()) gear 2i32 key
-            := unshielded = creature_hit (hunter_arrow ()).max_damage gear !- key
-            loop
-                (i + 1i32)
-                ? hurt = unshielded
-                ?> differ
-                |: differ + 1i32
-                ? left = 1i32
-                ?> spent + 1i32
-                |: spent
-                (total + hurt)
-    := differ, spent, total = loop 0i32 0i32 0i32 0i32
-    := _, empty = ranged_hit_spending_a_charge (hunter_arrow ()) gear 0i32 (rng.roll_key 9u32 0u32 2u32 11u32)
-    (differ, spent, empty, total > shots * 30i32) |> _assert_eq (0i32, shots, 0i32, !+)
+    arrow_facts shots |> _assert_eq (0i32, shots, 0i32, !+)
 
 ///> c
 test hunter_arrows_need_range_7_and_clear_sight_and_fire_half_the_time =
     := ~range = 7i32
-    := arrow = hunter_arrow ()
-    :~ ^ fired (i : i32) (count : i32) : i32 =
-        ? i >= 10000i32
-        ?> count
-        |:
-            fired
-                (i + 1i32)
-                ? ranged_fires arrow (rng.roll_key 3u32 (conv i) 4u32 12u32)
-                ?> count + 1i32
-                |: count
-    := shots = fired 0i32 0i32
-    (
-        ranged_in_reach arrow range !+,
-        ranged_in_reach arrow (range + 1i32) !+,
-        ranged_in_reach arrow 3i32 !-,
-        shots > 4800i32 && shots < 5200i32
-    )
-    |> _assert_eq (!+, !-, !-, !+)
+    := near, beyond, close = reach_of (hunter_arrow ()) range
+    (near, beyond, close, fires_about_half (hunter_arrow ())) |> _assert_eq (!+, !-, !-, !+)
 
 ///> c
 test armor_block_follows_canary_bounds =
     := ~armor = 10i32
-    := key = rng.roll_key 1u32 2u32 3u32 4u32
-    := block = armor_block armor key
-    (block >= 5i32 && block <= 9i32) |> _assert_eq !+
-    armor_block (armor - 7i32) key |> _assert_eq 1i32
-    armor_block (armor - 10i32) key |> _assert_eq 0i32
+    armor_blocks armor (rng.roll_key 1u32 2u32 3u32 4u32) |> _assert_eq (!+, 1i32, 0i32)
 
 ///> c
 test truncated_normal_stays_in_unit_range_with_mean_near_half =
     := ~seed = 11u32
-    ?= unit_draw_stats seed 4000i32 ?|
-    | mean, low, high =>
-        mean |> _assert_eq 2055i32
-        low |> _assert_eq 0i32
-        high |> _assert_eq 4093i32
+    unit_draw_stats seed 4000i32 |> _assert_eq (2055i32, 0i32, 4093i32)
 
 ///> c
 test level_8_knight_rarely_hurts_a_troll =
     := ~seed = 5u32
-    ?= swing_stats (:< damage ;; Offensive) 8i32 21i32 11i32 10i32 10i32 seed 2000i32 ?|
-    | landed, total =>
-        landed |> _assert_eq 435i32
-        total |> _assert_eq 1393i32
+    troll_swings (:< damage ;; Offensive) 11i32 seed |> _assert_eq (435i32, 1393i32)
 
 ///> c
 test axe_skill_30_hurts_a_troll_often =
     := ~seed = 5u32
-    ?= swing_stats (:< damage ;; Offensive) 8i32 21i32 30i32 10i32 10i32 seed 2000i32 ?|
-    | landed, total =>
-        landed |> _assert_eq 1680i32
-        total |> _assert_eq 28222i32
+    troll_swings (:< damage ;; Offensive) 30i32 seed |> _assert_eq (1680i32, 28222i32)
 
 ///> c
 test balanced_axe_skill_30_matches_live_troll_hits =
     := ~seed = 5u32
-    ?= swing_stats (:< damage ;; Balanced) 8i32 21i32 30i32 10i32 10i32 seed 2000i32 ?|
-    | landed, total =>
-        landed |> _assert_eq 1435i32
-        total |> _assert_eq 15398i32
+    troll_swings (:< damage ;; Balanced) 30i32 seed |> _assert_eq (1435i32, 15398i32)
 
 ///> wgsl
 test balanced_swing_stats_on_gpu =
     := ~seed = 5u32
-    ?= swing_stats (:< damage ;; Balanced) 8i32 21i32 30i32 10i32 10i32 seed 2000i32 ?|
+    ?= troll_swings (:< damage ;; Balanced) 30i32 seed ?|
     | landed, total => ? landed = 1435i32 && total = 15398i32 ?> 0i32 |: 1i32
 
 ///> c
 test hits_capped_at_remaining_health_match_live_skeleton_log =
     := ~seed = 5u32
-    ?= capped_hit_stats (:< damage ;; Balanced) 8i32 21i32 30i32 10i32 10i32 50i32 seed 2000i32 ?|
-    | landed, total =>
-        landed |> _assert_eq 1435i32
-        total |> _assert_eq 13451i32
+    capped_troll_swings (:< damage ;; Balanced) 30i32 50i32 seed |> _assert_eq (1435i32, 13451i32)

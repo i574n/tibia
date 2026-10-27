@@ -52,7 +52,7 @@ $testRows = [Collections.Generic.List[object]]::new()
 $wgslRows = [Collections.Generic.List[object]]::new()
 
 $notebooks = (New-Item -ItemType Directory -Force "../notebooks").FullName
-$sources = Get-ChildItem ../src, ../apps/arena, ../apps/host, ../apps/offscreen -File -Filter "*.spi" |
+$sources = Get-ChildItem ../src, ../apps/arena, ../apps/host, ../apps/offscreen, ../apps/map, ../apps/predict -File -Filter "*.spi" |
     Where-Object { !$Files -or $_.BaseName -in $Files } |
     Where-Object { Select-String -Path $_.FullName -Pattern '^test ' -Quiet } |
     Where-Object { $_.BaseName -notin $Exclude } |

@@ -27,19 +27,35 @@ test max_melee_matches_canary_double_formula =
     := ~value = 50i32
     max_melee_damage_offensive value 80 100 |> _assert_eq 360i32
     max_melee_damage_offensive (value - 8) 65 8 |> _assert_eq 233i32
+
+///> c
+test max_melee_matches_canary_at_the_extremes =
+    := ~value = 50i32
     max_melee_damage_offensive (value - 49) 1 1 |> _assert_eq 0i32
     max_melee_damage_offensive (value + 50) 120 500 |> _assert_eq 1120i32
+
+///> c
+test max_melee_matches_canary_for_weak_attacks =
+    := ~value = 50i32
     max_melee_damage_offensive (value - 15) 50 30 |> _assert_eq 155i32
     max_melee_damage_offensive (value - 30) 10 9 |> _assert_eq 18i32
+
+///> c
+test max_melee_matches_canary_for_high_levels =
+    := ~value = 50i32
     max_melee_damage_offensive (value - 2) 99 250 |> _assert_eq 454i32
     max_melee_damage_offensive (value + 150) 130 1000 |> _assert_eq 2410i32
 
 ///> c
-test fight_mode_scales_max_melee_like_canary_attack_factor =
+test fight_mode_scales_max_melee_like_canary =
     := ~skill = 30i32
     max_melee_damage Offensive 21 skill 8 |> _assert_eq 55i32
     max_melee_damage Balanced 21 skill 8 |> _assert_eq 41i32
     max_melee_damage Defensive 21 skill 8 |> _assert_eq 28i32
+
+///> c
+test a_low_skill_balanced_hit_matches_canary =
+    := ~skill = 30i32
     max_melee_damage Balanced 21 (skill - 19) 8 |> _assert_eq 16i32
 
 ///> c

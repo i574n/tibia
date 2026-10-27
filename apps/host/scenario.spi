@@ -10,52 +10,54 @@ test scenario static =
     | Mix : list order
     | BadOrder : string
 
+:= named_count (name : string) (count : string) : option order =
+    ?= convert.try_convert (sm'.trim count) ?|
+    | Some n => Some { name = sm'.trim name; count = n }
+    | None => None
+
 := order_of (part : string) : option order =
     := fields = part |> sm'.split ":" |> array
-    ? am'.length fields <> 2
-    ?> None
+    ? am'.length fields <> 2 ?> None |: named_count (am'.index 0 fields) (am'.index 1 fields)
+
+:~ ^ collected (parts : array string) (i : i32) (orders : list order) : mix =
+    ? i < 0 ?> Mix orders
     |:
-        ?= convert.try_convert (sm'.trim (am'.index 1 fields)) ?|
-        | Some count => Some { name = sm'.trim (am'.index 0 fields); count = count }
-        | None => None
+        := part = am'.index i parts
+        ?= order_of part ?|
+        | Some o => collected parts (i - 1) (o :: orders)
+        | None => BadOrder part
 
 := mix_of (monster : string) (count : i32) : mix =
-    ? sm'.contains ":" monster
-    ?>
+    ? sm'.contains ":" monster ?>
         := parts = monster |> sm'.split "," |> array
-        :~ ^ collect (i : i32) (orders : list order) : mix =
-            ? i < 0
-            ?> Mix orders
-            |:
-                := part = am'.index i parts
-                ?= order_of part ?|
-                | Some o => collect (i - 1) (o :: orders)
-                | None => BadOrder part
-        collect (am'.length parts - 1) Nil
+        collected parts (am'.length parts - 1) Nil
     |: Mix [ { name = monster; count = count } ]
 
+:= order_entry (radius : i32) (o : order) : string = o.name ++# "," ++#? o.count ++# ",," ++#? radius
+
 := summon_orders (orders : list order) (radius : i32) : string =
-    := entry (o : order) : string = o.name ++# "," ++#? o.count ++# ",," ++#? radius
     ?= orders ?|
-    | Cons (head, tail) => listm.fold (\ text o => text ++# ";" ++# entry o) (entry head) tail
+    | head :: tail => listm.fold (\ text o => text ++# ";" ++# order_entry radius o) (order_entry radius head) tail
     | Nil => ""
 
 := total_count (orders : list order) : i32 = listm.fold (\ total (o : order) => total + o.count) 0 orders
 
+:= camp_orders (m : mix) (radius : i32) : string * i32 =
+    ?= m ?|
+    | Mix orders => summon_orders orders radius, total_count orders
+    | BadOrder part => failwith part
+
 ///> lua
 ///> gleam
-test a_single_monster_and_a_mixed_camp_give_the_harness_orders =
+test a_single_monster_gives_the_harness_order =
     := ~radius = 2i32
-    ?= mix_of "troll" 3 ?|
-    | Mix orders =>
-        summon_orders orders radius |> _assert_eq "troll,3,,2"
-        total_count orders |> _assert_eq 3i32
-    | BadOrder part => failwith part
-    ?= mix_of "troll:2, cyclops:1" 0 ?|
-    | Mix orders =>
-        summon_orders orders radius |> _assert_eq "troll,2,,2;cyclops,1,,2"
-        total_count orders |> _assert_eq 3i32
-    | BadOrder part => failwith part
+    camp_orders (mix_of "troll" 3) radius |> _assert_eq ("troll,3,,2", 3i32)
+
+///> lua
+///> gleam
+test a_mixed_camp_gives_one_order_per_monster =
+    := ~radius = 2i32
+    camp_orders (mix_of "troll:2, cyclops:1" 0) radius |> _assert_eq ("troll,2,,2;cyclops,1,,2", 3i32)
 
 ///> lua
 ///> gleam

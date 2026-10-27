@@ -1,23 +1,14 @@
 :< sm'_operators
 
+:= silent_table (silent : list string) : hooks.host =
+    := table = hooks.new_list ()
+    listm.iter (\ (name : string) => hooks.set_field table name (\ () => 0i32)) silent
+    hooks.set_field table "cancel" (\ () => ())
+    table
+
 := silence_network () : () =
-    := silent = \ () => 0i32
-    := nothing = \ () => ()
-    := http = hooks.new_list ()
-    hooks.set_field http "get" silent
-    hooks.set_field http "post" silent
-    hooks.set_field http "download" silent
-    hooks.set_field http "ws" silent
-    hooks.set_field http "cancel" nothing
-    hooks.set_g_http http
-    := plain = hooks.new_list ()
-    hooks.set_field plain "get" silent
-    hooks.set_field plain "getJSON" silent
-    hooks.set_field plain "post" silent
-    hooks.set_field plain "postJSON" silent
-    hooks.set_field plain "download" silent
-    hooks.set_field plain "cancel" nothing
-    hooks.set_http plain
+    hooks.set_g_http (silent_table [ "get"; "post"; "download"; "ws" ])
+    hooks.set_http (silent_table [ "get"; "getJSON"; "post"; "postJSON"; "download" ])
 
 := main () : () =
     silence_network ()

@@ -8,14 +8,15 @@ param(
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 . (Join-Path $repo 'live/paths.ps1')
-$eoie = (Get-Command eoie -ErrorAction Ignore).Source ?? 'C:\home\git\eoie\eoie.exe'
+$kitPaths = 'C:\home\git\kit\kit.exe', 'C:\home\git\eoie\kit.exe', 'C:\home\git\eoie\eoie.exe'
+$kit = (Get-Command kit -ErrorAction Ignore).Source ?? @($kitPaths | Where-Object { Test-Path -LiteralPath $_ })[0]
 $scratch = (New-Item -ItemType Directory -Force (Join-Path $repo 'target/score')).FullName
 
 function Get-Moments([object[]] $rows, [string] $group, [string] $column) {
     $table = Join-Path $scratch "$column.tsv"
     $rows | Export-Csv $table -Delimiter "`t" -NoTypeInformation -UseQuotes Never
     $grouping = if ($group -eq 'all') { @() } else { @('--group', $group) }
-    $stats = @(& $eoie table query $table @grouping --count $column --mean $column --sd $column --quiet | ConvertFrom-Csv -Delimiter "`t" | Where-Object { $_."count_$column" -match '^\d+$' })
+    $stats = @(& $kit table query $table @grouping --count $column --mean $column --sd $column --quiet | ConvertFrom-Csv -Delimiter "`t" | Where-Object { $_."count_$column" -match '^\d+$' })
     foreach ($s in $stats) { [pscustomobject]@{ group = $s.$group; n = [int]$s."count_$column"; mean = [double]$s."mean_$column"; var = [math]::Pow([double]$s."sd_$column", 2) } }
 }
 function Get-RetreatLogs([string] $results) {
@@ -37,7 +38,7 @@ function Get-Tables([string] $label, [string[]] $builders, [int] $shield) {
 
 $logs = @(Get-RetreatLogs 'arena-results-cyclops-pr12.tsv') + @(Get-RetreatLogs 'arena-results-cyclops-pr16.tsv')
 $stepsTable = Join-Path $scratch 'live-steps.tsv'
-& $eoie table logs @logs --count steps='step away from' --out $stepsTable | Out-Null
+& $kit table logs @logs --count steps='step away from' --out $stepsTable | Out-Null
 $live = Get-Moments @(Import-Csv $stepsTable -Delimiter "`t" | Select-Object steps) all steps
 
 $rows = foreach ($name in $Candidates.Keys) {

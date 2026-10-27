@@ -3,10 +3,11 @@ test ground_trace static =
     :< testing
 
 :< sm'_operators
+:< canary
 
 :== watch = { id : u32; x : i32; y : i32 }
 
-:= emit (line : string) : () = file_system.append_all_text "ground-trace.log" (line ++# "\n")
+:= emit (line : string) : () = file_system.append_all_text "ground-trace.log" ("ground-trace " ++# line ++# "\n")
 
 := spot_text (x : i32) (y : i32) : string = "" ++#? x ++# "," ++#? y
 
@@ -23,87 +24,134 @@ test ground_trace static =
     listm.map (\ (w : watch) => ? w.id = id ?> { id = w.id; x = x; y = y } |: w) watched
 
 := still_present (present : list u32) (watched : list watch) : list watch =
-    listm.fold (\ kept (w : watch) => ? holds w.id present ?> Cons (w, kept) |: kept) Nil watched |> listm.rev
+    listm.fold (\ kept (w : watch) => ? holds w.id present ?> w :: kept |: kept) Nil watched |> listm.rev
+
+:= watched_two () : list watch =
+    [ { id = 201u32; x = 1950i32; y = 1345i32 }; { id = 202u32; x = 1953i32; y = 1346i32 } ]
+
+:= x_of (id : u32) (watched : list watch) : i32 = ?= watch_of id watched ?| Some w => w.x | None => 0i32
+
+:= watch_facts (moved : list watch) : i32 * bool * bool * i32 =
+    x_of 201u32 moved, holds 202u32 [ 202u32 ], holds 7u32 Nil, listm.length (still_present [ 202u32 ] moved)
 
 ///> lua
 ///> c
 test watches_follow_moves_and_departures =
-    := watched = Cons ({ id = 201u32; x = 1950i32; y = 1345i32 }, Cons ({ id = 202u32; x = 1953i32; y = 1346i32 }, Nil))
-    := moved = moved_to 201u32 1949i32 1344i32 watched
-    := kept = still_present (Cons (202u32, Nil)) moved
-    := moved_x = ?= watch_of 201u32 moved ?| Some w => w.x | None => 0i32
-    (moved_x, holds 202u32 (Cons (202u32, Nil)), holds 7u32 Nil, (listm.length kept : i32))
-    |> _assert_eq (1949i32, !+, !-, 1i32)
+    watch_facts (moved_to 201u32 1949i32 1344i32 (watched_two ())) |> _assert_eq (1949i32, !+, !-, 1i32)
 
 ///> lua
 test spot_text_joins_coordinates =
     spot_text 1949i32 1344i32 |> _assert_eq "1949,1344"
 
+:== ground = { knight_since : mut (option f64); knight_away : mut bool; watched : mut (list watch) }
+
+:== sweep = { present : mut (list u32); knight_present : mut bool }
+
+:= since (g : ground) : i32 =
+    ?= *g.knight_since ?|
+    | Some t => conv (system_time () - t)
+    | None => -1i32
+
+:= emit_at (g : ground) (line : string) : () = emit (line ++# " @knight+" ++#? since g)
+
+:= death_text (c : creature) : string =
+    := at = creature_position c
+    "death " ++#? creature_id c ++# " " ++# creature_name c ++# " at " ++# spot_text (position_x at) (position_y at)
+
+:= on_ground_death (g : ground) (c : creature) : bool =
+    emit_at g (death_text c)
+    !+
+
+:= knight_seen_line (x : i32) (y : i32) : string =
+    := stamp = date_time.now () |> date_time.format "%Y%m%d-%H%M%S"
+    "run " ++# stamp ++# " knight seen at " ++# spot_text x y ++# " @knight+0"
+
+:= saw_knight (g : ground) (x : i32) (y : i32) : () =
+    := knight_since = g.knight_since
+    ?= *knight_since ?|
+    | None =>
+        knight_since <- Some (system_time ())
+        emit (knight_seen_line x y)
+    | Some _ => ()
+
+:= appear_line (c : creature) (id : u32) (x : i32) (y : i32) : string =
+    "appear " ++#? id ++# " " ++# creature_name c ++# " at " ++# spot_text x y
+
+:= first_sight (g : ground) (c : creature) (id : u32) (x : i32) (y : i32) : () =
+    := watched = g.watched
+    creature_register_event c "GroundTraceDeath"
+    watched <- { id = id; x = x; y = y } :: *watched
+    emit_at g (appear_line c id x y)
+
+:= moved_sight (g : ground) (id : u32) (x : i32) (y : i32) : () =
+    := watched = g.watched
+    emit_at g ("move " ++#? id ++# " to " ++# spot_text x y)
+    watched <- moved_to id x y *watched
+
+:= sighted (g : ground) (c : creature) (id : u32) (x : i32) (y : i32) : () =
+    ?= watch_of id *g.watched ?|
+    | None => first_sight g c id x y
+    | Some seen => ? seen.x <> x || seen.y <> y ?> moved_sight g id x y
+
+:= saw_monster (g : ground) (s : sweep) (c : creature) (x : i32) (y : i32) : () =
+    := id, present = creature_id c, s.present
+    present <- id :: *present
+    sighted g c id x y
+
+:= saw_player (g : ground) (s : sweep) (c : creature) (x : i32) (y : i32) : () =
+    := knight_present = s.knight_present
+    ? creature_name c = "Knight Sample" ?>
+        knight_present <- !+
+        saw_knight g x y
+
+:= saw (g : ground) (s : sweep) (c : creature) : () =
+    := at = creature_position c
+    := x, y = position_x at, position_y at
+    ? creature_is_player c ?> saw_player g s c x y
+    |? creature_is_monster c ?> saw_monster g s c x y
+
+:= saw_all (g : ground) (s : sweep) (crowd : array creature) : () =
+    loop.for' { from = 0i32; nearTo = am'.length crowd } (\ i => saw g s (am'.index i crowd))
+
+:= departures (g : ground) (present : list u32) : () =
+    := watched = g.watched
+    *watched
+    |> listm.iter (\ (w : watch) =>
+        ? holds w.id present = !- ?> emit_at g ("gone " ++#? w.id)
+        )
+    watched <- still_present present *watched
+
+:= knight_known (g : ground) : bool = ?= *g.knight_since ?| Some _ => !+ | None => !-
+
+:= flip_view (g : ground) (knight_present : bool) : () =
+    := knight_away = g.knight_away
+    knight_away <- knight_present = !-
+    := view = ? *knight_away ?> "out of view" |: "back in view"
+    emit_at g ("knight " ++# view)
+
+:= knight_view (g : ground) (knight_present : bool) : () =
+    ? knight_known g && knight_present = *g.knight_away ?> flip_view g knight_present
+
+:= poll_once (g : ground) (centre : position) (reach : i32) : bool =
+    := s : sweep = { present = mut Nil; knight_present = mut !- }
+    saw_all g s (spectators centre reach)
+    departures g *s.present
+    knight_view g *s.knight_present
+    !+
+
+:= watch_deaths (g : ground) : () =
+    := death = creature_event "GroundTraceDeath"
+    on_death death (on_ground_death g)
+    register_creature_event death
+
+:= watch_ground (g : ground) : () =
+    := centre = position 1947 1345 7
+    := poll = global_event "GroundTracePoll"
+    on_think poll (\ _ => poll_once g centre 16i32)
+    think_interval poll 250
+    register_global_event poll
+
 := main () : () =
-    := centre = canary.position 1947 1345 7
-    := reach = 16i32
-    := knight_since : mut (option f64) = mut None
-    := knight_away = mut !-
-    := watched : mut (list watch) = mut Nil
-    := since () : i32 =
-        ?= *knight_since ?|
-        | Some t => conv (canary.system_time () - t)
-        | None => -1i32
-    := death = canary.creature_event "GroundTraceDeath"
-    canary.on_death death (\ c =>
-        := at = canary.creature_position c
-        emit (
-            "ground-trace death " ++#? canary.creature_id c ++# " " ++# canary.creature_name c ++# " at "
-            ++# spot_text (canary.position_x at) (canary.position_y at) ++# " @knight+" ++#? since ()
-        )
-        !+
-        )
-    canary.register_creature_event death
-    := poll = canary.global_event "GroundTracePoll"
-    canary.on_think poll (\ _ =>
-        := present : mut (list u32) = mut Nil
-        := knight_present = mut !-
-        := crowd = canary.spectators centre reach
-        loop.for' { from = 0i32; nearTo = am'.length crowd } (\ i =>
-            := c = am'.index i crowd
-            := at = canary.creature_position c
-            := x, y = canary.position_x at, canary.position_y at
-            ? canary.creature_is_player c ?>
-                ? canary.creature_name c = "Knight Sample" ?>
-                    knight_present <- !+
-                    ?= *knight_since ?|
-                    | None =>
-                        knight_since <- Some (canary.system_time ())
-                        := stamp = date_time.now () |> date_time.format "%Y%m%d-%H%M%S"
-                        emit ("ground-trace run " ++# stamp ++# " knight seen at " ++# spot_text x y ++# " @knight+0")
-                    | Some _ => ()
-            |? canary.creature_is_monster c ?>
-                := id = canary.creature_id c
-                present <- Cons (id, *present)
-                ?= watch_of id *watched ?|
-                | None =>
-                    canary.creature_register_event c "GroundTraceDeath"
-                    watched <- Cons ({ id = id; x = x; y = y }, *watched)
-                    emit (
-                        "ground-trace appear " ++#? id ++# " " ++# canary.creature_name c ++# " at " ++# spot_text x y
-                        ++# " @knight+" ++#? since ()
-                    )
-                | Some seen =>
-                    ? seen.x <> x || seen.y <> y ?>
-                        emit ("ground-trace move " ++#? id ++# " to " ++# spot_text x y ++# " @knight+" ++#? since ())
-                        watched <- moved_to id x y *watched
-            )
-        *watched
-        |> listm.iter (\ (w : watch) =>
-            ? holds w.id *present = !- ?> emit ("ground-trace gone " ++#? w.id ++# " @knight+" ++#? since ())
-            )
-        watched <- still_present *present *watched
-        := knight_known = ?= *knight_since ?| Some _ => !+ | None => !-
-        ? knight_known && *knight_present = *knight_away ?>
-            knight_away <- *knight_present = !-
-            := view = ? *knight_away ?> "out of view" |: "back in view"
-            emit ("ground-trace knight " ++# view ++# " @knight+" ++#? since ())
-        !+
-        )
-    canary.think_interval poll 250
-    canary.register_global_event poll
+    := g : ground = { knight_since = mut None; knight_away = mut !-; watched = mut Nil }
+    watch_deaths g
+    watch_ground g

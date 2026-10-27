@@ -2,76 +2,66 @@
 test gpu_sim static =
     :< testing
 
+:= troll_camp () : hunting_pack.camp = hunting_pack.uniform_camp (:< creatures ;; Troll)
+
+:= reach_first () : hunting_pack.tactic = hunting_pack.cavebot (:< policy ;; ReachFirst)
+
+:~ ^ troll_ticks (seed : u32) (tick : i32) (p : hunting_pack.pack) : hunting_pack.pack =
+    ? tick >= 10 ?> p |: troll_ticks seed (tick + 1) (hunting_pack.advance (troll_camp ()) (reach_first ()) seed tick p)
+
+:= ten_tick_facts (seed : u32) : i32 * i32 * i32 * i32 =
+    := p = troll_ticks seed 0 (hunting_pack.start (troll_camp ()))
+    quantity.value_of p.hunter.health, (hunting_pack.slot 0 p).at.x, (hunting_pack.slot 0 p).at.y, p.score.kills
+
 ///> c
 test ten_ticks_of_a_troll_pack_on_the_oracle =
-    :< hunting_pack
-    :< creatures
     := ~seed = 7u32
-    :~ ^ run (tick : i32) (p : pack) : pack =
-        ? tick >= 10
-        ?> p
-        |: run (tick + 1) (advance (uniform_camp Troll) (cavebot (:< policy ;; ReachFirst)) seed tick p)
-    := p = run 0 (start (uniform_camp Troll))
-    (quantity.value_of p.hunter.health, (slot 0 p).at.x, (slot 0 p).at.y, p.kills)
-    |> _assert_eq (185i32, 105i32, 102i32, 0i32)
+    ten_tick_facts seed |> _assert_eq (185i32, 105i32, 102i32, 0i32)
 
 ///> wgsl
 test ten_ticks_of_a_troll_pack_on_gpu =
-    :< hunting_pack
-    :< creatures
     := ~seed = 7u32
-    :~ ^ run (tick : i32) (p : pack) : pack =
-        ? tick >= 10
-        ?> p
-        |: run (tick + 1) (advance (uniform_camp Troll) (cavebot (:< policy ;; ReachFirst)) seed tick p)
-    := p = run 0 (start (uniform_camp Troll))
-    ?
-        quantity.value_of p.hunter.health = 185i32
-        && (slot 0 p).at.x = 105i32
-        && (slot 0 p).at.y = 102i32
-        && p.kills = 0i32
-    ?> 0i32
-    |: 1i32
+    := health, x, y, kills = ten_tick_facts seed
+    ? health = 185i32 && x = 105i32 && y = 102i32 && kills = 0i32 ?> 0i32 |: 1i32
+
+:= spot_clears (seed : u32) =
+    :< hunting_pack
+    := spot = uniform_camp (:< creatures ;; Cyclops) |> on_layout (:< terrain ;; ArenaSpot)
+    clear_ledger_of spot (cavebot_with_heal 160) (seed + 994u32) 5
+
+:= troll_hunt (seed : u32) : hunting_pack.pack =
+    hunting_pack.simulate (troll_camp ()) (reach_first ()) seed (hunting_pack.scenario_ticks ())
+
+:= hunt_and_clear_facts (seed : u32) : i32 * i32 * i32 * i32 * i32 * i32 =
+    := hunt, clears = troll_hunt seed, spot_clears seed
+    hunt.score.kills, hunt.score.escapes, hunt.score.deaths, clears.clear_potions, clears.clear_deaths, clears.clear_ms
 
 ///> c
-test a_full_troll_hunt_and_five_cyclops_clears_on_the_oracle =
-    :< hunting_pack
-    :< creatures
+test troll_hunt_and_cyclops_clears_on_the_oracle =
     := ~seed = 7u32
-    := hunt = simulate (uniform_camp Troll) (cavebot (:< policy ;; ReachFirst)) seed (scenario_ticks ())
-    := spot = uniform_camp Cyclops |> on_layout (:< terrain ;; ArenaSpot)
-    := clears = clear_ledger_of spot (cavebot_with_heal 160) (seed + 994u32) 5
-    (hunt.kills, hunt.escapes, hunt.deaths, clears.clear_potions, clears.clear_deaths, clears.clear_ms)
-    |> _assert_eq (6i32, 18i32, 0i32, 84i32, 0i32, 453000i32)
+    hunt_and_clear_facts seed |> _assert_eq (6i32, 18i32, 0i32, 84i32, 0i32, 453000i32)
 
 ///> wgsl
-test a_full_troll_hunt_and_five_cyclops_clears_on_gpu =
-    :< hunting_pack
-    :< creatures
+test troll_hunt_and_cyclops_clears_on_gpu =
     := ~seed = 7u32
-    := hunt = simulate (uniform_camp Troll) (cavebot (:< policy ;; ReachFirst)) seed (scenario_ticks ())
-    := spot = uniform_camp Cyclops |> on_layout (:< terrain ;; ArenaSpot)
-    := clears = clear_ledger_of spot (cavebot_with_heal 160) (seed + 994u32) 5
-    ?
-        hunt.kills = 6i32
-        && hunt.escapes = 18i32
-        && hunt.deaths = 0i32
-        && clears.clear_potions = 84i32
-        && clears.clear_deaths = 0i32
-        && clears.clear_ms = 453000i32
-    ?> 0i32
-    |: 1i32
+    := kills, fled, deaths, potions, lost, ms = hunt_and_clear_facts seed
+    ? kills = 6i32 && fled = 18i32 && deaths = 0i32 && potions = 84i32 && lost = 0i32 && ms = 453000i32 ?> 0i32 |: 1i32
+
+:= routed_hunt (seed : u32) =
+    :< hunting_pack
+    simulate (arena_hunt ()) (cavebot_with_heal 110 |> sweeping_spawns) seed (scenario_ticks ())
 
 ///> c
 test a_hunting_ground_hunt_with_routing_on_the_oracle =
-    :< hunting_pack
     := ~seed = 1001u32
-    := p = simulate (arena_hunt ()) (cavebot_with_heal 110 |> sweeping_spawns) seed (scenario_ticks ())
-    (p.kills, p.experience, p.hunter.potions, p.deaths) |> _assert_eq (23i32, 1370i32, 24i32, 0i32)
+    := p = routed_hunt seed
+    (p.score.kills, p.score.experience, p.hunter.tally.potions, p.score.deaths)
+    |> _assert_eq (23i32, 1370i32, 24i32, 0i32)
 
 ///> wgsl
 test a_hunting_ground_hunt_with_routing_on_gpu =
-    :< hunting_pack
     := ~seed = 1001u32
-    := p = simulate (arena_hunt ()) (cavebot_with_heal 110 |> sweeping_spawns) seed (scenario_ticks ())
-    ? p.kills = 23i32 && p.experience = 1370i32 && p.hunter.potions = 24i32 && p.deaths = 0i32 ?> 0i32 |: 1i32
+    := p = routed_hunt seed
+    ? p.score.kills = 23i32 && p.score.experience = 1370i32 && p.hunter.tally.potions = 24i32 && p.score.deaths = 0i32
+    ?> 0i32
+    |: 1i32

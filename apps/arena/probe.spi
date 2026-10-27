@@ -1,3 +1,7 @@
+///- --package .
+test probe static =
+    :< testing
+
 :< sm'_operators
 := note (message : string) : () = client.write_log_line ("[tibia-probe] " ++# message)
 
@@ -34,17 +38,22 @@
 
 :== nearest = { found : bool; index : i32; distance : i32 }
 
-:= nearest_monster (here : client.spot) (people : client.crowd) : nearest =
-    := size = client.crowd_size people
+:= nobody () : nearest = { found = !-; index = 0; distance = 999 }
+
+:= closer (best : nearest) (index : i32) (d : i32) : nearest =
+    ? d < best.distance ?> { found = !+; index = index; distance = d } |: best
+
+:= ranked (here : client.spot) (people : client.crowd) (index : i32) (best : nearest) : nearest =
+    := c = client.member people index
+    ? client.live_monster c ?> closer best index (chebyshev (client.creature_spot c) here) |: best
+
+:= nearest_in (here : client.spot) (people : client.crowd) (size : i32) : nearest =
     :~ ^ scan (index : i32) (best : nearest) : nearest =
-        ? index > size ?> best
-        |:
-            := c = client.member people index
-            ? client.live_monster c ?>
-                := d = chebyshev (client.creature_spot c) here
-                scan (index + 1) (? d < best.distance ?> { found = !+; index = index; distance = d } |: best)
-            |: scan (index + 1) best
-    scan 1 { found = !-; index = 0; distance = 999 }
+        ? index > size ?> best |: scan (index + 1) (ranked here people index best)
+    scan 1 (nobody ())
+
+:= nearest_monster (here : client.spot) (people : client.crowd) : nearest =
+    nearest_in here people (client.crowd_size people)
 
 := keep_hidden () : () =
     ? client.hidden_requested () ?> client.hide_window ()
@@ -71,25 +80,46 @@
         |: client.after 50 poll
     poll ()
 
-:= started_as
-    (character : string) (on_text : string -> string -> ()) (ready : () -> ()) (timeout_ms : i32)
-    (on_timeout : () -> ())
-    : ()
-    =
+:== text_handler = string -> string -> ()
+
+:= login_error (message : string) : () =
+    note ("game login error: " ++# message)
+    finish "game login error"
+
+:= entered (character : string) (on_text : text_handler) (ready : () -> ()) : () =
+    client.log_in {
+        character = character
+        on_start = ready
+        on_error = login_error
+        on_text = on_text
+        }
+
+:= gated_entry (character : string) (on_text : text_handler) (ready : () -> ()) : () =
+    when_gate_opens (login_gate ()) (\ () => entered character on_text ready)
+
+:= kept_hidden () : () =
     keep_hidden ()
     client.after 200 keep_hidden
     client.after 1000 keep_hidden
-    := enter () =
-        client.log_in {
-            character = character
-            on_start = ready
-            on_error = \ message =>
-                note ("game login error: " ++# message)
-                finish "game login error"
-            on_text = on_text
-            }
-    client.after 3000 (\ () => when_gate_opens (login_gate ()) enter)
+
+:= started_as
+    (character : string) (on_text : text_handler) (ready : () -> ()) (timeout_ms : i32) (on_timeout : () -> ())
+    : ()
+    =
+    kept_hidden ()
+    client.after 3000 (\ () => gated_entry character on_text ready)
     client.after timeout_ms on_timeout
 
 := started (ready : () -> ()) (timeout_ms : i32) : () =
     started_as (knight ()) ignore_text ready timeout_ms \ () => finish "timeout"
+
+///> lua
+///> c
+test chebyshev_takes_the_larger_axis =
+    := a, b = { x = 10; y = 20; z = 7 }, { x = 13; y = 19; z = 7 }
+    (chebyshev a b, chebyshev b a, chebyshev a a) |> _assert_eq (3i32, 3i32, 0i32)
+
+///> lua
+///> c
+test described_joins_xyz =
+    described { x = 1936; y = 1349; z = 7 } |> _assert_eq "1936,1349,7"

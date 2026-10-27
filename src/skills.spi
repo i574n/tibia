@@ -4,395 +4,206 @@ test skills static =
 
 :== skill = { level : i32; tries : i32 }
 
+:= tries_11_to_18 (level : i32) : i32 =
+    ? level <= 11 ?> 50
+    |? level <= 12 ?> 55
+    |? level <= 13 ?> 60
+    |? level <= 14 ?> 66
+    |? level <= 15 ?> 73
+    |? level <= 16 ?> 80
+    |? level <= 17 ?> 88
+    |: 97
+
+:= tries_19_to_26 (level : i32) : i32 =
+    ? level <= 19 ?> 107
+    |? level <= 20 ?> 117
+    |? level <= 21 ?> 129
+    |? level <= 22 ?> 142
+    |? level <= 23 ?> 156
+    |? level <= 24 ?> 172
+    |? level <= 25 ?> 189
+    |: 208
+
+:= tries_27_to_34 (level : i32) : i32 =
+    ? level <= 27 ?> 229
+    |? level <= 28 ?> 252
+    |? level <= 29 ?> 277
+    |? level <= 30 ?> 305
+    |? level <= 31 ?> 336
+    |? level <= 32 ?> 370
+    |? level <= 33 ?> 407
+    |: 447
+
+:= tries_35_to_42 (level : i32) : i32 =
+    ? level <= 35 ?> 492
+    |? level <= 36 ?> 541
+    |? level <= 37 ?> 595
+    |? level <= 38 ?> 655
+    |? level <= 39 ?> 721
+    |? level <= 40 ?> 793
+    |? level <= 41 ?> 872
+    |: 959
+
+:= tries_43_to_50 (level : i32) : i32 =
+    ? level <= 43 ?> 1055
+    |? level <= 44 ?> 1161
+    |? level <= 45 ?> 1277
+    |? level <= 46 ?> 1405
+    |? level <= 47 ?> 1545
+    |? level <= 48 ?> 1700
+    |? level <= 49 ?> 1870
+    |: 2057
+
+:= tries_11_to_50 (level : i32) : i32 =
+    ? level <= 18 ?> tries_11_to_18 level
+    |? level <= 26 ?> tries_19_to_26 level
+    |? level <= 34 ?> tries_27_to_34 level
+    |? level <= 42 ?> tries_35_to_42 level
+    |: tries_43_to_50 level
+
+:= tries_51_to_58 (level : i32) : i32 =
+    ? level <= 51 ?> 2262
+    |? level <= 52 ?> 2489
+    |? level <= 53 ?> 2738
+    |? level <= 54 ?> 3012
+    |? level <= 55 ?> 3313
+    |? level <= 56 ?> 3644
+    |? level <= 57 ?> 4008
+    |: 4409
+
+:= tries_59_to_66 (level : i32) : i32 =
+    ? level <= 59 ?> 4850
+    |? level <= 60 ?> 5335
+    |? level <= 61 ?> 5869
+    |? level <= 62 ?> 6456
+    |? level <= 63 ?> 7102
+    |? level <= 64 ?> 7812
+    |? level <= 65 ?> 8593
+    |: 9452
+
+:= tries_67_to_74 (level : i32) : i32 =
+    ? level <= 67 ?> 10398
+    |? level <= 68 ?> 11438
+    |? level <= 69 ?> 12581
+    |? level <= 70 ?> 13840
+    |? level <= 71 ?> 15224
+    |? level <= 72 ?> 16746
+    |? level <= 73 ?> 18421
+    |: 20263
+
+:= tries_75_to_82 (level : i32) : i32 =
+    ? level <= 75 ?> 22289
+    |? level <= 76 ?> 24518
+    |? level <= 77 ?> 26970
+    |? level <= 78 ?> 29667
+    |? level <= 79 ?> 32634
+    |? level <= 80 ?> 35897
+    |? level <= 81 ?> 39487
+    |: 43436
+
+:= tries_83_to_90 (level : i32) : i32 =
+    ? level <= 83 ?> 47779
+    |? level <= 84 ?> 52557
+    |? level <= 85 ?> 57813
+    |? level <= 86 ?> 63594
+    |? level <= 87 ?> 69954
+    |? level <= 88 ?> 76949
+    |? level <= 89 ?> 84644
+    |: 93109
+
+:= tries_51_to_90 (level : i32) : i32 =
+    ? level <= 58 ?> tries_51_to_58 level
+    |? level <= 66 ?> tries_59_to_66 level
+    |? level <= 74 ?> tries_67_to_74 level
+    |? level <= 82 ?> tries_75_to_82 level
+    |: tries_83_to_90 level
+
+:= tries_91_to_98 (level : i32) : i32 =
+    ? level <= 91 ?> 102420
+    |? level <= 92 ?> 112662
+    |? level <= 93 ?> 123928
+    |? level <= 94 ?> 136321
+    |? level <= 95 ?> 149953
+    |? level <= 96 ?> 164948
+    |? level <= 97 ?> 181443
+    |: 199588
+
+:= tries_99_to_106 (level : i32) : i32 =
+    ? level <= 99 ?> 219546
+    |? level <= 100 ?> 241501
+    |? level <= 101 ?> 265651
+    |? level <= 102 ?> 292216
+    |? level <= 103 ?> 321438
+    |? level <= 104 ?> 353582
+    |? level <= 105 ?> 388940
+    |: 427834
+
+:= tries_107_to_114 (level : i32) : i32 =
+    ? level <= 107 ?> 470618
+    |? level <= 108 ?> 517679
+    |? level <= 109 ?> 569448
+    |? level <= 110 ?> 626392
+    |? level <= 111 ?> 689032
+    |? level <= 112 ?> 757935
+    |? level <= 113 ?> 833728
+    |: 917101
+
+:= tries_115_to_122 (level : i32) : i32 =
+    ? level <= 115 ?> 1008812
+    |? level <= 116 ?> 1109693
+    |? level <= 117 ?> 1220662
+    |? level <= 118 ?> 1342728
+    |? level <= 119 ?> 1477001
+    |? level <= 120 ?> 1624701
+    |? level <= 121 ?> 1787172
+    |: 1965889
+
+:= tries_123_to_130 (level : i32) : i32 =
+    ? level <= 123 ?> 2162478
+    |? level <= 124 ?> 2378726
+    |? level <= 125 ?> 2616599
+    |? level <= 126 ?> 2878259
+    |? level <= 127 ?> 3166085
+    |? level <= 128 ?> 3482693
+    |? level <= 129 ?> 3830963
+    |: 4214059
+
+:= tries_91_to_130 (level : i32) : i32 =
+    ? level <= 98 ?> tries_91_to_98 level
+    |? level <= 106 ?> tries_99_to_106 level
+    |? level <= 114 ?> tries_107_to_114 level
+    |? level <= 122 ?> tries_115_to_122 level
+    |: tries_123_to_130 level
+
 :~ knight_skill_tries_up_to_130 (level : i32) : i32 =
-    ? level <= 10 || level > 130
-    ?> 0i32
-    |:
-        ? level <= 70
-        ?>
-            ? level <= 40
-            ?>
-                ? level <= 25
-                ?>
-                    ? level <= 18
-                    ?>
-                        ? level <= 14
-                        ?>
-                            ? level <= 12
-                            ?>
-                                ? level <= 11
-                                ?> 50i32
-                                |: 55i32
-                            |:
-                                ? level <= 13
-                                ?> 60i32
-                                |: 66i32
-                        |:
-                            ? level <= 16
-                            ?>
-                                ? level <= 15
-                                ?> 73i32
-                                |: 80i32
-                            |:
-                                ? level <= 17
-                                ?> 88i32
-                                |: 97i32
-                    |:
-                        ? level <= 22
-                        ?>
-                            ? level <= 20
-                            ?>
-                                ? level <= 19
-                                ?> 107i32
-                                |: 117i32
-                            |:
-                                ? level <= 21
-                                ?> 129i32
-                                |: 142i32
-                        |:
-                            ? level <= 24
-                            ?>
-                                ? level <= 23
-                                ?> 156i32
-                                |: 172i32
-                            |: 189i32
-                |:
-                    ? level <= 33
-                    ?>
-                        ? level <= 29
-                        ?>
-                            ? level <= 27
-                            ?>
-                                ? level <= 26
-                                ?> 208i32
-                                |: 229i32
-                            |:
-                                ? level <= 28
-                                ?> 252i32
-                                |: 277i32
-                        |:
-                            ? level <= 31
-                            ?>
-                                ? level <= 30
-                                ?> 305i32
-                                |: 336i32
-                            |:
-                                ? level <= 32
-                                ?> 370i32
-                                |: 407i32
-                    |:
-                        ? level <= 37
-                        ?>
-                            ? level <= 35
-                            ?>
-                                ? level <= 34
-                                ?> 447i32
-                                |: 492i32
-                            |:
-                                ? level <= 36
-                                ?> 541i32
-                                |: 595i32
-                        |:
-                            ? level <= 39
-                            ?>
-                                ? level <= 38
-                                ?> 655i32
-                                |: 721i32
-                            |: 793i32
-            |:
-                ? level <= 55
-                ?>
-                    ? level <= 48
-                    ?>
-                        ? level <= 44
-                        ?>
-                            ? level <= 42
-                            ?>
-                                ? level <= 41
-                                ?> 872i32
-                                |: 959i32
-                            |:
-                                ? level <= 43
-                                ?> 1055i32
-                                |: 1161i32
-                        |:
-                            ? level <= 46
-                            ?>
-                                ? level <= 45
-                                ?> 1277i32
-                                |: 1405i32
-                            |:
-                                ? level <= 47
-                                ?> 1545i32
-                                |: 1700i32
-                    |:
-                        ? level <= 52
-                        ?>
-                            ? level <= 50
-                            ?>
-                                ? level <= 49
-                                ?> 1870i32
-                                |: 2057i32
-                            |:
-                                ? level <= 51
-                                ?> 2262i32
-                                |: 2489i32
-                        |:
-                            ? level <= 54
-                            ?>
-                                ? level <= 53
-                                ?> 2738i32
-                                |: 3012i32
-                            |: 3313i32
-                |:
-                    ? level <= 63
-                    ?>
-                        ? level <= 59
-                        ?>
-                            ? level <= 57
-                            ?>
-                                ? level <= 56
-                                ?> 3644i32
-                                |: 4008i32
-                            |:
-                                ? level <= 58
-                                ?> 4409i32
-                                |: 4850i32
-                        |:
-                            ? level <= 61
-                            ?>
-                                ? level <= 60
-                                ?> 5335i32
-                                |: 5869i32
-                            |:
-                                ? level <= 62
-                                ?> 6456i32
-                                |: 7102i32
-                    |:
-                        ? level <= 67
-                        ?>
-                            ? level <= 65
-                            ?>
-                                ? level <= 64
-                                ?> 7812i32
-                                |: 8593i32
-                            |:
-                                ? level <= 66
-                                ?> 9452i32
-                                |: 10398i32
-                        |:
-                            ? level <= 69
-                            ?>
-                                ? level <= 68
-                                ?> 11438i32
-                                |: 12581i32
-                            |: 13840i32
-        |:
-            ? level <= 100
-            ?>
-                ? level <= 85
-                ?>
-                    ? level <= 78
-                    ?>
-                        ? level <= 74
-                        ?>
-                            ? level <= 72
-                            ?>
-                                ? level <= 71
-                                ?> 15224i32
-                                |: 16746i32
-                            |:
-                                ? level <= 73
-                                ?> 18421i32
-                                |: 20263i32
-                        |:
-                            ? level <= 76
-                            ?>
-                                ? level <= 75
-                                ?> 22289i32
-                                |: 24518i32
-                            |:
-                                ? level <= 77
-                                ?> 26970i32
-                                |: 29667i32
-                    |:
-                        ? level <= 82
-                        ?>
-                            ? level <= 80
-                            ?>
-                                ? level <= 79
-                                ?> 32634i32
-                                |: 35897i32
-                            |:
-                                ? level <= 81
-                                ?> 39487i32
-                                |: 43436i32
-                        |:
-                            ? level <= 84
-                            ?>
-                                ? level <= 83
-                                ?> 47779i32
-                                |: 52557i32
-                            |: 57813i32
-                |:
-                    ? level <= 93
-                    ?>
-                        ? level <= 89
-                        ?>
-                            ? level <= 87
-                            ?>
-                                ? level <= 86
-                                ?> 63594i32
-                                |: 69954i32
-                            |:
-                                ? level <= 88
-                                ?> 76949i32
-                                |: 84644i32
-                        |:
-                            ? level <= 91
-                            ?>
-                                ? level <= 90
-                                ?> 93109i32
-                                |: 102420i32
-                            |:
-                                ? level <= 92
-                                ?> 112662i32
-                                |: 123928i32
-                    |:
-                        ? level <= 97
-                        ?>
-                            ? level <= 95
-                            ?>
-                                ? level <= 94
-                                ?> 136321i32
-                                |: 149953i32
-                            |:
-                                ? level <= 96
-                                ?> 164948i32
-                                |: 181443i32
-                        |:
-                            ? level <= 99
-                            ?>
-                                ? level <= 98
-                                ?> 199588i32
-                                |: 219546i32
-                            |: 241501i32
-            |:
-                ? level <= 115
-                ?>
-                    ? level <= 108
-                    ?>
-                        ? level <= 104
-                        ?>
-                            ? level <= 102
-                            ?>
-                                ? level <= 101
-                                ?> 265651i32
-                                |: 292216i32
-                            |:
-                                ? level <= 103
-                                ?> 321438i32
-                                |: 353582i32
-                        |:
-                            ? level <= 106
-                            ?>
-                                ? level <= 105
-                                ?> 388940i32
-                                |: 427834i32
-                            |:
-                                ? level <= 107
-                                ?> 470618i32
-                                |: 517679i32
-                    |:
-                        ? level <= 112
-                        ?>
-                            ? level <= 110
-                            ?>
-                                ? level <= 109
-                                ?> 569448i32
-                                |: 626392i32
-                            |:
-                                ? level <= 111
-                                ?> 689032i32
-                                |: 757935i32
-                        |:
-                            ? level <= 114
-                            ?>
-                                ? level <= 113
-                                ?> 833728i32
-                                |: 917101i32
-                            |: 1008812i32
-                |:
-                    ? level <= 123
-                    ?>
-                        ? level <= 119
-                        ?>
-                            ? level <= 117
-                            ?>
-                                ? level <= 116
-                                ?> 1109693i32
-                                |: 1220662i32
-                            |:
-                                ? level <= 118
-                                ?> 1342728i32
-                                |: 1477001i32
-                        |:
-                            ? level <= 121
-                            ?>
-                                ? level <= 120
-                                ?> 1624701i32
-                                |: 1787172i32
-                            |:
-                                ? level <= 122
-                                ?> 1965889i32
-                                |: 2162478i32
-                    |:
-                        ? level <= 127
-                        ?>
-                            ? level <= 125
-                            ?>
-                                ? level <= 124
-                                ?> 2378726i32
-                                |: 2616599i32
-                            |:
-                                ? level <= 126
-                                ?> 2878259i32
-                                |: 3166085i32
-                        |:
-                            ? level <= 129
-                            ?>
-                                ? level <= 128
-                                ?> 3482693i32
-                                |: 3830963i32
-                            |: 4214059i32
+    ? level <= 10 || level > 130 ?> 0
+    |? level <= 50 ?> tries_11_to_50 level
+    |? level <= 90 ?> tries_51_to_90 level
+    |: tries_91_to_130 level
 
 := total_tries_to (level : i32) : i32 =
     :~ ^ sum (c : i32) (total : i32) : i32 =
         ? c > level ?> total |: sum (c + 1) (total + knight_skill_tries_up_to_130 c)
     sum 11 0
 
-:= after_unblessed_death (s : skill) : skill =
-    :~ ^ drop (level : i32) (tries : i32) (lost : i32) : skill =
-        ? lost > tries ?>
-            ? level <= 10 ?> { level = 10; tries = 0 }
-            |: drop (level - 1) (knight_skill_tries_up_to_130 level) (lost - tries)
-        |: { level = level; tries = ? tries > lost ?> tries - lost |: 0 }
-    drop s.level s.tries ((total_tries_to s.level + s.tries) / 10)
+:= kept_skill (level : i32) (tries : i32) (lost : i32) : skill =
+    { level = level; tries = ? tries > lost ?> tries - lost |: 0 }
+
+:~ ^ skill_drop (level : i32) (tries : i32) (lost : i32) : skill =
+    ? lost <= tries ?> kept_skill level tries lost
+    |? level <= 10 ?> { level = 10; tries = 0 }
+    |: skill_drop (level - 1) (knight_skill_tries_up_to_130 level) (lost - tries)
+
+:= after_unblessed_death (s : skill) : skill = skill_drop s.level s.tries ((total_tries_to s.level + s.tries) / 10)
+
+:= tries_pins (level : i32) : i32 * i32 * i32 * i32 * i32 * i32 * i32 * i32 =
+    := at = knight_skill_tries_up_to_130
+    at 10, at 11, at 12, at level, at 60, at 100, at 130, total_tries_to level
 
 ///> c
 test knight_skill_tries_match_canary_pow_of_the_float_multiplier =
     := ~level = 30i32
-    (
-        knight_skill_tries_up_to_130 10,
-        knight_skill_tries_up_to_130 11,
-        knight_skill_tries_up_to_130 12,
-        knight_skill_tries_up_to_130 level,
-        knight_skill_tries_up_to_130 60,
-        knight_skill_tries_up_to_130 100,
-        knight_skill_tries_up_to_130 130,
-        total_tries_to level
-    )
-    |> _assert_eq (0i32, 50i32, 55i32, 305i32, 5335i32, 241501i32, 4214059i32, 2852i32)
+    tries_pins level |> _assert_eq (0i32, 50i32, 55i32, 305i32, 5335i32, 241501i32, 4214059i32, 2852i32)
 
 ///> c
 test an_axe_30_knight_loses_a_skill_level_on_death_like_live =
@@ -400,21 +211,23 @@ test an_axe_30_knight_loses_a_skill_level_on_death_like_live =
     := after = after_unblessed_death { level = level; tries = 0 }
     (after.level, after.tries) |> _assert_eq (29i32, 20i32)
 
+:== level_tries = i32 * i32
+
+:= skill_after_death (level : i32) (tries : i32) : level_tries =
+    := after = after_unblessed_death { level = level; tries = tries }
+    after.level, after.tries
+
+:= loss_rows (tries : i32) : level_tries * level_tries * level_tries * level_tries * level_tries * level_tries =
+    := at = skill_after_death
+    at 60 tries, at 12 3, at 11 0, at 100 50000, at 10 0, at 130 0
+
+:= loss_expected () : level_tries * level_tries * level_tries * level_tries * level_tries * level_tries =
+    (59, 629), (11, 48), (10, 45), (99, 20904), (10, 0), (128, 3409614)
+
 ///> c
 test skill_loss_matches_canary_death_loop_across_levels =
     := ~tries = 1234i32
-    := at level tries =
-        := after = after_unblessed_death { level = level; tries = tries }
-        after.level, after.tries
-    (at 60 tries, at 12 3, at 11 0, at 100 50000, at 10 0, at 130 0)
-    |> _assert_eq (
-        (59i32, 629i32),
-        (11i32, 48i32),
-        (10i32, 45i32),
-        (99i32, 20904i32),
-        (10i32, 0i32),
-        (128i32, 3409614i32)
-    )
+    loss_rows tries |> _assert_eq (loss_expected ())
 
 ///> wgsl
 test skill_loss_on_gpu =

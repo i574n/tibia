@@ -24,6 +24,11 @@
 := replace3 (owner : host) (name : string) (f : host * host * host -> bool) : () =
     $'(!owner)[!name] = function(a, b, c) return (!f)({ a, b, c }) end' : ()
 
+:= replace_dispatch (owner : host) (name : string) (pick : () -> host_fn) : () =
+    $'(!owner)[!name] = function(...) return (!pick)()(...) end' : ()
+
+:= ignoring () : host_fn = $'function() end' : host_fn
+
 := replace_spectators (f : host * bool -> host) : () =
     $'g_map.getSpectators = function(a, b) return (!f)({ a, b }) end' : ()
 

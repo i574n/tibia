@@ -16,6 +16,14 @@ function Get-ForeignActivity([string[]] $lines) {
     }
 }
 
+function Get-FinishReason([string[]] $lines) {
+    $reason = ''
+    foreach ($line in $lines) { if ($line -match '\[tibia-probe\] finish: (.+)$') { $reason = $Matches[1].Trim() } }
+    $reason
+}
+
+function Test-CrashedHunt([string[]] $lines) { (Get-FinishReason $lines) -in '', 'offline', 'game login error' }
+
 if ($MyInvocation.InvocationName -ne '.') {
     . (Join-Path $PSScriptRoot 'paths.ps1')
     $logDir = $TibiaLogs

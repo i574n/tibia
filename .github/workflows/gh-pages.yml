@@ -44,7 +44,7 @@ jobs:
           otp-version: "29"
           elixir-version: "1.20"
           gleam-version: "1.19.2"
-          rebar3-version: "3.27.3"
+          rebar3-version: "3.28.0"
 
       - uses: actions/setup-dotnet@v6.0.0
         with:
@@ -54,9 +54,9 @@ jobs:
 
       - uses: mlugg/setup-zig@v2.2.1
         with:
-          version: 0.17.0
+          version: "0.17.0"
 
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: "3.12.10"
 
