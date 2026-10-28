@@ -5,16 +5,23 @@
 A typed Tibia-rules simulator in Spiral, compiled to C, Rust and WGSL (GPU) from one source, used to train agents that
 are measured against the best open-source Tibia bots on a public, reproducible benchmark: the **OT Agent Arena**.
 
-## Status 2026-10-21
+## Status 2026-10-27
 
-27 `.spi` modules in `src` (plus `src/standards.spi`, the package's standards checked by `eoie standards`), 15 files in
-`apps/arena` (9 Lua probes and their shared client modules) and the server-map tool in `apps/map`.
+26 `.spi` modules in `src` (plus `src/standards.spi`, the package's standards checked by `kit standards`), and six apps:
+`apps/arena` (24 files: 13 Lua programs for the live client and their shared modules), `apps/map` (the server-map tool
+that generates terrain's walk, road, sight and protection-zone tables), `apps/predict` (C predictions over the
+simulators), `apps/host` (the arena host: world port and executor), `apps/offscreen` and `apps/canary`.
 - **Rules:** geometry, vitality, coins, rng, cooldowns, damage, combat, creatures, experience, skills, blessings, wire.
 - **Typed domain:** quantity (phantom units), readiness (GADT witnesses), vocations (vocation-indexed
   spells), catalog (existential spawns), views (HKT `mapped` and `counted`), terrain (layouts, incl. the scanned arena spot).
 - **Decisions:** policy, network (integer neural policy), search (evolution).
 - **Simulators and entries:** hunt with its hunt_sim tests, hunting_pack (the multi-creature simulator) with its pack_sim
-  and gpu_sim tests.
+  and gpu_sim tests. Its GPU shader inlines to 252k lines (probe run 281 s); `knight_turn` is shared on C only.
+- **Postable:** every top-level cell of every `.spi` fits one post (273 weighted characters): 65 files, 3,572 cells, 0
+  over. The generated terrain tables are a fan-4 tree of small inline parts, checked equal to the old tables over every
+  word, row and zone offset.
+- **Lib:** every app references `lib/spiral` (`spiral-`); host macros are one-call primitives, and casts and parsing go
+  through typed Spiral (lib `env`, `convert`, `csv`).
 
 Tests name their targets with a reason: C as the oracle, WGSL for the GPU path, Lua for the live client, and Rust only
 where a test needs the training host.
@@ -77,12 +84,12 @@ Correction 2026-10-14: every live `spiral-*` run from 2026-10-13 11:48 until the
    and scored learned policies. On a respawning hunting ground the rule that sweeps to the next spawn due beats every fixed
    route at a 60 s respawn, the evolved one included, but not at 30 s. With more
    monsters than the knight can fight at once, the tuned sweeping cavebot leads and the retreat rules trade experience
-   for cost, and two knights coordinate best by simply following one shared rule together. That party finding
-   rests on a duo model the first live duo hunts did not confirm (PR-24, 2026-10-22: 5.1 party potions against
-   7.56 predicted, 16.6 kills against 15.36): the model sent every cyclops at the first knight, while live the hits
-   split about evenly. Canary's target order (the last knight to log in first, later arrivals in map-scan order)
-   fixes the potions and the split in the model; it still kills about one troll per hunt too few, so the party
-   sweep is rerun only after that.
+   for cost, and two knights coordinate best by simply following one shared rule together. The duo model behind
+   that finding now matches live hunts: Canary's target order plus the ally's measured login delay predicted
+   16.73 kills and 6.68 potions per hunt, and 9 live duo hunts gave 16.78 and 6.89 (PR-28, 2026-10-25). The rerun
+   sweep on that model keeps the finding: rules evolved for the duo earned 63% less held-out profit than the
+   validated shared cavebot (P12, 2026-10-27). The one open gap is the split of potions between the knights (the
+   ally drinks 52% live against 27% predicted).
 
 ## Fidelity
 

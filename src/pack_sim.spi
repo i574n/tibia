@@ -118,6 +118,9 @@ test cyclops_pack_healing_below_130_dies_while_170_and_above_tie_on_kills =
 := trained (o : gold_objective) (camp : camp) (t : tactic) : i32 =
     hunting_pack.worth_on_training o camp t (hunting_pack.training_block ())
 
+:= kiting_on (camp : camp) (heal : i32) (n : i32) : tactic =
+    hunting_pack.network_tactic (hunting_pack.cavebot_network camp heal |> network.with_kiting n)
+
 := best_kiting (o : gold_objective) (camp : camp) (heal : i32) : i32 =
     := k n = trained o camp (kiting_on camp heal n)
     := k1, k2, k3 = k 1, k 2, k 3
@@ -212,9 +215,6 @@ test cyclops_pack_only_the_warm_started_network_dominates_the_tuned_cavebot_by_a
 := clear_averages (camp : camp) (t : tactic) (first : u32) : tally3 =
     := ms, potions, deaths, _, _ = sums_over camp t (twenty_from first)
     ms / 20, potions * 10 / 20, deaths
-
-:= kiting_on (camp : camp) (heal : i32) (n : i32) : tactic =
-    hunting_pack.network_tactic (hunting_pack.cavebot_network camp heal |> network.with_kiting n)
 
 := clear_pair (camp : camp) (a : tactic) (b : tactic) (first : u32) : tally3 * tally3 =
     clear_averages camp a first, clear_averages camp b first

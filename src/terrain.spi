@@ -18,247 +18,427 @@ test terrain static =
 := corridor_row () : i32 = 100
 := corridor_mouth () : i32 = 99
 
+:~ arena_spot_bits_0_0_0 (row : i32) : u32 =
+    ? row <= 1
+    ?> ? row <= 0 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 2 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_1 (row : i32) : u32 =
+    ? row <= 5
+    ?> ? row <= 4 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 6 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_2 (row : i32) : u32 =
+    ? row <= 9
+    ?> ? row <= 8 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 10 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_3 (row : i32) : u32 =
+    ? row <= 13
+    ?> ? row <= 12 ?> 1073741823u32 |: 536870911u32
+    |? row <= 14 ?> 1879048191u32 |: 536870911u32
+
+:~ arena_spot_bits_0_0_4 (row : i32) : u32 =
+    ? row <= 17
+    ?> ? row <= 16 ?> 1610612735u32 |: 1610612735u32
+    |? row <= 18 ?> 1140850687u32 |: 570425343u32
+
+:~ arena_spot_bits_0_0_5 (row : i32) : u32 =
+    ? row <= 21
+    ?> ? row <= 20 ?> 587202559u32 |: 184549375u32
+    |? row <= 22 ?> 83886079u32 |: 1174405119u32
+
+:~ arena_spot_bits_0_0_6 (row : i32) : u32 =
+    ? row <= 25
+    ?> ? row <= 24 ?> 335544319u32 |: 671088639u32
+    |? row <= 26 ?> 2684354559u32 |: 2684354559u32
+
+:~ arena_spot_bits_0_0_7 (row : i32) : u32 =
+    ? row <= 29
+    ?> ? row <= 28 ?> 3221225471u32 |: 1073741823u32
+    |? row <= 30 ?> 1073741823u32 |: 3221225471u32
+
+:~ arena_spot_bits_0_0_8 (row : i32) : u32 =
+    ? row <= 33
+    ?> ? row <= 32 ?> 2147483647u32 |: 1073741823u32
+    |? row <= 34 ?> 1610612735u32 |: 1342177279u32
+
+:~ arena_spot_bits_0_0_9 (row : i32) : u32 =
+    ? row <= 37
+    ?> ? row <= 36 ?> 3087007743u32 |: 2348810239u32
+    |? row <= 38 ?> 570425343u32 |: 3590324223u32
+
+:~ arena_spot_bits_0_0_10 (row : i32) : u32 =
+    ? row <= 41
+    ?> ? row <= 40 ?> 285212671u32 |: 33554431u32
+    |? row <= 42 ?> 1426063359u32 |: 2181038079u32
+
+:~ arena_spot_bits_0_0_11 (row : i32) : u32 =
+    ? row <= 45
+    ?> ? row <= 44 ?> 2281701375u32 |: 2818572287u32
+    |? row <= 46 ?> 536870911u32 |: 2147483647u32
+
+:~ arena_spot_bits_0_0_12 (row : i32) : u32 =
+    ? row <= 49
+    ?> ? row <= 48 ?> 2147483647u32 |: 2147483647u32
+    |? row <= 50 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_13 (row : i32) : u32 =
+    ? row <= 53
+    ?> ? row <= 52 ?> 4294967295u32 |: 2147483647u32
+    |? row <= 54 ?> 2147483647u32 |: 1073741823u32
+
+:~ arena_spot_bits_0_0_14 (row : i32) : u32 =
+    ? row <= 57
+    ?> ? row <= 56 ?> 536870911u32 |: 1073741823u32
+    |? row <= 58 ?> 1073741823u32 |: 2147483647u32
+
+:~ arena_spot_bits_0_0_15 (row : i32) : u32 =
+    ? row <= 61
+    ?> ? row <= 60 ?> 2147483647u32 |: 2147483647u32
+    |? row <= 62 ?> 2147483647u32 |: 1073741823u32
+
+:~ arena_spot_bits_0_0_16 (row : i32) : u32 =
+    ? row <= 65
+    ?> ? row <= 64 ?> 536870911u32 |: 268435455u32
+    |? row <= 66 ?> 536870911u32 |: 1073741823u32
+
+:~ arena_spot_bits_0_0_17 (row : i32) : u32 =
+    ? row <= 69
+    ?> ? row <= 68 ?> 1073741823u32 |: 1073741823u32
+    |? row <= 70 ?> 2147483647u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_18 (row : i32) : u32 =
+    ? row <= 73
+    ?> ? row <= 72 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 74 ?> 4294967295u32 |: 2147483647u32
+
+:~ arena_spot_bits_0_0_19 (row : i32) : u32 =
+    ? row <= 77
+    ?> ? row <= 76 ?> 2147483647u32 |: 4294967295u32
+    |? row <= 78 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_20 (row : i32) : u32 =
+    ? row <= 81
+    ?> ? row <= 80 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 82 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 86 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_spot_bits_0_0_0 row |: arena_spot_bits_0_0_1 row
+    |? row <= 11 ?> arena_spot_bits_0_0_2 row |: arena_spot_bits_0_0_3 row
+
+:~ arena_spot_bits_0_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_spot_bits_0_0_4 row |: arena_spot_bits_0_0_5 row
+    |? row <= 27 ?> arena_spot_bits_0_0_6 row |: arena_spot_bits_0_0_7 row
+
+:~ arena_spot_bits_0_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_spot_bits_0_0_8 row |: arena_spot_bits_0_0_9 row
+    |? row <= 43 ?> arena_spot_bits_0_0_10 row |: arena_spot_bits_0_0_11 row
+
+:~ arena_spot_bits_0_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_spot_bits_0_0_12 row |: arena_spot_bits_0_0_13 row
+    |? row <= 59 ?> arena_spot_bits_0_0_14 row |: arena_spot_bits_0_0_15 row
+
+:~ arena_spot_bits_0_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_spot_bits_0_0_16 row |: arena_spot_bits_0_0_17 row
+    |? row <= 75 ?> arena_spot_bits_0_0_18 row |: arena_spot_bits_0_0_19 row
+
+:~ arena_spot_bits_0_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_spot_bits_0_0_20 row |: arena_spot_bits_0_0_21 row
+    |: arena_spot_bits_0_0_22 row
+
+:~ arena_spot_bits_0_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_spot_bits_0_1_0 row |: arena_spot_bits_0_1_1 row
+    |? row <= 47 ?> arena_spot_bits_0_1_2 row |: arena_spot_bits_0_1_3 row
+
+:~ arena_spot_bits_0_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_spot_bits_0_1_4 row |: arena_spot_bits_0_1_5 row
+
+:~ arena_spot_bits_0 (row : i32) : u32 =
+    ? row <= 63 ?> arena_spot_bits_0_2_0 row |: arena_spot_bits_0_2_1 row
+
+:~ arena_spot_bits_1_0_0 (row : i32) : u32 =
+    ? row <= 1
+    ?> ? row <= 0 ?> 135560767u32 |: 2861563935u32
+    |? row <= 2 ?> 17825823u32 |: 1356675615u32
+
+:~ arena_spot_bits_1_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 5244687u32 |: 671355015u32 |: ? row <= 6 ?> 67633799u32 |: 133711879u32
+
+:~ arena_spot_bits_1_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 76049671u32 |: 76025863u32 |: ? row <= 10 ?> 83363463u32 |: 533511u32
+
+:~ arena_spot_bits_1_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 557056u32 |: 67635202u32 |: ? row <= 14 ?> 67633160u32 |: 133693444u32
+
+:~ arena_spot_bits_1_0_4 (row : i32) : u32 =
+    ? row <= 17
+    ?> ? row <= 16 ?> 109314050u32 |: 5242976u32
+    |? row <= 18 ?> 267911178u32 |: 83361872u32
+
+:~ arena_spot_bits_1_0_5 (row : i32) : u32 =
+    ? row <= 21
+    ?> ? row <= 20 ?> 80216072u32 |: 206305409u32
+    |? row <= 22 ?> 71960601u32 |: 268044425u32
+
+:~ arena_spot_bits_1_0_6 (row : i32) : u32 =
+    ? row <= 25
+    ?> ? row <= 24 ?> 76155008u32 |: 76154924u32
+    |? row <= 26 ?> 210372640u32 |: 268434432u32
+
+:~ arena_spot_bits_1_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 4094u32 |: 3142u32 |: ? row <= 30 ?> 3142u32 |: 4034u32
+
+:~ arena_spot_bits_1_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 2242u32 |: 2174u32 |: ? row <= 34 ?> 267388994u32 |: 134745666u32
+
+:~ arena_spot_bits_1_0_9 (row : i32) : u32 =
+    ? row <= 37
+    ?> ? row <= 36 ?> 134746050u32 |: 135090766u32
+    |? row <= 38 ?> 170731134u32 |: 134775366u32
+
+:~ arena_spot_bits_1_0_10 (row : i32) : u32 =
+    ? row <= 41
+    ?> ? row <= 40 ?> 135012934u32 |: 135073347u32
+    |? row <= 42 ?> 170448894u32 |: 134906880u32
+
+:~ arena_spot_bits_1_0_11 (row : i32) : u32 =
+    ? row <= 45
+    ?> ? row <= 44 ?> 135012420u32 |: 134976388u32
+    |? row <= 46 ?> 204999056u32 |: 134652480u32
+
+:~ arena_spot_bits_1_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 5120u32 |: 261702u32 |: ? row <= 50 ?> 393990u32 |: 131328u32
+
+:~ arena_spot_bits_1_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 131360u32 |: 33685760u32 |: ? row <= 54 ?> 4261544224u32 |: 33685773u32
+
+:~ arena_spot_bits_1_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 101056780u32 |: 67370784u32 |: ? row <= 58 ?> 393504u32 |: 100794624u32
+
+:~ arena_spot_bits_1_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 33685792u32 |: 4261544194u32 |: ? row <= 62 ?> 1359478528u32 |: 17u32
+
+:~ arena_spot_bits_1_0_16 (row : i32) : u32 =
+    ? row <= 65
+    ?> ? row <= 64 ?> 17039936u32 |: 1073782784u32
+    |? row <= 66 ?> 268435520u32 |: 16547878u32
+
+:~ arena_spot_bits_1_0_17 (row : i32) : u32 =
+    ? row <= 69
+    ?> ? row <= 68 ?> 1241252358u32 |: 134088714u32
+    |? row <= 70 ?> 268419074u32 |: 2147475584u32
+
+:~ arena_spot_bits_1_0_18 (row : i32) : u32 =
+    ? row <= 73
+    ?> ? row <= 72 ?> 4294963200u32 |: 4294965264u32
+    |? row <= 74 ?> 4294965760u32 |: 4294966272u32
+
+:~ arena_spot_bits_1_0_19 (row : i32) : u32 =
+    ? row <= 77
+    ?> ? row <= 76 ?> 4294966784u32 |: 4294966816u32
+    |? row <= 78 ?> 4294967203u32 |: 4294967233u32
+
+:~ arena_spot_bits_1_0_20 (row : i32) : u32 =
+    ? row <= 81
+    ?> ? row <= 80 ?> 4294967267u32 |: 4294967295u32
+    |? row <= 82 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_1_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 86 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_1_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_1_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_spot_bits_1_0_0 row |: arena_spot_bits_1_0_1 row
+    |? row <= 11 ?> arena_spot_bits_1_0_2 row |: arena_spot_bits_1_0_3 row
+
+:~ arena_spot_bits_1_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_spot_bits_1_0_4 row |: arena_spot_bits_1_0_5 row
+    |? row <= 27 ?> arena_spot_bits_1_0_6 row |: arena_spot_bits_1_0_7 row
+
+:~ arena_spot_bits_1_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_spot_bits_1_0_8 row |: arena_spot_bits_1_0_9 row
+    |? row <= 43 ?> arena_spot_bits_1_0_10 row |: arena_spot_bits_1_0_11 row
+
+:~ arena_spot_bits_1_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_spot_bits_1_0_12 row |: arena_spot_bits_1_0_13 row
+    |? row <= 59 ?> arena_spot_bits_1_0_14 row |: arena_spot_bits_1_0_15 row
+
+:~ arena_spot_bits_1_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_spot_bits_1_0_16 row |: arena_spot_bits_1_0_17 row
+    |? row <= 75 ?> arena_spot_bits_1_0_18 row |: arena_spot_bits_1_0_19 row
+
+:~ arena_spot_bits_1_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_spot_bits_1_0_20 row |: arena_spot_bits_1_0_21 row
+    |: arena_spot_bits_1_0_22 row
+
+:~ arena_spot_bits_1_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_spot_bits_1_1_0 row |: arena_spot_bits_1_1_1 row
+    |? row <= 47 ?> arena_spot_bits_1_1_2 row |: arena_spot_bits_1_1_3 row
+
+:~ arena_spot_bits_1_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_spot_bits_1_1_4 row |: arena_spot_bits_1_1_5 row
+
+:~ arena_spot_bits_1 (row : i32) : u32 =
+    ? row <= 63 ?> arena_spot_bits_1_2_0 row |: arena_spot_bits_1_2_1 row
+
+:~ arena_spot_bits_2_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 70254618u32 |: 68716552u32 |: ? row <= 2 ?> 68157458u32 |: 68190179u32
+
+:~ arena_spot_bits_2_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 68821192u32 |: 68182244u32 |: ? row <= 6 ?> 68165698u32 |: 68429822u32
+
+:~ arena_spot_bits_2_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 133243971u32 |: 70526017u32 |: ? row <= 10 ?> 70297153u32 |: 74464993u32
+
+:~ arena_spot_bits_2_0_3 (row : i32) : u32 =
+    ? row <= 13
+    ?> ? row <= 12 ?> 79724479u32 |: 128590339u32
+    |? row <= 14 ?> 67110928u32 |: 132382592u32
+
+:~ arena_spot_bits_2_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 132223362u32 |: 44142976u32 |: ? row <= 18 ?> 44638112u32 |: 2167039u32
+
+:~ arena_spot_bits_2_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 2168734u32 |: 36377747u32 |: ? row <= 22 ?> 35782546u32 |: 8129683u32
+
+:~ arena_spot_bits_2_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 5112990u32 |: 5047431u32 |: ? row <= 26 ?> 4985990u32 |: 16648191u32
+
+:~ arena_spot_bits_2_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 0u32 |: 0u32 |: ? row <= 30 ?> 0u32 |: 0u32
+
+:~ arena_spot_bits_2_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 0u32 |: 4194304u32 |: ? row <= 34 ?> 4194303u32 |: 4194302u32
+
+:~ arena_spot_bits_2_0_9 (row : i32) : u32 =
+    ? row <= 37 ?> ? row <= 36 ?> 6859434u32 |: 7318186u32 |: ? row <= 38 ?> 2097152u32 |: 2097216u32
+
+:~ arena_spot_bits_2_0_10 (row : i32) : u32 =
+    ? row <= 41 ?> ? row <= 40 ?> 6291520u32 |: 6291456u32 |: ? row <= 42 ?> 6564522u32 |: 6302378u32
+
+:~ arena_spot_bits_2_0_11 (row : i32) : u32 =
+    ? row <= 45 ?> ? row <= 44 ?> 2113534u32 |: 2113534u32 |: ? row <= 46 ?> 2105346u32 |: 6987776u32
+
+:~ arena_spot_bits_2_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 6988936u32 |: 4186112u32 |: ? row <= 50 ?> 8382528u32 |: 5246976u32
+
+:~ arena_spot_bits_2_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 4228132u32 |: 34144256u32 |: ? row <= 54 ?> 104891647u32 |: 34087040u32
+
+:~ arena_spot_bits_2_0_14 (row : i32) : u32 =
+    ? row <= 57
+    ?> ? row <= 56 ?> 33554880u32 |: 50332992u32
+    |? row <= 58 ?> 48431296u32 |: 107151552u32
+
+:~ arena_spot_bits_2_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 109580672u32 |: 255u32 |: ? row <= 62 ?> 2621440u32 |: 2113553u32
+
+:~ arena_spot_bits_2_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 32832u32 |: 41945088u32 |: ? row <= 66 ?> 513u32 |: 4186112u32
+
+:~ arena_spot_bits_2_0_17 (row : i32) : u32 =
+    ? row <= 69
+    ?> ? row <= 68 ?> 41941000u32 |: 16776736u32
+    |? row <= 70 ?> 33554304u32 |: 134217616u32
+
+:~ arena_spot_bits_2_0_18 (row : i32) : u32 =
+    ? row <= 73
+    ?> ? row <= 72 ?> 134217681u32 |: 134217699u32
+    |? row <= 74 ?> 134217727u32 |: 134217727u32
+
+:~ arena_spot_bits_2_0_19 (row : i32) : u32 =
+    ? row <= 77
+    ?> ? row <= 76 ?> 134217727u32 |: 134217727u32
+    |? row <= 78 ?> 134217727u32 |: 134217727u32
+
+:~ arena_spot_bits_2_0_20 (row : i32) : u32 =
+    ? row <= 81
+    ?> ? row <= 80 ?> 134217727u32 |: 134217727u32
+    |? row <= 82 ?> 134217727u32 |: 134217727u32
+
+:~ arena_spot_bits_2_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 134217727u32 |: 134217727u32
+    |? row <= 86 ?> 134217727u32 |: 134217727u32
+
+:~ arena_spot_bits_2_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 262143u32 |: 131071u32 |: 65535u32
+
+:~ arena_spot_bits_2_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_spot_bits_2_0_0 row |: arena_spot_bits_2_0_1 row
+    |? row <= 11 ?> arena_spot_bits_2_0_2 row |: arena_spot_bits_2_0_3 row
+
+:~ arena_spot_bits_2_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_spot_bits_2_0_4 row |: arena_spot_bits_2_0_5 row
+    |? row <= 27 ?> arena_spot_bits_2_0_6 row |: arena_spot_bits_2_0_7 row
+
+:~ arena_spot_bits_2_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_spot_bits_2_0_8 row |: arena_spot_bits_2_0_9 row
+    |? row <= 43 ?> arena_spot_bits_2_0_10 row |: arena_spot_bits_2_0_11 row
+
+:~ arena_spot_bits_2_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_spot_bits_2_0_12 row |: arena_spot_bits_2_0_13 row
+    |? row <= 59 ?> arena_spot_bits_2_0_14 row |: arena_spot_bits_2_0_15 row
+
+:~ arena_spot_bits_2_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_spot_bits_2_0_16 row |: arena_spot_bits_2_0_17 row
+    |? row <= 75 ?> arena_spot_bits_2_0_18 row |: arena_spot_bits_2_0_19 row
+
+:~ arena_spot_bits_2_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_spot_bits_2_0_20 row |: arena_spot_bits_2_0_21 row
+    |: arena_spot_bits_2_0_22 row
+
+:~ arena_spot_bits_2_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_spot_bits_2_1_0 row |: arena_spot_bits_2_1_1 row
+    |? row <= 47 ?> arena_spot_bits_2_1_2 row |: arena_spot_bits_2_1_3 row
+
+:~ arena_spot_bits_2_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_spot_bits_2_1_4 row |: arena_spot_bits_2_1_5 row
+
+:~ arena_spot_bits_2 (row : i32) : u32 =
+    ? row <= 63 ?> arena_spot_bits_2_2_0 row |: arena_spot_bits_2_2_1 row
+
+:~ arena_spot_bits_outside (word : i32) : u32 =
+    ? word = 0 ?> 4294967295u32 |: ? word = 1 ?> 4294967295u32 |: 134217727u32
+
 :~ arena_spot_bits (word : i32) (row : i32) : u32 =
     ? row < 0 || row > 90
-    ?> ? word = 0 ?> 4294967295u32 |: ? word = 1 ?> 4294967295u32 |: 134217727u32
-    |? word = 0
-    ?>
-        ? row <= 45
-        ?>
-            ? row <= 22
-            ?>
-                ? row <= 11
-                ?>
-                    ? row <= 5
-                    ?>
-                        ? row <= 2
-                        ?> ? row <= 1 ?> ? row <= 0 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
-                        |? row <= 4 ?> ? row <= 3 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
-                    |? row <= 8
-                    ?> ? row <= 7 ?> ? row <= 6 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
-                    |? row <= 10 ?> ? row <= 9 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
-                |? row <= 17
-                ?>
-                    ? row <= 14
-                    ?> ? row <= 13 ?> ? row <= 12 ?> 1073741823u32 |: 536870911u32 |: 1879048191u32
-                    |? row <= 16 ?> ? row <= 15 ?> 536870911u32 |: 1610612735u32 |: 1610612735u32
-                |? row <= 20
-                ?> ? row <= 19 ?> ? row <= 18 ?> 1140850687u32 |: 570425343u32 |: 587202559u32
-                |? row <= 21 ?> 184549375u32 |: 83886079u32
-            |? row <= 34
-            ?>
-                ? row <= 28
-                ?>
-                    ? row <= 25
-                    ?> ? row <= 24 ?> ? row <= 23 ?> 1174405119u32 |: 335544319u32 |: 671088639u32
-                    |? row <= 27 ?> ? row <= 26 ?> 2684354559u32 |: 2684354559u32 |: 3221225471u32
-                |? row <= 31
-                ?> ? row <= 30 ?> ? row <= 29 ?> 1073741823u32 |: 1073741823u32 |: 3221225471u32
-                |? row <= 33 ?> ? row <= 32 ?> 2147483647u32 |: 1073741823u32 |: 1610612735u32
-            |? row <= 40
-            ?>
-                ? row <= 37
-                ?> ? row <= 36 ?> ? row <= 35 ?> 1342177279u32 |: 3087007743u32 |: 2348810239u32
-                |? row <= 39 ?> ? row <= 38 ?> 570425343u32 |: 3590324223u32 |: 285212671u32
-            |? row <= 43
-            ?> ? row <= 42 ?> ? row <= 41 ?> 33554431u32 |: 1426063359u32 |: 2181038079u32
-            |? row <= 44 ?> 2281701375u32 |: 2818572287u32
-        |? row <= 68
-        ?>
-            ? row <= 57
-            ?>
-                ? row <= 51
-                ?>
-                    ? row <= 48
-                    ?> ? row <= 47 ?> ? row <= 46 ?> 536870911u32 |: 2147483647u32 |: 2147483647u32
-                    |? row <= 50 ?> ? row <= 49 ?> 2147483647u32 |: 4294967295u32 |: 4294967295u32
-                |? row <= 54
-                ?> ? row <= 53 ?> ? row <= 52 ?> 4294967295u32 |: 2147483647u32 |: 2147483647u32
-                |? row <= 56 ?> ? row <= 55 ?> 1073741823u32 |: 536870911u32 |: 1073741823u32
-            |? row <= 63
-            ?>
-                ? row <= 60
-                ?> ? row <= 59 ?> ? row <= 58 ?> 1073741823u32 |: 2147483647u32 |: 2147483647u32
-                |? row <= 62 ?> ? row <= 61 ?> 2147483647u32 |: 2147483647u32 |: 1073741823u32
-            |? row <= 66
-            ?> ? row <= 65 ?> ? row <= 64 ?> 536870911u32 |: 268435455u32 |: 536870911u32
-            |? row <= 67 ?> 1073741823u32 |: 1073741823u32
-        |? row <= 79
-        ?>
-            ? row <= 74
-            ?>
-                ? row <= 71
-                ?> ? row <= 70 ?> ? row <= 69 ?> 1073741823u32 |: 2147483647u32 |: 4294967295u32
-                |? row <= 73 ?> ? row <= 72 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
-            |? row <= 77
-            ?> ? row <= 76 ?> ? row <= 75 ?> 2147483647u32 |: 2147483647u32 |: 4294967295u32
-            |? row <= 78 ?> 4294967295u32 |: 4294967295u32
-        |? row <= 85
-        ?>
-            ? row <= 82
-            ?> ? row <= 81 ?> ? row <= 80 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
-            |? row <= 84 ?> ? row <= 83 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
-        |? row <= 88
-        ?> ? row <= 87 ?> ? row <= 86 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
-        |? row <= 89 ?> 4294967295u32 |: 4294967295u32
-    |? word = 1
-    ?>
-        ? row <= 45
-        ?>
-            ? row <= 22
-            ?>
-                ? row <= 11
-                ?>
-                    ? row <= 5
-                    ?>
-                        ? row <= 2
-                        ?> ? row <= 1 ?> ? row <= 0 ?> 135560767u32 |: 2861563935u32 |: 17825823u32
-                        |? row <= 4 ?> ? row <= 3 ?> 1356675615u32 |: 5244687u32 |: 671355015u32
-                    |? row <= 8
-                    ?> ? row <= 7 ?> ? row <= 6 ?> 67633799u32 |: 133711879u32 |: 76049671u32
-                    |? row <= 10 ?> ? row <= 9 ?> 76025863u32 |: 83363463u32 |: 533511u32
-                |? row <= 17
-                ?>
-                    ? row <= 14
-                    ?> ? row <= 13 ?> ? row <= 12 ?> 557056u32 |: 67635202u32 |: 67633160u32
-                    |? row <= 16 ?> ? row <= 15 ?> 133693444u32 |: 109314050u32 |: 5242976u32
-                |? row <= 20
-                ?> ? row <= 19 ?> ? row <= 18 ?> 267911178u32 |: 83361872u32 |: 80216072u32
-                |? row <= 21 ?> 206305409u32 |: 71960601u32
-            |? row <= 34
-            ?>
-                ? row <= 28
-                ?>
-                    ? row <= 25
-                    ?> ? row <= 24 ?> ? row <= 23 ?> 268044425u32 |: 76155008u32 |: 76154924u32
-                    |? row <= 27 ?> ? row <= 26 ?> 210372640u32 |: 268434432u32 |: 4094u32
-                |? row <= 31
-                ?> ? row <= 30 ?> ? row <= 29 ?> 3142u32 |: 3142u32 |: 4034u32
-                |? row <= 33 ?> ? row <= 32 ?> 2242u32 |: 2174u32 |: 267388994u32
-            |? row <= 40
-            ?>
-                ? row <= 37
-                ?> ? row <= 36 ?> ? row <= 35 ?> 134745666u32 |: 134746050u32 |: 135090766u32
-                |? row <= 39 ?> ? row <= 38 ?> 170731134u32 |: 134775366u32 |: 135012934u32
-            |? row <= 43
-            ?> ? row <= 42 ?> ? row <= 41 ?> 135073347u32 |: 170448894u32 |: 134906880u32
-            |? row <= 44 ?> 135012420u32 |: 134976388u32
-        |? row <= 68
-        ?>
-            ? row <= 57
-            ?>
-                ? row <= 51
-                ?>
-                    ? row <= 48
-                    ?> ? row <= 47 ?> ? row <= 46 ?> 204999056u32 |: 134652480u32 |: 5120u32
-                    |? row <= 50 ?> ? row <= 49 ?> 261702u32 |: 393990u32 |: 131328u32
-                |? row <= 54
-                ?> ? row <= 53 ?> ? row <= 52 ?> 131360u32 |: 33685760u32 |: 4261544224u32
-                |? row <= 56 ?> ? row <= 55 ?> 33685773u32 |: 101056780u32 |: 67370784u32
-            |? row <= 63
-            ?>
-                ? row <= 60
-                ?> ? row <= 59 ?> ? row <= 58 ?> 393504u32 |: 100794624u32 |: 33685792u32
-                |? row <= 62 ?> ? row <= 61 ?> 4261544194u32 |: 1359478528u32 |: 17u32
-            |? row <= 66
-            ?> ? row <= 65 ?> ? row <= 64 ?> 17039936u32 |: 1073782784u32 |: 268435520u32
-            |? row <= 67 ?> 16547878u32 |: 1241252358u32
-        |? row <= 79
-        ?>
-            ? row <= 74
-            ?>
-                ? row <= 71
-                ?> ? row <= 70 ?> ? row <= 69 ?> 134088714u32 |: 268419074u32 |: 2147475584u32
-                |? row <= 73 ?> ? row <= 72 ?> 4294963200u32 |: 4294965264u32 |: 4294965760u32
-            |? row <= 77
-            ?> ? row <= 76 ?> ? row <= 75 ?> 4294966272u32 |: 4294966784u32 |: 4294966816u32
-            |? row <= 78 ?> 4294967203u32 |: 4294967233u32
-        |? row <= 85
-        ?>
-            ? row <= 82
-            ?> ? row <= 81 ?> ? row <= 80 ?> 4294967267u32 |: 4294967295u32 |: 4294967295u32
-            |? row <= 84 ?> ? row <= 83 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
-        |? row <= 88
-        ?> ? row <= 87 ?> ? row <= 86 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
-        |? row <= 89 ?> 4294967295u32 |: 4294967295u32
-    |? row <= 45
-    ?>
-        ? row <= 22
-        ?>
-            ? row <= 11
-            ?>
-                ? row <= 5
-                ?>
-                    ? row <= 2
-                    ?> ? row <= 1 ?> ? row <= 0 ?> 70254618u32 |: 68716552u32 |: 68157458u32
-                    |? row <= 4 ?> ? row <= 3 ?> 68190179u32 |: 68821192u32 |: 68182244u32
-                |? row <= 8
-                ?> ? row <= 7 ?> ? row <= 6 ?> 68165698u32 |: 68429822u32 |: 133243971u32
-                |? row <= 10 ?> ? row <= 9 ?> 70526017u32 |: 70297153u32 |: 74464993u32
-            |? row <= 17
-            ?>
-                ? row <= 14
-                ?> ? row <= 13 ?> ? row <= 12 ?> 79724479u32 |: 128590339u32 |: 67110928u32
-                |? row <= 16 ?> ? row <= 15 ?> 132382592u32 |: 132223362u32 |: 44142976u32
-            |? row <= 20
-            ?> ? row <= 19 ?> ? row <= 18 ?> 44638112u32 |: 2167039u32 |: 2168734u32
-            |? row <= 21 ?> 36377747u32 |: 35782546u32
-        |? row <= 34
-        ?>
-            ? row <= 28
-            ?>
-                ? row <= 25
-                ?> ? row <= 24 ?> ? row <= 23 ?> 8129683u32 |: 5112990u32 |: 5047431u32
-                |? row <= 27 ?> ? row <= 26 ?> 4985990u32 |: 16648191u32 |: 0u32
-            |? row <= 31
-            ?> ? row <= 30 ?> ? row <= 29 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 33 ?> ? row <= 32 ?> 0u32 |: 4194304u32 |: 4194303u32
-        |? row <= 40
-        ?>
-            ? row <= 37
-            ?> ? row <= 36 ?> ? row <= 35 ?> 4194302u32 |: 6859434u32 |: 7318186u32
-            |? row <= 39 ?> ? row <= 38 ?> 2097152u32 |: 2097216u32 |: 6291520u32
-        |? row <= 43
-        ?> ? row <= 42 ?> ? row <= 41 ?> 6291456u32 |: 6564522u32 |: 6302378u32
-        |? row <= 44 ?> 2113534u32 |: 2113534u32
-    |? row <= 68
-    ?>
-        ? row <= 57
-        ?>
-            ? row <= 51
-            ?>
-                ? row <= 48
-                ?> ? row <= 47 ?> ? row <= 46 ?> 2105346u32 |: 6987776u32 |: 6988936u32
-                |? row <= 50 ?> ? row <= 49 ?> 4186112u32 |: 8382528u32 |: 5246976u32
-            |? row <= 54
-            ?> ? row <= 53 ?> ? row <= 52 ?> 4228132u32 |: 34144256u32 |: 104891647u32
-            |? row <= 56 ?> ? row <= 55 ?> 34087040u32 |: 33554880u32 |: 50332992u32
-        |? row <= 63
-        ?>
-            ? row <= 60
-            ?> ? row <= 59 ?> ? row <= 58 ?> 48431296u32 |: 107151552u32 |: 109580672u32
-            |? row <= 62 ?> ? row <= 61 ?> 255u32 |: 2621440u32 |: 2113553u32
-        |? row <= 66
-        ?> ? row <= 65 ?> ? row <= 64 ?> 32832u32 |: 41945088u32 |: 513u32
-        |? row <= 67 ?> 4186112u32 |: 41941000u32
-    |? row <= 79
-    ?>
-        ? row <= 74
-        ?>
-            ? row <= 71
-            ?> ? row <= 70 ?> ? row <= 69 ?> 16776736u32 |: 33554304u32 |: 134217616u32
-            |? row <= 73 ?> ? row <= 72 ?> 134217681u32 |: 134217699u32 |: 134217727u32
-        |? row <= 77
-        ?> ? row <= 76 ?> ? row <= 75 ?> 134217727u32 |: 134217727u32 |: 134217727u32
-        |? row <= 78 ?> 134217727u32 |: 134217727u32
-    |? row <= 85
-    ?>
-        ? row <= 82
-        ?> ? row <= 81 ?> ? row <= 80 ?> 134217727u32 |: 134217727u32 |: 134217727u32
-        |? row <= 84 ?> ? row <= 83 ?> 134217727u32 |: 134217727u32 |: 134217727u32
-    |? row <= 88
-    ?> ? row <= 87 ?> ? row <= 86 ?> 134217727u32 |: 134217727u32 |: 262143u32
-    |? row <= 89 ?> 131071u32 |: 65535u32
+    ?> arena_spot_bits_outside word
+    |? word = 0 ?> arena_spot_bits_0 row |: ? word = 1 ?> arena_spot_bits_1 row |: arena_spot_bits_2 row
 
 := arena_spot_radius () : i32 = 45
 := row_word_bits () : i32 = 32
@@ -277,563 +457,834 @@ test terrain static =
     ?> arena_bit_set arena_spot_bits p
     |: !+
 
+:~ arena_road_bits_0_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: ? row <= 2 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 0u32 |: 0u32 |: ? row <= 6 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 0u32 |: 0u32 |: ? row <= 10 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 0u32 |: 0u32 |: ? row <= 14 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 0u32 |: 0u32 |: ? row <= 18 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 0u32 |: 0u32 |: ? row <= 22 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 0u32 |: 0u32 |: ? row <= 26 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 0u32 |: 0u32 |: ? row <= 30 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 0u32 |: 0u32 |: ? row <= 34 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_9 (row : i32) : u32 =
+    ? row <= 37 ?> ? row <= 36 ?> 0u32 |: 0u32 |: ? row <= 38 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_10 (row : i32) : u32 =
+    ? row <= 41 ?> ? row <= 40 ?> 0u32 |: 0u32 |: ? row <= 42 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_11 (row : i32) : u32 =
+    ? row <= 45 ?> ? row <= 44 ?> 0u32 |: 0u32 |: ? row <= 46 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 0u32 |: 0u32 |: ? row <= 50 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 0u32 |: 0u32 |: ? row <= 54 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 0u32 |: 0u32 |: ? row <= 58 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 0u32 |: 0u32 |: ? row <= 62 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: ? row <= 66 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_17 (row : i32) : u32 =
+    ? row <= 69 ?> ? row <= 68 ?> 0u32 |: 0u32 |: ? row <= 70 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_18 (row : i32) : u32 =
+    ? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: ? row <= 74 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_19 (row : i32) : u32 =
+    ? row <= 77 ?> ? row <= 76 ?> 0u32 |: 0u32 |: ? row <= 78 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_20 (row : i32) : u32 =
+    ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: ? row <= 82 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_21 (row : i32) : u32 =
+    ? row <= 85 ?> ? row <= 84 ?> 0u32 |: 0u32 |: ? row <= 86 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 0u32 |: 0u32 |: 0u32
+
+:~ arena_road_bits_0_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_road_bits_0_0_0 row |: arena_road_bits_0_0_1 row
+    |? row <= 11 ?> arena_road_bits_0_0_2 row |: arena_road_bits_0_0_3 row
+
+:~ arena_road_bits_0_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_road_bits_0_0_4 row |: arena_road_bits_0_0_5 row
+    |? row <= 27 ?> arena_road_bits_0_0_6 row |: arena_road_bits_0_0_7 row
+
+:~ arena_road_bits_0_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_road_bits_0_0_8 row |: arena_road_bits_0_0_9 row
+    |? row <= 43 ?> arena_road_bits_0_0_10 row |: arena_road_bits_0_0_11 row
+
+:~ arena_road_bits_0_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_road_bits_0_0_12 row |: arena_road_bits_0_0_13 row
+    |? row <= 59 ?> arena_road_bits_0_0_14 row |: arena_road_bits_0_0_15 row
+
+:~ arena_road_bits_0_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_road_bits_0_0_16 row |: arena_road_bits_0_0_17 row
+    |? row <= 75 ?> arena_road_bits_0_0_18 row |: arena_road_bits_0_0_19 row
+
+:~ arena_road_bits_0_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_road_bits_0_0_20 row |: arena_road_bits_0_0_21 row
+    |: arena_road_bits_0_0_22 row
+
+:~ arena_road_bits_0_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_road_bits_0_1_0 row |: arena_road_bits_0_1_1 row
+    |? row <= 47 ?> arena_road_bits_0_1_2 row |: arena_road_bits_0_1_3 row
+
+:~ arena_road_bits_0_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_road_bits_0_1_4 row |: arena_road_bits_0_1_5 row
+
+:~ arena_road_bits_0 (row : i32) : u32 =
+    ? row <= 63 ?> arena_road_bits_0_2_0 row |: arena_road_bits_0_2_1 row
+
+:~ arena_road_bits_1_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: ? row <= 2 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 0u32 |: 0u32 |: ? row <= 6 ?> 0u32 |: 4160749568u32
+
+:~ arena_road_bits_1_0_2 (row : i32) : u32 =
+    ? row <= 9
+    ?> ? row <= 8 ?> 4160749568u32 |: 4160749568u32
+    |? row <= 10 ?> 4160749568u32 |: 4160749568u32
+
+:~ arena_road_bits_1_0_3 (row : i32) : u32 =
+    ? row <= 13
+    ?> ? row <= 12 ?> 4160749568u32 |: 4160749568u32
+    |? row <= 14 ?> 4160749568u32 |: 4160749568u32
+
+:~ arena_road_bits_1_0_4 (row : i32) : u32 =
+    ? row <= 17
+    ?> ? row <= 16 ?> 4160749568u32 |: 4026531840u32
+    |? row <= 18 ?> 4059037696u32 |: 4159700992u32
+
+:~ arena_road_bits_1_0_5 (row : i32) : u32 =
+    ? row <= 21
+    ?> ? row <= 20 ?> 4159700992u32 |: 4159700992u32
+    |? row <= 22 ?> 4159959040u32 |: 4159959040u32
+
+:~ arena_road_bits_1_0_6 (row : i32) : u32 =
+    ? row <= 25
+    ?> ? row <= 24 ?> 4159959040u32 |: 4159959040u32
+    |? row <= 26 ?> 4159959040u32 |: 4294176768u32
+
+:~ arena_road_bits_1_0_7 (row : i32) : u32 =
+    ? row <= 29
+    ?> ? row <= 28 ?> 4294963200u32 |: 4294967292u32
+    |? row <= 30 ?> 4294967292u32 |: 4294967292u32
+
+:~ arena_road_bits_1_0_8 (row : i32) : u32 =
+    ? row <= 33
+    ?> ? row <= 32 ?> 4294967292u32 |: 4294967292u32
+    |? row <= 34 ?> 4027056124u32 |: 4025745404u32
+
+:~ arena_road_bits_1_0_9 (row : i32) : u32 =
+    ? row <= 37
+    ?> ? row <= 36 ?> 4025484284u32 |: 4025484284u32
+    |? row <= 38 ?> 4025484284u32 |: 4025484284u32
+
+:~ arena_road_bits_1_0_10 (row : i32) : u32 =
+    ? row <= 41
+    ?> ? row <= 40 ?> 4025484284u32 |: 4025484284u32
+    |? row <= 42 ?> 4025484284u32 |: 4025483264u32
+
+:~ arena_road_bits_1_0_11 (row : i32) : u32 =
+    ? row <= 45
+    ?> ? row <= 44 ?> 4025483264u32 |: 4025483264u32
+    |? row <= 46 ?> 4024434688u32 |: 4089446400u32
+
+:~ arena_road_bits_1_0_12 (row : i32) : u32 =
+    ? row <= 49
+    ?> ? row <= 48 ?> 4294443008u32 |: 4294443008u32
+    |? row <= 50 ?> 4294704128u32 |: 4294704640u32
+
+:~ arena_road_bits_1_0_13 (row : i32) : u32 =
+    ? row <= 53
+    ?> ? row <= 52 ?> 4294704640u32 |: 33291776u32
+    |? row <= 54 ?> 16514560u32 |: 4244372992u32
+
+:~ arena_road_bits_1_0_14 (row : i32) : u32 =
+    ? row <= 57
+    ?> ? row <= 56 ?> 4277927424u32 |: 4277927424u32
+    |? row <= 58 ?> 4277927424u32 |: 4277927424u32
+
+:~ arena_road_bits_1_0_15 (row : i32) : u32 =
+    ? row <= 61
+    ?> ? row <= 60 ?> 4244372992u32 |: 16514560u32
+    |? row <= 62 ?> 16514560u32 |: 16252928u32
+
+:~ arena_road_bits_1_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 16252928u32 |: 16252928u32 |: ? row <= 66 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_17 (row : i32) : u32 =
+    ? row <= 69 ?> ? row <= 68 ?> 0u32 |: 0u32 |: ? row <= 70 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_18 (row : i32) : u32 =
+    ? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: ? row <= 74 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_19 (row : i32) : u32 =
+    ? row <= 77 ?> ? row <= 76 ?> 0u32 |: 0u32 |: ? row <= 78 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_20 (row : i32) : u32 =
+    ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: ? row <= 82 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_21 (row : i32) : u32 =
+    ? row <= 85 ?> ? row <= 84 ?> 0u32 |: 0u32 |: ? row <= 86 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 0u32 |: 0u32 |: 0u32
+
+:~ arena_road_bits_1_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_road_bits_1_0_0 row |: arena_road_bits_1_0_1 row
+    |? row <= 11 ?> arena_road_bits_1_0_2 row |: arena_road_bits_1_0_3 row
+
+:~ arena_road_bits_1_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_road_bits_1_0_4 row |: arena_road_bits_1_0_5 row
+    |? row <= 27 ?> arena_road_bits_1_0_6 row |: arena_road_bits_1_0_7 row
+
+:~ arena_road_bits_1_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_road_bits_1_0_8 row |: arena_road_bits_1_0_9 row
+    |? row <= 43 ?> arena_road_bits_1_0_10 row |: arena_road_bits_1_0_11 row
+
+:~ arena_road_bits_1_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_road_bits_1_0_12 row |: arena_road_bits_1_0_13 row
+    |? row <= 59 ?> arena_road_bits_1_0_14 row |: arena_road_bits_1_0_15 row
+
+:~ arena_road_bits_1_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_road_bits_1_0_16 row |: arena_road_bits_1_0_17 row
+    |? row <= 75 ?> arena_road_bits_1_0_18 row |: arena_road_bits_1_0_19 row
+
+:~ arena_road_bits_1_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_road_bits_1_0_20 row |: arena_road_bits_1_0_21 row
+    |: arena_road_bits_1_0_22 row
+
+:~ arena_road_bits_1_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_road_bits_1_1_0 row |: arena_road_bits_1_1_1 row
+    |? row <= 47 ?> arena_road_bits_1_1_2 row |: arena_road_bits_1_1_3 row
+
+:~ arena_road_bits_1_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_road_bits_1_1_4 row |: arena_road_bits_1_1_5 row
+
+:~ arena_road_bits_1 (row : i32) : u32 =
+    ? row <= 63 ?> arena_road_bits_1_2_0 row |: arena_road_bits_1_2_1 row
+
+:~ arena_road_bits_2_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: ? row <= 2 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 16256u32 |: 16256u32 |: ? row <= 6 ?> 16256u32 |: 16257u32
+
+:~ arena_road_bits_2_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 16381u32 |: 16383u32 |: ? row <= 10 ?> 16383u32 |: 16383u32
+
+:~ arena_road_bits_2_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 16191u32 |: 0u32 |: ? row <= 14 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 130816u32 |: 130816u32 |: ? row <= 18 ?> 130816u32 |: 130816u32
+
+:~ arena_road_bits_2_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 131068u32 |: 131068u32 |: ? row <= 22 ?> 131068u32 |: 2044u32
+
+:~ arena_road_bits_2_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 59388u32 |: 59388u32 |: ? row <= 26 ?> 59388u32 |: 129021u32
+
+:~ arena_road_bits_2_0_7 (row : i32) : u32 =
+    ? row <= 29
+    ?> ? row <= 28 ?> 134217727u32 |: 134217727u32
+    |? row <= 30 ?> 134217727u32 |: 134217727u32
+
+:~ arena_road_bits_2_0_8 (row : i32) : u32 =
+    ? row <= 33
+    ?> ? row <= 32 ?> 134217727u32 |: 134217727u32
+    |? row <= 34 ?> 130023425u32 |: 125829249u32
+
+:~ arena_road_bits_2_0_9 (row : i32) : u32 =
+    ? row <= 37
+    ?> ? row <= 36 ?> 125829121u32 |: 125829121u32
+    |? row <= 38 ?> 125829123u32 |: 125829123u32
+
+:~ arena_road_bits_2_0_10 (row : i32) : u32 =
+    ? row <= 41
+    ?> ? row <= 40 ?> 125829123u32 |: 125829123u32
+    |? row <= 42 ?> 126091265u32 |: 125829121u32
+
+:~ arena_road_bits_2_0_11 (row : i32) : u32 =
+    ? row <= 45
+    ?> ? row <= 44 ?> 125829121u32 |: 125837313u32
+    |? row <= 46 ?> 125829121u32 |: 125829121u32
+
+:~ arena_road_bits_2_0_12 (row : i32) : u32 =
+    ? row <= 49
+    ?> ? row <= 48 ?> 125829121u32 |: 125829121u32
+    |? row <= 50 ?> 125829121u32 |: 125829121u32
+
+:~ arena_road_bits_2_0_13 (row : i32) : u32 =
+    ? row <= 53
+    ?> ? row <= 52 ?> 125829121u32 |: 125829120u32
+    |? row <= 54 ?> 125829120u32 |: 67108991u32
+
+:~ arena_road_bits_2_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 67108991u32 |: 67108927u32 |: ? row <= 58 ?> 67108927u32 |: 67108991u32
+
+:~ arena_road_bits_2_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 67108991u32 |: 0u32 |: ? row <= 62 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: ? row <= 66 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_17 (row : i32) : u32 =
+    ? row <= 69 ?> ? row <= 68 ?> 0u32 |: 0u32 |: ? row <= 70 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_18 (row : i32) : u32 =
+    ? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: ? row <= 74 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_19 (row : i32) : u32 =
+    ? row <= 77 ?> ? row <= 76 ?> 0u32 |: 0u32 |: ? row <= 78 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_20 (row : i32) : u32 =
+    ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: ? row <= 82 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_21 (row : i32) : u32 =
+    ? row <= 85 ?> ? row <= 84 ?> 0u32 |: 0u32 |: ? row <= 86 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 0u32 |: 0u32 |: 0u32
+
+:~ arena_road_bits_2_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_road_bits_2_0_0 row |: arena_road_bits_2_0_1 row
+    |? row <= 11 ?> arena_road_bits_2_0_2 row |: arena_road_bits_2_0_3 row
+
+:~ arena_road_bits_2_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_road_bits_2_0_4 row |: arena_road_bits_2_0_5 row
+    |? row <= 27 ?> arena_road_bits_2_0_6 row |: arena_road_bits_2_0_7 row
+
+:~ arena_road_bits_2_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_road_bits_2_0_8 row |: arena_road_bits_2_0_9 row
+    |? row <= 43 ?> arena_road_bits_2_0_10 row |: arena_road_bits_2_0_11 row
+
+:~ arena_road_bits_2_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_road_bits_2_0_12 row |: arena_road_bits_2_0_13 row
+    |? row <= 59 ?> arena_road_bits_2_0_14 row |: arena_road_bits_2_0_15 row
+
+:~ arena_road_bits_2_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_road_bits_2_0_16 row |: arena_road_bits_2_0_17 row
+    |? row <= 75 ?> arena_road_bits_2_0_18 row |: arena_road_bits_2_0_19 row
+
+:~ arena_road_bits_2_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_road_bits_2_0_20 row |: arena_road_bits_2_0_21 row
+    |: arena_road_bits_2_0_22 row
+
+:~ arena_road_bits_2_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_road_bits_2_1_0 row |: arena_road_bits_2_1_1 row
+    |? row <= 47 ?> arena_road_bits_2_1_2 row |: arena_road_bits_2_1_3 row
+
+:~ arena_road_bits_2_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_road_bits_2_1_4 row |: arena_road_bits_2_1_5 row
+
+:~ arena_road_bits_2 (row : i32) : u32 =
+    ? row <= 63 ?> arena_road_bits_2_2_0 row |: arena_road_bits_2_2_1 row
+
+:~ arena_road_bits_outside (word : i32) : u32 =
+    ? word = 0 ?> 0u32 |: ? word = 1 ?> 0u32 |: 0u32
+
 :~ arena_road_bits (word : i32) (row : i32) : u32 =
     ? row < 0 || row > 90
-    ?> ? word = 0 ?> 0u32 |: ? word = 1 ?> 0u32 |: 0u32
-    |? word = 0
-    ?>
-        ? row <= 45
-        ?>
-            ? row <= 22
-            ?>
-                ? row <= 11
-                ?>
-                    ? row <= 5
-                    ?>
-                        ? row <= 2
-                        ?> ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: 0u32
-                        |? row <= 4 ?> ? row <= 3 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 8
-                    ?> ? row <= 7 ?> ? row <= 6 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 10 ?> ? row <= 9 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 17
-                ?>
-                    ? row <= 14
-                    ?> ? row <= 13 ?> ? row <= 12 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 16 ?> ? row <= 15 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 20
-                ?> ? row <= 19 ?> ? row <= 18 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 21 ?> 0u32 |: 0u32
-            |? row <= 34
-            ?>
-                ? row <= 28
-                ?>
-                    ? row <= 25
-                    ?> ? row <= 24 ?> ? row <= 23 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 27 ?> ? row <= 26 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 31
-                ?> ? row <= 30 ?> ? row <= 29 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 33 ?> ? row <= 32 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 40
-            ?>
-                ? row <= 37
-                ?> ? row <= 36 ?> ? row <= 35 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 39 ?> ? row <= 38 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 43
-            ?> ? row <= 42 ?> ? row <= 41 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 44 ?> 0u32 |: 0u32
-        |? row <= 68
-        ?>
-            ? row <= 57
-            ?>
-                ? row <= 51
-                ?>
-                    ? row <= 48
-                    ?> ? row <= 47 ?> ? row <= 46 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 50 ?> ? row <= 49 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 54
-                ?> ? row <= 53 ?> ? row <= 52 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 56 ?> ? row <= 55 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 63
-            ?>
-                ? row <= 60
-                ?> ? row <= 59 ?> ? row <= 58 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 62 ?> ? row <= 61 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 66
-            ?> ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 67 ?> 0u32 |: 0u32
-        |? row <= 79
-        ?>
-            ? row <= 74
-            ?>
-                ? row <= 71
-                ?> ? row <= 70 ?> ? row <= 69 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 77
-            ?> ? row <= 76 ?> ? row <= 75 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 78 ?> 0u32 |: 0u32
-        |? row <= 85
-        ?>
-            ? row <= 82
-            ?> ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 84 ?> ? row <= 83 ?> 0u32 |: 0u32 |: 0u32
-        |? row <= 88
-        ?> ? row <= 87 ?> ? row <= 86 ?> 0u32 |: 0u32 |: 0u32
-        |? row <= 89 ?> 0u32 |: 0u32
-    |? word = 1
-    ?>
-        ? row <= 45
-        ?>
-            ? row <= 22
-            ?>
-                ? row <= 11
-                ?>
-                    ? row <= 5
-                    ?>
-                        ? row <= 2
-                        ?> ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: 0u32
-                        |? row <= 4 ?> ? row <= 3 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 8
-                    ?> ? row <= 7 ?> ? row <= 6 ?> 0u32 |: 4160749568u32 |: 4160749568u32
-                    |? row <= 10 ?> ? row <= 9 ?> 4160749568u32 |: 4160749568u32 |: 4160749568u32
-                |? row <= 17
-                ?>
-                    ? row <= 14
-                    ?> ? row <= 13 ?> ? row <= 12 ?> 4160749568u32 |: 4160749568u32 |: 4160749568u32
-                    |? row <= 16 ?> ? row <= 15 ?> 4160749568u32 |: 4160749568u32 |: 4026531840u32
-                |? row <= 20
-                ?> ? row <= 19 ?> ? row <= 18 ?> 4059037696u32 |: 4159700992u32 |: 4159700992u32
-                |? row <= 21 ?> 4159700992u32 |: 4159959040u32
-            |? row <= 34
-            ?>
-                ? row <= 28
-                ?>
-                    ? row <= 25
-                    ?> ? row <= 24 ?> ? row <= 23 ?> 4159959040u32 |: 4159959040u32 |: 4159959040u32
-                    |? row <= 27 ?> ? row <= 26 ?> 4159959040u32 |: 4294176768u32 |: 4294963200u32
-                |? row <= 31
-                ?> ? row <= 30 ?> ? row <= 29 ?> 4294967292u32 |: 4294967292u32 |: 4294967292u32
-                |? row <= 33 ?> ? row <= 32 ?> 4294967292u32 |: 4294967292u32 |: 4027056124u32
-            |? row <= 40
-            ?>
-                ? row <= 37
-                ?> ? row <= 36 ?> ? row <= 35 ?> 4025745404u32 |: 4025484284u32 |: 4025484284u32
-                |? row <= 39 ?> ? row <= 38 ?> 4025484284u32 |: 4025484284u32 |: 4025484284u32
-            |? row <= 43
-            ?> ? row <= 42 ?> ? row <= 41 ?> 4025484284u32 |: 4025484284u32 |: 4025483264u32
-            |? row <= 44 ?> 4025483264u32 |: 4025483264u32
-        |? row <= 68
-        ?>
-            ? row <= 57
-            ?>
-                ? row <= 51
-                ?>
-                    ? row <= 48
-                    ?> ? row <= 47 ?> ? row <= 46 ?> 4024434688u32 |: 4089446400u32 |: 4294443008u32
-                    |? row <= 50 ?> ? row <= 49 ?> 4294443008u32 |: 4294704128u32 |: 4294704640u32
-                |? row <= 54
-                ?> ? row <= 53 ?> ? row <= 52 ?> 4294704640u32 |: 33291776u32 |: 16514560u32
-                |? row <= 56 ?> ? row <= 55 ?> 4244372992u32 |: 4277927424u32 |: 4277927424u32
-            |? row <= 63
-            ?>
-                ? row <= 60
-                ?> ? row <= 59 ?> ? row <= 58 ?> 4277927424u32 |: 4277927424u32 |: 4244372992u32
-                |? row <= 62 ?> ? row <= 61 ?> 16514560u32 |: 16514560u32 |: 16252928u32
-            |? row <= 66
-            ?> ? row <= 65 ?> ? row <= 64 ?> 16252928u32 |: 16252928u32 |: 0u32
-            |? row <= 67 ?> 0u32 |: 0u32
-        |? row <= 79
-        ?>
-            ? row <= 74
-            ?>
-                ? row <= 71
-                ?> ? row <= 70 ?> ? row <= 69 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 77
-            ?> ? row <= 76 ?> ? row <= 75 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 78 ?> 0u32 |: 0u32
-        |? row <= 85
-        ?>
-            ? row <= 82
-            ?> ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 84 ?> ? row <= 83 ?> 0u32 |: 0u32 |: 0u32
-        |? row <= 88
-        ?> ? row <= 87 ?> ? row <= 86 ?> 0u32 |: 0u32 |: 0u32
-        |? row <= 89 ?> 0u32 |: 0u32
-    |? row <= 45
-    ?>
-        ? row <= 22
-        ?>
-            ? row <= 11
-            ?>
-                ? row <= 5
-                ?>
-                    ? row <= 2
-                    ?> ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 4 ?> ? row <= 3 ?> 0u32 |: 16256u32 |: 16256u32
-                |? row <= 8
-                ?> ? row <= 7 ?> ? row <= 6 ?> 16256u32 |: 16257u32 |: 16381u32
-                |? row <= 10 ?> ? row <= 9 ?> 16383u32 |: 16383u32 |: 16383u32
-            |? row <= 17
-            ?>
-                ? row <= 14
-                ?> ? row <= 13 ?> ? row <= 12 ?> 16191u32 |: 0u32 |: 0u32
-                |? row <= 16 ?> ? row <= 15 ?> 0u32 |: 130816u32 |: 130816u32
-            |? row <= 20
-            ?> ? row <= 19 ?> ? row <= 18 ?> 130816u32 |: 130816u32 |: 131068u32
-            |? row <= 21 ?> 131068u32 |: 131068u32
-        |? row <= 34
-        ?>
-            ? row <= 28
-            ?>
-                ? row <= 25
-                ?> ? row <= 24 ?> ? row <= 23 ?> 2044u32 |: 59388u32 |: 59388u32
-                |? row <= 27 ?> ? row <= 26 ?> 59388u32 |: 129021u32 |: 134217727u32
-            |? row <= 31
-            ?> ? row <= 30 ?> ? row <= 29 ?> 134217727u32 |: 134217727u32 |: 134217727u32
-            |? row <= 33 ?> ? row <= 32 ?> 134217727u32 |: 134217727u32 |: 130023425u32
-        |? row <= 40
-        ?>
-            ? row <= 37
-            ?> ? row <= 36 ?> ? row <= 35 ?> 125829249u32 |: 125829121u32 |: 125829121u32
-            |? row <= 39 ?> ? row <= 38 ?> 125829123u32 |: 125829123u32 |: 125829123u32
-        |? row <= 43
-        ?> ? row <= 42 ?> ? row <= 41 ?> 125829123u32 |: 126091265u32 |: 125829121u32
-        |? row <= 44 ?> 125829121u32 |: 125837313u32
-    |? row <= 68
-    ?>
-        ? row <= 57
-        ?>
-            ? row <= 51
-            ?>
-                ? row <= 48
-                ?> ? row <= 47 ?> ? row <= 46 ?> 125829121u32 |: 125829121u32 |: 125829121u32
-                |? row <= 50 ?> ? row <= 49 ?> 125829121u32 |: 125829121u32 |: 125829121u32
-            |? row <= 54
-            ?> ? row <= 53 ?> ? row <= 52 ?> 125829121u32 |: 125829120u32 |: 125829120u32
-            |? row <= 56 ?> ? row <= 55 ?> 67108991u32 |: 67108991u32 |: 67108927u32
-        |? row <= 63
-        ?>
-            ? row <= 60
-            ?> ? row <= 59 ?> ? row <= 58 ?> 67108927u32 |: 67108991u32 |: 67108991u32
-            |? row <= 62 ?> ? row <= 61 ?> 0u32 |: 0u32 |: 0u32
-        |? row <= 66
-        ?> ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: 0u32
-        |? row <= 67 ?> 0u32 |: 0u32
-    |? row <= 79
-    ?>
-        ? row <= 74
-        ?>
-            ? row <= 71
-            ?> ? row <= 70 ?> ? row <= 69 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: 0u32
-        |? row <= 77
-        ?> ? row <= 76 ?> ? row <= 75 ?> 0u32 |: 0u32 |: 0u32
-        |? row <= 78 ?> 0u32 |: 0u32
-    |? row <= 85
-    ?>
-        ? row <= 82
-        ?> ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: 0u32
-        |? row <= 84 ?> ? row <= 83 ?> 0u32 |: 0u32 |: 0u32
-    |? row <= 88
-    ?> ? row <= 87 ?> ? row <= 86 ?> 0u32 |: 0u32 |: 0u32
-    |? row <= 89 ?> 0u32 |: 0u32
+    ?> arena_road_bits_outside word
+    |? word = 0 ?> arena_road_bits_0 row |: ? word = 1 ?> arena_road_bits_1 row |: arena_road_bits_2 row
 
 :~ arena_road (p : tile) : bool = ? inside_arena_spot p ?> arena_bit_set arena_road_bits p |: !-
 
+:~ arena_sight_bits_0_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: ? row <= 2 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 0u32 |: 0u32 |: ? row <= 6 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 0u32 |: 0u32 |: ? row <= 10 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 0u32 |: 0u32 |: ? row <= 14 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 0u32 |: 0u32 |: ? row <= 18 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 0u32 |: 0u32 |: ? row <= 22 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 0u32 |: 0u32 |: ? row <= 26 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 0u32 |: 0u32 |: ? row <= 30 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 0u32 |: 0u32 |: ? row <= 34 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_9 (row : i32) : u32 =
+    ? row <= 37 ?> ? row <= 36 ?> 0u32 |: 0u32 |: ? row <= 38 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_10 (row : i32) : u32 =
+    ? row <= 41 ?> ? row <= 40 ?> 0u32 |: 0u32 |: ? row <= 42 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_11 (row : i32) : u32 =
+    ? row <= 45 ?> ? row <= 44 ?> 0u32 |: 0u32 |: ? row <= 46 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 0u32 |: 0u32 |: ? row <= 50 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 0u32 |: 0u32 |: ? row <= 54 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 0u32 |: 0u32 |: ? row <= 58 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 0u32 |: 0u32 |: ? row <= 62 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: ? row <= 66 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_17 (row : i32) : u32 =
+    ? row <= 69 ?> ? row <= 68 ?> 0u32 |: 0u32 |: ? row <= 70 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_18 (row : i32) : u32 =
+    ? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: ? row <= 74 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_19 (row : i32) : u32 =
+    ? row <= 77 ?> ? row <= 76 ?> 0u32 |: 0u32 |: ? row <= 78 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_20 (row : i32) : u32 =
+    ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: ? row <= 82 ?> 4261412864u32 |: 4278190080u32
+
+:~ arena_sight_bits_0_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 4278190080u32 |: 4286578688u32
+    |? row <= 86 ?> 4286578688u32 |: 4290772992u32
+
+:~ arena_sight_bits_0_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 4292870144u32 |: 4293918720u32 |: 4293918720u32
+
+:~ arena_sight_bits_0_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_sight_bits_0_0_0 row |: arena_sight_bits_0_0_1 row
+    |? row <= 11 ?> arena_sight_bits_0_0_2 row |: arena_sight_bits_0_0_3 row
+
+:~ arena_sight_bits_0_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_sight_bits_0_0_4 row |: arena_sight_bits_0_0_5 row
+    |? row <= 27 ?> arena_sight_bits_0_0_6 row |: arena_sight_bits_0_0_7 row
+
+:~ arena_sight_bits_0_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_sight_bits_0_0_8 row |: arena_sight_bits_0_0_9 row
+    |? row <= 43 ?> arena_sight_bits_0_0_10 row |: arena_sight_bits_0_0_11 row
+
+:~ arena_sight_bits_0_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_sight_bits_0_0_12 row |: arena_sight_bits_0_0_13 row
+    |? row <= 59 ?> arena_sight_bits_0_0_14 row |: arena_sight_bits_0_0_15 row
+
+:~ arena_sight_bits_0_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_sight_bits_0_0_16 row |: arena_sight_bits_0_0_17 row
+    |? row <= 75 ?> arena_sight_bits_0_0_18 row |: arena_sight_bits_0_0_19 row
+
+:~ arena_sight_bits_0_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_sight_bits_0_0_20 row |: arena_sight_bits_0_0_21 row
+    |: arena_sight_bits_0_0_22 row
+
+:~ arena_sight_bits_0_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_sight_bits_0_1_0 row |: arena_sight_bits_0_1_1 row
+    |? row <= 47 ?> arena_sight_bits_0_1_2 row |: arena_sight_bits_0_1_3 row
+
+:~ arena_sight_bits_0_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_sight_bits_0_1_4 row |: arena_sight_bits_0_1_5 row
+
+:~ arena_sight_bits_0 (row : i32) : u32 =
+    ? row <= 63 ?> arena_sight_bits_0_2_0 row |: arena_sight_bits_0_2_1 row
+
+:~ arena_sight_bits_1_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: ? row <= 2 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_1_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 0u32 |: 0u32 |: ? row <= 6 ?> 0u32 |: 129499136u32
+
+:~ arena_sight_bits_1_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 524288u32 |: 67633152u32 |: ? row <= 10 ?> 67633152u32 |: 0u32
+
+:~ arena_sight_bits_1_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 524288u32 |: 67633152u32 |: ? row <= 14 ?> 67633152u32 |: 131596288u32
+
+:~ arena_sight_bits_1_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 0u32 |: 0u32 |: ? row <= 18 ?> 133693440u32 |: 71827456u32
+
+:~ arena_sight_bits_1_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 4718592u32 |: 72087552u32 |: ? row <= 22 ?> 71960576u32 |: 133826560u32
+
+:~ arena_sight_bits_1_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 76154880u32 |: 9046016u32 |: ? row <= 26 ?> 76154880u32 |: 133953536u32
+
+:~ arena_sight_bits_1_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 4094u32 |: 2114u32 |: ? row <= 30 ?> 2114u32 |: 4034u32
+
+:~ arena_sight_bits_1_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 2114u32 |: 2174u32 |: ? row <= 34 ?> 267388994u32 |: 134745666u32
+
+:~ arena_sight_bits_1_0_9 (row : i32) : u32 =
+    ? row <= 37
+    ?> ? row <= 36 ?> 134742978u32 |: 134742594u32
+    |? row <= 38 ?> 134742654u32 |: 134742594u32
+
+:~ arena_sight_bits_1_0_10 (row : i32) : u32 =
+    ? row <= 41
+    ?> ? row <= 40 ?> 134742594u32 |: 134742594u32
+    |? row <= 42 ?> 134743038u32 |: 134742016u32
+
+:~ arena_sight_bits_1_0_11 (row : i32) : u32 =
+    ? row <= 45 ?> ? row <= 44 ?> 134742016u32 |: 134742016u32 |: ? row <= 46 ?> 204996608u32 |: 0u32
+
+:~ arena_sight_bits_1_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 0u32 |: 253440u32 |: ? row <= 50 ?> 131840u32 |: 131328u32
+
+:~ arena_sight_bits_1_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 131328u32 |: 131328u32 |: ? row <= 54 ?> 4261544192u32 |: 33685760u32
+
+:~ arena_sight_bits_1_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 100794624u32 |: 67370752u32 |: ? row <= 58 ?> 131328u32 |: 100794624u32
+
+:~ arena_sight_bits_1_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 33685760u32 |: 4261544192u32 |: ? row <= 62 ?> 253696u32 |: 0u32
+
+:~ arena_sight_bits_1_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: ? row <= 66 ?> 0u32 |: 13369344u32
+
+:~ arena_sight_bits_1_0_17 (row : i32) : u32 =
+    ? row <= 69
+    ?> ? row <= 68 ?> 33292288u32 |: 134086656u32
+    |? row <= 70 ?> 268419072u32 |: 2147475456u32
+
+:~ arena_sight_bits_1_0_18 (row : i32) : u32 =
+    ? row <= 73
+    ?> ? row <= 72 ?> 4294963200u32 |: 4294965248u32
+    |? row <= 74 ?> 4294965248u32 |: 4294966272u32
+
+:~ arena_sight_bits_1_0_19 (row : i32) : u32 =
+    ? row <= 77
+    ?> ? row <= 76 ?> 4294966784u32 |: 4294966784u32
+    |? row <= 78 ?> 4294966784u32 |: 4294966784u32
+
+:~ arena_sight_bits_1_0_20 (row : i32) : u32 =
+    ? row <= 81
+    ?> ? row <= 80 ?> 4294966784u32 |: 4294967040u32
+    |? row <= 82 ?> 4294967169u32 |: 4294967171u32
+
+:~ arena_sight_bits_1_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 4294967279u32 |: 4294967295u32
+    |? row <= 86 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_sight_bits_1_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
+
+:~ arena_sight_bits_1_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_sight_bits_1_0_0 row |: arena_sight_bits_1_0_1 row
+    |? row <= 11 ?> arena_sight_bits_1_0_2 row |: arena_sight_bits_1_0_3 row
+
+:~ arena_sight_bits_1_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_sight_bits_1_0_4 row |: arena_sight_bits_1_0_5 row
+    |? row <= 27 ?> arena_sight_bits_1_0_6 row |: arena_sight_bits_1_0_7 row
+
+:~ arena_sight_bits_1_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_sight_bits_1_0_8 row |: arena_sight_bits_1_0_9 row
+    |? row <= 43 ?> arena_sight_bits_1_0_10 row |: arena_sight_bits_1_0_11 row
+
+:~ arena_sight_bits_1_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_sight_bits_1_0_12 row |: arena_sight_bits_1_0_13 row
+    |? row <= 59 ?> arena_sight_bits_1_0_14 row |: arena_sight_bits_1_0_15 row
+
+:~ arena_sight_bits_1_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_sight_bits_1_0_16 row |: arena_sight_bits_1_0_17 row
+    |? row <= 75 ?> arena_sight_bits_1_0_18 row |: arena_sight_bits_1_0_19 row
+
+:~ arena_sight_bits_1_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_sight_bits_1_0_20 row |: arena_sight_bits_1_0_21 row
+    |: arena_sight_bits_1_0_22 row
+
+:~ arena_sight_bits_1_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_sight_bits_1_1_0 row |: arena_sight_bits_1_1_1 row
+    |? row <= 47 ?> arena_sight_bits_1_1_2 row |: arena_sight_bits_1_1_3 row
+
+:~ arena_sight_bits_1_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_sight_bits_1_1_4 row |: arena_sight_bits_1_1_5 row
+
+:~ arena_sight_bits_1 (row : i32) : u32 =
+    ? row <= 63 ?> arena_sight_bits_1_2_0 row |: arena_sight_bits_1_2_1 row
+
+:~ arena_sight_bits_2_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 68157440u32 |: 68157440u32 |: ? row <= 2 ?> 68157440u32 |: 68173760u32
+
+:~ arena_sight_bits_2_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 68165696u32 |: 68165696u32 |: ? row <= 6 ?> 68165696u32 |: 68167166u32
+
+:~ arena_sight_bits_2_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 133178435u32 |: 68166721u32 |: ? row <= 10 ?> 68166657u32 |: 74458337u32
+
+:~ arena_sight_bits_2_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 79708095u32 |: 125829120u32 |: ? row <= 14 ?> 0u32 |: 132235136u32
+
+:~ arena_sight_bits_2_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 35721344u32 |: 35717248u32 |: ? row <= 18 ?> 35724160u32 |: 2166974u32
+
+:~ arena_sight_bits_2_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 71570u32 |: 35722386u32 |: ? row <= 22 ?> 2228098u32 |: 3933330u32
+
+:~ arena_sight_bits_2_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 263326u32 |: 263298u32 |: ? row <= 26 ?> 263298u32 |: 16516606u32
+
+:~ arena_sight_bits_2_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 0u32 |: 0u32 |: ? row <= 30 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_2_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 0u32 |: 0u32 |: ? row <= 34 ?> 4177662u32 |: 2105890u32
+
+:~ arena_sight_bits_2_0_9 (row : i32) : u32 =
+    ? row <= 37 ?> ? row <= 36 ?> 2105890u32 |: 2105890u32 |: ? row <= 38 ?> 2097152u32 |: 2097216u32
+
+:~ arena_sight_bits_2_0_10 (row : i32) : u32 =
+    ? row <= 41 ?> ? row <= 40 ?> 2097152u32 |: 0u32 |: ? row <= 42 ?> 2105888u32 |: 2097698u32
+
+:~ arena_sight_bits_2_0_11 (row : i32) : u32 =
+    ? row <= 45 ?> ? row <= 44 ?> 2105890u32 |: 16382u32 |: ? row <= 46 ?> 2105344u32 |: 2236416u32
+
+:~ arena_sight_bits_2_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 2236416u32 |: 2236416u32 |: ? row <= 50 ?> 4186112u32 |: 0u32
+
+:~ arena_sight_bits_2_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 0u32 |: 0u32 |: ? row <= 54 ?> 100663551u32 |: 33554560u32
+
+:~ arena_sight_bits_2_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 192u32 |: 33554496u32 |: ? row <= 58 ?> 33554496u32 |: 192u32
+
+:~ arena_sight_bits_2_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 100663424u32 |: 255u32 |: ? row <= 62 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_2_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: ? row <= 66 ?> 0u32 |: 4186112u32
+
+:~ arena_sight_bits_2_0_17 (row : i32) : u32 =
+    ? row <= 69 ?> ? row <= 68 ?> 8386560u32 |: 16776704u32 |: ? row <= 70 ?> 33554304u32 |: 134217600u32
+
+:~ arena_sight_bits_2_0_18 (row : i32) : u32 =
+    ? row <= 73
+    ?> ? row <= 72 ?> 134217665u32 |: 134217699u32
+    |? row <= 74 ?> 134217727u32 |: 134217727u32
+
+:~ arena_sight_bits_2_0_19 (row : i32) : u32 =
+    ? row <= 77
+    ?> ? row <= 76 ?> 134217727u32 |: 134217727u32
+    |? row <= 78 ?> 134217727u32 |: 134217727u32
+
+:~ arena_sight_bits_2_0_20 (row : i32) : u32 =
+    ? row <= 81
+    ?> ? row <= 80 ?> 134217727u32 |: 134217727u32
+    |? row <= 82 ?> 134217727u32 |: 134217727u32
+
+:~ arena_sight_bits_2_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 134217727u32 |: 134217727u32
+    |? row <= 86 ?> 134217727u32 |: 134217727u32
+
+:~ arena_sight_bits_2_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 262143u32 |: 131071u32 |: 65535u32
+
+:~ arena_sight_bits_2_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_sight_bits_2_0_0 row |: arena_sight_bits_2_0_1 row
+    |? row <= 11 ?> arena_sight_bits_2_0_2 row |: arena_sight_bits_2_0_3 row
+
+:~ arena_sight_bits_2_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_sight_bits_2_0_4 row |: arena_sight_bits_2_0_5 row
+    |? row <= 27 ?> arena_sight_bits_2_0_6 row |: arena_sight_bits_2_0_7 row
+
+:~ arena_sight_bits_2_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_sight_bits_2_0_8 row |: arena_sight_bits_2_0_9 row
+    |? row <= 43 ?> arena_sight_bits_2_0_10 row |: arena_sight_bits_2_0_11 row
+
+:~ arena_sight_bits_2_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_sight_bits_2_0_12 row |: arena_sight_bits_2_0_13 row
+    |? row <= 59 ?> arena_sight_bits_2_0_14 row |: arena_sight_bits_2_0_15 row
+
+:~ arena_sight_bits_2_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_sight_bits_2_0_16 row |: arena_sight_bits_2_0_17 row
+    |? row <= 75 ?> arena_sight_bits_2_0_18 row |: arena_sight_bits_2_0_19 row
+
+:~ arena_sight_bits_2_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_sight_bits_2_0_20 row |: arena_sight_bits_2_0_21 row
+    |: arena_sight_bits_2_0_22 row
+
+:~ arena_sight_bits_2_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_sight_bits_2_1_0 row |: arena_sight_bits_2_1_1 row
+    |? row <= 47 ?> arena_sight_bits_2_1_2 row |: arena_sight_bits_2_1_3 row
+
+:~ arena_sight_bits_2_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_sight_bits_2_1_4 row |: arena_sight_bits_2_1_5 row
+
+:~ arena_sight_bits_2 (row : i32) : u32 =
+    ? row <= 63 ?> arena_sight_bits_2_2_0 row |: arena_sight_bits_2_2_1 row
+
+:~ arena_sight_bits_outside (word : i32) : u32 =
+    ? word = 0 ?> 0u32 |: ? word = 1 ?> 0u32 |: 0u32
+
 :~ arena_sight_bits (word : i32) (row : i32) : u32 =
     ? row < 0 || row > 90
-    ?> ? word = 0 ?> 0u32 |: ? word = 1 ?> 0u32 |: 0u32
-    |? word = 0
-    ?>
-        ? row <= 45
-        ?>
-            ? row <= 22
-            ?>
-                ? row <= 11
-                ?>
-                    ? row <= 5
-                    ?>
-                        ? row <= 2
-                        ?> ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: 0u32
-                        |? row <= 4 ?> ? row <= 3 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 8
-                    ?> ? row <= 7 ?> ? row <= 6 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 10 ?> ? row <= 9 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 17
-                ?>
-                    ? row <= 14
-                    ?> ? row <= 13 ?> ? row <= 12 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 16 ?> ? row <= 15 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 20
-                ?> ? row <= 19 ?> ? row <= 18 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 21 ?> 0u32 |: 0u32
-            |? row <= 34
-            ?>
-                ? row <= 28
-                ?>
-                    ? row <= 25
-                    ?> ? row <= 24 ?> ? row <= 23 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 27 ?> ? row <= 26 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 31
-                ?> ? row <= 30 ?> ? row <= 29 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 33 ?> ? row <= 32 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 40
-            ?>
-                ? row <= 37
-                ?> ? row <= 36 ?> ? row <= 35 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 39 ?> ? row <= 38 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 43
-            ?> ? row <= 42 ?> ? row <= 41 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 44 ?> 0u32 |: 0u32
-        |? row <= 68
-        ?>
-            ? row <= 57
-            ?>
-                ? row <= 51
-                ?>
-                    ? row <= 48
-                    ?> ? row <= 47 ?> ? row <= 46 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 50 ?> ? row <= 49 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 54
-                ?> ? row <= 53 ?> ? row <= 52 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 56 ?> ? row <= 55 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 63
-            ?>
-                ? row <= 60
-                ?> ? row <= 59 ?> ? row <= 58 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 62 ?> ? row <= 61 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 66
-            ?> ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 67 ?> 0u32 |: 0u32
-        |? row <= 79
-        ?>
-            ? row <= 74
-            ?>
-                ? row <= 71
-                ?> ? row <= 70 ?> ? row <= 69 ?> 0u32 |: 0u32 |: 0u32
-                |? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 77
-            ?> ? row <= 76 ?> ? row <= 75 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 78 ?> 0u32 |: 0u32
-        |? row <= 85
-        ?>
-            ? row <= 82
-            ?> ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: 4261412864u32
-            |? row <= 84 ?> ? row <= 83 ?> 4278190080u32 |: 4278190080u32 |: 4286578688u32
-        |? row <= 88
-        ?> ? row <= 87 ?> ? row <= 86 ?> 4286578688u32 |: 4290772992u32 |: 4292870144u32
-        |? row <= 89 ?> 4293918720u32 |: 4293918720u32
-    |? word = 1
-    ?>
-        ? row <= 45
-        ?>
-            ? row <= 22
-            ?>
-                ? row <= 11
-                ?>
-                    ? row <= 5
-                    ?>
-                        ? row <= 2
-                        ?> ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: 0u32
-                        |? row <= 4 ?> ? row <= 3 ?> 0u32 |: 0u32 |: 0u32
-                    |? row <= 8
-                    ?> ? row <= 7 ?> ? row <= 6 ?> 0u32 |: 129499136u32 |: 524288u32
-                    |? row <= 10 ?> ? row <= 9 ?> 67633152u32 |: 67633152u32 |: 0u32
-                |? row <= 17
-                ?>
-                    ? row <= 14
-                    ?> ? row <= 13 ?> ? row <= 12 ?> 524288u32 |: 67633152u32 |: 67633152u32
-                    |? row <= 16 ?> ? row <= 15 ?> 131596288u32 |: 0u32 |: 0u32
-                |? row <= 20
-                ?> ? row <= 19 ?> ? row <= 18 ?> 133693440u32 |: 71827456u32 |: 4718592u32
-                |? row <= 21 ?> 72087552u32 |: 71960576u32
-            |? row <= 34
-            ?>
-                ? row <= 28
-                ?>
-                    ? row <= 25
-                    ?> ? row <= 24 ?> ? row <= 23 ?> 133826560u32 |: 76154880u32 |: 9046016u32
-                    |? row <= 27 ?> ? row <= 26 ?> 76154880u32 |: 133953536u32 |: 4094u32
-                |? row <= 31
-                ?> ? row <= 30 ?> ? row <= 29 ?> 2114u32 |: 2114u32 |: 4034u32
-                |? row <= 33 ?> ? row <= 32 ?> 2114u32 |: 2174u32 |: 267388994u32
-            |? row <= 40
-            ?>
-                ? row <= 37
-                ?> ? row <= 36 ?> ? row <= 35 ?> 134745666u32 |: 134742978u32 |: 134742594u32
-                |? row <= 39 ?> ? row <= 38 ?> 134742654u32 |: 134742594u32 |: 134742594u32
-            |? row <= 43
-            ?> ? row <= 42 ?> ? row <= 41 ?> 134742594u32 |: 134743038u32 |: 134742016u32
-            |? row <= 44 ?> 134742016u32 |: 134742016u32
-        |? row <= 68
-        ?>
-            ? row <= 57
-            ?>
-                ? row <= 51
-                ?>
-                    ? row <= 48
-                    ?> ? row <= 47 ?> ? row <= 46 ?> 204996608u32 |: 0u32 |: 0u32
-                    |? row <= 50 ?> ? row <= 49 ?> 253440u32 |: 131840u32 |: 131328u32
-                |? row <= 54
-                ?> ? row <= 53 ?> ? row <= 52 ?> 131328u32 |: 131328u32 |: 4261544192u32
-                |? row <= 56 ?> ? row <= 55 ?> 33685760u32 |: 100794624u32 |: 67370752u32
-            |? row <= 63
-            ?>
-                ? row <= 60
-                ?> ? row <= 59 ?> ? row <= 58 ?> 131328u32 |: 100794624u32 |: 33685760u32
-                |? row <= 62 ?> ? row <= 61 ?> 4261544192u32 |: 253696u32 |: 0u32
-            |? row <= 66
-            ?> ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 67 ?> 13369344u32 |: 33292288u32
-        |? row <= 79
-        ?>
-            ? row <= 74
-            ?>
-                ? row <= 71
-                ?> ? row <= 70 ?> ? row <= 69 ?> 134086656u32 |: 268419072u32 |: 2147475456u32
-                |? row <= 73 ?> ? row <= 72 ?> 4294963200u32 |: 4294965248u32 |: 4294965248u32
-            |? row <= 77
-            ?> ? row <= 76 ?> ? row <= 75 ?> 4294966272u32 |: 4294966784u32 |: 4294966784u32
-            |? row <= 78 ?> 4294966784u32 |: 4294966784u32
-        |? row <= 85
-        ?>
-            ? row <= 82
-            ?> ? row <= 81 ?> ? row <= 80 ?> 4294966784u32 |: 4294967040u32 |: 4294967169u32
-            |? row <= 84 ?> ? row <= 83 ?> 4294967171u32 |: 4294967279u32 |: 4294967295u32
-        |? row <= 88
-        ?> ? row <= 87 ?> ? row <= 86 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
-        |? row <= 89 ?> 4294967295u32 |: 4294967295u32
-    |? row <= 45
-    ?>
-        ? row <= 22
-        ?>
-            ? row <= 11
-            ?>
-                ? row <= 5
-                ?>
-                    ? row <= 2
-                    ?> ? row <= 1 ?> ? row <= 0 ?> 68157440u32 |: 68157440u32 |: 68157440u32
-                    |? row <= 4 ?> ? row <= 3 ?> 68173760u32 |: 68165696u32 |: 68165696u32
-                |? row <= 8
-                ?> ? row <= 7 ?> ? row <= 6 ?> 68165696u32 |: 68167166u32 |: 133178435u32
-                |? row <= 10 ?> ? row <= 9 ?> 68166721u32 |: 68166657u32 |: 74458337u32
-            |? row <= 17
-            ?>
-                ? row <= 14
-                ?> ? row <= 13 ?> ? row <= 12 ?> 79708095u32 |: 125829120u32 |: 0u32
-                |? row <= 16 ?> ? row <= 15 ?> 132235136u32 |: 35721344u32 |: 35717248u32
-            |? row <= 20
-            ?> ? row <= 19 ?> ? row <= 18 ?> 35724160u32 |: 2166974u32 |: 71570u32
-            |? row <= 21 ?> 35722386u32 |: 2228098u32
-        |? row <= 34
-        ?>
-            ? row <= 28
-            ?>
-                ? row <= 25
-                ?> ? row <= 24 ?> ? row <= 23 ?> 3933330u32 |: 263326u32 |: 263298u32
-                |? row <= 27 ?> ? row <= 26 ?> 263298u32 |: 16516606u32 |: 0u32
-            |? row <= 31
-            ?> ? row <= 30 ?> ? row <= 29 ?> 0u32 |: 0u32 |: 0u32
-            |? row <= 33 ?> ? row <= 32 ?> 0u32 |: 0u32 |: 4177662u32
-        |? row <= 40
-        ?>
-            ? row <= 37
-            ?> ? row <= 36 ?> ? row <= 35 ?> 2105890u32 |: 2105890u32 |: 2105890u32
-            |? row <= 39 ?> ? row <= 38 ?> 2097152u32 |: 2097216u32 |: 2097152u32
-        |? row <= 43
-        ?> ? row <= 42 ?> ? row <= 41 ?> 0u32 |: 2105888u32 |: 2097698u32
-        |? row <= 44 ?> 2105890u32 |: 16382u32
-    |? row <= 68
-    ?>
-        ? row <= 57
-        ?>
-            ? row <= 51
-            ?>
-                ? row <= 48
-                ?> ? row <= 47 ?> ? row <= 46 ?> 2105344u32 |: 2236416u32 |: 2236416u32
-                |? row <= 50 ?> ? row <= 49 ?> 2236416u32 |: 4186112u32 |: 0u32
-            |? row <= 54
-            ?> ? row <= 53 ?> ? row <= 52 ?> 0u32 |: 0u32 |: 100663551u32
-            |? row <= 56 ?> ? row <= 55 ?> 33554560u32 |: 192u32 |: 33554496u32
-        |? row <= 63
-        ?>
-            ? row <= 60
-            ?> ? row <= 59 ?> ? row <= 58 ?> 33554496u32 |: 192u32 |: 100663424u32
-            |? row <= 62 ?> ? row <= 61 ?> 255u32 |: 0u32 |: 0u32
-        |? row <= 66
-        ?> ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: 0u32
-        |? row <= 67 ?> 4186112u32 |: 8386560u32
-    |? row <= 79
-    ?>
-        ? row <= 74
-        ?>
-            ? row <= 71
-            ?> ? row <= 70 ?> ? row <= 69 ?> 16776704u32 |: 33554304u32 |: 134217600u32
-            |? row <= 73 ?> ? row <= 72 ?> 134217665u32 |: 134217699u32 |: 134217727u32
-        |? row <= 77
-        ?> ? row <= 76 ?> ? row <= 75 ?> 134217727u32 |: 134217727u32 |: 134217727u32
-        |? row <= 78 ?> 134217727u32 |: 134217727u32
-    |? row <= 85
-    ?>
-        ? row <= 82
-        ?> ? row <= 81 ?> ? row <= 80 ?> 134217727u32 |: 134217727u32 |: 134217727u32
-        |? row <= 84 ?> ? row <= 83 ?> 134217727u32 |: 134217727u32 |: 134217727u32
-    |? row <= 88
-    ?> ? row <= 87 ?> ? row <= 86 ?> 134217727u32 |: 134217727u32 |: 262143u32
-    |? row <= 89 ?> 131071u32 |: 65535u32
+    ?> arena_sight_bits_outside word
+    |? word = 0 ?> arena_sight_bits_0 row |: ? word = 1 ?> arena_sight_bits_1 row |: arena_sight_bits_2 row
 
 :~ arena_sight_blocked (p : tile) : bool =
     ? inside_arena_spot p ?> arena_bit_set arena_sight_bits p |: !-
+
+:~ arena_protection_zone_dy35 (dx : i32) : bool =
+    (dx >= 7 && dx <= 14)
+    || (dx >= 21 && dx <= 23)
+    || (dx >= 25 && dx <= 27)
+    || (dx >= 29 && dx <= 31)
+    || (dx >= 33 && dx <= 40)
+
+:~ arena_protection_zone_dy36 (dx : i32) : bool =
+    (dx >= 7 && dx <= 14)
+    || (dx >= 21 && dx <= 23)
+    || (dx >= 25 && dx <= 27)
+    || (dx >= 29 && dx <= 31)
+    || (dx >= 33 && dx <= 40)
+
+:~ arena_protection_zone_11 (dx : i32) (dy : i32) : bool =
+    ? dy = 5 ?> (dx >= 33 && dx <= 40) |: !-
+
+:~ arena_protection_zone_10 (dx : i32) (dy : i32) : bool =
+    ? dy = 2
+    ?> dx >= 33 && dx <= 40
+    |? dy = 3
+    ?> dx >= 33 && dx <= 40
+    |? dy = 4 ?> (dx >= 33 && dx <= 40) |: arena_protection_zone_11 dx dy
+
+:~ arena_protection_zone_9 (dx : i32) (dy : i32) : bool =
+    ? dy = 0
+    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    |? dy = 1 ?> (dx >= 8 && dx <= 14) || (dx >= 33 && dx <= 40) |: arena_protection_zone_10 dx dy
+
+:~ arena_protection_zone_8 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 2)
+    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    |? dy = (0 - 1) ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40) |: arena_protection_zone_9 dx dy
+
+:~ arena_protection_zone_7 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 4)
+    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    |? dy = (0 - 3) ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40) |: arena_protection_zone_8 dx dy
+
+:~ arena_protection_zone_6 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 6)
+    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    |? dy = (0 - 5) ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40) |: arena_protection_zone_7 dx dy
+
+:~ arena_protection_zone_5 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 8)
+    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    |? dy = (0 - 7) ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40) |: arena_protection_zone_6 dx dy
+
+:~ arena_protection_zone_4 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 10)
+    ?> arena_protection_zone_dy35 dx
+    |? dy = (0 - 9) ?> arena_protection_zone_dy36 dx |: arena_protection_zone_5 dx dy
+
+:~ arena_protection_zone_3 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 20)
+    ?> dx >= 38 && dx <= 45
+    |? dy = (0 - 19)
+    ?> dx >= 38 && dx <= 45
+    |? dy = (0 - 18) ?> (dx >= 38 && dx <= 45) |: arena_protection_zone_4 dx dy
+
+:~ arena_protection_zone_2 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 23)
+    ?> dx >= 41 && dx <= 45
+    |? dy = (0 - 22)
+    ?> dx >= 41 && dx <= 45
+    |? dy = (0 - 21) ?> (dx >= 38 && dx <= 45) |: arena_protection_zone_3 dx dy
+
+:~ arena_protection_zone_1 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 26)
+    ?> dx >= 41 && dx <= 45
+    |? dy = (0 - 25)
+    ?> dx >= 41 && dx <= 45
+    |? dy = (0 - 24) ?> (dx >= 41 && dx <= 45) |: arena_protection_zone_2 dx dy
 
 :~ arena_protection_zone (dx : i32) (dy : i32) : bool =
     ? dy = (0 - 29)
     ?> (dx >= 41 && dx <= 43) || dx = 45
     |? dy = (0 - 28)
     ?> (dx >= 41 && dx <= 43) || dx = 45
-    |? dy = (0 - 27)
-    ?> dx >= 40 && dx <= 45
-    |? dy = (0 - 26)
-    ?> dx >= 41 && dx <= 45
-    |? dy = (0 - 25)
-    ?> dx >= 41 && dx <= 45
-    |? dy = (0 - 24)
-    ?> dx >= 41 && dx <= 45
-    |? dy = (0 - 23)
-    ?> dx >= 41 && dx <= 45
-    |? dy = (0 - 22)
-    ?> dx >= 41 && dx <= 45
-    |? dy = (0 - 21)
-    ?> dx >= 38 && dx <= 45
-    |? dy = (0 - 20)
-    ?> dx >= 38 && dx <= 45
-    |? dy = (0 - 19)
-    ?> dx >= 38 && dx <= 45
-    |? dy = (0 - 18)
-    ?> dx >= 38 && dx <= 45
-    |? dy = (0 - 10)
-    ?>
-        (dx >= 7 && dx <= 14)
-        || (dx >= 21 && dx <= 23)
-        || (dx >= 25 && dx <= 27)
-        || (dx >= 29 && dx <= 31)
-        || (dx >= 33 && dx <= 40)
-    |? dy = (0 - 9)
-    ?>
-        (dx >= 7 && dx <= 14)
-        || (dx >= 21 && dx <= 23)
-        || (dx >= 25 && dx <= 27)
-        || (dx >= 29 && dx <= 31)
-        || (dx >= 33 && dx <= 40)
-    |? dy = (0 - 8)
-    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
-    |? dy = (0 - 7)
-    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
-    |? dy = (0 - 6)
-    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
-    |? dy = (0 - 5)
-    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
-    |? dy = (0 - 4)
-    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
-    |? dy = (0 - 3)
-    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
-    |? dy = (0 - 2)
-    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
-    |? dy = (0 - 1)
-    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
-    |? dy = 0
-    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
-    |? dy = 1
-    ?> (dx >= 8 && dx <= 14) || (dx >= 33 && dx <= 40)
-    |? dy = 2
-    ?> dx >= 33 && dx <= 40
-    |? dy = 3
-    ?> dx >= 33 && dx <= 40
-    |? dy = 4
-    ?> dx >= 33 && dx <= 40
-    |? dy = 5
-    ?> dx >= 33 && dx <= 40
-    |: !-
+    |? dy = (0 - 27) ?> (dx >= 40 && dx <= 45) |: arena_protection_zone_1 dx dy
 
 := arena_spot_world_x () : i32 = 1933
 := arena_spot_world_y () : i32 = 1350

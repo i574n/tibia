@@ -1,4 +1,4 @@
-param([int] $TimeoutSeconds = 240, [int] $AxeSkill = 30, [string] $Monster = 'troll', [int] $MonsterCount = 3, [string] $ProbeBody = 'competitor', [int] $SpawnRadius = 2, [ValidateSet('none', 'vBot', 'nExBot')] [string] $Bot = 'none', [switch] $NoParity, [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [string] $SummonAt = '1932,1352', [string] $KnightAt = '1932,1349', [string] $SpawnFile = '', [string] $Ally = '', [string] $AllyAt = '')
+param([int] $TimeoutSeconds = 240, [int] $AxeSkill = 30, [string] $Monster = 'troll', [int] $MonsterCount = 3, [string] $ProbeBody = 'competitor', [int] $SpawnRadius = 2, [ValidateSet('none', 'vBot', 'nExBot')] [string] $Bot = 'none', [switch] $NoParity, [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [string] $SummonAt = '1932,1352', [string] $KnightAt = '1932,1349', [string] $SpawnFile = '', [string] $Ally = '', [string] $AllyAt = '', [switch] $ExternalWorld)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'paths.ps1')
 $root = $TibiaWorld
@@ -23,15 +23,17 @@ $summon = Join-Path $TibiaArenaTarget 'summon.lua'
 $kinds = @($mix | ForEach-Object { $_.Name })
 $MonsterCount = ($mix | Measure-Object -Property Count -Sum).Sum
 
-Get-Process canary -ErrorAction SilentlyContinue | Stop-Process -Force
-Start-Sleep -Seconds 3
-& $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary -e 'select 1' 2>$null | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Start-Process (Join-Path $MariaDbBin 'mariadbd.exe') -ArgumentList "--datadir=$(Join-Path $root 'mariadb-data')", '--port=3317', '--bind-address=127.0.0.1', '--innodb-buffer-pool-size=128M' -WindowStyle Hidden | Out-Null
-    foreach ($attempt in 1..60) {
-        Start-Sleep -Milliseconds 500
-        & $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary -e 'select 1' 2>$null | Out-Null
-        if ($LASTEXITCODE -eq 0) { break }
+if (-not $ExternalWorld) {
+    Get-Process canary -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep -Seconds 3
+    & $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary -e 'select 1' 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Start-Process (Join-Path $MariaDbBin 'mariadbd.exe') -ArgumentList "--datadir=$(Join-Path $root 'mariadb-data')", '--port=3317', '--bind-address=127.0.0.1', '--innodb-buffer-pool-size=128M' -WindowStyle Hidden | Out-Null
+        foreach ($attempt in 1..60) {
+            Start-Sleep -Milliseconds 500
+            & $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary -e 'select 1' 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) { break }
+        }
     }
 }
 $experience = [long](50 * ([long]$Level * $Level * $Level - 6 * $Level * $Level + 17 * $Level - 12) / 3)
@@ -39,7 +41,7 @@ $healthMax = 185 + 15 * ($Level - 8)
 $manaMax = 90 + 5 * ($Level - 8)
 $env:TIBIA_ARENA_HEAL_BELOW = "$HealBelow"
 $env:TIBIA_ARENA_STRIKE_ABOVE = "$StrikeAbove"
-& $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary canary -e "update players set level = $Level, experience = $experience, healthmax = $healthMax, health = $healthMax, manamax = $manaMax, mana = $manaMax, skill_axe = $AxeSkill, skill_shielding = 11, skill_shielding_tries = 0, posx = $knightX, posy = $knightY, posz = 7 where name = 'Knight Sample'"
+if (-not $ExternalWorld) { & $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary canary -e "update players set level = $Level, experience = $experience, healthmax = $healthMax, health = $healthMax, manamax = $manaMax, mana = $manaMax, skill_axe = $AxeSkill, skill_shielding = 11, skill_shielding_tries = 0, posx = $knightX, posy = $knightY, posz = 7 where name = 'Knight Sample'" }
 & $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary canary -e "delete pi from player_items pi join players p on p.id = pi.player_id where p.name = 'Knight Sample'; insert into player_items (player_id, pid, sid, itemtype, count, attributes) select p.id, v.pid, v.sid, v.itemtype, v.count, '' from players p join (select 1 as pid, 101 as sid, 3354 as itemtype, 1 as count union all select 3, 102, 2853, 1 union all select 4, 103, 3359, 1 union all select 5, 104, 3425, 1 union all select 6, 105, 7773, 1 union all select 7, 106, 3372, 1 union all select 8, 107, 3552, 1 union all select 11, 108, 23396, 1 union all select 102, 109, 266, 100) v where p.name = 'Knight Sample'"
 if ($Ally) {
     $allyX, $allyY = $AllyAt -split ','
@@ -48,27 +50,28 @@ if ($Ally) {
 }
 $env:LUA_PATH = $null
 $env:LUA_CPATH = $null
-[IO.File]::WriteAllText($worldLog, '')
+if (-not $ExternalWorld) { [IO.File]::WriteAllText($worldLog, '') }
 $serverSpawns = Join-Path $canaryDir 'data-canary\world\canary-monster.xml'
 $keptSpawns = "$serverSpawns.kept"
-if (Test-Path $keptSpawns) { Move-Item $keptSpawns $serverSpawns -Force }
+if ($ExternalWorld -and ($SpawnFile -or $Ally)) { throw 'ExternalWorld runs leave spawns and config.lua to the world owner; SpawnFile and Ally need the self-managed world' }
+if (-not $ExternalWorld -and (Test-Path $keptSpawns)) { Move-Item $keptSpawns $serverSpawns -Force }
 if ($SpawnFile) {
     Copy-Item $serverSpawns $keptSpawns
     Copy-Item $SpawnFile $serverSpawns -Force
 }
 $serverConfig = Join-Path $canaryDir 'config.lua'
 $keptConfig = "$serverConfig.kept"
-if (Test-Path $keptConfig) { Move-Item $keptConfig $serverConfig -Force }
+if (-not $ExternalWorld -and (Test-Path $keptConfig)) { Move-Item $keptConfig $serverConfig -Force }
 if ($Ally) {
     $configText = [IO.File]::ReadAllText($serverConfig)
     if (-not $configText.Contains('maxPlayersOnlinePerAccount = 1') -or -not $configText.Contains('maxPlayersOutsidePZPerAccount = 1')) { throw 'config.lua lacks the per-account limits the duo raises' }
     Copy-Item $serverConfig $keptConfig
     [IO.File]::WriteAllText($serverConfig, $configText.Replace('maxPlayersOnlinePerAccount = 1', 'maxPlayersOnlinePerAccount = 2').Replace('maxPlayersOutsidePZPerAccount = 1', 'maxPlayersOutsidePZPerAccount = 2'))
 }
-Start-Process (Join-Path $canaryDir 'canary.exe') -WorkingDirectory $canaryDir -RedirectStandardOutput $worldLog -RedirectStandardError (Join-Path $canaryDir 'world.err') -WindowStyle Hidden | Out-Null
+if (-not $ExternalWorld) { Start-Process (Join-Path $canaryDir 'canary.exe') -WorkingDirectory $canaryDir -RedirectStandardOutput $worldLog -RedirectStandardError (Join-Path $canaryDir 'world.err') -WindowStyle Hidden | Out-Null }
 try {
     $deadline = (Get-Date).AddSeconds(120)
-    while (-not (Select-String -Path $worldLog -Pattern 'server online!' -Quiet -ErrorAction SilentlyContinue)) {
+    while (-not $ExternalWorld -and -not (Select-String -Path $worldLog -Pattern 'server online!' -Quiet -ErrorAction SilentlyContinue)) {
         if ((Get-Date) -gt $deadline) { throw 'canary did not come online in 120 s' }
         Start-Sleep -Seconds 1
     }
@@ -171,9 +174,11 @@ try {
     Start-Sleep -Seconds 5
 } finally {
     Copy-Item (Join-Path $root 'otclient-src\otclientrc.lua.orig') (Join-Path $root 'otclient-src\otclientrc.lua') -Force -ErrorAction SilentlyContinue
-    Get-Process canary -ErrorAction SilentlyContinue | Stop-Process -Force
-    if (Test-Path $keptSpawns) { Move-Item $keptSpawns $serverSpawns -Force }
-    if (Test-Path $keptConfig) { Move-Item $keptConfig $serverConfig -Force }
+    if (-not $ExternalWorld) {
+        Get-Process canary -ErrorAction SilentlyContinue | Stop-Process -Force
+        if (Test-Path $keptSpawns) { Move-Item $keptSpawns $serverSpawns -Force }
+        if (Test-Path $keptConfig) { Move-Item $keptConfig $serverConfig -Force }
+    }
 }
 & $mariadb --host=127.0.0.1 --port=3317 -uroot -pcanary canary -e "select level, experience, health, skill_axe from players where name = 'Knight Sample'"
 '== world stopped'

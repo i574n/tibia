@@ -12,31 +12,26 @@ test client static =
 
 :== spot = { x : i32; y : i32; z : i32 }
 
+:! host_value = $'any'
+
+:= host_text (v : host_value) : string = $'tostring(!v)' : string
+
 := after (ms : i32) (f : () -> ()) : () = $'scheduleEvent(!f, !ms)' : ()
 
 := now_ms () : i32 = $'g_clock.millis()' : i32
 
 := wall_seconds () : i32 = $'os.time()' : i32
 
-:! lua_number = $'any'
-
-:= number_of_text (text : string) : lua_number = $'tonumber(!text)' : lua_number
-
-:= number_present (n : lua_number) : bool = $'(!n) ~= nil' : bool
-
-:= number_i32 (n : lua_number) : i32 = $'!n' : i32
-
 :~ env_text (name : string) (fallback : string) : string =
     := value = env.get_environment_variable name
     ? value = "" ?> fallback |: value
 
 :~ env_i32 (name : string) (fallback : i32) : i32 =
-    := n = number_of_text (env.get_environment_variable name)
-    ? number_present n ?> number_i32 n |: fallback
+    optionm'.default_value fallback (convert.try_convert (sm'.trim (env.get_environment_variable name)))
 
 := seed_random_from_clock () : () = $'math.randomseed(os.time())' : ()
 
-:= env_is (name : string) (value : string) : bool = $'os.getenv(!name) == (!value)' : bool
+:= env_is (name : string) (value : string) : bool = env.get_environment_variable name = value
 
 := spot_of (p : native_position) : spot = { x = $'!p.x' : i32; y = $'!p.y' : i32; z = $'!p.z' : i32 }
 
@@ -161,7 +156,7 @@ test client static =
 
 := fight_balanced () : () = $'g_game.setFightMode(FightBalanced)' : ()
 
-:= fight_mode_text () : string = $'tostring(g_game.getFightMode())' : string
+:= fight_mode_text () : string = host_text ($'g_game.getFightMode()' : host_value)
 
 := following_someone () : bool = $'g_game.getFollowingCreature() ~= nil' : bool
 
@@ -323,7 +318,7 @@ test client static =
 
 := position_known (p : native_position) : bool = $'(!p) ~= nil' : bool
 
-:= player_speed () : string = $'tostring(g_game.getLocalPlayer():getSpeed())' : string
+:= player_speed () : string = host_text ($'g_game.getLocalPlayer():getSpeed()' : host_value)
 
 :! position_handler = $'any'
 
@@ -378,10 +373,6 @@ test client static =
     $'table.insert(TibiaProbeLog, !line)' : ()
     $'g_logger.info(!line)' : ()
     log_flush ()
-
-:! host_value = $'any'
-
-:= host_text (v : host_value) : string = $'tostring(!v)' : string
 
 :! game_handler = $'any'
 

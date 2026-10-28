@@ -66,23 +66,39 @@ test network static =
 
 := weight (weights w) (i : i32) : i32 = index w i
 
+:= feature_flag (b : bool) : i32 = ? b ?> one () |: 0
+
+:= sensed_distance (distance : i32) : i32 = (? distance > 7 ?> 7 |: distance) * 32
+
+:= put (x : array i32) (f : feature) (value : i32) : () = set x (feature_slot f) value
+
+:= biased () : array i32 =
+    := x = filled (input_count ()) 0
+    put x Bias (one ())
+    x
+
+:= own_slots (health : i32) (attackers : i32) (x : array i32) : array i32 =
+    put x HealthFraction health
+    put x Attackers (attackers * attacker_unit ())
+    x
+
+:= ready_slots (heal : bool) (strike : bool) (x : array i32) : array i32 =
+    put x HealReady (feature_flag heal)
+    put x StrikeReady (feature_flag strike)
+    x
+
+:= target_slots (target : i32) (distance : i32) (flees : bool) (x : array i32) : array i32 =
+    put x TargetHealth target
+    put x TargetDistance (sensed_distance distance)
+    put x TargetFleeing (feature_flag flees)
+    x
+
 := inputs_of
-    (health_fraction : i32) (attackers : i32) (target_health : i32) (target_distance : i32) (heal_ready : bool)
-    (strike_ready : bool) (target_fleeing : bool)
+    (health : i32) (attackers : i32) (target : i32) (distance : i32) (heal : bool) (strike : bool) (flees : bool)
     : inputs
     =
-    := x = filled (input_count ()) 0
-    := flag b = ? b ?> one () |: 0
-    := put f value = set x (feature_slot f) value
-    put HealthFraction health_fraction
-    put Attackers (attackers * attacker_unit ())
-    put TargetHealth target_health
-    put TargetDistance ((? target_distance > 7 ?> 7 |: target_distance) * 32)
-    put HealReady (flag heal_ready)
-    put StrikeReady (flag strike_ready)
-    put TargetFleeing (flag target_fleeing)
-    put Bias (one ())
-    inputs x
+    biased () |> own_slots health attackers |> ready_slots heal strike |> target_slots target distance flees
+    |> inputs
 
 := hidden_unit (w : weights) (inputs x) (j : i32) : i32 =
     :~ ^ sum (i : i32) (total : i32) : i32 =
