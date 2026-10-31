@@ -1,0 +1,110 @@
+///- --package .
+test world_port static =
+    :< testing
+
+:< sm'_operators
+
+:== world_programs =
+    {
+        directory : string
+        server : string
+        server_args : list string
+        log : string
+        online_line : string
+    }
+
+:== world = { running : process.started; programs : world_programs }
+
+:= world_started (programs : world_programs) : world =
+    {
+        running = process.start_logging programs.directory programs.server programs.server_args programs.log
+        programs = programs
+    }
+
+:= world_online (w : world) : bool = file_system.read_all_text w.programs.log |> sm'.contains w.programs.online_line
+
+:= world_event_within (w : world) (ms : i32) : option arena_host.host_event =
+    ?= process.await_exit_within w.running ms ?|
+    | Some _ => Some arena_host.WorldCrashed
+    | None => ? world_online w ?> Some arena_host.WorldReady |: None
+
+:= world_stopped (w : world) : () = process.kill_tree_of_pid (process.started_pid w.running)
+
+:= stopped_if_running (current : option world) : () =
+    ?= current ?|
+    | Some w => world_stopped w
+    | None => ()
+
+:= restarted (programs : world_programs) (current : option world) : option world =
+    stopped_if_running current
+    Some (world_started programs)
+
+:= released (current : option world) : option world =
+    stopped_if_running current
+    None
+
+:= world_changed (programs : world_programs) (current : option world) (c : arena_host.host_command) : option world =
+    ? c = arena_host.RestartWorld ?> restarted programs current
+    |? c = arena_host.ReleaseWindow ?> released current
+    |: current
+
+:= world_obeyed (programs : world_programs) (current : option world) (c : arena_host.host_command) : option world =
+    ? c = arena_host.StartWorld ?> Some (world_started programs) |: world_changed programs current c
+
+:= exited (s : process.started) (ms : i32) : bool =
+    ?= process.await_exit_within s ms ?|
+    | Some _ => !+
+    | None => !-
+
+:= absent (current : option world) : bool =
+    ?= current ?|
+    | Some _ => !-
+    | None => !+
+
+:= fake_server_args (line : string) : list string =
+    [ "-u"; "-c"; "import time; print('" ++# line ++# "'); time.sleep(30)" ]
+
+:= fake_server (line : string) : world_programs =
+    {
+        directory = "."
+        server = "python"
+        server_args = fake_server_args line
+        log = "world-port-fake.log"
+        online_line = ">> server online!"
+    }
+
+:~ ^ settled (w : world) (tries : i32) : option arena_host.host_event =
+    ?= world_event_within w 50i32 ?|
+    | Some e => Some e
+    | None => ? tries > 0i32 ?> settled w (tries - 1i32) |: None
+
+:= ready_within (w : world) (tries : i32) : bool = settled w tries = Some arena_host.WorldReady
+
+:= crashed_within (w : world) (ms : i32) : bool = world_event_within w ms = Some arena_host.WorldCrashed
+
+:= exits_within (w : world) : bool = exited w.running 10000i32
+
+:= expect_world (current : option world) : world =
+    ?= current ?|
+    | Some w => w
+    | None => failwith "world_port: a start command left no world"
+
+:= obeyed_world (p : world_programs) (current : option world) (c : arena_host.host_command) : world =
+    expect_world (world_obeyed p current c)
+
+:= cycled (p : world_programs) : world * world * option world =
+    := first = obeyed_world p None arena_host.StartWorld
+    := second = obeyed_world p (Some first) arena_host.RestartWorld
+    first, second, world_obeyed p (Some second) arena_host.ReleaseWindow
+
+///> gleam
+test a_world_reports_online_then_crashed_after_a_kill =
+    := w = world_started (fake_server ">> server online!")
+    ready_within w 400i32 |> _assert_eq !+
+    world_stopped w
+    crashed_within w 10000i32 |> _assert_eq !+
+
+///> gleam
+test the_world_owner_restarts_and_releases_its_server =
+    := first, second, released = cycled (fake_server ">> server online!")
+    (exits_within first, exits_within second, absent released) |> _assert_eq (!+, !+, !+)

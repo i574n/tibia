@@ -1,0 +1,160 @@
+///- --package .
+test character static =
+    :< testing
+
+:< sm'_operators
+
+:== character = { name : string; level : i32; axe_skill : i32; x : i32; y : i32 }
+
+:= experience_for (level : i32) : i64 =
+    := l : i64 = conv level
+    50 * (l * l * l - 6 * l * l + 17 * l - 12) / 3
+
+:= health_max_for (level : i32) : i32 = 185 + 15 * (level - 8)
+
+:= mana_max_for (level : i32) : i32 = 90 + 5 * (level - 8)
+
+:= vitals_sql (c : character) : string =
+    := health, mana = health_max_for c.level, mana_max_for c.level
+    ", healthmax = " ++#? health ++# ", health = " ++#? health ++# ", manamax = " ++#? mana ++# ", mana = " ++#? mana
+
+:= skills_sql (c : character) : string =
+    ", skill_axe = " ++#? c.axe_skill ++# ", skill_shielding = 11, skill_shielding_tries = 0"
+
+:= position_sql (c : character) : string = ", posx = " ++#? c.x ++# ", posy = " ++#? c.y ++# ", posz = 7"
+
+:= reset_sql (c : character) : string =
+    := level = "update players set level = " ++#? c.level ++# ", experience = " ++#? experience_for c.level
+    level ++# vitals_sql c ++# skills_sql c ++# position_sql c ++# " where name = '" ++# c.name ++# "'"
+
+///> c
+///> lua
+///> gleam
+test experience_matches_the_arena_harness =
+    := ~level = 30i32
+    experience_for level |> _assert_eq 368300i64
+    experience_for 8 |> _assert_eq 4200i64
+    experience_for 200 |> _assert_eq 129389800i64
+
+///> c
+///> lua
+///> gleam
+test health_and_mana_maxima_match_the_arena_harness =
+    := ~level = 30i32
+    (health_max_for level, mana_max_for level) |> _assert_eq (515i32, 200i32)
+
+:= expected_reset_head () : string =
+    "update players set level = 30, experience = 368300, healthmax = 515, health = 515, manamax = 200, mana = 200"
+
+:= expected_reset_tail () : string =
+    ", skill_axe = 60, skill_shielding = 11, skill_shielding_tries = 0, posx = 1932, posy = 1349, posz = 7 where "
+    ^^ "name = 'Knight Sample'"
+
+///> c
+///> lua
+///> gleam
+test the_reset_statement_matches_the_powershell_text =
+    := ~level = 30i32
+    reset_sql { name = "Knight Sample"; level = level; axe_skill = 60; x = 1932; y = 1349 }
+    |> _assert_eq (expected_reset_head () ++# expected_reset_tail ())
+
+:== item = { pid : i32; sid : i32; itemtype : i32; count : i32 }
+
+:= kit_slots_1_to_4 () : list item =
+    [
+        { pid = 1; sid = 101; itemtype = 3354; count = 1 };
+        { pid = 3; sid = 102; itemtype = 2853; count = 1 };
+        { pid = 4; sid = 103; itemtype = 3359; count = 1 }
+    ]
+
+:= kit_slots_5_to_7 () : list item =
+    [
+        { pid = 5; sid = 104; itemtype = 3425; count = 1 };
+        { pid = 6; sid = 105; itemtype = 7773; count = 1 };
+        { pid = 7; sid = 106; itemtype = 3372; count = 1 }
+    ]
+
+:= kit_slots_8_and_up () : list item =
+    [
+        { pid = 8; sid = 107; itemtype = 3552; count = 1 };
+        { pid = 11; sid = 108; itemtype = 23396; count = 1 };
+        { pid = 102; sid = 109; itemtype = 266; count = 100 }
+    ]
+
+:= canonical_kit () : list item =
+    listm.append (kit_slots_1_to_4 ()) (listm.append (kit_slots_5_to_7 ()) (kit_slots_8_and_up ()))
+
+:= first_kit_row (i : item) : string =
+    "select " ++#? i.pid ++# " as pid, " ++#? i.sid ++# " as sid, " ++#? i.itemtype ++# " as itemtype, "
+    ++#? i.count ++# " as count"
+
+:= later_kit_row (i : item) : string =
+    " union all select " ++#? i.pid ++# ", " ++#? i.sid ++# ", " ++#? i.itemtype ++# ", " ++#? i.count
+
+:= kit_rows (items : list item) : string =
+    ?= items ?|
+    | head :: tail => listm.fold (\ text i => text ++# later_kit_row i) (first_kit_row head) tail
+    | [] => ""
+
+:= kit_delete_sql (name : string) : string =
+    "delete pi from player_items pi join players p on p.id = pi.player_id where p.name = '" ++# name ++# "'; "
+
+:= kit_insert_head () : string =
+    "insert into player_items (player_id, pid, sid, itemtype, count, attributes) select p.id, v.pid, v.sid, "
+    ^^ "v.itemtype, v.count, '' from players p join ("
+
+:= kit_sql (name : string) (items : list item) : string =
+    kit_delete_sql name ++# kit_insert_head () ++# kit_rows items ++# ") v where p.name = '" ++# name ++# "'"
+
+:= expected_kit_delete () : string =
+    "delete pi from player_items pi join players p on p.id = pi.player_id where p.name = 'Knight Sample'; "
+
+:= expected_kit_first_rows () : string =
+    "select 1 as pid, 101 as sid, 3354 as itemtype, 1 as count union all select 3, 102, 2853, 1 union all select 4, "
+    ^^ "103, 3359, 1 union all select 5, 104, 3425, 1 "
+
+:= expected_kit_last_rows () : string =
+    "union all select 6, 105, 7773, 1 union all select 7, 106, 3372, 1 union all select 8, 107, 3552, 1 union all "
+    ^^ "select 11, 108, 23396, 1 union all select 102, 109, 266, 100) v where p.name = 'Knight Sample'"
+
+:= expected_kit_statement () : string =
+    expected_kit_delete () ++# kit_insert_head () ++# expected_kit_first_rows () ++# expected_kit_last_rows ()
+
+///> c
+///> lua
+///> gleam
+test the_kit_statement_matches_the_powershell_text =
+    := ~name = "Knight Sample"
+    kit_sql name (canonical_kit ()) |> _assert_eq (expected_kit_statement ())
+
+:| config_edit =
+    | Raised : string
+    | LimitsMissing
+
+:= online_limit (n : i32) : string = "maxPlayersOnlinePerAccount = " ++#? n
+
+:= outside_limit (n : i32) : string = "maxPlayersOutsidePZPerAccount = " ++#? n
+
+:= raised_limits (config : string) : string =
+    config |> sm'.replace (online_limit 1) (online_limit 2) |> sm'.replace (outside_limit 1) (outside_limit 2)
+
+:= with_duo_limits (config : string) : config_edit =
+    ? sm'.contains (online_limit 1) config && sm'.contains (outside_limit 1) config
+    ?> Raised (raised_limits config)
+    |: LimitsMissing
+
+:= single_limits_config () : string =
+    "serverName = x\nmaxPlayersOnlinePerAccount = 1\nmaxPlayersOutsidePZPerAccount = 1\n"
+
+///> lua
+///> gleam
+test the_duo_raises_both_per_account_limits =
+    := ~config = single_limits_config ()
+    with_duo_limits config
+    |> _assert_eq (Raised "serverName = x\nmaxPlayersOnlinePerAccount = 2\nmaxPlayersOutsidePZPerAccount = 2\n")
+
+///> lua
+///> gleam
+test the_duo_refuses_a_config_without_both_limits =
+    := ~prefix = "serverName = x\n"
+    with_duo_limits (prefix ++# "maxPlayersOnlinePerAccount = 1\n") |> _assert_eq LimitsMissing

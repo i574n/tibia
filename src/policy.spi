@@ -1,0 +1,243 @@
+///- --package .
+test policy static =
+    :< testing
+
+:== thresholds = { heal_below : i32; strike_above : i32 }
+
+:| reach =
+    | InReach
+    | OutOfReach
+    | NoTarget
+
+:== observation = { health : i32; heal_ready : bool; strike_ready : bool; target : reach }
+
+:| engagement =
+    | Strike
+    | Approach
+    | Hold
+
+:== candidate = { is_current : bool; distance : i32; health_percent : i32 }
+
+:= evolved_against_cyclops () : thresholds = { heal_below = 124; strike_above = 23 }
+
+:== adaptive = { heal_base : i32; heal_per_attacker : i32; strike_above : i32; retreat_at : i32 }
+
+:= thresholds_of (a : adaptive) (attackers : i32) : thresholds =
+    { heal_below = a.heal_base + a.heal_per_attacker * attackers; strike_above = a.strike_above }
+
+:= never_retreat () : i32 = 99
+
+:= fixed (t : thresholds) : adaptive =
+    { heal_base = t.heal_below; heal_per_attacker = 0; strike_above = t.strike_above; retreat_at = never_retreat () }
+
+:= retreats (a : adaptive) (attackers : i32) : bool = attackers >= a.retreat_at
+
+:| temperament =
+    | Stands
+    | Flees
+
+:== by_temperament a = { standing : a; fleeing : a }
+
+:== temperate = { heal_base : i32; heal_per : by_temperament i32; strike_above : i32; retreat_at : by_temperament i32 }
+
+:= temperate_thresholds (r : temperate) (crowd : by_temperament i32) : thresholds =
+    {
+        heal_below = r.heal_base + r.heal_per.standing * crowd.standing + r.heal_per.fleeing * crowd.fleeing
+        strike_above = r.strike_above
+    }
+
+:= temperate_retreats (r : temperate) (crowd : by_temperament i32) : bool =
+    crowd.standing >= r.retreat_at.standing || crowd.fleeing >= r.retreat_at.fleeing
+
+:= heals (t : thresholds) (o : observation) : bool =
+    o.heal_ready && o.health < t.heal_below
+
+:= engages (t : thresholds) (o : observation) : engagement =
+    ?= o.target ?|
+    | InReach => ? o.strike_ready && o.health >= t.strike_above ?> Strike |: Hold
+    | OutOfReach => ? o.health >= t.strike_above ?> Approach |: Hold
+    | NoTarget => Hold
+
+:= in_reach (c : candidate) : bool = c.distance <= 1
+
+:== aim = { current : i32; reach : i32; health : i32; distance : i32 }
+
+:| targeting =
+    | ReachFirst
+    | CurrentFirst
+    | Scored : aim
+
+:= weaker_or_nearer (a : candidate) (b : candidate) : bool =
+    ? a.health_percent <> b.health_percent ?> a.health_percent < b.health_percent
+    |: a.distance < b.distance
+
+:= aim_score (w : aim) (c : candidate) : i32 =
+    ? c.is_current
+    ?> w.current
+    |: 0
+    + (? in_reach c ?> w.reach |: 0)
+    + w.health * c.health_percent / 100
+    + w.distance * c.distance
+
+:= reach_first (a : candidate) (b : candidate) : bool =
+    ? in_reach a <> in_reach b ?> in_reach a
+    |? a.is_current <> b.is_current ?> a.is_current
+    |: weaker_or_nearer a b
+
+:= current_first (a : candidate) (b : candidate) : bool =
+    ? a.is_current <> b.is_current ?> a.is_current
+    |? in_reach a <> in_reach b ?> in_reach a
+    |: weaker_or_nearer a b
+
+:= scored_first (w : aim) (a : candidate) (b : candidate) : bool =
+    := sa, sb = aim_score w a, aim_score w b
+    ? sa <> sb ?> sa > sb |: weaker_or_nearer a b
+
+:= prefers_by (order : targeting) (a : candidate) (b : candidate) : bool =
+    ?= order ?|
+    | ReachFirst => reach_first a b
+    | CurrentFirst => current_first a b
+    | Scored w => scored_first w a b
+
+:= prefers (a : candidate) (b : candidate) : bool = prefers_by ReachFirst a b
+
+:= engagement_code (e : engagement) : i32 =
+    ?= e ?|
+    | Strike => 1
+    | Approach => 2
+    | Hold => 0
+
+:= sighting (health : i32) (heal_ready : bool) (strike_ready : bool) (target : reach) : observation =
+    { health = health; heal_ready = heal_ready; strike_ready = strike_ready; target = target }
+
+:= aimed (current : bool) (distance : i32) (health : i32) : candidate =
+    { is_current = current; distance = distance; health_percent = health }
+
+:= heals_now (o : observation) : bool = heals (evolved_against_cyclops ()) o
+
+:= engaged_code (o : observation) : i32 = engagement_code (engages (evolved_against_cyclops ()) o)
+
+///> c
+///> lua
+test heals_only_below_threshold_when_ready =
+    := ~health = 100i32
+    heals_now (sighting health !+ !+ InReach) |> _assert_eq !+
+    heals_now (sighting health !- !+ InReach) |> _assert_eq !-
+
+///> c
+///> lua
+test no_heal_at_the_threshold =
+    := ~health = 100i32
+    heals_now (sighting (health + 24) !+ !+ InReach) |> _assert_eq !-
+
+///> c
+///> lua
+test strikes_only_in_reach_ready_and_healthy_enough =
+    := ~health = 23i32
+    engaged_code (sighting health !+ !+ InReach) |> _assert_eq 1i32
+    engaged_code (sighting (health - 1) !+ !+ InReach) |> _assert_eq 0i32
+
+///> c
+///> lua
+test no_strike_while_the_strike_cools_down =
+    := ~health = 23i32
+    engaged_code (sighting health !+ !- InReach) |> _assert_eq 0i32
+    engaged_code (sighting health !+ !+ NoTarget) |> _assert_eq 0i32
+
+///> c
+///> lua
+test approaches_out_of_reach_only_when_healthy_enough =
+    := ~health = 23i32
+    engaged_code (sighting health !+ !+ OutOfReach) |> _assert_eq 2i32
+    engaged_code (sighting (health - 1) !+ !+ OutOfReach) |> _assert_eq 0i32
+
+///> c
+test strike_is_not_a_bool fails "Unification failure" =
+    engages (evolved_against_cyclops ()) { health = 50; heal_ready = !+; strike_ready = !+; target = InReach }
+    |> _assert_eq !+
+
+///> c
+///> lua
+test prefers_reach_then_current =
+    := ~far = 3i32
+    prefers (aimed !- 1 90) (aimed !+ far 10) |> _assert_eq !+
+    prefers (aimed !+ 1 90) (aimed !- 1 10) |> _assert_eq !+
+
+///> c
+///> lua
+test prefers_the_weakest_then_the_nearest =
+    := ~far = 3i32
+    prefers (aimed !- 1 40) (aimed !- 1 60) |> _assert_eq !+
+    prefers (aimed !- far 50) (aimed !- (far - 1) 50) |> _assert_eq !-
+
+///> wgsl
+test decisions_on_gpu =
+    := ~health = 23i32
+    := s, a = engaged_code (sighting health !+ !+ InReach), engaged_code (sighting health !+ !+ OutOfReach)
+    ? s = 1i32 && a = 2i32 && heals_now (sighting health !+ !+ InReach) ?> 0i32 |: 1i32
+
+///> c
+///> lua
+test current_first_keeps_a_fleeing_target =
+    := ~far = 4i32
+    := fleeing, fresh = aimed !+ far 20, aimed !- 1 100
+    prefers_by CurrentFirst fleeing fresh |> _assert_eq !+
+    prefers_by ReachFirst fleeing fresh |> _assert_eq !-
+
+:= sample_adaptive () : adaptive = { heal_base = 60; heal_per_attacker = 25; strike_above = 10; retreat_at = 2 }
+
+///> c
+test adaptive_rules_retreat_from_a_crowd =
+    := ~attackers = 3i32
+    retreats (sample_adaptive ()) attackers |> _assert_eq !+
+    retreats (fixed (evolved_against_cyclops ())) attackers |> _assert_eq !-
+
+///> c
+test adaptive_healing_rises_with_attackers =
+    := ~attackers = 3i32
+    (thresholds_of (sample_adaptive ()) attackers).heal_below |> _assert_eq 135i32
+    (thresholds_of (sample_adaptive ()) 0).heal_below |> _assert_eq 60i32
+
+///> c
+test fixed_rules_keep_their_heal_threshold =
+    := ~attackers = 3i32
+    (thresholds_of (fixed (evolved_against_cyclops ())) attackers).heal_below |> _assert_eq 124i32
+
+:= sample_temperate () : temperate =
+    {
+        heal_base = 40
+        heal_per = { standing = 100; fleeing = 5 }
+        strike_above = 0
+        retreat_at = { standing = 2; fleeing = never_retreat () }
+    }
+
+:= heal_below_with (standing : i32) (fleeing : i32) : i32 =
+    (temperate_thresholds (sample_temperate ()) { standing = standing; fleeing = fleeing }).heal_below
+
+:= retreats_with (standing : i32) (fleeing : i32) : bool =
+    temperate_retreats (sample_temperate ()) { standing = standing; fleeing = fleeing }
+
+///> c
+test temperate_rules_count_standing_and_fleeing_attackers_apart =
+    := ~standing = 1i32
+    (heal_below_with standing 2, heal_below_with (standing - 1) 3) |> _assert_eq (150i32, 55i32)
+
+///> c
+test temperate_rules_retreat_only_from_standing_attackers =
+    := ~standing = 1i32
+    (retreats_with standing 2, retreats_with (standing - 1) 3, retreats_with (standing + 1) 0)
+    |> _assert_eq (!-, !-, !+)
+
+:= reachlike () : targeting = Scored { current = 50; reach = 100; health = 0; distance = 0 }
+
+///> c
+test a_scored_aim_can_express_reach_first =
+    := ~d = 1i32
+    := near, far_current = aimed !- d 90, aimed !+ (d + 2) 40
+    (prefers_by (reachlike ()) near far_current, prefers_by ReachFirst near far_current) |> _assert_eq (!+, !+)
+
+///> c
+test current_first_disagrees_with_the_reachlike_aim =
+    := ~d = 1i32
+    := near, far_current = aimed !- d 90, aimed !+ (d + 2) 40
+    prefers_by CurrentFirst near far_current |> _assert_eq !-

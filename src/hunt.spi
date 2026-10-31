@@ -1,0 +1,64 @@
+///- --package .
+test hunt static =
+    :< testing
+
+:= melee_reach () : i32 = 1
+
+:== living = vitality.vitality vitality.alive
+
+:= attack (damage : i32) (hunter : geometry.position) (prey_at : geometry.position) (prey : living) : vitality.struck =
+    ? geometry.within_range (melee_reach ()) hunter prey_at
+    ?> vitality.strike damage prey
+    |: vitality.Survived prey
+
+:= loot (outcome : vitality.struck) (bounty : i32) (held : coins.purse) : coins.purse =
+    ?= outcome ?|
+    | vitality.Slain _ => coins.fewest_coins (coins.total_gold held + bounty)
+    | vitality.Survived _ => held
+
+///> c
+test adjacent_attack_lands =
+    := ~damage = 40i32
+    attack damage (geometry.position 100 100 7) (geometry.position 101 101 7) (vitality.spawn 100)
+    |> vitality.survivor_health |> _assert_eq 60i32
+
+///> c
+test distant_attack_misses =
+    := ~damage = 40i32
+    attack damage (geometry.position 100 100 7) (geometry.position 103 100 7) (vitality.spawn 100)
+    |> vitality.survivor_health |> _assert_eq 100i32
+
+///> c
+test kill_pays_bounty =
+    := ~damage = 150i32
+    := outcome = attack damage (geometry.position 100 100 7) (geometry.position 100 99 7) (vitality.spawn 100)
+    loot outcome 250 (coins.purse 80 0 0) |> coins.total_gold |> _assert_eq 330i32
+
+:= struck_fresh (damage : i32) : vitality.struck = vitality.strike damage (vitality.spawn 100)
+
+:= gold_conserved (bounty : i32) (held : coins.purse) (slain : coins.purse) (kept : coins.purse) : bool =
+    coins.total_gold slain = coins.total_gold held + bounty && coins.total_gold kept = coins.total_gold held
+
+:= loot_holds (bounty : i32) (held : coins.purse) : bool =
+    := slain = loot (struck_fresh 500) bounty held
+    := kept = loot (struck_fresh 1) bounty held
+    gold_conserved bounty held slain kept && slain.gold < 100 && slain.platinum < 100
+
+:= case_purse (limit : i32) (i : i32) : coins.purse = coins.purse (i % limit * 37) (i / limit * 3) (i % 7)
+
+:= loot_breaks (limit : i32) : i32 =
+    :~ ^ check (i : i32) (broken : i32) : i32 =
+        ? i >= limit * limit ?> broken
+        |: check (i + 1) (? loot_holds (i * 53 % 997) (case_purse limit i) ?> broken |: broken + 1)
+    check 0 0
+
+///> c
+test loot_conserves_gold_and_pays_in_fewest_coins_over_1600_purses_and_bounties =
+    := ~limit = 40i32
+    loot_breaks limit |> _assert_eq 0i32
+
+///> wgsl
+test kill_pays_bounty_on_gpu =
+    := ~damage = 150i32
+    := outcome = attack damage (geometry.position 100 100 7) (geometry.position 100 99 7) (vitality.spawn 100)
+    ? (loot outcome 250 (coins.purse 80 0 0) |> coins.total_gold) = 330i32 ?> 0i32 |: 1i32

@@ -1,0 +1,254 @@
+///- --package .
+test creatures static =
+    :< testing
+
+:| arena_creature =
+    | CaveRat
+    | Troll
+    | Wolf
+    | Skeleton
+    | Goblin
+    | Cyclops
+    | Hunter
+
+:== creature_stats =
+    {
+        experience : i32
+        max_health : i32
+        speed : i32
+        target_distance : i32
+        melee_max : i32
+        combat_spells : i32
+        armor : i32
+        defense : i32
+        run_health : i32
+        step_ms : i32
+    }
+
+:== gold_drop = { chance_per_100000 : i32; max_count : i32 }
+
+:= drop (chance : i32) (most : i32) : gold_drop = { chance_per_100000 = chance; max_count = most }
+
+:= gold_drop_of (kind : arena_creature) : gold_drop =
+    ?= kind ?|
+    | Troll => drop 65300 12
+    | Goblin => drop 50320 9
+    | Skeleton => drop 43900 10
+    | Cyclops => drop 82000 47
+    | _ => drop 0 0
+
+:= rat_stats () : creature_stats =
+    {
+        experience = 10; max_health = 30; speed = 75; target_distance = 1; melee_max = 10;
+        combat_spells = 0; armor = 5; defense = 5; run_health = 3; step_ms = 800
+    }
+
+:= troll_stats () : creature_stats =
+    {
+        experience = 20; max_health = 50; speed = 63; target_distance = 1; melee_max = 15;
+        combat_spells = 0; armor = 10; defense = 10; run_health = 15; step_ms = 950
+    }
+
+:= wolf_stats () : creature_stats =
+    {
+        experience = 18; max_health = 25; speed = 82; target_distance = 1; melee_max = 20;
+        combat_spells = 0; armor = 5; defense = 5; run_health = 8; step_ms = 750
+    }
+
+:= skeleton_stats () : creature_stats =
+    {
+        experience = 35; max_health = 50; speed = 77; target_distance = 1; melee_max = 20;
+        combat_spells = 1; armor = 10; defense = 10; run_health = 0; step_ms = 800
+    }
+
+:= goblin_stats () : creature_stats =
+    {
+        experience = 25; max_health = 50; speed = 60; target_distance = 1; melee_max = 10;
+        combat_spells = 1; armor = 10; defense = 10; run_health = 15; step_ms = 1000
+    }
+
+:= cyclops_stats () : creature_stats =
+    {
+        experience = 150; max_health = 260; speed = 95; target_distance = 1; melee_max = 105;
+        combat_spells = 0; armor = 20; defense = 20; run_health = 0; step_ms = 650
+    }
+
+:= hunter_stats () : creature_stats =
+    {
+        experience = 150; max_health = 150; speed = 105; target_distance = 4; melee_max = 20;
+        combat_spells = 1; armor = 15; defense = 15; run_health = 10; step_ms = 600
+    }
+
+:= stats_of (k : arena_creature) =
+    ?= k ?|
+    | CaveRat => rat_stats ()
+    | Troll => troll_stats ()
+    | Wolf => wolf_stats ()
+    | Skeleton => skeleton_stats ()
+    | Goblin => goblin_stats ()
+    | Cyclops => cyclops_stats ()
+    | Hunter => hunter_stats ()
+
+:= is_ranged (kind : arena_creature) : bool =
+    ?= kind ?|
+    | Hunter => !+
+    | _ => !-
+
+:= ranged_attack_of (kind : arena_creature) : combat.ranged_attack =
+    ?= kind ?|
+    | Hunter => combat.hunter_arrow ()
+    | _ => { chance_percent = 0; max_damage = 0; range = 0; every_ms = 2000 }
+
+:= server_beat_ms () : i32 = 50
+:= grass_ground_speed () : i32 = terrain.grass_ground_speed ()
+
+:= canary_step_speed_exact_up_to () : i32 = 408
+
+:= step_speed_above_362 (speed : i32) : i32 =
+    ? speed <= 388 ?> (5559 * speed + 947585) / 4096
+    |: (5325 * speed + 1037437) / 4096
+
+:= step_speed_above_281 (speed : i32) : i32 =
+    ? speed <= 301 ?> (6372 * speed + 680716) / 4096
+    |? speed <= 337 ?> (6063 * speed + 774007) / 4096
+    |? speed <= 362 ?> (5735 * speed + 883711) / 4096
+    |: step_speed_above_362 speed
+
+:= step_speed_above_214 (speed : i32) : i32 =
+    ? speed <= 232 ?> (7282 * speed + 449600) / 4096
+    |? speed <= 255 ?> (6964 * speed + 523272) / 4096
+    |? speed <= 281 ?> (6617 * speed + 612091) / 4096
+    |: step_speed_above_281 speed
+
+:= step_speed_above_137 (speed : i32) : i32 =
+    ? speed <= 156 ?> (8648 * speed + 202848) / 4096
+    |? speed <= 196 ?> (8056 * speed + 295768) / 4096
+    |? speed <= 214 ?> (7510 * speed + 400590) / 4096
+    |: step_speed_above_214 speed
+
+:= step_speed_above_96 (speed : i32) : i32 =
+    ? speed <= 114 ?> (9558 * speed + 88680) / 4096
+    |? speed <= 122 ?> (9217 * speed + 127881) / 4096
+    |? speed <= 137 ?> (9012 * speed + 153088) / 4096
+    |: step_speed_above_137 speed
+
+:= step_speed_above_47 (speed : i32) : i32 =
+    ? speed <= 61 ?> (11118 * speed - 33954) / 4096
+    |? speed <= 80 ?> (10582 * speed - 732) / 4096
+    |? speed <= 96 ?> (10013 * speed + 45006) / 4096
+    |: step_speed_above_96 speed
+
+:= canary_step_speed (speed : i32) : i32 =
+    ? speed < 8 ?> 1
+    |? speed <= 35 ?> (12289 * speed - 81935) / 4096
+    |? speed <= 47 ?> (11606 * speed - 57372) / 4096
+    |: step_speed_above_47 speed
+
+:= canary_step_speed_in_double (speed : i32) : i32 =
+    := rounded : i32 = conv (857.36 * log (conv speed + 261.29 : f64) - 4795.01 + 0.5)
+    ? rounded < 1 ?> 1 |: rounded
+
+:= step_ms_from_canary_formula (speed : i32) (ground_speed : i32) : i32 =
+    := duration = 1000 * ground_speed / canary_step_speed speed
+    (duration + server_beat_ms () - 1) / server_beat_ms () * server_beat_ms ()
+
+:= knight_speed (level : i32) : i32 = 110 + level - 1
+
+:= player_step_ms (level : i32) : i32 = step_ms_from_canary_formula (knight_speed level) (grass_ground_speed ())
+
+:= experience_per_health (kind : arena_creature) : i32 =
+    := s = stats_of kind
+    s.experience * 1000 / s.max_health
+
+///> c
+test stats_match_canary_data_canary_lua_2026_10_12 =
+    := ~marker = 0i32
+    (stats_of Troll).max_health + marker |> _assert_eq 50i32
+    (stats_of Troll).melee_max + marker |> _assert_eq 15i32
+    (stats_of CaveRat).experience + marker |> _assert_eq 10i32
+
+///> c
+test cyclops_health_and_wolf_speed_match_canary_data =
+    := ~marker = 0i32
+    (stats_of Cyclops).max_health + marker |> _assert_eq 260i32
+    (stats_of Wolf).speed + marker |> _assert_eq 82i32
+
+:= adjacent_melee_count (marker : i32) : i32 =
+    := melee = [ CaveRat; Troll; Wolf; Skeleton; Goblin; Cyclops ]
+    listm.fold (\ n k => ? (stats_of k).target_distance + marker = 1i32 ?> n + 1i32 |: n) 0i32 melee
+
+///> c
+test every_melee_arena_creature_fights_adjacent =
+    := ~marker = 0i32
+    adjacent_melee_count marker |> _assert_eq 6i32
+
+///> c
+test the_hunter_keeps_four_tiles_away_and_is_the_ranged_one =
+    := ~marker = 0i32
+    ((stats_of Hunter).target_distance + marker, is_ranged Hunter, is_ranged Cyclops) |> _assert_eq (4i32, !+, !-)
+
+///> c
+test the_hunter_shoots_seven_tiles_with_150_health =
+    := ~marker = 0i32
+    ((ranged_attack_of Hunter).range + marker, (stats_of Hunter).max_health) |> _assert_eq (7i32, 150i32)
+
+///> c
+test experience_per_health_ranks_skeleton_above_troll =
+    := ~marker = 0i32
+    experience_per_health Skeleton + marker |> _assert_eq 700i32
+    experience_per_health Troll + marker |> _assert_eq 400i32
+
+///> c
+test armor_defense_and_flee_match_data_canary_2026_10_13 =
+    := ~marker = 0i32
+    (stats_of Troll).armor + marker |> _assert_eq 10i32
+    (stats_of Cyclops).defense + marker |> _assert_eq 20i32
+    (stats_of Wolf).armor + marker |> _assert_eq 5i32
+
+///> c
+test flee_health_matches_data_canary_2026_10_13 =
+    := ~marker = 0i32
+    (stats_of Troll).run_health + marker |> _assert_eq 15i32
+    (stats_of Skeleton).run_health + marker |> _assert_eq 0i32
+
+:= step_matches_formula (kind : arena_creature) : bool =
+    (stats_of kind).step_ms = step_ms_from_canary_formula (stats_of kind).speed (grass_ground_speed ())
+
+:= all_steps_match () : bool =
+    := m = step_matches_formula
+    m CaveRat && m Troll && m Wolf && m Skeleton && m Goblin && m Cyclops && m Hunter
+
+///> c
+test step_ms_matches_canary_step_formula_on_grass =
+    := ~marker = 0i32
+    (all_steps_match (), marker) |> _assert_eq (!+, 0i32)
+
+///> c
+test the_knight_steps_faster_with_levels =
+    := ~level = 8i32
+    player_step_ms level |> _assert_eq 550i32
+    player_step_ms (level + 22) |> _assert_eq 450i32
+
+///> wgsl
+test stats_on_gpu =
+    := ~marker = 0i32
+    ? (stats_of Troll).max_health + marker = 50i32 && experience_per_health Skeleton + marker = 700i32
+    ?> 0i32
+    |: 1i32
+
+:~ ^ step_speed_mismatches (speed : i32) (count : i32) : i32 =
+    := agrees = canary_step_speed speed = canary_step_speed_in_double speed
+    ? speed > canary_step_speed_exact_up_to () ?> count
+    |: step_speed_mismatches (speed + 1) (? agrees ?> count |: count + 1)
+
+///> c
+test integer_step_speed_equals_canary_double_formula_for_every_speed_up_to_its_exact_limit =
+    := ~first = 1i32
+    step_speed_mismatches first 0 |> _assert_eq 0i32
+
+///> wgsl
+test integer_step_speed_on_gpu =
+    := ~cyclops = 95i32
+    ? canary_step_speed cyclops = 243i32 && step_ms_from_canary_formula cyclops (grass_ground_speed ()) = 650i32
+    ?> 0i32
+    |: 1i32

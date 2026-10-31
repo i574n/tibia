@@ -1,0 +1,79 @@
+///- --package .
+test predict static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:= candidate (c : camp) : camp = c
+
+:= table_clear () : i32 = 1
+:= table_hunter () : i32 = 2
+:= table_hunt () : i32 = 3
+
+:= tabbed (x : i32) (row : string) : string = row ++# "\t" ++#? x
+
+:= each_held_out (row : i32 -> u32 -> string) : () =
+    := block = range_of (held_out_block ())
+    :~ ^ each (i : i32) : () =
+        ? i < block.count
+        ?>
+            console.write_line (row i (block.first + conv i))
+            each (i + 1)
+    each 0
+
+:= clear_head (arm : i32) (i : i32) (h : hunter_tally) : string =
+    "" ++#? table_clear () |> tabbed arm |> tabbed i |> tabbed h.retreats |> tabbed h.hits_taken
+
+:= clear_row (arm : i32) (camp : camp) (t : tactic) (i : i32) (seed : u32) : string =
+    := elapsed, p = clear_run camp t seed 6000
+    := h = p.hunter.tally
+    clear_head arm i h |> tabbed (quantity.value_of h.damage_taken) |> tabbed h.potions |> tabbed elapsed
+
+:= hunter_head (camp : camp) (i : i32) (p : pack) : string =
+    := cleared : i32 = ? all_killed camp p ?> 1 |: 0
+    "" ++#? table_hunter () |> tabbed i |> tabbed p.score.kills |> tabbed cleared
+
+:= hunter_line (camp : camp) (i : i32) (run : i32 * pack) : string =
+    := dt, p = run
+    := h = p.hunter.tally
+    := head = hunter_head camp i p |> tabbed dt |> tabbed h.potions
+    head |> tabbed h.hits_taken |> tabbed (quantity.value_of h.damage_taken)
+
+:= hunter_row (camp : camp) (t : tactic) (i : i32) (seed : u32) : string =
+    hunter_line camp i (clear_run camp t seed 2000i32)
+
+:= hunt_line (i : i32) (p : pack) : string =
+    := h = p.hunter.tally
+    := head = "" ++#? table_hunt () |> tabbed i |> tabbed p.score.kills |> tabbed h.hits_taken
+    head |> tabbed (quantity.value_of h.damage_taken) |> tabbed h.potions
+
+:= hunt_row (camp : camp) (t : tactic) (i : i32) (seed : u32) : string =
+    hunt_line i (simulate camp t seed (scenario_ticks ()))
+
+:= arena_spot (kind : creatures.arena_creature) : camp =
+    uniform_camp kind |> on_layout (:< terrain ;; ArenaSpot) |> mirroring_the_current_arena |> candidate
+
+:= canary_ground () : camp = arena_hunt () |> mirroring_the_current_arena |> candidate |> respawning_like_canary 60000
+
+:= clear_tables (cavebot : tactic) : () =
+    := arena = arena_spot (:< creatures ;; Cyclops)
+    each_held_out (clear_row 0 arena cavebot)
+    each_held_out (clear_row 1 arena (live_retreat_tactic 160 2))
+
+///> c
+test tabbed_appends_tab_separated_numbers =
+    ("" ++#? table_clear () |> tabbed 0 |> tabbed 7, "" ++#? table_hunt () |> tabbed (0 - 2))
+    |> _assert_eq ("1\t0\t7", "3\t-2")
+
+///> c
+test table_kinds_are_distinct_row_tags =
+    (table_clear (), table_hunter (), table_hunt ()) |> _assert_eq (1i32, 2i32, 3i32)
+
+///> _
+:= main () =
+    := cavebot = cavebot_with_heal 160
+    clear_tables cavebot
+    each_held_out (hunter_row (arena_spot (:< creatures ;; Hunter)) cavebot)
+    each_held_out (hunt_row (canary_ground ()) cavebot)
+    0i32

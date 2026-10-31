@@ -1,0 +1,247 @@
+///- --package .
+test measure static =
+    :< testing
+
+:< sm'_operators
+:= health_potion () : i32 = 266
+:= swing_ms () : i32 = 2000
+:= potion_gap_ms () : i32 = 1000
+:= tick_ms () : i32 = 100
+:= run_ms () : i32 = 200000
+
+:== bench_counts = { misses : mut i32; kills : mut i32; potions : mut i32; pending_hit : mut i32 }
+
+:== bench_run = { start_experience : mut i32; started_at : mut i32; done : mut i32; potion_below : i32 }
+
+:== bench =
+    {
+        hits : mut (list i32)
+        taken : mut (list i32)
+        counts : bench_counts
+        target : client.creature_slot
+        run : bench_run
+    }
+
+:== paces = { swing_at : i32; potion_at : i32 }
+
+:= bump (cell : mut i32) : () = cell <- (*cell + 1)
+
+:= share_text (part : i32) (whole : i32) : string =
+    sm'.format_fixed 1 (? whole > 0 ?> (conv part : f64) * 100.0 / (conv whole : f64) |: 0.0)
+
+:= mean_text (total : i32) (count : i32) : string =
+    sm'.format_fixed 2 (? count > 0 ?> (conv total : f64) / (conv count : f64) |: 0.0)
+
+:= swing_counts (label : string) (landed : i32) (misses : i32) : string =
+    := swings = landed + misses
+    label ++# ": swings " ++#? swings ++# " landed " ++#? landed ++# " (" ++# share_text landed swings ++# "%)"
+
+:= swing_totals (landed : i32) (total : i32) (median : i32) : string =
+    " mean landed " ++# mean_text total landed ++# " median " ++#? median ++# " total " ++#? total
+
+:= swing_tail (kills : i32) (plus : i32) (health : i32) : string =
+    " kills " ++#? kills ++# " experience +" ++#? plus ++# " health " ++#? health
+
+:= swings_line
+    (label : string) (landed : i32) (misses : i32) (total : i32) (median : i32) (kills : i32) (plus : i32)
+    (health : i32)
+    : string
+    =
+    swing_counts label landed misses ++# swing_totals landed total median ++# swing_tail kills plus health
+
+:= taken_head (count : i32) (taken_total : i32) : string =
+    "taken: count " ++#? count ++# " mean " ++# mean_text taken_total count
+
+:= taken_line (count : i32) (taken_total : i32) (taken_median : i32) (taken_max : i32) : string =
+    := head = taken_head count taken_total ++# " median " ++#? taken_median
+    head ++# " max " ++#? taken_max ++# " total " ++#? taken_total
+
+:= kill_line (kills : i32) (plus : i32) : string =
+    "kill " ++#? kills ++# " confirmed dead, experience +" ++#? plus
+
+:= experience_gained (b : bench) : i32 = client.player_experience () - *b.run.start_experience
+
+:= hits_summary (b : bench) : i32 * i32 * i32 =
+    samples.sample_count b.hits, samples.sample_total b.hits, samples.sample_median b.hits
+
+:= swings_noted (b : bench) (label : string) : () =
+    := l, total, median = hits_summary b
+    := misses, kills = *b.counts.misses, *b.counts.kills
+    probe.note (swings_line label l misses total median kills (experience_gained b) (client.player_health ()))
+
+:= taken_summary (b : bench) : i32 * i32 * i32 * i32 =
+    := count, total = samples.sample_count b.taken, samples.sample_total b.taken
+    count, total, samples.sample_median b.taken, samples.sample_max b.taken
+
+:= taken_noted (b : bench) : () =
+    := count, total, median, most = taken_summary b
+    probe.note (taken_line count total median most)
+
+:= report (b : bench) (label : string) : () =
+    probe.note (("potions " ++#? *b.counts.potions))
+    swings_noted b label
+    probe.note ("hits " ++# samples.samples_joined b.hits)
+    taken_noted b
+    probe.note ("taken " ++# samples.samples_joined b.taken)
+
+:= kill_counted (b : bench) : () =
+    bump b.counts.kills
+    := kills, plus = *b.counts.kills, experience_gained b
+    probe.note (kill_line kills plus)
+    client.empty_slot b.target
+
+:= kill_checked (b : bench) : () =
+    ? client.slot_occupied b.target && client.creature_dead (client.slot_creature b.target) ?> kill_counted b
+
+:= engaged (b : bench) (target : client.creature) (now : i32) : i32 =
+    client.occupy_slot b.target target
+    client.attack target
+    probe.stored b.counts.pending_hit 0
+    now
+
+:= adjacent_engaged (b : bench) (people : client.crowd) (seen : probe.nearest) (now : i32) (last_swing_at : i32) : i32 =
+    ? seen.found && seen.distance <= 1 ?> engaged b (client.member people seen.index) now |: last_swing_at
+
+:= engaged_adjacent (b : bench) (now : i32) (last_swing_at : i32) : i32 =
+    := here = client.player_spot ()
+    := people = client.spectators here
+    adjacent_engaged b people (probe.nearest_monster here people) now last_swing_at
+
+:= adjacent_to_player (target : client.creature) : bool =
+    probe.chebyshev (client.creature_spot target) (client.player_spot ()) <= 1
+
+:= healthy_unhit (b : bench) : bool = client.player_health () > 0 && *b.counts.pending_hit = 0
+
+:= swing_missed (b : bench) (target : client.creature) : bool =
+    client.creature_positioned target && adjacent_to_player target && healthy_unhit b
+
+:= swing_settled (b : bench) (now : i32) : i32 =
+    ? swing_missed b (client.slot_creature b.target) ?> bump b.counts.misses
+    probe.stored b.counts.pending_hit 0
+    now
+
+:= swing_after (b : bench) (now : i32) (last_swing_at : i32) : i32 =
+    ? client.slot_occupied b.target = !- ?> engaged_adjacent b now last_swing_at
+    |? now - last_swing_at >= swing_ms () ?> swing_settled b now
+    |: last_swing_at
+
+:= potion_due (b : bench) (now : i32) (last_potion_at : i32) : bool =
+    client.player_health () < b.run.potion_below && now - last_potion_at >= potion_gap_ms ()
+
+:= drank (b : bench) (now : i32) : i32 =
+    client.drink (health_potion ()) |> ignore
+    bump b.counts.potions
+    now
+
+:= potion_after (b : bench) (now : i32) (last_potion_at : i32) : i32 =
+    ? potion_due b now last_potion_at ?> drank b now |: last_potion_at
+
+:= stepped (b : bench) (now : i32) (p : paces) : paces =
+    kill_checked b
+    := swing_at = swing_after b now p.swing_at
+    := potion_at = potion_after b now p.potion_at
+    { swing_at = swing_at; potion_at = potion_at }
+
+:= measure_complete (b : bench) : () =
+    report b "end"
+    probe.finish_once_without_parity b.run.done "measure complete"
+
+:= tick_step (b : bench) (p : paces) : option paces =
+    := now = client.now_ms ()
+    := next = stepped b now p
+    ? now - *b.run.started_at > run_ms () ?>
+        measure_complete b
+        None
+    |: Some next
+
+:~ ^ ticked (b : bench) (p : paces) : () =
+    ? client.player_present () = !- ?> probe.finish_once_without_parity b.run.done "offline"
+    |:
+        ?= tick_step b p ?|
+        | Some next => client.after (tick_ms ()) \ () => ticked b next
+        | None => ()
+
+:= tick (b : bench) : () = ticked b { swing_at = *b.run.started_at; potion_at = 0 }
+
+///> lua
+///> c
+test swings_line_reports_landed_share_and_mean =
+    := full = "end: swings 10 landed 7 (70.0%) mean landed 100.00 median 95 total 700 kills 2 experience +540"
+    swings_line "end" 7 3 700 95 2 540 377 |> _assert_eq (full ++# " health 377")
+
+///> lua
+///> c
+test swings_line_reports_zero_when_nothing_landed =
+    swings_line "death" 0 0 0 0 0 0 0
+    |> _assert_eq "death: swings 0 landed 0 (0.0%) mean landed 0.00 median 0 total 0 kills 0 experience +0 health 0"
+
+///> lua
+///> c
+test taken_line_reports_the_mean_with_two_decimals =
+    taken_line 3 41 12 20 |> _assert_eq "taken: count 3 mean 13.67 median 12 max 20 total 41"
+    taken_line 0 0 0 0 |> _assert_eq "taken: count 0 mean 0.00 median 0 max 0 total 0"
+
+///> lua
+///> c
+test kill_line_names_the_kill_and_experience =
+    kill_line 2 540 |> _assert_eq "kill 2 confirmed dead, experience +540"
+
+:= fresh_counts () : bench_counts = { misses = mut 0; kills = mut 0; potions = mut 0; pending_hit = mut 0 }
+
+:= fresh_run (potion_below : i32) : bench_run =
+    { start_experience = mut 0; started_at = mut 0; done = mut 0; potion_below = potion_below }
+
+:= fresh_bench (potion_below : i32) : bench =
+    {
+        hits = samples.new_samples ()
+        taken = samples.new_samples ()
+        counts = fresh_counts ()
+        target = client.new_creature_slot ()
+        run = fresh_run potion_below
+    }
+
+:= server_text_noted (mode : string) (text : string) : () = probe.note (("server text [" ++# mode ++# "]: " ++# text))
+
+:= hit_seen (b : bench) (amount : i32) (text : string) : () =
+    samples.sample b.hits amount
+    probe.stored b.counts.pending_hit 1
+    ? sm'.contains "critical" text ?> probe.note ("critical: " ++# text)
+
+:= died (b : bench) (mode : string) (text : string) : () =
+    ? client.player_present () ?> report b "death"
+    client.after 500 (\ () => probe.finish_once_without_parity b.run.done "death")
+    server_text_noted mode text
+
+:= other_text (b : bench) (mode : string) (text : string) : () =
+    ? sm'.contains "You died" text ?> died b mode text
+    |? sm'.contains "You lose" text = !- ?> server_text_noted mode text
+
+:= on_text (b : bench) (mode : string) (text : string) : () =
+    := amount, lost = combat_text.hit_amount text, combat_text.damage_taken text
+    ? lost >= 0 ?> samples.sample b.taken lost
+    |? amount >= 0 ?> hit_seen b amount text
+    |: other_text b mode text
+
+:= fight_noted () : () =
+    client.chasing !-
+    client.fight_balanced ()
+    := mode, at = client.fight_mode_text (), probe.described (client.player_spot ())
+    probe.note (("fight mode " ++# mode ++# " at " ++# at))
+
+:= started (b : bench) : () =
+    fight_noted ()
+    probe.stored b.run.start_experience (client.player_experience ())
+    probe.stored b.run.started_at (client.now_ms ())
+    tick b
+
+:= ready (b : bench) : () =
+    := name, health = client.player_name (), client.player_health ()
+    probe.note (("in game as " ++# name ++# " health " ++#? health))
+    client.after 1000 \ () => started b
+
+///> _
+:= main () =
+    := b = fresh_bench (client.env_i32 "TIBIA_MEASURE_POTION_BELOW" 90)
+    := on_timeout () = probe.finish_once_without_parity b.run.done "timeout"
+    probe.started_as (probe.knight ()) (on_text b) (\ () => ready b) 260000 on_timeout
+    0i32

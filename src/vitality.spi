@@ -1,0 +1,76 @@
+///- --package .
+test vitality static =
+    :< testing
+
+:! alive = ()
+:! dead = ()
+
+:| vitality phase =
+    | Living :: i32 * i32 -> vitality alive
+    | Fallen :: i32 -> vitality dead
+
+:| struck =
+    | Survived : vitality alive
+    | Slain : vitality dead
+
+:= spawn (maximum : i32) : vitality alive =
+    Living (maximum, maximum)
+
+:= health (target : vitality alive) : i32 =
+    ?= target ?|
+    | Living (current, _) => current
+
+:= maximum_health (target : vitality alive) : i32 =
+    ?= target ?|
+    | Living (_, maximum) => maximum
+
+:= strike (damage : i32) (target : vitality alive) : struck =
+    ?= target ?|
+    | Living (current, maximum) =>
+        := remaining = current - damage
+        ? remaining > 0 ?> Survived (Living (remaining, maximum)) |: Slain (Fallen maximum)
+
+:= heal (amount : i32) (target : vitality alive) : vitality alive =
+    ?= target ?|
+    | Living (current, maximum) =>
+        := restored = current + amount
+        Living ((? restored > maximum ?> maximum |: restored), maximum)
+
+:= survivor_health (outcome : struck) : i32 =
+    ?= outcome ?|
+    | Survived target => health target
+    | Slain _ => 0
+
+///> c
+test strike_reduces_health =
+    := ~damage = 30i32
+    spawn 100 |> strike damage |> survivor_health |> _assert_eq 70i32
+
+///> c
+test lethal_strike_slays =
+    := ~damage = 100i32
+    spawn 100 |> strike damage |> survivor_health |> _assert_eq 0i32
+
+///> c
+test heal_caps_at_maximum =
+    := ~amount = 500i32
+    := healed = spawn 100 |> heal amount
+    health healed |> _assert_eq (maximum_health healed)
+
+///> c
+test strike_then_heal =
+    := ~damage = 60i32
+    ?= spawn 100 |> strike damage ?|
+    | Survived wounded => wounded |> heal 25 |> health |> _assert_eq 65i32
+    | Slain _ => _assert_eq 0i32 1i32
+
+///> c
+test healing_the_fallen_does_not_compile fails "Unification failure" =
+    heal 10 (Fallen 100)
+
+///> wgsl
+test strike_then_heal_on_gpu =
+    := ~damage = 60i32
+    ?= spawn 100 |> strike damage ?|
+    | Survived wounded => ? (wounded |> heal 25 |> health) = 65i32 ?> 0i32 |: 1i32
+    | Slain _ => 2i32

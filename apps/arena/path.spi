@@ -1,0 +1,112 @@
+///- --package .
+test path static =
+    :< testing
+
+:< sm'_operators
+:= watch_ms () : i32 = 30000
+:= sample_ms () : i32 = 50
+
+:= followed (has_last : bool) (last : client.spot) (at : client.spot) (steps : i32) : bool * i32 =
+    := moved = has_last = !- || at.x <> last.x || at.y <> last.y
+    moved, (? moved && has_last ?> steps + 1 |: steps)
+
+:= step_line (elapsed : i32) (from : string) (distance : i32) (steps : i32) : string =
+    "path t=" ++#? elapsed ++# " ms monster at " ++# from ++# " distance " ++#? distance ++# " step " ++#? steps
+
+:= arrived_line (elapsed : i32) (steps : i32) (knight : string) : string =
+    "arrived at " ++#? elapsed ++# " ms after " ++#? steps ++# " steps, knight at " ++# knight
+
+:= not_arrived_line (elapsed : i32) (steps : i32) : string =
+    "not arrived after " ++#? elapsed ++# " ms, " ++#? steps ++# " steps"
+
+:== trail = { has_last : bool; last : client.spot; steps : i32 }
+
+:= fresh_trail () : trail = { has_last = !-; last = { x = 0; y = 0; z = 0 }; steps = 0 }
+
+:= seen_spot (people : client.crowd) (seen : probe.nearest) : client.spot =
+    client.creature_spot (client.member people seen.index)
+
+:= step_noted (elapsed : i32) (at : client.spot) (distance : i32) (steps : i32) : () =
+    probe.note (step_line elapsed (probe.described at) distance steps)
+
+:= trail_moved (t : trail) (at : client.spot) (dt : i32) (distance : i32) : trail =
+    := moved, steps = followed t.has_last t.last at t.steps
+    ? moved ?> step_noted dt at distance steps
+    { has_last = !+; last = (? moved ?> at |: t.last); steps = steps }
+
+:= seen_trail (t : trail) (people : client.crowd) (seen : probe.nearest) (elapsed : i32) : bool * trail =
+    := t = ? seen.found ?> trail_moved t (seen_spot people seen) elapsed seen.distance |: t
+    seen.found && seen.distance <= 1, t
+
+:= sample_at (here : client.spot) (t : trail) (elapsed : i32) : bool * trail =
+    := people = client.spectators here
+    seen_trail t people (probe.nearest_monster here people) elapsed
+
+:= finished_arrived (done : mut i32) (elapsed : i32) (steps : i32) (here : client.spot) : bool =
+    probe.note (arrived_line elapsed steps (probe.described here))
+    probe.finish_once_without_parity done "arrived"
+    !+
+
+:= finished_not_arrived (done : mut i32) (elapsed : i32) (steps : i32) : bool =
+    probe.note (not_arrived_line elapsed steps)
+    probe.finish_once_without_parity done "not arrived"
+    !+
+
+:= ended (done : mut i32) (elapsed : i32) (here : client.spot) (arrived : bool) (steps : i32) : bool =
+    ? arrived ?> finished_arrived done elapsed steps here
+    |? elapsed > watch_ms () ?> finished_not_arrived done elapsed steps
+    |: !-
+
+:= path_tick (done : mut i32) (elapsed : i32) (t : trail) (again : trail -> ()) : () =
+    := here = client.player_spot ()
+    := arrived, t = sample_at here t elapsed
+    ? ended done elapsed here arrived t.steps = !- ?> client.after (sample_ms ()) \ () => again t
+
+:= watch (done : mut i32) (started_at : i32) : () =
+    :~ ^ go (t : trail) : () =
+        ? client.player_present () = !- ?> probe.finish_once_without_parity done "offline"
+        |: path_tick done (client.now_ms () - started_at) t go
+    go (fresh_trail ())
+
+///> lua
+///> c
+test a_first_sighting_is_not_a_step =
+    followed !- { x = 0; y = 0; z = 0 } { x = 1940; y = 1352; z = 7 } 0 |> _assert_eq (!+, 0i32)
+
+///> lua
+///> c
+test standing_still_keeps_the_step_count =
+    followed !+ { x = 1940; y = 1352; z = 7 } { x = 1940; y = 1352; z = 7 } 3 |> _assert_eq (!-, 3i32)
+
+///> lua
+///> c
+test a_move_after_a_sighting_counts_a_step =
+    followed !+ { x = 1940; y = 1352; z = 7 } { x = 1939; y = 1352; z = 7 } 3 |> _assert_eq (!+, 4i32)
+
+///> lua
+///> c
+test the_step_line_keeps_the_probe_wording =
+    step_line 850 "1939,1352,7" 3 4 |> _assert_eq "path t=850 ms monster at 1939,1352,7 distance 3 step 4"
+
+///> lua
+///> c
+test the_end_lines_keep_the_probe_wording =
+    (arrived_line 2400 6 "1936,1349,7", not_arrived_line 30050 9)
+    |> _assert_eq ("arrived at 2400 ms after 6 steps, knight at 1936,1349,7", "not arrived after 30050 ms, 9 steps")
+
+:= server_text_noted (mode : string) (text : string) : () = probe.note ("server text [" ++# mode ++# "]: " ++# text)
+
+:= path_started (done : mut i32) : () =
+    := name, at = client.player_name (), probe.described (client.player_spot ())
+    probe.note ("in game as " ++# name ++# " at " ++# at ++# " (path check, standing, no attack)")
+    watch done (client.now_ms ())
+
+:= timed_out (done : mut i32) : () = probe.finish_once_without_parity done "timeout"
+
+///> _
+:= main () =
+    := done = mut 0
+    := ready () = client.after 1500 \ () => path_started done
+    client.disable_client_bot (probe.bot_profile ())
+    probe.started_as (probe.knight ()) server_text_noted ready 60000 \ () => timed_out done
+    0i32

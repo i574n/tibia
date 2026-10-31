@@ -1,0 +1,1 @@
+:= main () : hooks.host = ? hooks.getfenv_available () ?> hooks.level_env () |: hooks.globals ()

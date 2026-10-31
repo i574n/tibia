@@ -1,0 +1,64 @@
+///- --package .
+test combat_text static =
+    :< testing
+
+:< sm'_operators
+
+:= digit_at (text : string) (at : i32) : option i32 =
+    ? at >= sm'.length text ?> None |: convert.try_convert (sm'.substring at 1i32 text)
+
+:~ ^ digits_from (text : string) (at : i32) (value : i32) : i32 * i32 =
+    ?= digit_at text at ?|
+    | Some d => digits_from text (at + 1i32) (value * 10i32 + d)
+    | None => value, at
+
+:= rest_from (at : i32) (text : string) : string = sm'.substring at (sm'.length text - at) text
+
+:= starts_with_any (prefixes : list string) (text : string) : bool =
+    listm.fold (\ found prefix => found || sm'.starts_with prefix text) !- prefixes
+
+:== number_pattern = { before : string; ends : list string }
+
+:= number_at (p : number_pattern) (found : i32) (text : string) : i32 =
+    := start = found + sm'.length p.before
+    := value, stop = digits_from text start 0i32
+    ? stop > start && starts_with_any p.ends (rest_from stop text) ?> value |: -1i32
+
+:~ ^ number_between (p : number_pattern) (text : string) : i32 =
+    := found : i32 = sm'.index_of p.before text
+    ? found < 0i32 ?> -1i32
+    |:
+        := n = number_at p found text
+        ? n >= 0i32 ?> n |: number_between p (rest_from (found + 1i32) text)
+
+:= hit_amount (text : string) : i32 =
+    number_between { before = "loses "; ends = [ " hitpoints due to your"; " hitpoint due to your" ] } text
+
+:= damage_taken (text : string) : i32 =
+    number_between { before = "You lose "; ends = [ " hitpoints due to an attack"; " hitpoint due to an attack" ] } text
+
+///> lua
+test hits_read_the_amount_the_monster_loses =
+    := crit = "A rat loses 1 hitpoint due to your critical attack."
+    (hit_amount "A troll loses 12 hitpoints due to your attack.", hit_amount crit) |> _assert_eq (12i32, 1i32)
+
+///> lua
+test hits_skip_other_attackers_and_own_losses =
+    := theirs = "A troll loses 12 hitpoints due to an attack by a cyclops."
+    := mine = "You lose 30 hitpoints due to an attack by a troll."
+    (hit_amount theirs, hit_amount mine) |> _assert_eq (-1i32, -1i32)
+
+///> lua
+test damage_reads_the_amount_the_knight_loses =
+    := rat = "You lose 1 hitpoint due to an attack by a rat."
+    (damage_taken "You lose 30 hitpoints due to an attack by a troll.", damage_taken rat) |> _assert_eq (30i32, 1i32)
+
+///> lua
+test damage_skips_monster_losses_and_mana =
+    (damage_taken "A troll loses 12 hitpoints due to your attack.", damage_taken "You lose 5 mana.")
+    |> _assert_eq (-1i32, -1i32)
+
+///> lua
+test a_later_match_counts_when_an_earlier_one_does_not_fit =
+    := p = { before = "loses "; ends = [ " hitpoints" ] }
+    number_between p "it loses its way and loses 7 hitpoints" |> _assert_eq 7i32

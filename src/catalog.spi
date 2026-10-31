@@ -1,0 +1,75 @@
+///- --package .
+test catalog static =
+    :< testing
+
+:! troll_kind = ()
+:! goblin_kind = ()
+:! cyclops_kind = ()
+
+:| kind k =
+    | TrollKind :: kind troll_kind
+    | GoblinKind :: kind goblin_kind
+    | CyclopsKind :: kind cyclops_kind
+
+:== spawn k = { kind : kind k; count : i32; radius : i32 }
+
+:! entry = \? k. spawn k
+
+:= arena_creature_of \* k. (which : kind k) : creatures.arena_creature =
+    :< creatures
+    ?= which ?|
+    | TrollKind => Troll
+    | GoblinKind => Goblin
+    | CyclopsKind => Cyclops
+
+:= stats_of \* k. (which : kind k) : creatures.creature_stats =
+    creatures.stats_of (arena_creature_of which)
+
+:= spawn_of \* k. (which : kind k) (count : i32) (radius : i32) : spawn k =
+    { kind = which; count = count; radius = radius }
+
+:= pack_entry \* k. (s : spawn k) : entry = entry (\? s)
+
+:= entry_experience (entry e : entry) : i32 =
+    := \? k. s = e
+    (stats_of s.kind).experience * s.count
+
+:= entry_health (entry e : entry) : i32 =
+    := \? k. s = e
+    (stats_of s.kind).max_health * s.count
+
+:= entry_creature (entry e : entry) : creatures.arena_creature =
+    := \? k. s = e
+    arena_creature_of s.kind
+
+:= troll_camp () : entry * entry =
+    pack_entry (spawn_of TrollKind 3 2), pack_entry (spawn_of GoblinKind 2 3)
+
+:= cyclops_cave () : entry * entry =
+    pack_entry (spawn_of CyclopsKind 1 2), pack_entry (spawn_of TrollKind 2 4)
+
+:= camp_experience (camp : entry * entry) : i32 =
+    := a, b = camp
+    entry_experience a + entry_experience b
+:= camp_health (camp : entry * entry) : i32 =
+    := a, b = camp
+    entry_health a + entry_health b
+
+///> c
+test mixed_camps_sum_their_kinds =
+    := ~scale = 1i32
+    camp_experience (troll_camp ()) * scale |> _assert_eq 110i32
+    camp_health (troll_camp ()) * scale |> _assert_eq 250i32
+    camp_experience (cyclops_cave ()) * scale |> _assert_eq 190i32
+
+///> c
+test a_troll_spawn_cannot_hold_a_cyclops fails "Unification failure" =
+    := s : spawn troll_kind = spawn_of CyclopsKind 1 2
+    s.count
+
+///> wgsl
+test camps_on_gpu =
+    := ~scale = 1i32
+    ? camp_experience (troll_camp ()) * scale = 110i32 && camp_health (cyclops_cave ()) * scale = 360i32
+    ?> 0i32
+    |: 1i32

@@ -1,0 +1,167 @@
+///- --package .
+test search static =
+    :< testing
+
+:== genome = { first : i32; second : i32; third : i32 }
+
+:= clamp_between (low : i32) (high : i32) (x : i32) : i32 =
+    ? x < low ?> low |? x > high ?> high |: x
+
+:= nudge (seed : u32) (generation : i32) (child : i32) (gene : u32) (spread : i32) (value : i32) : i32 =
+    := draw : i32 =
+        conv (rng.roll_between 0 (conv (2 * spread)) (rng.roll_key seed (conv generation) (conv child) (100u32 + gene)))
+    value + draw - spread
+
+:== gene_draw = { seed : u32; generation : i32; child : i32; spread : i32 }
+
+:= drawn (d : gene_draw) (gene : u32) (low : i32) (high : i32) (value : i32) : i32 =
+    clamp_between low high (nudge d.seed d.generation d.child gene d.spread value)
+
+:= mutate (d : gene_draw) (lo : genome) (hi : genome) (g : genome) : genome =
+    {
+        first = drawn d 1u32 lo.first hi.first g.first
+        second = drawn d 2u32 lo.second hi.second g.second
+        third = drawn d 3u32 lo.third hi.third g.third
+    }
+
+:== genome_search = { low : genome; high : genome; seed : u32; offspring : i32; generations : i32; spread : i32 }
+
+:== scored_genome = { g : genome; score : i32 }
+
+:== genome_round = { s : genome_search; index : i32; width : i32; parent : scored_genome }
+
+:= genome_child (r : genome_round) (child : i32) : genome =
+    mutate { seed = r.s.seed; generation = r.index; child = child; spread = r.width } r.s.low r.s.high r.parent.g
+
+:= fitter_genome (fitness : genome -> i32) (candidate : genome) (best : scored_genome) : scored_genome =
+    := score = fitness candidate
+    ? score > best.score ?> { g = candidate; score = score } |: best
+
+:~ ^ offspring_from (fitness : genome -> i32) (r : genome_round) (child : i32) (best : scored_genome) : scored_genome =
+    ? child >= r.s.offspring ?> best
+    |: offspring_from fitness r (child + 1) (fitter_genome fitness (genome_child r child) best)
+
+:= next_genome_round (r : genome_round) (best : scored_genome) : genome_round =
+    { r ?| index = r.index + 1; width = (? r.width > 1 ?> r.width / 2 |: 1); parent = best }
+
+:~ ^ genome_climb (fitness : genome -> i32) (r : genome_round) : genome =
+    ? r.index >= r.s.generations ?> r.parent.g
+    |: genome_climb fitness (next_genome_round r (offspring_from fitness r 0 r.parent))
+
+:= evolve (fitness : genome -> i32) (s : genome_search) (start : genome) : genome =
+    genome_climb fitness { s = s; index = 0; width = s.spread; parent = { g = start; score = fitness start } }
+
+:! vector = array i32
+
+:= vector_of (count : i32) (value : i32) : vector =
+    := x : array i32 = create count
+    :~ ^ fill (i : i32) : () =
+        ? i < count ?>
+            set x i value
+            fill (i + 1)
+    fill 0
+    vector x
+
+:= gene (vector v) (i : i32) : i32 = index v i
+:= gene_count (vector v) : i32 = length v
+:= with_gene (i : i32) (value : i32) (vector v) : vector =
+    set v i value
+    vector v
+
+:== vector_search = { low : vector; high : vector; seed : u32; pairs : i32; generations : i32 }
+
+:== scored_vector = { v : vector; score : i32 }
+
+:== vector_round = { s : vector_search; index : i32; width : i32; parent : scored_vector }
+
+:= pair_delta (r : vector_round) (pair : i32) (i : i32) : i32 =
+    := range = gene r.s.high i - gene r.s.low i
+    := spread = ? range * r.width / 1000 < 1 ?> 1 |: range * r.width / 1000
+    nudge r.s.seed r.index pair (conv i) spread 0
+
+:= pair_genes (r : vector_round) (i : i32) (delta : i32) : i32 * i32 =
+    := low, high, mid = gene r.s.low i, gene r.s.high i, gene r.parent.v i
+    clamp_between low high (mid + delta), clamp_between low high (mid - delta)
+
+:= set_genes (i : i32) (up : i32) (down : i32) (plus : vector) (minus : vector) : () =
+    with_gene i up plus |> ignore
+    with_gene i down minus |> ignore
+
+:~ ^ fill_pair (r : vector_round) (pair : i32) (plus : vector) (minus : vector) (i : i32) : () =
+    ? i < gene_count plus ?>
+        := up, down = pair_genes r i (pair_delta r pair i)
+        set_genes i up down plus minus
+        fill_pair r pair plus minus (i + 1)
+
+:= antithetic_pair (r : vector_round) (pair : i32) : vector * vector =
+    := n = gene_count r.parent.v
+    := plus, minus = vector_of n 0, vector_of n 0
+    fill_pair r pair plus minus 0
+    plus, minus
+
+:= stronger_vector (fitness : vector -> i32) (candidate : vector) (best : scored_vector) : scored_vector =
+    := score = fitness candidate
+    ? score > best.score ?> { v = candidate; score = score } |: best
+
+:= pair_winner (fitness : vector -> i32) (r : vector_round) (pair : i32) (best : scored_vector) : scored_vector =
+    := plus, minus = antithetic_pair r pair
+    stronger_vector fitness minus (stronger_vector fitness plus best)
+
+:~ ^ pairs_from (fitness : vector -> i32) (r : vector_round) (pair : i32) (best : scored_vector) : scored_vector =
+    ? pair >= r.s.pairs ?> best |: pairs_from fitness r (pair + 1) (pair_winner fitness r pair best)
+
+:= next_vector_round (r : vector_round) (best : scored_vector) : vector_round =
+    { r ?| index = r.index + 1; width = (? r.width * 4 / 5 > 10 ?> r.width * 4 / 5 |: 10); parent = best }
+
+:~ ^ vector_climb (fitness : vector -> i32) (r : vector_round) : vector =
+    ? r.index >= r.s.generations ?> r.parent.v
+    |: vector_climb fitness (next_vector_round r (pairs_from fitness r 0 r.parent))
+
+:= evolve_vector (fitness : vector -> i32) (s : vector_search) (start : vector) : vector =
+    vector_climb fitness { s = s; index = 0; width = 250; parent = { v = start; score = fitness start } }
+
+:= rescored (score : vector -> i32) (p : scored_vector) : scored_vector = { v = p.v; score = score p.v }
+
+:~ ^ resampled_climb (fitness : i32 -> vector -> i32) (r : vector_round) : vector =
+    := score = fitness r.index
+    ? r.index >= r.s.generations ?> r.parent.v
+    |: resampled_climb fitness (next_vector_round r (pairs_from score r 0 (rescored score r.parent)))
+
+:= evolve_vector_resampled (fitness : i32 -> vector -> i32) (s : vector_search) (start : vector) : vector =
+    resampled_climb fitness { s = s; index = 0; width = 250; parent = { v = start; score = 0 } }
+
+:= peak_genome (g : genome) : i32 =
+    0 - (g.first - 40) * (g.first - 40) - (g.second - 7) * (g.second - 7) - (g.third + 5) * (g.third + 5)
+
+:= peak_search (seed : u32) : genome_search =
+    := low = { first = 0; second = -20; third = -20 }
+    := high = { first = 100; second = 20; third = 20 }
+    { low = low; high = high; seed = seed; offspring = 16; generations = 12; spread = 32 }
+
+:= origin () : genome = { first = 0; second = 0; third = 0 }
+
+///> c
+test evolve_climbs_a_known_peak =
+    := ~seed = 3u32
+    := best = evolve peak_genome (peak_search seed) (origin ())
+    (peak_genome best > peak_genome (origin ()), peak_genome best >= -12) |> _assert_eq (!+, !+)
+
+:= vector_peak_gene (i : i32) : i32 = ? i = 0 ?> 40 |? i = 1 ?> -7 |? i = 2 ?> 3 |: 90
+
+:= squared_miss (v : vector) (i : i32) : i32 =
+    := miss = gene v i - vector_peak_gene i
+    miss * miss
+
+:~ ^ vector_loss (v : vector) (i : i32) (acc : i32) : i32 =
+    ? i >= 4 ?> acc |: vector_loss v (i + 1) (acc - squared_miss v i)
+
+:= vector_peak (v : vector) : i32 = vector_loss v 0 0
+
+:= vector_peak_search (seed : u32) : vector_search =
+    { low = vector_of 4 -100; high = vector_of 4 100; seed = seed; pairs = 8; generations = 20 }
+
+///> c
+test evolve_vector_climbs_a_known_peak_with_antithetic_pairs =
+    := ~seed = 3u32
+    := best = evolve_vector vector_peak (vector_peak_search seed) (vector_of 4 0)
+    (vector_peak best > vector_peak (vector_of 4 0), vector_peak best >= -40) |> _assert_eq (!+, !+)

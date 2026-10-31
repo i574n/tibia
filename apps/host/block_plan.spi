@@ -1,0 +1,161 @@
+///- --package .
+test block_plan static =
+    :< testing
+
+:| run_outcome =
+    | Completed
+    | Crashed
+
+:| run_fate =
+    | Counted
+    | Rerun
+    | Missing
+
+:== progress = { stage : i32; run : i32; retried : bool; counted : i32; missing : i32 }
+
+:= outcome_of_experience (experience : string) : run_outcome = ? experience = "" ?> Crashed |: Completed
+
+:= fate_of (retried : bool) (o : run_outcome) : run_fate =
+    ?= o ?|
+    | Completed => Counted
+    | Crashed => ? retried ?> Missing |: Rerun
+
+:= starting () : progress = { stage = 0; run = 0; retried = !-; counted = 0; missing = 0 }
+
+:= finished (runs : array i32) (p : progress) : bool = p.stage >= length runs
+
+:= next_slot (runs : array i32) (p : progress) : i32 * i32 =
+    ? p.run + 1 >= index runs p.stage ?> p.stage + 1, 0 |: p.stage, p.run + 1
+
+:= advanced (runs : array i32) (p : progress) (counted : i32) (missing : i32) : progress =
+    := stage, run = next_slot runs p
+    { stage = stage; run = run; retried = !-; counted = counted; missing = missing }
+
+:= after (runs : array i32) (p : progress) (o : run_outcome) : progress =
+    ?= fate_of p.retried o ?|
+    | Rerun => { p ?| retried = !+ }
+    | Counted => advanced runs p (p.counted + 1) p.missing
+    | Missing => advanced runs p p.counted (p.missing + 1)
+
+:| stage_step =
+    | InstallProbe : string
+    | Runs : i32
+    | RemoveProbe
+    | KeepTrace : string
+
+:= probed_stage (probe : string) (runs : i32) (trace : string) : list stage_step =
+    [ InstallProbe probe; Runs runs; RemoveProbe; KeepTrace trace ]
+
+:= plain_stage (runs : i32) : list stage_step = [ Runs runs ]
+
+:= runs_of (steps : list stage_step) : i32 =
+    listm.fold (\ total step => ?= step ?| Runs n => total + n | _ => total) 0 steps
+
+:= probe_left_installed (steps : list stage_step) : bool =
+    listm.fold
+        \ installed step =>
+            ?= step ?|
+            | InstallProbe _ => !+
+            | RemoveProbe => !-
+            | _ => installed
+        !-
+        steps
+
+:= stages_of (first : i32) (second : i32) : array i32 =
+    := runs : array i32 = create 2
+    set runs 0 first
+    set runs 1 second
+    runs
+
+:= block_progress (first : i32) (outcomes : list run_outcome) : progress =
+    listm.fold (\ p o => after (stages_of first 1) p o) (starting ()) outcomes
+
+:= block_finished (first : i32) (outcomes : list run_outcome) : bool =
+    finished (stages_of first 1) (block_progress first outcomes)
+
+///> c
+///> lua
+///> gleam
+test an_empty_experience_reading_means_the_run_crashed =
+    := ~empty = ""
+    (outcome_of_experience empty, outcome_of_experience "675") |> _assert_eq (Crashed, Completed)
+
+///> c
+///> lua
+///> gleam
+test a_crash_is_rerun_once_then_counted_missing =
+    := ~retried = !+
+    (fate_of (not retried) Completed, fate_of (not retried) Crashed, fate_of retried Crashed, fate_of retried Completed)
+    |> _assert_eq (Counted, Rerun, Missing, Counted)
+
+///> c
+///> lua
+///> gleam
+test the_first_completed_run_counts_and_moves_on =
+    := ~first = 2i32
+    := p = block_progress first [ Completed ]
+    (p.stage, p.run, p.counted) |> _assert_eq (0i32, 1i32, 1i32)
+
+///> c
+///> lua
+///> gleam
+test a_crash_marks_the_run_for_a_rerun =
+    := ~first = 2i32
+    := p = block_progress first [ Completed; Crashed ]
+    (p.stage, p.run, p.retried) |> _assert_eq (0i32, 1i32, !+)
+
+///> c
+///> lua
+///> gleam
+test a_completed_rerun_moves_to_the_next_stage =
+    := ~first = 2i32
+    := p = block_progress first [ Completed; Crashed; Completed ]
+    (p.stage, p.run, p.counted, p.retried) |> _assert_eq (1i32, 0i32, 2i32, !-)
+
+///> c
+///> lua
+///> gleam
+test a_block_runs_every_stage_in_order =
+    := ~first = 2i32
+    := p = block_progress first [ Completed; Crashed; Completed; Completed ]
+    (p.stage, p.counted, p.missing) |> _assert_eq (2i32, 3i32, 0i32)
+
+///> c
+///> lua
+///> gleam
+test a_block_ends_after_its_last_stage =
+    := ~first = 2i32
+    := three, four = [ Completed; Crashed; Completed ], [ Completed; Crashed; Completed; Completed ]
+    (block_finished first three, block_finished first four) |> _assert_eq (!-, !+)
+
+///> c
+///> lua
+///> gleam
+test two_crashes_count_one_run_missing =
+    := ~first = 1i32
+    := runs = stages_of first 1
+    := p = after runs (after runs (starting ()) Crashed) Crashed
+    (p.stage, p.counted, p.missing) |> _assert_eq (1i32, 0i32, 1i32)
+
+///> c
+///> lua
+///> gleam
+test a_probed_stage_keeps_its_run_count =
+    := ~runs = 10i32
+    (runs_of (probed_stage "lead_trace.lua" runs "lead-trace.log"), runs_of (plain_stage runs))
+    |> _assert_eq (10i32, 10i32)
+
+///> c
+///> lua
+///> gleam
+test a_probed_stage_removes_its_probe_and_keeps_the_trace =
+    := ~runs = 10i32
+    := steps = probed_stage "lead_trace.lua" runs "lead-trace.log"
+    probe_left_installed steps |> _assert_eq !-
+
+///> c
+///> lua
+///> gleam
+test a_stage_without_removal_leaves_its_probe_installed =
+    := ~runs = 10i32
+    probe_left_installed [ InstallProbe "lead_trace.lua"; Runs runs ] |> _assert_eq !+

@@ -1,0 +1,331 @@
+///- --package .
+test hunt_sim static =
+    :< testing
+
+:== tile = geometry.position
+
+:== foe_kind = creatures.arena_creature
+
+:= tick_ms () : i32 = 100
+:= scenario_ticks () : i32 = 3000
+:= spawn_health (foe : foe_kind) : i32 =
+    (creatures.stats_of foe).max_health
+
+:= creature_melee_max (foe : foe_kind) : u32 =
+    conv (creatures.stats_of foe).melee_max
+
+:= default_foe () : foe_kind =
+    :< creatures
+    Troll
+
+:== offense = { level : i32; weapon_attack : i32; weapon_skill : i32; step_ms : i32 }
+
+:= offense_of (level : i32) (attack : i32) (skill : i32) : offense =
+    { level = level; weapon_attack = attack; weapon_skill = skill; step_ms = hunting_pack.knight_sample_step_ms () }
+
+:= offense_against (foe : foe_kind) : offense =
+    :< creatures
+    ?= foe ?|
+    | Cyclops => offense_of 30 21 60
+    | _ => offense_of 8 20 30
+
+:= swinger_of (o : offense) : combat.swinger =
+    { mode = (:< damage ;; Balanced); level = o.level; attack_value = o.weapon_attack; attack_skill = o.weapon_skill }
+
+:= player_hit (foe : foe_kind) (roll : rng.roll_key) : i32 =
+    := stats = creatures.stats_of foe
+    combat.melee_hit (swinger_of (offense_against foe)) { armor = stats.armor; defense = stats.defense } roll
+
+:= creature_strike_ms () : i32 = 2000
+:= heal_below () : i32 = 60
+
+:= purpose_player_hit () : u32 = 1
+:= purpose_player_heal () : u32 = 2
+:= purpose_creature_hit () : u32 = 3
+:= purpose_loot () : u32 = 4
+
+:== knight_state = { at : tile; health : i32; timers : cooldowns.timers; next_step_at : i32 }
+
+:== living = vitality.vitality vitality.alive
+
+:== foe_state = { at : tile; life : living; strikes_at : i32; next_step_at : i32; met_player : bool }
+
+:== hunt = { player : knight_state; creature : foe_state; kills : i32; gold : i32; escapes : i32 }
+
+:== moment = { seed : u32; tick : i32; now : i32 }
+
+:= spawn_point () : tile = geometry.position 106 103 7
+
+:= knight_start () : knight_state =
+    { at = geometry.position 100 100 7; health = 150; timers = cooldowns.idle_timers (); next_step_at = 0 }
+
+:= foe_start (foe : foe_kind) : foe_state =
+    { at = spawn_point (); life = vitality.spawn (spawn_health foe); strikes_at = 0; next_step_at = 0; met_player = !- }
+
+:= start (foe : foe_kind) : hunt =
+    { player = knight_start (); creature = foe_start foe; kills = 0; gold = 0; escapes = 0 }
+
+:= key (m : moment) (purpose : u32) : rng.roll_key =
+    rng.roll_key m.seed (conv m.tick) 1 purpose
+
+:= adjacent (s : hunt) : bool =
+    geometry.within_range 1 s.player.at s.creature.at
+
+:= escape_distance () : i32 = 8
+
+:= respawned_foe (foe : foe_kind) (c : foe_state) : foe_state =
+    { c ?| at = spawn_point (); life = vitality.spawn (spawn_health foe); met_player = !- }
+
+:= fled_from (foe : foe_kind) (now : i32) (player_at : tile) (c : foe_state) : foe_state =
+    := away = geometry.step_away player_at c.at
+    { c ?| at = away; next_step_at = now + geometry.step_cost (creatures.stats_of foe).step_ms c.at away }
+
+:= escaped (foe : foe_kind) (fled : foe_state) (s : hunt) : hunt =
+    { s ?| creature = respawned_foe foe fled; escapes = s.escapes + 1 }
+
+:= flee (foe : foe_kind) (now : i32) (s : hunt) : hunt =
+    := fled = fled_from foe now s.player.at s.creature
+    ? geometry.chebyshev_distance s.player.at fled.at >= escape_distance () ?> escaped foe fled s
+    |: { s ?| creature = fled }
+
+:= creature_step_ms (foe : foe_kind) (met_player : bool) : i32 =
+    := step = (creatures.stats_of foe).step_ms
+    ? met_player ?> step * hunting_pack.chase_step_factor () |: step
+
+:= approached (foe : foe_kind) (now : i32) (player_at : tile) (c : foe_state) : foe_state =
+    := toward = geometry.step_toward player_at c.at
+    { c ?| at = toward; next_step_at = now + geometry.step_cost (creature_step_ms foe c.met_player) c.at toward }
+
+:= met (c : foe_state) : foe_state = { c ?| met_player = !+ }
+
+:= fleeing (foe : foe_kind) (c : foe_state) : bool = vitality.health c.life < (creatures.stats_of foe).run_health
+
+:= creature_moves (foe : foe_kind) (now : i32) (s : hunt) : hunt =
+    := c = s.creature
+    ? now < c.next_step_at ?> s
+    |? fleeing foe c ?> flee foe now s
+    |: { s ?| creature = (? adjacent s ?> met c |: approached foe now s.player.at c) }
+
+:= creature_damage (foe : foe_kind) (m : moment) : i32 =
+    := roll = key m (purpose_creature_hit ())
+    combat.creature_hit (conv (creature_melee_max foe)) (combat.knight_sample_gear ()) !+ roll
+
+:= struck_by (damage : i32) (now : i32) (s : hunt) : hunt =
+    := p, c = s.player, s.creature
+    { s ?| player = { p ?| health = p.health - damage }; creature = { c ?| strikes_at = now + creature_strike_ms () } }
+
+:= creature_strikes (foe : foe_kind) (m : moment) (s : hunt) : hunt =
+    ? adjacent s && s.creature.strikes_at <= m.now ?> struck_by (creature_damage foe m) m.now s |: s
+
+:= heal_spell () = vocations.as_cooldown (vocations.knight_heal ())
+
+:= healed (amount : i32) (now : i32) (p : knight_state) : knight_state =
+    { p ?| health = p.health + amount; timers = cooldowns.after_cast now (heal_spell ()) p.timers }
+
+:= heal_now (m : moment) (s : hunt) : hunt =
+    := amount : i32 = conv (rng.roll_between 30 60 (key m (purpose_player_heal ())))
+    { s ?| player = healed amount m.now s.player }
+
+:= struck (now : i32) (p : knight_state) : knight_state =
+    { p ?| timers = cooldowns.after_cast now (cooldowns.strike_spell ()) p.timers }
+
+:= looted (foe : foe_kind) (bounty : i32) (s : hunt) : hunt =
+    { s ?| creature = respawned_foe foe s.creature; kills = s.kills + 1; gold = s.gold + bounty }
+
+:= bounty (m : moment) : i32 = conv (rng.roll_between 10 30 (key m (purpose_loot ())))
+
+:= after_hit (foe : foe_kind) (m : moment) (damage : i32) (s : hunt) : hunt =
+    :< vitality
+    := c = s.creature
+    ?= strike damage c.life ?|
+    | Survived wounded => { s ?| creature = { c ?| life = wounded } }
+    | Slain _ => looted foe (bounty m) s
+
+:= strike_now (foe : foe_kind) (m : moment) (s : hunt) : hunt =
+    := damage = player_hit foe (key m (purpose_player_hit ()))
+    after_hit foe m damage { s ?| player = struck m.now s.player }
+
+:= heal_ready (now : i32) (p : knight_state) : bool = cooldowns.can_cast now (heal_spell ()) p.timers
+
+:= strike_ready (now : i32) (p : knight_state) : bool = cooldowns.can_cast now (cooldowns.strike_spell ()) p.timers
+
+:= observe (now : i32) (s : hunt) : policy.observation =
+    :< policy
+    {
+        health = s.player.health
+        heal_ready = heal_ready now s.player
+        strike_ready = strike_ready now s.player
+        target = ? adjacent s ?> InReach |: OutOfReach
+    }
+
+:= player_heals_below (threshold : i32) (m : moment) (s : hunt) : hunt =
+    ? s.player.health < threshold && heal_ready m.now s.player ?> heal_now m s |: s
+
+:= player_strikes (foe : foe_kind) (m : moment) (s : hunt) : hunt =
+    ? adjacent s && strike_ready m.now s.player ?> strike_now foe m s |: s
+
+:= stepped_toward (target : tile) (step_ms : i32) (now : i32) (p : knight_state) : knight_state =
+    := toward = geometry.step_toward target p.at
+    { p ?| at = toward; next_step_at = now + geometry.step_cost step_ms p.at toward }
+
+:= player_approaches (foe : foe_kind) (now : i32) (s : hunt) : hunt =
+    ? now < s.player.next_step_at || adjacent s ?> s
+    |: { s ?| player = stepped_toward s.creature.at (offense_against foe).step_ms now s.player }
+
+:= engaged (foe : foe_kind) (t : policy.thresholds) (m : moment) (s : hunt) : hunt =
+    :< policy
+    ?= engages t (observe m.now s) ?|
+    | Strike => strike_now foe m s
+    | Approach => player_approaches foe m.now s
+    | Hold => s
+
+:= follow_policy (foe : foe_kind) (t : policy.thresholds) (m : moment) (s : hunt) : hunt =
+    :< policy
+    engaged foe t m (? heals t (observe m.now s) ?> heal_now m s |: s)
+
+:| policy =
+    | Scripted
+    | ScriptedHealingBelow : i32
+    | Tuned : i32 * i32
+    | RandomControl
+
+:= purpose_policy () : u32 = 5
+
+:= cavebot_baseline () : policy = Tuned (120, 0)
+
+:= scripted_act (foe : foe_kind) (threshold : i32) (m : moment) (s : hunt) : hunt =
+    s |> player_heals_below threshold m |> player_strikes foe m
+
+:= random_act (foe : foe_kind) (m : moment) (s : hunt) : hunt =
+    := pick = rng.roll_between 0 2 (key m (purpose_policy ()))
+    ? pick = 1 ?> player_heals_below 100000 m s |? pick = 2 ?> player_strikes foe m s |: s
+
+:= tuned_act (foe : foe_kind) (heal : i32) (strike : i32) (m : moment) (s : hunt) : hunt =
+    follow_policy foe { heal_below = heal; strike_above = strike } m s
+
+:= scripted_threshold (choice : policy) : i32 =
+    ?= choice ?|
+    | ScriptedHealingBelow threshold => threshold
+    | _ => heal_below ()
+
+:= player_acts (foe : foe_kind) (choice : policy) (m : moment) (s : hunt) : hunt =
+    ?= choice ?|
+    | Tuned (heal, strike) => tuned_act foe heal strike m s
+    | RandomControl => random_act foe m s
+    | _ => scripted_act foe (scripted_threshold choice) m s
+
+:= creature_turn_then_player (foe : foe_kind) (choice : policy) (m : moment) (s : hunt) : hunt =
+    := struck = s |> creature_moves foe m.now |> creature_strikes foe m
+    ? struck.player.health <= 0 ?> struck |: player_acts foe choice m struck
+
+:= advance_against (foe : foe_kind) (choice : policy) (seed : u32) (tick : i32) (s : hunt) : hunt =
+    := m = { seed = seed; tick = tick; now = tick * tick_ms () }
+    ? s.player.health <= 0 ?> s |: creature_turn_then_player foe choice m s
+
+:~ ^ simulated_from (foe : foe_kind) (choice : policy) (seed : u32) (ticks : i32) (tick : i32) (s : hunt) : hunt =
+    ? tick >= ticks ?> s |: simulated_from foe choice seed ticks (tick + 1) (advance_against foe choice seed tick s)
+
+:= simulate_against (foe : foe_kind) (choice : policy) (seed : u32) (ticks : i32) : hunt =
+    simulated_from foe choice seed ticks 0 (start foe)
+
+:= simulate_with (choice : policy) (seed : u32) (ticks : i32) : hunt =
+    simulate_against (default_foe ()) choice seed ticks
+
+:= simulate (seed : u32) (ticks : i32) : hunt =
+    simulate_with Scripted seed ticks
+
+:== trial = { foe : foe_kind; first : u32; count : i32 }
+
+:= trial_hunt (t : trial) (choice : policy) (index : i32) : hunt =
+    simulate_against t.foe choice (t.first + conv index) (scenario_ticks ())
+
+:= summed (f : hunt -> i32) (t : trial) (choice : policy) : i32 =
+    :~ ^ go (index : i32) (acc : i32) : i32 =
+        ? index >= t.count ?> acc |: go (index + 1) (acc + f (trial_hunt t choice index))
+    go 0 0
+
+:= died (h : hunt) : i32 = ? h.player.health <= 0 ?> 1 |: 0
+
+:= total_deaths_against (foe : foe_kind) (choice : policy) (first_seed : u32) (count : i32) : i32 =
+    summed died { foe = foe; first = first_seed; count = count } choice
+
+:= total_kills (choice : policy) (first_seed : u32) (count : i32) : i32 =
+    summed (\ h => h.kills) { foe = default_foe (); first = first_seed; count = count } choice
+
+:= total_deaths (choice : policy) (first_seed : u32) (count : i32) : i32 =
+    total_deaths_against (default_foe ()) choice first_seed count
+
+///> c
+test same_seed_same_hunt =
+    := ~seed = 7u32
+    := a, b = simulate seed (scenario_ticks ()), simulate seed (scenario_ticks ())
+    (a.kills, a.gold, a.player.health) |> _assert_eq (b.kills, b.gold, b.player.health)
+
+///> c
+test chasing_hunter_survives_and_kills =
+    := ~seed = 7u32
+    := outcome = simulate_with (cavebot_baseline ()) seed (scenario_ticks ())
+    (outcome.kills > 0, outcome.player.health > 0) |> _assert_eq (!+, !+)
+
+///> c
+test loot_stays_within_bounty_range =
+    := ~seed = 7u32
+    := outcome = simulate seed (scenario_ticks ())
+    (outcome.gold >= outcome.kills * 10, outcome.gold <= outcome.kills * 30) |> _assert_eq (!+, !+)
+
+///> rust
+///> c
+test golden_seed_7 =
+    := ~seed = 7u32
+    := outcome = simulate seed (scenario_ticks ())
+    (outcome.kills, outcome.gold, outcome.player.health) |> _assert_eq (1i32, 18i32, 150i32)
+
+///> c
+test scripted_beats_random_control_over_twenty_seeds =
+    := ~first = 1u32
+    := scripted, control = total_kills Scripted first 20, total_kills RandomControl first 20
+    (scripted, control, scripted > control) |> _assert_eq (34i32, 28i32, !+)
+
+:= sweep_kills (first : u32) (threshold : i32) : i32 = total_kills (ScriptedHealingBelow threshold) first 10
+
+///> c
+test heal_threshold_sweep_over_ten_seeds =
+    := ~first = 1u32
+    := at = sweep_kills first
+    (at 20, at 40, at 60, at 80, at 100, at 120) |> _assert_eq (14i32, 14i32, 14i32, 14i32, 14i32, 14i32)
+
+:= sweep_deaths (first : u32) (threshold : i32) : i32 = total_deaths (ScriptedHealingBelow threshold) first 10
+
+///> c
+test troll_scenario_saturates_no_deaths_over_ten_seeds =
+    := ~first = 1u32
+    := at = sweep_deaths first
+    (at 20, at 60, at 120, total_deaths RandomControl first 10) |> _assert_eq (0i32, 0i32, 0i32, 0i32)
+
+:= cyclops_deaths (first : u32) (choice : policy) : i32 =
+    :< creatures
+    total_deaths_against Cyclops choice first 10
+
+///> c
+test cyclops_scenario_separates_policies_over_ten_seeds =
+    := ~first = 1u32
+    := deaths = cyclops_deaths first
+    (deaths (ScriptedHealingBelow 120), deaths (ScriptedHealingBelow 20), deaths RandomControl)
+    |> _assert_eq (0i32, 10i32, 0i32)
+
+///> wgsl
+test golden_seed_7_on_gpu =
+    := ~seed = 7u32
+    := outcome = simulate seed (scenario_ticks ())
+    ? outcome.kills = 1i32 && outcome.gold = 18i32 && outcome.player.health = 150i32 ?> 0i32 |: 1i32
+
+///> wgsl
+test scripted_beats_random_control_on_gpu =
+    := ~first = 1u32
+    ? total_kills Scripted first 20 = 34i32 && total_kills RandomControl first 20 = 28i32 ?> 0i32 |: 1i32
+
+///> c
+test chasing_policy_outkills_standing_scripted_over_twenty_seeds =
+    := ~first = 1u32
+    := standing, chasing = total_kills Scripted first 20, total_kills (Tuned (60, 40)) first 20
+    (standing, chasing, chasing > standing) |> _assert_eq (34i32, 356i32, !+)

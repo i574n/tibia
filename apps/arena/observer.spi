@@ -1,0 +1,158 @@
+///- --package .
+test observer static =
+    :< testing
+
+:< sm'_operators
+:= watch_ms () : i32 = 100
+:= observe_ms () : i32 = 10000
+:= run_ms () : i32 = 150000
+:= full_experience () : i32 = client.env_i32 "TIBIA_ARENA_FULL_EXPERIENCE" 90
+
+:== watch =
+    {
+        start_experience : i32
+        started_at : i32
+        full_experience : i32
+        lowest : mut i32
+        cleared : mut i32
+        done : mut i32
+    }
+
+:== bot = { config : string; banner : string; diagnostics : () -> string }
+
+:= gained (w : watch) : i32 = client.player_experience () - w.start_experience
+
+:= note_lowest (w : watch) (health : i32) : () =
+    ? health < *w.lowest ?> probe.stored w.lowest health
+
+:= cleared_line (plus : i32) (health : i32) (lowest : i32) : string =
+    "cleared: experience +" ++#? plus ++# " health " ++#? health ++# " lowest health " ++#? lowest
+
+:= progress_head (seconds : i32) (plus : i32) (health : i32) : string =
+    "t=" ++#? seconds ++# "s experience +" ++#? plus ++# " health " ++#? health
+
+:= progress_line (seconds : i32) (plus : i32) (health : i32) (lowest : i32) (attacking : string) (at : string)
+    : string
+    =
+    progress_head seconds plus health ++# " lowest " ++#? lowest ++# " attacking " ++# attacking ++# " at " ++# at
+
+:= cleared_now (w : watch) (health : i32) (at : i32) : () =
+    probe.stored w.cleared 1
+    := plus, low = gained w, *w.lowest
+    probe.note ("cleared at " ++#? at ++# " ms")
+    probe.note (cleared_line plus health low)
+    probe.finish_once w.done "cleared"
+
+:= clear_if_full (w : watch) (health : i32) (at : i32) : bool =
+    ? *w.cleared = 0 && gained w >= w.full_experience
+    ?>
+        cleared_now w health at
+        !+
+    |: !-
+
+:= tick_watched (w : watch) (again : () -> ()) : () =
+    := health = client.player_health ()
+    note_lowest w health
+    ? clear_if_full w health (client.now_ms () - w.started_at) = !- ?> client.after (watch_ms ()) again
+
+:= watch_every_tick (w : watch) : () =
+    :~ ^ go () : () =
+        ? *w.done = 0 && client.player_present () ?> tick_watched w go
+    go ()
+
+:= player_at () : string = probe.described (client.player_spot ())
+
+:= progress_noted (plus : i32) (lowest : i32) (health : i32) (elapsed : i32) : () =
+    := attacking, at = client.attacking_short (), player_at ()
+    probe.note (progress_line (elapsed / 1000) plus health lowest attacking at)
+
+:= diagnostics_noted (b : bot) : () =
+    := diagnostics = b.diagnostics ()
+    ? diagnostics <> "" ?> probe.note diagnostics
+
+:= run_ended (plus : i32) (lowest : i32) (done : mut i32) : () =
+    probe.note ("end: experience +" ++#? plus ++# " lowest health " ++#? lowest)
+    probe.finish_once done "run complete"
+
+:= ended_or_again (w : watch) (plus : i32) (lowest : i32) (elapsed : i32) (again : () -> ()) : () =
+    ? elapsed > run_ms () ?> run_ended plus lowest w.done |: client.after (observe_ms ()) again
+
+:= observed (b : bot) (w : watch) (health : i32) (elapsed : i32) (again : () -> ()) : () =
+    := plus, lowest = gained w, *w.lowest
+    progress_noted plus lowest health elapsed
+    diagnostics_noted b
+    ended_or_again w plus lowest elapsed again
+
+:= observe_tick (b : bot) (w : watch) (again : () -> ()) : () =
+    := health = client.player_health ()
+    note_lowest w health
+    := elapsed = client.now_ms () - w.started_at
+    ? clear_if_full w health elapsed = !- ?> observed b w health elapsed again
+
+:= observe (b : bot) (w : watch) : () =
+    :~ ^ go () : () =
+        ? *w.done = 0 ?>
+            ? client.player_present () = !- ?> probe.finish_once w.done "offline" |: observe_tick b w go
+    go ()
+
+:= late_potion (done : mut i32) (text : string) : bool = *done = 1 && sm'.contains "health potion" text
+
+:= late_potion_line (mode : string) (t : i32) : string =
+    "server text after finish (potion not counted) [" ++# mode ++# "] @t+" ++#? t
+
+:= server_text_line (mode : string) (text : string) (t : i32) : string =
+    "server text [" ++# mode ++# "]: " ++# text ++# " @t+" ++#? t
+
+:= text_noted (done : mut i32) (logged_in_at : mut i32) (mode : string) (text : string) : () =
+    := t = client.now_ms () - *logged_in_at
+    ? late_potion done text ?> probe.note (late_potion_line mode t) |: probe.note (server_text_line mode text t)
+
+:= ready_noted (b : bot) (logged_in_at : mut i32) : () =
+    := name, health, tag = client.player_name (), client.player_health (), b.banner
+    probe.note ("in game as " ++# name ++# " health " ++#? health ++# " " ++# tag)
+    logged_in_at <- (client.now_ms ())
+
+:= bot_started (b : bot) (logged_in_at : mut i32) : () =
+    client.fight_balanced ()
+    client.start_client_bot (probe.bot_profile ()) b.config
+    := t = client.now_ms () - *logged_in_at
+    probe.note ("client bot starts @t+" ++#? t)
+
+:= fresh_watch (done : mut i32) : watch =
+    {
+        start_experience = client.player_experience ()
+        started_at = client.now_ms ()
+        full_experience = full_experience ()
+        lowest = mut 999
+        cleared = mut 0
+        done = done
+    }
+
+:= watch_started (b : bot) (logged_in_at : mut i32) (done : mut i32) : () =
+    bot_started b logged_in_at
+    := w = fresh_watch done
+    watch_every_tick w
+    observe b w
+
+:= on_ready (b : bot) (done : mut i32) (logged_in_at : mut i32) : () =
+    ready_noted b logged_in_at
+    client.after (probe.start_delay_ms ()) \ () => watch_started b logged_in_at done
+
+:= timed_out (done : mut i32) : () = probe.finish_once done "timeout"
+
+:= run (b : bot) : () =
+    := done, at = mut 0, mut 0
+    := ready () = on_ready b done at
+    client.disable_client_bot (probe.bot_profile ())
+    probe.started_as (probe.knight ()) (text_noted done at) ready 200000 \ () => timed_out done
+
+///> lua
+///> c
+test progress_line_reports_time_experience_health_and_target =
+    progress_line 12 270 377 210 "Cyclops" "1936,1349,7"
+    |> _assert_eq "t=12s experience +270 health 377 lowest 210 attacking Cyclops at 1936,1349,7"
+
+///> lua
+///> c
+test cleared_line_reports_experience_and_both_healths =
+    cleared_line 675 410 188 |> _assert_eq "cleared: experience +675 health 410 lowest health 188"

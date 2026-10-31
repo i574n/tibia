@@ -1,0 +1,412 @@
+///- --package .
+test client static =
+    :< testing
+
+:< sm'_operators
+
+:! native_position = $'any'
+
+:! creature = $'any'
+
+:! crowd = $'any'
+
+:== spot = { x : i32; y : i32; z : i32 }
+
+:! host_value = $'any'
+
+:= host_text (v : host_value) : string = $'tostring(!v)' : string
+
+:= after (ms : i32) (f : () -> ()) : () = $'scheduleEvent(!f, !ms)' : ()
+
+:= now_ms () : i32 = $'g_clock.millis()' : i32
+
+:= wall_seconds () : i32 = $'os.time()' : i32
+
+:~ env_text (name : string) (fallback : string) : string =
+    := value = env.get_environment_variable name
+    ? value = "" ?> fallback |: value
+
+:~ env_i32 (name : string) (fallback : i32) : i32 =
+    optionm'.default_value fallback (convert.try_convert (sm'.trim (env.get_environment_variable name)))
+
+:= seed_random_from_clock () : () = $'math.randomseed(os.time())' : ()
+
+:= env_is (name : string) (value : string) : bool = env.get_environment_variable name = value
+
+:= spot_of (p : native_position) : spot = { x = $'!p.x' : i32; y = $'!p.y' : i32; z = $'!p.z' : i32 }
+
+:= player_spot () : spot = spot_of ($'g_game.getLocalPlayer():getPosition()' : native_position)
+
+:= player_positioned () : bool = $'g_game.getLocalPlayer():getPosition() ~= nil' : bool
+
+:= player_exists () : bool = $'g_game.getLocalPlayer() ~= nil' : bool
+
+:= game_online () : bool = $'g_game.isOnline()' : bool
+
+:~ player_present () : bool = player_exists () && game_online ()
+
+:= player_name () : string = $'g_game.getLocalPlayer():getName()' : string
+
+:= player_health () : i32 = $'g_game.getLocalPlayer():getHealth()' : i32
+
+:= player_max_health () : i32 = $'g_game.getLocalPlayer():getMaxHealth()' : i32
+
+:= player_shield_skill () : i32 = $'g_game.getLocalPlayer():getSkillLevel(Skill.Shielding)' : i32
+
+:= player_mana () : i32 = $'g_game.getLocalPlayer():getMana()' : i32
+
+:= player_experience () : i32 = $'g_game.getLocalPlayer():getExperience()' : i32
+
+:= player_walking () : bool = $'g_game.getLocalPlayer():isWalking()' : bool
+
+:= local_player () : creature = $'g_game.getLocalPlayer()' : creature
+
+:= creature_has_zone_check (c : creature) : bool = $'(!c).isInProtectionZone ~= nil' : bool
+
+:= creature_in_zone (c : creature) : bool = $'(!c):isInProtectionZone()' : bool
+
+:~ player_zone () : string =
+    := player = local_player ()
+    ? creature_has_zone_check player ?> (? creature_in_zone player ?> "true" |: "false") |: "?"
+
+:| footing =
+    | Free
+    | Ramp
+    | Occupied
+    | Blocked
+    | Unknown
+
+:! map_tile = $'any'
+
+:= tile_at (x : i32) (y : i32) (z : i32) : map_tile = $'g_map.getTile({ x = !x, y = !y, z = !z })' : map_tile
+
+:= tile_present (tile : map_tile) : bool = $'(!tile) ~= nil' : bool
+
+:= tile_walkable (tile : map_tile) : bool = $'(!tile):isWalkable()' : bool
+
+:= tile_floor_change (tile : map_tile) : bool = $'(!tile):hasFloorChange()' : bool
+
+:= tile_walkable_through_creatures (tile : map_tile) : bool = $'(!tile):isWalkable(true)' : bool
+
+:~ footing_of (present : bool) (walkable : bool) (floor_change : bool) (through_creatures : bool) : footing =
+    ? present = !- ?> Unknown
+    |? walkable && floor_change = !- ?> Free
+    |? walkable ?> Ramp
+    |? through_creatures ?> Occupied
+    |: Blocked
+
+:~ footing_at (s : spot) : footing =
+    := tile = tile_at s.x s.y s.z
+    ? tile_present tile
+    ?> footing_of !+ (tile_walkable tile) (tile_floor_change tile) (tile_walkable_through_creatures tile)
+    |: Unknown
+
+:= spectators (s : spot) : crowd =
+    := x, y, z = s.x, s.y, s.z
+    $'g_map.getSpectators({ x = !x, y = !y, z = !z }, false)' : crowd
+
+:= crowd_size (c : crowd) : i32 = $'##(!c)' : i32
+
+:= member (c : crowd) (index : i32) : creature = $'(!c)[!index]' : creature
+
+
+:= creature_spot (c : creature) : spot = spot_of ($'(!c):getPosition()' : native_position)
+
+:= creature_name (c : creature) : string = $'(!c):getName()' : string
+
+:= creature_health_percent (c : creature) : i32 = $'(!c):getHealthPercent()' : i32
+
+:= same_creature (a : creature) (b : creature) : bool = $'(!a) == (!b)' : bool
+
+:= attacking () : creature = $'g_game.getAttackingCreature()' : creature
+
+:= attacking_anyone () : bool = $'g_game.isAttacking()' : bool
+
+:= creature_present (c : creature) : bool = $'(!c) ~= nil' : bool
+
+:= spot_text (s : spot) : string = "" ++#? s.x ++# "," ++#? s.y ++# "," ++#? s.z
+
+:= target_line (a : creature) : string = creature_name a ++# " " ++#? creature_health_percent a ++# "%"
+
+:~ attacking_short () : string =
+    := a = attacking ()
+    ? creature_present a ?> target_line a |: "nothing"
+
+:~ attacking_described () : string =
+    := a = attacking ()
+    ? creature_present a ?> target_line a ++# " at " ++# spot_text (creature_spot a) |: "nothing"
+
+:= attack (c : creature) : () = $'g_game.attack(!c)' : ()
+
+:= cancel_attack () : () = $'g_game.cancelAttack()' : ()
+
+:= chase_on () : bool = $'g_game.getChaseMode() == ChaseOpponent' : bool
+
+:= chase_opponent_mode () : i32 = $'ChaseOpponent' : i32
+
+:= dont_chase_mode () : i32 = $'DontChase' : i32
+
+:= chase_mode () : i32 = $'g_game.getChaseMode()' : i32
+
+:= set_chase_mode (mode : i32) : () = $'g_game.setChaseMode(!mode)' : ()
+
+:~ chasing (on : bool) : () =
+    := wanted = ? on ?> chase_opponent_mode () |: dont_chase_mode ()
+    ? chase_mode () <> wanted ?> set_chase_mode wanted
+
+:= fight_balanced () : () = $'g_game.setFightMode(FightBalanced)' : ()
+
+:= fight_mode_text () : string = host_text ($'g_game.getFightMode()' : host_value)
+
+:= following_someone () : bool = $'g_game.getFollowingCreature() ~= nil' : bool
+
+:! item = $'any'
+
+:= inventory_item (p : creature) (slot : i32) : item = $'(!p):getInventoryItem(!slot)' : item
+
+:= item_present (i : item) : bool = $'(!i) ~= nil' : bool
+
+:= item_id (i : item) : i32 = $'(!i):getId()' : i32
+
+:= left_hand_slot () : i32 = $'InventorySlotLeft' : i32
+
+:= right_hand_slot () : i32 = $'InventorySlotRight' : i32
+
+:= drink (item : i32) : bool = $'g_game.useInventoryItemWith(!item, g_game.getLocalPlayer()) ~= false' : bool
+
+:! direction = $'any'
+
+:= north () : direction = $'North' : direction
+
+:= east () : direction = $'East' : direction
+
+:= south () : direction = $'South' : direction
+
+:= west () : direction = $'West' : direction
+
+:= north_east () : direction = $'NorthEast' : direction
+
+:= south_east () : direction = $'SouthEast' : direction
+
+:= south_west () : direction = $'SouthWest' : direction
+
+:= north_west () : direction = $'NorthWest' : direction
+
+:= walk_direction (d : direction) : bool = $'g_game.walk(!d) ~= false' : bool
+
+:= heading (dx : i32) (dy : i32) (x : i32) (y : i32) : bool = dx = x && dy = y
+
+:~ diagonal_south (dx : i32) (dy : i32) : bool =
+    ? heading dx dy 1 1 ?> walk_direction (south_east ())
+    |? heading dx dy (0 - 1) 1 ?> walk_direction (south_west ())
+    |: !-
+
+:~ diagonal_step (dx : i32) (dy : i32) : bool =
+    ? heading dx dy 1 (0 - 1) ?> walk_direction (north_east ())
+    |? heading dx dy (0 - 1) (0 - 1) ?> walk_direction (north_west ())
+    |: diagonal_south dx dy
+
+:~ south_or_west_step (dx : i32) (dy : i32) : bool =
+    ? heading dx dy 0 1 ?> walk_direction (south ())
+    |? heading dx dy (0 - 1) 0 ?> walk_direction (west ())
+    |: diagonal_step dx dy
+
+:~ step (dx : i32) (dy : i32) : bool =
+    ? heading dx dy 0 (0 - 1) ?> walk_direction (north ())
+    |? heading dx dy 1 0 ?> walk_direction (east ())
+    |: south_or_west_step dx dy
+
+:= talk (text : string) : () = $'g_game.talk(!text)' : ()
+
+:! settings_node = $'any'
+
+:= bot_settings_node () : settings_node = $'g_settings.getNode("bot")' : settings_node
+
+:= settings_node_present (s : settings_node) : bool = $'(!s) ~= nil' : bool
+
+:= empty_settings_node () : settings_node = $'{}' : settings_node
+
+:= mark_bot_disabled (s : settings_node) (key : string) : () = $'(!s)[!key] = { enabled = false }' : ()
+
+:= mark_bot_enabled (s : settings_node) (key : string) (config : string) : () =
+    $'(!s)[!key] = { enabled = true, config = !config }' : ()
+
+:= store_bot_settings (s : settings_node) : () = $'g_settings.setNode("bot", !s)' : ()
+
+:= save_settings () : () = $'g_settings.save()' : ()
+
+:= current_bot_settings () : settings_node =
+    := s = bot_settings_node ()
+    ? settings_node_present s ?> s |: empty_settings_node ()
+
+:~ disable_client_bot (character_key : string) : () =
+    := s = current_bot_settings ()
+    mark_bot_disabled s character_key
+    store_bot_settings s
+    save_settings ()
+
+:~ enable_client_bot (character_key : string) (config : string) : () =
+    := s = current_bot_settings ()
+    mark_bot_enabled s character_key config
+    store_bot_settings s
+    save_settings ()
+
+:= start_client_bot (character_key : string) (config : string) : () =
+    enable_client_bot character_key config
+    $'modules.game_bot.refresh()' : ()
+
+:= parity_present () : bool = $'ArenaParity ~= nil' : bool
+
+:= parity_text () : string = $'ArenaParity.summary()' : string
+
+:~ parity_summary () : string = ? parity_present () ?> parity_text () |: ""
+
+:== engaged = mut (list (i32 * creature))
+
+:= no_engaged () : engaged = mut []
+
+:== creature_slot = mut (option creature)
+
+:= no_creature () : creature = $'nil' : creature
+
+:= new_creature_slot () : creature_slot = mut None
+
+:= slot_occupied (slot : creature_slot) : bool = ?= *slot ?| Some _ => !+ | None => !-
+
+:= slot_creature (slot : creature_slot) : creature = ?= *slot ?| Some c => c | None => no_creature ()
+
+:= occupy_slot (slot : creature_slot) (c : creature) : () = slot <- Some c
+
+:= empty_slot (slot : creature_slot) : () = slot <- None
+
+:= creature_id (c : creature) : i32 = $'(!c):getId()' : i32
+
+:= creature_is_monster (c : creature) : bool = $'(!c):isMonster()' : bool
+
+:= creature_is_local_player (c : creature) : bool = $'(!c):isLocalPlayer()' : bool
+
+:= creature_positioned (c : creature) : bool = $'(!c):getPosition() ~= nil' : bool
+
+:= creature_dead (c : creature) : bool = $'(!c):isDead()' : bool
+
+:~ positioned_monster (c : creature) : bool = creature_is_monster c && creature_positioned c
+
+:~ live_monster (c : creature) : bool = creature_is_monster c && creature_dead c = !- && creature_positioned c
+
+:~ ^ remember (t : engaged) (c : creature) : () =
+    := id = creature_id c
+    t <- (id, c) :: listm'.filter (\ (seen, _) => seen <> id) *t
+
+:~ ^ forget_dead (t : engaged) : i32 =
+    := dead = listm'.filter (\ (_, c) => creature_dead c) *t
+    t <- listm'.filter (\ (_, c) => creature_dead c = !-) *t
+    listm.length dead
+
+:= monster_line (c : creature) : string =
+    := at = creature_spot c
+    target_line c ++# " " ++#? at.x ++# "," ++#? at.y
+
+:~ ^ monster_lines (seen : crowd) (i : i32) (acc : list string) : list string =
+    ? i < 1 ?> acc
+    |:
+        := c = member seen i
+        monster_lines seen (i - 1) (? live_monster c ?> monster_line c :: acc |: acc)
+
+:~ ^ monsters_described (s : spot) : string =
+    := seen = spectators s
+    ?= monster_lines seen (crowd_size seen) [] ?| [] => "none" | lines => sm'.concat_list "; " lines
+
+:= position_known (p : native_position) : bool = $'(!p) ~= nil' : bool
+
+:= player_speed () : string = host_text ($'g_game.getLocalPlayer():getSpeed()' : host_value)
+
+:! position_handler = $'any'
+
+:= position_handler_of (f : creature -> native_position -> native_position -> ()) : position_handler =
+    $'function(c, n, o) (!f)(c)(n)(o) end' : position_handler
+
+:= connect_creature_moves (h : position_handler) : () = $'connect(Creature, { onPositionChange = !h })' : ()
+
+:= connect_player_moves (h : position_handler) : () = $'connect(LocalPlayer, { onPositionChange = !h })' : ()
+
+:~ on_position_change (f : creature -> native_position -> native_position -> ()) : () =
+    := handler = position_handler_of f
+    connect_creature_moves handler
+    connect_player_moves handler
+
+:= online () : bool = $'g_game.isOnline()' : bool
+
+:= log_out () : () = $'g_game.safeLogout()' : ()
+
+:= exit_client () : () = $'g_app.exit()' : ()
+
+:= hidden_requested () : bool = env_is "TIBIA_PROBE_HIDDEN" "1"
+
+:= hide_window () : () =
+    $'g_window.move({ x = -32000, y = -32000 })' : ()
+    $'g_window.hide()' : ()
+
+:= sounds_present () : bool = $'g_sounds ~= nil' : bool
+
+:= sounds_disable () : () = $'g_sounds.setAudioEnabled(false)' : ()
+
+:= sounds_stop () : () = $'g_sounds.stopAll()' : ()
+
+:~ mute () : () =
+    $'g_settings.set("enableAudio", false)' : ()
+    ? sounds_present () ?>
+        sounds_disable ()
+        sounds_stop ()
+
+:= probe_log_missing () : bool = $'TibiaProbeLog == nil' : bool
+
+:= probe_log_start () : () = $'TibiaProbeLog = {}' : ()
+
+:= probe_log_text () : string = $'table.concat(TibiaProbeLog, string.char(10))' : string
+
+:~ log_flush () : () =
+    := joined = probe_log_text () ++# "\n"
+    $'g_resources.writeFileContents("/tibia-probe.log", !joined)' : ()
+
+:~ write_log_line (line : string) : () =
+    ? probe_log_missing () ?> probe_log_start ()
+    $'table.insert(TibiaProbeLog, !line)' : ()
+    $'g_logger.info(!line)' : ()
+    log_flush ()
+
+:! game_handler = $'any'
+
+:= login_error_handler (f : string -> ()) : game_handler =
+    := typed (message : host_value) : () = f (host_text message)
+    $'function(message) (!typed)(message) end' : game_handler
+
+:= text_message_handler (f : string -> string -> ()) : game_handler =
+    := typed (mode : host_value) (text : host_value) : () = f (host_text mode) (host_text text)
+    $'function(mode, text) (!typed)(mode)(text) end' : game_handler
+
+:= connect_game_events (on_start : () -> ()) (on_error : game_handler) (on_text : game_handler) : () =
+    $'connect(g_game, { onGameStart = !on_start, onLoginError = !on_error, onTextMessage = !on_text })' : ()
+
+:== session = { character : string; on_start : () -> (); on_error : string -> (); on_text : string -> string -> () }
+
+:= client_version_set () : () =
+    $'g_game.setClientVersion(1511)' : ()
+    $'g_game.setProtocolVersion(g_game.getClientProtocolVersion(1511))' : ()
+    $'g_game.chooseRsa("127.0.0.1")' : ()
+
+:= world_login (character : string) : () =
+    := account = "@god"
+    := session_key = "@god\ngod"
+    $'g_game.loginWorld(!account, "god", "OTServBR-Global", "127.0.0.1", 7172, !character, "", !session_key)' : ()
+
+:= log_in (s : session) : () =
+    := on_start, on_error, on_text, c = s.on_start, s.on_error, s.on_text, s.character
+    client_version_set ()
+    connect_game_events on_start (login_error_handler on_error) (text_message_handler on_text)
+    world_login c
+
+///> lua
+///> c
+test footing_follows_the_host_tile_facts =
+    (footing_of !+ !+ !- !+, footing_of !+ !+ !+ !+, footing_of !+ !- !- !+) |> _assert_eq (Free, Ramp, Occupied)
+    (footing_of !+ !- !- !-, footing_of !- !+ !- !+) |> _assert_eq (Blocked, Unknown)

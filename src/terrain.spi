@@ -1,0 +1,1975 @@
+///- --package .
+test terrain static =
+    :< testing
+
+:== tile = geometry.position
+
+:= tile (x : i32) (y : i32) (z : i32) : tile = geometry.position x y z
+
+:== occupancy = tile -> bool
+
+:| layout =
+    | OpenField
+    | EastCorridor
+    | RoomAndCorridor
+    | ArenaSpot
+    | ArenaHunt
+
+:= corridor_row () : i32 = 100
+:= corridor_mouth () : i32 = 99
+
+:~ arena_spot_bits_0_0_0 (row : i32) : u32 =
+    ? row <= 1
+    ?> ? row <= 0 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 2 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_1 (row : i32) : u32 =
+    ? row <= 5
+    ?> ? row <= 4 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 6 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_2 (row : i32) : u32 =
+    ? row <= 9
+    ?> ? row <= 8 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 10 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_3 (row : i32) : u32 =
+    ? row <= 13
+    ?> ? row <= 12 ?> 1073741823u32 |: 536870911u32
+    |? row <= 14 ?> 1879048191u32 |: 536870911u32
+
+:~ arena_spot_bits_0_0_4 (row : i32) : u32 =
+    ? row <= 17
+    ?> ? row <= 16 ?> 1610612735u32 |: 1610612735u32
+    |? row <= 18 ?> 1140850687u32 |: 570425343u32
+
+:~ arena_spot_bits_0_0_5 (row : i32) : u32 =
+    ? row <= 21
+    ?> ? row <= 20 ?> 587202559u32 |: 184549375u32
+    |? row <= 22 ?> 83886079u32 |: 1174405119u32
+
+:~ arena_spot_bits_0_0_6 (row : i32) : u32 =
+    ? row <= 25
+    ?> ? row <= 24 ?> 335544319u32 |: 671088639u32
+    |? row <= 26 ?> 2684354559u32 |: 2684354559u32
+
+:~ arena_spot_bits_0_0_7 (row : i32) : u32 =
+    ? row <= 29
+    ?> ? row <= 28 ?> 3221225471u32 |: 1073741823u32
+    |? row <= 30 ?> 1073741823u32 |: 3221225471u32
+
+:~ arena_spot_bits_0_0_8 (row : i32) : u32 =
+    ? row <= 33
+    ?> ? row <= 32 ?> 2147483647u32 |: 1073741823u32
+    |? row <= 34 ?> 1610612735u32 |: 1342177279u32
+
+:~ arena_spot_bits_0_0_9 (row : i32) : u32 =
+    ? row <= 37
+    ?> ? row <= 36 ?> 3087007743u32 |: 2348810239u32
+    |? row <= 38 ?> 570425343u32 |: 3590324223u32
+
+:~ arena_spot_bits_0_0_10 (row : i32) : u32 =
+    ? row <= 41
+    ?> ? row <= 40 ?> 285212671u32 |: 33554431u32
+    |? row <= 42 ?> 1426063359u32 |: 2181038079u32
+
+:~ arena_spot_bits_0_0_11 (row : i32) : u32 =
+    ? row <= 45
+    ?> ? row <= 44 ?> 2281701375u32 |: 2818572287u32
+    |? row <= 46 ?> 536870911u32 |: 2147483647u32
+
+:~ arena_spot_bits_0_0_12 (row : i32) : u32 =
+    ? row <= 49
+    ?> ? row <= 48 ?> 2147483647u32 |: 2147483647u32
+    |? row <= 50 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_13 (row : i32) : u32 =
+    ? row <= 53
+    ?> ? row <= 52 ?> 4294967295u32 |: 2147483647u32
+    |? row <= 54 ?> 2147483647u32 |: 1073741823u32
+
+:~ arena_spot_bits_0_0_14 (row : i32) : u32 =
+    ? row <= 57
+    ?> ? row <= 56 ?> 536870911u32 |: 1073741823u32
+    |? row <= 58 ?> 1073741823u32 |: 2147483647u32
+
+:~ arena_spot_bits_0_0_15 (row : i32) : u32 =
+    ? row <= 61
+    ?> ? row <= 60 ?> 2147483647u32 |: 2147483647u32
+    |? row <= 62 ?> 2147483647u32 |: 1073741823u32
+
+:~ arena_spot_bits_0_0_16 (row : i32) : u32 =
+    ? row <= 65
+    ?> ? row <= 64 ?> 536870911u32 |: 268435455u32
+    |? row <= 66 ?> 536870911u32 |: 1073741823u32
+
+:~ arena_spot_bits_0_0_17 (row : i32) : u32 =
+    ? row <= 69
+    ?> ? row <= 68 ?> 1073741823u32 |: 1073741823u32
+    |? row <= 70 ?> 2147483647u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_18 (row : i32) : u32 =
+    ? row <= 73
+    ?> ? row <= 72 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 74 ?> 4294967295u32 |: 2147483647u32
+
+:~ arena_spot_bits_0_0_19 (row : i32) : u32 =
+    ? row <= 77
+    ?> ? row <= 76 ?> 2147483647u32 |: 4294967295u32
+    |? row <= 78 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_20 (row : i32) : u32 =
+    ? row <= 81
+    ?> ? row <= 80 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 82 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 86 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_0_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_spot_bits_0_0_0 row |: arena_spot_bits_0_0_1 row
+    |? row <= 11 ?> arena_spot_bits_0_0_2 row |: arena_spot_bits_0_0_3 row
+
+:~ arena_spot_bits_0_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_spot_bits_0_0_4 row |: arena_spot_bits_0_0_5 row
+    |? row <= 27 ?> arena_spot_bits_0_0_6 row |: arena_spot_bits_0_0_7 row
+
+:~ arena_spot_bits_0_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_spot_bits_0_0_8 row |: arena_spot_bits_0_0_9 row
+    |? row <= 43 ?> arena_spot_bits_0_0_10 row |: arena_spot_bits_0_0_11 row
+
+:~ arena_spot_bits_0_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_spot_bits_0_0_12 row |: arena_spot_bits_0_0_13 row
+    |? row <= 59 ?> arena_spot_bits_0_0_14 row |: arena_spot_bits_0_0_15 row
+
+:~ arena_spot_bits_0_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_spot_bits_0_0_16 row |: arena_spot_bits_0_0_17 row
+    |? row <= 75 ?> arena_spot_bits_0_0_18 row |: arena_spot_bits_0_0_19 row
+
+:~ arena_spot_bits_0_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_spot_bits_0_0_20 row |: arena_spot_bits_0_0_21 row
+    |: arena_spot_bits_0_0_22 row
+
+:~ arena_spot_bits_0_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_spot_bits_0_1_0 row |: arena_spot_bits_0_1_1 row
+    |? row <= 47 ?> arena_spot_bits_0_1_2 row |: arena_spot_bits_0_1_3 row
+
+:~ arena_spot_bits_0_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_spot_bits_0_1_4 row |: arena_spot_bits_0_1_5 row
+
+:~ arena_spot_bits_0 (row : i32) : u32 =
+    ? row <= 63 ?> arena_spot_bits_0_2_0 row |: arena_spot_bits_0_2_1 row
+
+:~ arena_spot_bits_1_0_0 (row : i32) : u32 =
+    ? row <= 1
+    ?> ? row <= 0 ?> 135560767u32 |: 2861563935u32
+    |? row <= 2 ?> 17825823u32 |: 1356675615u32
+
+:~ arena_spot_bits_1_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 5244687u32 |: 671355015u32 |: ? row <= 6 ?> 67633799u32 |: 133711879u32
+
+:~ arena_spot_bits_1_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 76049671u32 |: 76025863u32 |: ? row <= 10 ?> 83363463u32 |: 533511u32
+
+:~ arena_spot_bits_1_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 557056u32 |: 67635202u32 |: ? row <= 14 ?> 67633160u32 |: 133693444u32
+
+:~ arena_spot_bits_1_0_4 (row : i32) : u32 =
+    ? row <= 17
+    ?> ? row <= 16 ?> 109314050u32 |: 5242976u32
+    |? row <= 18 ?> 267911178u32 |: 83361872u32
+
+:~ arena_spot_bits_1_0_5 (row : i32) : u32 =
+    ? row <= 21
+    ?> ? row <= 20 ?> 80216072u32 |: 206305409u32
+    |? row <= 22 ?> 71960601u32 |: 268044425u32
+
+:~ arena_spot_bits_1_0_6 (row : i32) : u32 =
+    ? row <= 25
+    ?> ? row <= 24 ?> 76155008u32 |: 76154924u32
+    |? row <= 26 ?> 210372640u32 |: 268434432u32
+
+:~ arena_spot_bits_1_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 4094u32 |: 3142u32 |: ? row <= 30 ?> 3142u32 |: 4034u32
+
+:~ arena_spot_bits_1_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 2242u32 |: 2174u32 |: ? row <= 34 ?> 267388994u32 |: 134745666u32
+
+:~ arena_spot_bits_1_0_9 (row : i32) : u32 =
+    ? row <= 37
+    ?> ? row <= 36 ?> 134746050u32 |: 135090766u32
+    |? row <= 38 ?> 170731134u32 |: 134775366u32
+
+:~ arena_spot_bits_1_0_10 (row : i32) : u32 =
+    ? row <= 41
+    ?> ? row <= 40 ?> 135012934u32 |: 135073347u32
+    |? row <= 42 ?> 170448894u32 |: 134906880u32
+
+:~ arena_spot_bits_1_0_11 (row : i32) : u32 =
+    ? row <= 45
+    ?> ? row <= 44 ?> 135012420u32 |: 134976388u32
+    |? row <= 46 ?> 204999056u32 |: 134652480u32
+
+:~ arena_spot_bits_1_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 5120u32 |: 261702u32 |: ? row <= 50 ?> 393990u32 |: 131328u32
+
+:~ arena_spot_bits_1_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 131360u32 |: 33685760u32 |: ? row <= 54 ?> 4261544224u32 |: 33685773u32
+
+:~ arena_spot_bits_1_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 101056780u32 |: 67370784u32 |: ? row <= 58 ?> 393504u32 |: 100794624u32
+
+:~ arena_spot_bits_1_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 33685792u32 |: 4261544194u32 |: ? row <= 62 ?> 1359478528u32 |: 17u32
+
+:~ arena_spot_bits_1_0_16 (row : i32) : u32 =
+    ? row <= 65
+    ?> ? row <= 64 ?> 17039936u32 |: 1073782784u32
+    |? row <= 66 ?> 268435520u32 |: 16547878u32
+
+:~ arena_spot_bits_1_0_17 (row : i32) : u32 =
+    ? row <= 69
+    ?> ? row <= 68 ?> 1241252358u32 |: 134088714u32
+    |? row <= 70 ?> 268419074u32 |: 2147475584u32
+
+:~ arena_spot_bits_1_0_18 (row : i32) : u32 =
+    ? row <= 73
+    ?> ? row <= 72 ?> 4294963200u32 |: 4294965264u32
+    |? row <= 74 ?> 4294965760u32 |: 4294966272u32
+
+:~ arena_spot_bits_1_0_19 (row : i32) : u32 =
+    ? row <= 77
+    ?> ? row <= 76 ?> 4294966784u32 |: 4294966816u32
+    |? row <= 78 ?> 4294967203u32 |: 4294967233u32
+
+:~ arena_spot_bits_1_0_20 (row : i32) : u32 =
+    ? row <= 81
+    ?> ? row <= 80 ?> 4294967267u32 |: 4294967295u32
+    |? row <= 82 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_1_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 4294967295u32 |: 4294967295u32
+    |? row <= 86 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_1_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
+
+:~ arena_spot_bits_1_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_spot_bits_1_0_0 row |: arena_spot_bits_1_0_1 row
+    |? row <= 11 ?> arena_spot_bits_1_0_2 row |: arena_spot_bits_1_0_3 row
+
+:~ arena_spot_bits_1_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_spot_bits_1_0_4 row |: arena_spot_bits_1_0_5 row
+    |? row <= 27 ?> arena_spot_bits_1_0_6 row |: arena_spot_bits_1_0_7 row
+
+:~ arena_spot_bits_1_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_spot_bits_1_0_8 row |: arena_spot_bits_1_0_9 row
+    |? row <= 43 ?> arena_spot_bits_1_0_10 row |: arena_spot_bits_1_0_11 row
+
+:~ arena_spot_bits_1_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_spot_bits_1_0_12 row |: arena_spot_bits_1_0_13 row
+    |? row <= 59 ?> arena_spot_bits_1_0_14 row |: arena_spot_bits_1_0_15 row
+
+:~ arena_spot_bits_1_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_spot_bits_1_0_16 row |: arena_spot_bits_1_0_17 row
+    |? row <= 75 ?> arena_spot_bits_1_0_18 row |: arena_spot_bits_1_0_19 row
+
+:~ arena_spot_bits_1_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_spot_bits_1_0_20 row |: arena_spot_bits_1_0_21 row
+    |: arena_spot_bits_1_0_22 row
+
+:~ arena_spot_bits_1_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_spot_bits_1_1_0 row |: arena_spot_bits_1_1_1 row
+    |? row <= 47 ?> arena_spot_bits_1_1_2 row |: arena_spot_bits_1_1_3 row
+
+:~ arena_spot_bits_1_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_spot_bits_1_1_4 row |: arena_spot_bits_1_1_5 row
+
+:~ arena_spot_bits_1 (row : i32) : u32 =
+    ? row <= 63 ?> arena_spot_bits_1_2_0 row |: arena_spot_bits_1_2_1 row
+
+:~ arena_spot_bits_2_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 70254618u32 |: 68716552u32 |: ? row <= 2 ?> 68157458u32 |: 68190179u32
+
+:~ arena_spot_bits_2_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 68821192u32 |: 68182244u32 |: ? row <= 6 ?> 68165698u32 |: 68429822u32
+
+:~ arena_spot_bits_2_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 133243971u32 |: 70526017u32 |: ? row <= 10 ?> 70297153u32 |: 74464993u32
+
+:~ arena_spot_bits_2_0_3 (row : i32) : u32 =
+    ? row <= 13
+    ?> ? row <= 12 ?> 79724479u32 |: 128590339u32
+    |? row <= 14 ?> 67110928u32 |: 132382592u32
+
+:~ arena_spot_bits_2_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 132223362u32 |: 44142976u32 |: ? row <= 18 ?> 44638112u32 |: 2167039u32
+
+:~ arena_spot_bits_2_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 2168734u32 |: 36377747u32 |: ? row <= 22 ?> 35782546u32 |: 8129683u32
+
+:~ arena_spot_bits_2_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 5112990u32 |: 5047431u32 |: ? row <= 26 ?> 4985990u32 |: 16648191u32
+
+:~ arena_spot_bits_2_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 0u32 |: 0u32 |: ? row <= 30 ?> 0u32 |: 0u32
+
+:~ arena_spot_bits_2_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 0u32 |: 4194304u32 |: ? row <= 34 ?> 4194303u32 |: 4194302u32
+
+:~ arena_spot_bits_2_0_9 (row : i32) : u32 =
+    ? row <= 37 ?> ? row <= 36 ?> 6859434u32 |: 7318186u32 |: ? row <= 38 ?> 2097152u32 |: 2097216u32
+
+:~ arena_spot_bits_2_0_10 (row : i32) : u32 =
+    ? row <= 41 ?> ? row <= 40 ?> 6291520u32 |: 6291456u32 |: ? row <= 42 ?> 6564522u32 |: 6302378u32
+
+:~ arena_spot_bits_2_0_11 (row : i32) : u32 =
+    ? row <= 45 ?> ? row <= 44 ?> 2113534u32 |: 2113534u32 |: ? row <= 46 ?> 2105346u32 |: 6987776u32
+
+:~ arena_spot_bits_2_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 6988936u32 |: 4186112u32 |: ? row <= 50 ?> 8382528u32 |: 5246976u32
+
+:~ arena_spot_bits_2_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 4228132u32 |: 34144256u32 |: ? row <= 54 ?> 104891647u32 |: 34087040u32
+
+:~ arena_spot_bits_2_0_14 (row : i32) : u32 =
+    ? row <= 57
+    ?> ? row <= 56 ?> 33554880u32 |: 50332992u32
+    |? row <= 58 ?> 48431296u32 |: 107151552u32
+
+:~ arena_spot_bits_2_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 109580672u32 |: 255u32 |: ? row <= 62 ?> 2621440u32 |: 2113553u32
+
+:~ arena_spot_bits_2_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 32832u32 |: 41945088u32 |: ? row <= 66 ?> 513u32 |: 4186112u32
+
+:~ arena_spot_bits_2_0_17 (row : i32) : u32 =
+    ? row <= 69
+    ?> ? row <= 68 ?> 41941000u32 |: 16776736u32
+    |? row <= 70 ?> 33554304u32 |: 134217616u32
+
+:~ arena_spot_bits_2_0_18 (row : i32) : u32 =
+    ? row <= 73
+    ?> ? row <= 72 ?> 134217681u32 |: 134217699u32
+    |? row <= 74 ?> 134217727u32 |: 134217727u32
+
+:~ arena_spot_bits_2_0_19 (row : i32) : u32 =
+    ? row <= 77
+    ?> ? row <= 76 ?> 134217727u32 |: 134217727u32
+    |? row <= 78 ?> 134217727u32 |: 134217727u32
+
+:~ arena_spot_bits_2_0_20 (row : i32) : u32 =
+    ? row <= 81
+    ?> ? row <= 80 ?> 134217727u32 |: 134217727u32
+    |? row <= 82 ?> 134217727u32 |: 134217727u32
+
+:~ arena_spot_bits_2_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 134217727u32 |: 134217727u32
+    |? row <= 86 ?> 134217727u32 |: 134217727u32
+
+:~ arena_spot_bits_2_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 262143u32 |: 131071u32 |: 65535u32
+
+:~ arena_spot_bits_2_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_spot_bits_2_0_0 row |: arena_spot_bits_2_0_1 row
+    |? row <= 11 ?> arena_spot_bits_2_0_2 row |: arena_spot_bits_2_0_3 row
+
+:~ arena_spot_bits_2_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_spot_bits_2_0_4 row |: arena_spot_bits_2_0_5 row
+    |? row <= 27 ?> arena_spot_bits_2_0_6 row |: arena_spot_bits_2_0_7 row
+
+:~ arena_spot_bits_2_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_spot_bits_2_0_8 row |: arena_spot_bits_2_0_9 row
+    |? row <= 43 ?> arena_spot_bits_2_0_10 row |: arena_spot_bits_2_0_11 row
+
+:~ arena_spot_bits_2_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_spot_bits_2_0_12 row |: arena_spot_bits_2_0_13 row
+    |? row <= 59 ?> arena_spot_bits_2_0_14 row |: arena_spot_bits_2_0_15 row
+
+:~ arena_spot_bits_2_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_spot_bits_2_0_16 row |: arena_spot_bits_2_0_17 row
+    |? row <= 75 ?> arena_spot_bits_2_0_18 row |: arena_spot_bits_2_0_19 row
+
+:~ arena_spot_bits_2_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_spot_bits_2_0_20 row |: arena_spot_bits_2_0_21 row
+    |: arena_spot_bits_2_0_22 row
+
+:~ arena_spot_bits_2_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_spot_bits_2_1_0 row |: arena_spot_bits_2_1_1 row
+    |? row <= 47 ?> arena_spot_bits_2_1_2 row |: arena_spot_bits_2_1_3 row
+
+:~ arena_spot_bits_2_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_spot_bits_2_1_4 row |: arena_spot_bits_2_1_5 row
+
+:~ arena_spot_bits_2 (row : i32) : u32 =
+    ? row <= 63 ?> arena_spot_bits_2_2_0 row |: arena_spot_bits_2_2_1 row
+
+:~ arena_spot_bits_outside (word : i32) : u32 =
+    ? word = 0 ?> 4294967295u32 |: ? word = 1 ?> 4294967295u32 |: 134217727u32
+
+:~ arena_spot_bits (word : i32) (row : i32) : u32 =
+    ? row < 0 || row > 90
+    ?> arena_spot_bits_outside word
+    |? word = 0 ?> arena_spot_bits_0 row |: ? word = 1 ?> arena_spot_bits_1 row |: arena_spot_bits_2 row
+
+:= arena_spot_radius () : i32 = 45
+:= row_word_bits () : i32 = 32
+
+:= arena_bit_set (bits : i32 -> i32 -> u32) (p : tile) : bool =
+    := r = arena_spot_radius ()
+    := bit = p.x - 100 + r
+    ((bits (bit / row_word_bits ()) (p.y - 100 + r) >>> (bit % row_word_bits ())) &&& 1u32) = 1u32
+
+:= inside_arena_spot (p : tile) : bool =
+    := r = arena_spot_radius ()
+    p.x - 100 >= 0 - r && p.x - 100 <= r && p.y - 100 >= 0 - r && p.y - 100 <= r
+
+:~ arena_spot_blocked (p : tile) : bool =
+    ? inside_arena_spot p
+    ?> arena_bit_set arena_spot_bits p
+    |: !+
+
+:~ arena_road_bits_0_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: ? row <= 2 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 0u32 |: 0u32 |: ? row <= 6 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 0u32 |: 0u32 |: ? row <= 10 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 0u32 |: 0u32 |: ? row <= 14 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 0u32 |: 0u32 |: ? row <= 18 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 0u32 |: 0u32 |: ? row <= 22 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 0u32 |: 0u32 |: ? row <= 26 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 0u32 |: 0u32 |: ? row <= 30 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 0u32 |: 0u32 |: ? row <= 34 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_9 (row : i32) : u32 =
+    ? row <= 37 ?> ? row <= 36 ?> 0u32 |: 0u32 |: ? row <= 38 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_10 (row : i32) : u32 =
+    ? row <= 41 ?> ? row <= 40 ?> 0u32 |: 0u32 |: ? row <= 42 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_11 (row : i32) : u32 =
+    ? row <= 45 ?> ? row <= 44 ?> 0u32 |: 0u32 |: ? row <= 46 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 0u32 |: 0u32 |: ? row <= 50 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 0u32 |: 0u32 |: ? row <= 54 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 0u32 |: 0u32 |: ? row <= 58 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 0u32 |: 0u32 |: ? row <= 62 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: ? row <= 66 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_17 (row : i32) : u32 =
+    ? row <= 69 ?> ? row <= 68 ?> 0u32 |: 0u32 |: ? row <= 70 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_18 (row : i32) : u32 =
+    ? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: ? row <= 74 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_19 (row : i32) : u32 =
+    ? row <= 77 ?> ? row <= 76 ?> 0u32 |: 0u32 |: ? row <= 78 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_20 (row : i32) : u32 =
+    ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: ? row <= 82 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_21 (row : i32) : u32 =
+    ? row <= 85 ?> ? row <= 84 ?> 0u32 |: 0u32 |: ? row <= 86 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_0_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 0u32 |: 0u32 |: 0u32
+
+:~ arena_road_bits_0_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_road_bits_0_0_0 row |: arena_road_bits_0_0_1 row
+    |? row <= 11 ?> arena_road_bits_0_0_2 row |: arena_road_bits_0_0_3 row
+
+:~ arena_road_bits_0_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_road_bits_0_0_4 row |: arena_road_bits_0_0_5 row
+    |? row <= 27 ?> arena_road_bits_0_0_6 row |: arena_road_bits_0_0_7 row
+
+:~ arena_road_bits_0_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_road_bits_0_0_8 row |: arena_road_bits_0_0_9 row
+    |? row <= 43 ?> arena_road_bits_0_0_10 row |: arena_road_bits_0_0_11 row
+
+:~ arena_road_bits_0_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_road_bits_0_0_12 row |: arena_road_bits_0_0_13 row
+    |? row <= 59 ?> arena_road_bits_0_0_14 row |: arena_road_bits_0_0_15 row
+
+:~ arena_road_bits_0_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_road_bits_0_0_16 row |: arena_road_bits_0_0_17 row
+    |? row <= 75 ?> arena_road_bits_0_0_18 row |: arena_road_bits_0_0_19 row
+
+:~ arena_road_bits_0_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_road_bits_0_0_20 row |: arena_road_bits_0_0_21 row
+    |: arena_road_bits_0_0_22 row
+
+:~ arena_road_bits_0_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_road_bits_0_1_0 row |: arena_road_bits_0_1_1 row
+    |? row <= 47 ?> arena_road_bits_0_1_2 row |: arena_road_bits_0_1_3 row
+
+:~ arena_road_bits_0_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_road_bits_0_1_4 row |: arena_road_bits_0_1_5 row
+
+:~ arena_road_bits_0 (row : i32) : u32 =
+    ? row <= 63 ?> arena_road_bits_0_2_0 row |: arena_road_bits_0_2_1 row
+
+:~ arena_road_bits_1_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: ? row <= 2 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 0u32 |: 0u32 |: ? row <= 6 ?> 0u32 |: 4160749568u32
+
+:~ arena_road_bits_1_0_2 (row : i32) : u32 =
+    ? row <= 9
+    ?> ? row <= 8 ?> 4160749568u32 |: 4160749568u32
+    |? row <= 10 ?> 4160749568u32 |: 4160749568u32
+
+:~ arena_road_bits_1_0_3 (row : i32) : u32 =
+    ? row <= 13
+    ?> ? row <= 12 ?> 4160749568u32 |: 4160749568u32
+    |? row <= 14 ?> 4160749568u32 |: 4160749568u32
+
+:~ arena_road_bits_1_0_4 (row : i32) : u32 =
+    ? row <= 17
+    ?> ? row <= 16 ?> 4160749568u32 |: 4026531840u32
+    |? row <= 18 ?> 4059037696u32 |: 4159700992u32
+
+:~ arena_road_bits_1_0_5 (row : i32) : u32 =
+    ? row <= 21
+    ?> ? row <= 20 ?> 4159700992u32 |: 4159700992u32
+    |? row <= 22 ?> 4159959040u32 |: 4159959040u32
+
+:~ arena_road_bits_1_0_6 (row : i32) : u32 =
+    ? row <= 25
+    ?> ? row <= 24 ?> 4159959040u32 |: 4159959040u32
+    |? row <= 26 ?> 4159959040u32 |: 4294176768u32
+
+:~ arena_road_bits_1_0_7 (row : i32) : u32 =
+    ? row <= 29
+    ?> ? row <= 28 ?> 4294963200u32 |: 4294967292u32
+    |? row <= 30 ?> 4294967292u32 |: 4294967292u32
+
+:~ arena_road_bits_1_0_8 (row : i32) : u32 =
+    ? row <= 33
+    ?> ? row <= 32 ?> 4294967292u32 |: 4294967292u32
+    |? row <= 34 ?> 4027056124u32 |: 4025745404u32
+
+:~ arena_road_bits_1_0_9 (row : i32) : u32 =
+    ? row <= 37
+    ?> ? row <= 36 ?> 4025484284u32 |: 4025484284u32
+    |? row <= 38 ?> 4025484284u32 |: 4025484284u32
+
+:~ arena_road_bits_1_0_10 (row : i32) : u32 =
+    ? row <= 41
+    ?> ? row <= 40 ?> 4025484284u32 |: 4025484284u32
+    |? row <= 42 ?> 4025484284u32 |: 4025483264u32
+
+:~ arena_road_bits_1_0_11 (row : i32) : u32 =
+    ? row <= 45
+    ?> ? row <= 44 ?> 4025483264u32 |: 4025483264u32
+    |? row <= 46 ?> 4024434688u32 |: 4089446400u32
+
+:~ arena_road_bits_1_0_12 (row : i32) : u32 =
+    ? row <= 49
+    ?> ? row <= 48 ?> 4294443008u32 |: 4294443008u32
+    |? row <= 50 ?> 4294704128u32 |: 4294704640u32
+
+:~ arena_road_bits_1_0_13 (row : i32) : u32 =
+    ? row <= 53
+    ?> ? row <= 52 ?> 4294704640u32 |: 33291776u32
+    |? row <= 54 ?> 16514560u32 |: 4244372992u32
+
+:~ arena_road_bits_1_0_14 (row : i32) : u32 =
+    ? row <= 57
+    ?> ? row <= 56 ?> 4277927424u32 |: 4277927424u32
+    |? row <= 58 ?> 4277927424u32 |: 4277927424u32
+
+:~ arena_road_bits_1_0_15 (row : i32) : u32 =
+    ? row <= 61
+    ?> ? row <= 60 ?> 4244372992u32 |: 16514560u32
+    |? row <= 62 ?> 16514560u32 |: 16252928u32
+
+:~ arena_road_bits_1_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 16252928u32 |: 16252928u32 |: ? row <= 66 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_17 (row : i32) : u32 =
+    ? row <= 69 ?> ? row <= 68 ?> 0u32 |: 0u32 |: ? row <= 70 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_18 (row : i32) : u32 =
+    ? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: ? row <= 74 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_19 (row : i32) : u32 =
+    ? row <= 77 ?> ? row <= 76 ?> 0u32 |: 0u32 |: ? row <= 78 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_20 (row : i32) : u32 =
+    ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: ? row <= 82 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_21 (row : i32) : u32 =
+    ? row <= 85 ?> ? row <= 84 ?> 0u32 |: 0u32 |: ? row <= 86 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_1_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 0u32 |: 0u32 |: 0u32
+
+:~ arena_road_bits_1_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_road_bits_1_0_0 row |: arena_road_bits_1_0_1 row
+    |? row <= 11 ?> arena_road_bits_1_0_2 row |: arena_road_bits_1_0_3 row
+
+:~ arena_road_bits_1_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_road_bits_1_0_4 row |: arena_road_bits_1_0_5 row
+    |? row <= 27 ?> arena_road_bits_1_0_6 row |: arena_road_bits_1_0_7 row
+
+:~ arena_road_bits_1_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_road_bits_1_0_8 row |: arena_road_bits_1_0_9 row
+    |? row <= 43 ?> arena_road_bits_1_0_10 row |: arena_road_bits_1_0_11 row
+
+:~ arena_road_bits_1_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_road_bits_1_0_12 row |: arena_road_bits_1_0_13 row
+    |? row <= 59 ?> arena_road_bits_1_0_14 row |: arena_road_bits_1_0_15 row
+
+:~ arena_road_bits_1_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_road_bits_1_0_16 row |: arena_road_bits_1_0_17 row
+    |? row <= 75 ?> arena_road_bits_1_0_18 row |: arena_road_bits_1_0_19 row
+
+:~ arena_road_bits_1_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_road_bits_1_0_20 row |: arena_road_bits_1_0_21 row
+    |: arena_road_bits_1_0_22 row
+
+:~ arena_road_bits_1_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_road_bits_1_1_0 row |: arena_road_bits_1_1_1 row
+    |? row <= 47 ?> arena_road_bits_1_1_2 row |: arena_road_bits_1_1_3 row
+
+:~ arena_road_bits_1_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_road_bits_1_1_4 row |: arena_road_bits_1_1_5 row
+
+:~ arena_road_bits_1 (row : i32) : u32 =
+    ? row <= 63 ?> arena_road_bits_1_2_0 row |: arena_road_bits_1_2_1 row
+
+:~ arena_road_bits_2_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: ? row <= 2 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 16256u32 |: 16256u32 |: ? row <= 6 ?> 16256u32 |: 16257u32
+
+:~ arena_road_bits_2_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 16381u32 |: 16383u32 |: ? row <= 10 ?> 16383u32 |: 16383u32
+
+:~ arena_road_bits_2_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 16191u32 |: 0u32 |: ? row <= 14 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 130816u32 |: 130816u32 |: ? row <= 18 ?> 130816u32 |: 130816u32
+
+:~ arena_road_bits_2_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 131068u32 |: 131068u32 |: ? row <= 22 ?> 131068u32 |: 2044u32
+
+:~ arena_road_bits_2_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 59388u32 |: 59388u32 |: ? row <= 26 ?> 59388u32 |: 129021u32
+
+:~ arena_road_bits_2_0_7 (row : i32) : u32 =
+    ? row <= 29
+    ?> ? row <= 28 ?> 134217727u32 |: 134217727u32
+    |? row <= 30 ?> 134217727u32 |: 134217727u32
+
+:~ arena_road_bits_2_0_8 (row : i32) : u32 =
+    ? row <= 33
+    ?> ? row <= 32 ?> 134217727u32 |: 134217727u32
+    |? row <= 34 ?> 130023425u32 |: 125829249u32
+
+:~ arena_road_bits_2_0_9 (row : i32) : u32 =
+    ? row <= 37
+    ?> ? row <= 36 ?> 125829121u32 |: 125829121u32
+    |? row <= 38 ?> 125829123u32 |: 125829123u32
+
+:~ arena_road_bits_2_0_10 (row : i32) : u32 =
+    ? row <= 41
+    ?> ? row <= 40 ?> 125829123u32 |: 125829123u32
+    |? row <= 42 ?> 126091265u32 |: 125829121u32
+
+:~ arena_road_bits_2_0_11 (row : i32) : u32 =
+    ? row <= 45
+    ?> ? row <= 44 ?> 125829121u32 |: 125837313u32
+    |? row <= 46 ?> 125829121u32 |: 125829121u32
+
+:~ arena_road_bits_2_0_12 (row : i32) : u32 =
+    ? row <= 49
+    ?> ? row <= 48 ?> 125829121u32 |: 125829121u32
+    |? row <= 50 ?> 125829121u32 |: 125829121u32
+
+:~ arena_road_bits_2_0_13 (row : i32) : u32 =
+    ? row <= 53
+    ?> ? row <= 52 ?> 125829121u32 |: 125829120u32
+    |? row <= 54 ?> 125829120u32 |: 67108991u32
+
+:~ arena_road_bits_2_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 67108991u32 |: 67108927u32 |: ? row <= 58 ?> 67108927u32 |: 67108991u32
+
+:~ arena_road_bits_2_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 67108991u32 |: 0u32 |: ? row <= 62 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: ? row <= 66 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_17 (row : i32) : u32 =
+    ? row <= 69 ?> ? row <= 68 ?> 0u32 |: 0u32 |: ? row <= 70 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_18 (row : i32) : u32 =
+    ? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: ? row <= 74 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_19 (row : i32) : u32 =
+    ? row <= 77 ?> ? row <= 76 ?> 0u32 |: 0u32 |: ? row <= 78 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_20 (row : i32) : u32 =
+    ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: ? row <= 82 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_21 (row : i32) : u32 =
+    ? row <= 85 ?> ? row <= 84 ?> 0u32 |: 0u32 |: ? row <= 86 ?> 0u32 |: 0u32
+
+:~ arena_road_bits_2_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 0u32 |: 0u32 |: 0u32
+
+:~ arena_road_bits_2_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_road_bits_2_0_0 row |: arena_road_bits_2_0_1 row
+    |? row <= 11 ?> arena_road_bits_2_0_2 row |: arena_road_bits_2_0_3 row
+
+:~ arena_road_bits_2_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_road_bits_2_0_4 row |: arena_road_bits_2_0_5 row
+    |? row <= 27 ?> arena_road_bits_2_0_6 row |: arena_road_bits_2_0_7 row
+
+:~ arena_road_bits_2_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_road_bits_2_0_8 row |: arena_road_bits_2_0_9 row
+    |? row <= 43 ?> arena_road_bits_2_0_10 row |: arena_road_bits_2_0_11 row
+
+:~ arena_road_bits_2_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_road_bits_2_0_12 row |: arena_road_bits_2_0_13 row
+    |? row <= 59 ?> arena_road_bits_2_0_14 row |: arena_road_bits_2_0_15 row
+
+:~ arena_road_bits_2_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_road_bits_2_0_16 row |: arena_road_bits_2_0_17 row
+    |? row <= 75 ?> arena_road_bits_2_0_18 row |: arena_road_bits_2_0_19 row
+
+:~ arena_road_bits_2_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_road_bits_2_0_20 row |: arena_road_bits_2_0_21 row
+    |: arena_road_bits_2_0_22 row
+
+:~ arena_road_bits_2_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_road_bits_2_1_0 row |: arena_road_bits_2_1_1 row
+    |? row <= 47 ?> arena_road_bits_2_1_2 row |: arena_road_bits_2_1_3 row
+
+:~ arena_road_bits_2_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_road_bits_2_1_4 row |: arena_road_bits_2_1_5 row
+
+:~ arena_road_bits_2 (row : i32) : u32 =
+    ? row <= 63 ?> arena_road_bits_2_2_0 row |: arena_road_bits_2_2_1 row
+
+:~ arena_road_bits_outside (word : i32) : u32 =
+    ? word = 0 ?> 0u32 |: ? word = 1 ?> 0u32 |: 0u32
+
+:~ arena_road_bits (word : i32) (row : i32) : u32 =
+    ? row < 0 || row > 90
+    ?> arena_road_bits_outside word
+    |? word = 0 ?> arena_road_bits_0 row |: ? word = 1 ?> arena_road_bits_1 row |: arena_road_bits_2 row
+
+:~ arena_road (p : tile) : bool = ? inside_arena_spot p ?> arena_bit_set arena_road_bits p |: !-
+
+:~ arena_sight_bits_0_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: ? row <= 2 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 0u32 |: 0u32 |: ? row <= 6 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 0u32 |: 0u32 |: ? row <= 10 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 0u32 |: 0u32 |: ? row <= 14 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 0u32 |: 0u32 |: ? row <= 18 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 0u32 |: 0u32 |: ? row <= 22 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 0u32 |: 0u32 |: ? row <= 26 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 0u32 |: 0u32 |: ? row <= 30 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 0u32 |: 0u32 |: ? row <= 34 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_9 (row : i32) : u32 =
+    ? row <= 37 ?> ? row <= 36 ?> 0u32 |: 0u32 |: ? row <= 38 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_10 (row : i32) : u32 =
+    ? row <= 41 ?> ? row <= 40 ?> 0u32 |: 0u32 |: ? row <= 42 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_11 (row : i32) : u32 =
+    ? row <= 45 ?> ? row <= 44 ?> 0u32 |: 0u32 |: ? row <= 46 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 0u32 |: 0u32 |: ? row <= 50 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 0u32 |: 0u32 |: ? row <= 54 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 0u32 |: 0u32 |: ? row <= 58 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 0u32 |: 0u32 |: ? row <= 62 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: ? row <= 66 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_17 (row : i32) : u32 =
+    ? row <= 69 ?> ? row <= 68 ?> 0u32 |: 0u32 |: ? row <= 70 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_18 (row : i32) : u32 =
+    ? row <= 73 ?> ? row <= 72 ?> 0u32 |: 0u32 |: ? row <= 74 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_19 (row : i32) : u32 =
+    ? row <= 77 ?> ? row <= 76 ?> 0u32 |: 0u32 |: ? row <= 78 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_0_0_20 (row : i32) : u32 =
+    ? row <= 81 ?> ? row <= 80 ?> 0u32 |: 0u32 |: ? row <= 82 ?> 4261412864u32 |: 4278190080u32
+
+:~ arena_sight_bits_0_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 4278190080u32 |: 4286578688u32
+    |? row <= 86 ?> 4286578688u32 |: 4290772992u32
+
+:~ arena_sight_bits_0_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 4292870144u32 |: 4293918720u32 |: 4293918720u32
+
+:~ arena_sight_bits_0_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_sight_bits_0_0_0 row |: arena_sight_bits_0_0_1 row
+    |? row <= 11 ?> arena_sight_bits_0_0_2 row |: arena_sight_bits_0_0_3 row
+
+:~ arena_sight_bits_0_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_sight_bits_0_0_4 row |: arena_sight_bits_0_0_5 row
+    |? row <= 27 ?> arena_sight_bits_0_0_6 row |: arena_sight_bits_0_0_7 row
+
+:~ arena_sight_bits_0_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_sight_bits_0_0_8 row |: arena_sight_bits_0_0_9 row
+    |? row <= 43 ?> arena_sight_bits_0_0_10 row |: arena_sight_bits_0_0_11 row
+
+:~ arena_sight_bits_0_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_sight_bits_0_0_12 row |: arena_sight_bits_0_0_13 row
+    |? row <= 59 ?> arena_sight_bits_0_0_14 row |: arena_sight_bits_0_0_15 row
+
+:~ arena_sight_bits_0_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_sight_bits_0_0_16 row |: arena_sight_bits_0_0_17 row
+    |? row <= 75 ?> arena_sight_bits_0_0_18 row |: arena_sight_bits_0_0_19 row
+
+:~ arena_sight_bits_0_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_sight_bits_0_0_20 row |: arena_sight_bits_0_0_21 row
+    |: arena_sight_bits_0_0_22 row
+
+:~ arena_sight_bits_0_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_sight_bits_0_1_0 row |: arena_sight_bits_0_1_1 row
+    |? row <= 47 ?> arena_sight_bits_0_1_2 row |: arena_sight_bits_0_1_3 row
+
+:~ arena_sight_bits_0_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_sight_bits_0_1_4 row |: arena_sight_bits_0_1_5 row
+
+:~ arena_sight_bits_0 (row : i32) : u32 =
+    ? row <= 63 ?> arena_sight_bits_0_2_0 row |: arena_sight_bits_0_2_1 row
+
+:~ arena_sight_bits_1_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 0u32 |: 0u32 |: ? row <= 2 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_1_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 0u32 |: 0u32 |: ? row <= 6 ?> 0u32 |: 129499136u32
+
+:~ arena_sight_bits_1_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 524288u32 |: 67633152u32 |: ? row <= 10 ?> 67633152u32 |: 0u32
+
+:~ arena_sight_bits_1_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 524288u32 |: 67633152u32 |: ? row <= 14 ?> 67633152u32 |: 131596288u32
+
+:~ arena_sight_bits_1_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 0u32 |: 0u32 |: ? row <= 18 ?> 133693440u32 |: 71827456u32
+
+:~ arena_sight_bits_1_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 4718592u32 |: 72087552u32 |: ? row <= 22 ?> 71960576u32 |: 133826560u32
+
+:~ arena_sight_bits_1_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 76154880u32 |: 9046016u32 |: ? row <= 26 ?> 76154880u32 |: 133953536u32
+
+:~ arena_sight_bits_1_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 4094u32 |: 2114u32 |: ? row <= 30 ?> 2114u32 |: 4034u32
+
+:~ arena_sight_bits_1_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 2114u32 |: 2174u32 |: ? row <= 34 ?> 267388994u32 |: 134745666u32
+
+:~ arena_sight_bits_1_0_9 (row : i32) : u32 =
+    ? row <= 37
+    ?> ? row <= 36 ?> 134742978u32 |: 134742594u32
+    |? row <= 38 ?> 134742654u32 |: 134742594u32
+
+:~ arena_sight_bits_1_0_10 (row : i32) : u32 =
+    ? row <= 41
+    ?> ? row <= 40 ?> 134742594u32 |: 134742594u32
+    |? row <= 42 ?> 134743038u32 |: 134742016u32
+
+:~ arena_sight_bits_1_0_11 (row : i32) : u32 =
+    ? row <= 45 ?> ? row <= 44 ?> 134742016u32 |: 134742016u32 |: ? row <= 46 ?> 204996608u32 |: 0u32
+
+:~ arena_sight_bits_1_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 0u32 |: 253440u32 |: ? row <= 50 ?> 131840u32 |: 131328u32
+
+:~ arena_sight_bits_1_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 131328u32 |: 131328u32 |: ? row <= 54 ?> 4261544192u32 |: 33685760u32
+
+:~ arena_sight_bits_1_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 100794624u32 |: 67370752u32 |: ? row <= 58 ?> 131328u32 |: 100794624u32
+
+:~ arena_sight_bits_1_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 33685760u32 |: 4261544192u32 |: ? row <= 62 ?> 253696u32 |: 0u32
+
+:~ arena_sight_bits_1_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: ? row <= 66 ?> 0u32 |: 13369344u32
+
+:~ arena_sight_bits_1_0_17 (row : i32) : u32 =
+    ? row <= 69
+    ?> ? row <= 68 ?> 33292288u32 |: 134086656u32
+    |? row <= 70 ?> 268419072u32 |: 2147475456u32
+
+:~ arena_sight_bits_1_0_18 (row : i32) : u32 =
+    ? row <= 73
+    ?> ? row <= 72 ?> 4294963200u32 |: 4294965248u32
+    |? row <= 74 ?> 4294965248u32 |: 4294966272u32
+
+:~ arena_sight_bits_1_0_19 (row : i32) : u32 =
+    ? row <= 77
+    ?> ? row <= 76 ?> 4294966784u32 |: 4294966784u32
+    |? row <= 78 ?> 4294966784u32 |: 4294966784u32
+
+:~ arena_sight_bits_1_0_20 (row : i32) : u32 =
+    ? row <= 81
+    ?> ? row <= 80 ?> 4294966784u32 |: 4294967040u32
+    |? row <= 82 ?> 4294967169u32 |: 4294967171u32
+
+:~ arena_sight_bits_1_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 4294967279u32 |: 4294967295u32
+    |? row <= 86 ?> 4294967295u32 |: 4294967295u32
+
+:~ arena_sight_bits_1_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 4294967295u32 |: 4294967295u32 |: 4294967295u32
+
+:~ arena_sight_bits_1_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_sight_bits_1_0_0 row |: arena_sight_bits_1_0_1 row
+    |? row <= 11 ?> arena_sight_bits_1_0_2 row |: arena_sight_bits_1_0_3 row
+
+:~ arena_sight_bits_1_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_sight_bits_1_0_4 row |: arena_sight_bits_1_0_5 row
+    |? row <= 27 ?> arena_sight_bits_1_0_6 row |: arena_sight_bits_1_0_7 row
+
+:~ arena_sight_bits_1_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_sight_bits_1_0_8 row |: arena_sight_bits_1_0_9 row
+    |? row <= 43 ?> arena_sight_bits_1_0_10 row |: arena_sight_bits_1_0_11 row
+
+:~ arena_sight_bits_1_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_sight_bits_1_0_12 row |: arena_sight_bits_1_0_13 row
+    |? row <= 59 ?> arena_sight_bits_1_0_14 row |: arena_sight_bits_1_0_15 row
+
+:~ arena_sight_bits_1_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_sight_bits_1_0_16 row |: arena_sight_bits_1_0_17 row
+    |? row <= 75 ?> arena_sight_bits_1_0_18 row |: arena_sight_bits_1_0_19 row
+
+:~ arena_sight_bits_1_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_sight_bits_1_0_20 row |: arena_sight_bits_1_0_21 row
+    |: arena_sight_bits_1_0_22 row
+
+:~ arena_sight_bits_1_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_sight_bits_1_1_0 row |: arena_sight_bits_1_1_1 row
+    |? row <= 47 ?> arena_sight_bits_1_1_2 row |: arena_sight_bits_1_1_3 row
+
+:~ arena_sight_bits_1_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_sight_bits_1_1_4 row |: arena_sight_bits_1_1_5 row
+
+:~ arena_sight_bits_1 (row : i32) : u32 =
+    ? row <= 63 ?> arena_sight_bits_1_2_0 row |: arena_sight_bits_1_2_1 row
+
+:~ arena_sight_bits_2_0_0 (row : i32) : u32 =
+    ? row <= 1 ?> ? row <= 0 ?> 68157440u32 |: 68157440u32 |: ? row <= 2 ?> 68157440u32 |: 68173760u32
+
+:~ arena_sight_bits_2_0_1 (row : i32) : u32 =
+    ? row <= 5 ?> ? row <= 4 ?> 68165696u32 |: 68165696u32 |: ? row <= 6 ?> 68165696u32 |: 68167166u32
+
+:~ arena_sight_bits_2_0_2 (row : i32) : u32 =
+    ? row <= 9 ?> ? row <= 8 ?> 133178435u32 |: 68166721u32 |: ? row <= 10 ?> 68166657u32 |: 74458337u32
+
+:~ arena_sight_bits_2_0_3 (row : i32) : u32 =
+    ? row <= 13 ?> ? row <= 12 ?> 79708095u32 |: 125829120u32 |: ? row <= 14 ?> 0u32 |: 132235136u32
+
+:~ arena_sight_bits_2_0_4 (row : i32) : u32 =
+    ? row <= 17 ?> ? row <= 16 ?> 35721344u32 |: 35717248u32 |: ? row <= 18 ?> 35724160u32 |: 2166974u32
+
+:~ arena_sight_bits_2_0_5 (row : i32) : u32 =
+    ? row <= 21 ?> ? row <= 20 ?> 71570u32 |: 35722386u32 |: ? row <= 22 ?> 2228098u32 |: 3933330u32
+
+:~ arena_sight_bits_2_0_6 (row : i32) : u32 =
+    ? row <= 25 ?> ? row <= 24 ?> 263326u32 |: 263298u32 |: ? row <= 26 ?> 263298u32 |: 16516606u32
+
+:~ arena_sight_bits_2_0_7 (row : i32) : u32 =
+    ? row <= 29 ?> ? row <= 28 ?> 0u32 |: 0u32 |: ? row <= 30 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_2_0_8 (row : i32) : u32 =
+    ? row <= 33 ?> ? row <= 32 ?> 0u32 |: 0u32 |: ? row <= 34 ?> 4177662u32 |: 2105890u32
+
+:~ arena_sight_bits_2_0_9 (row : i32) : u32 =
+    ? row <= 37 ?> ? row <= 36 ?> 2105890u32 |: 2105890u32 |: ? row <= 38 ?> 2097152u32 |: 2097216u32
+
+:~ arena_sight_bits_2_0_10 (row : i32) : u32 =
+    ? row <= 41 ?> ? row <= 40 ?> 2097152u32 |: 0u32 |: ? row <= 42 ?> 2105888u32 |: 2097698u32
+
+:~ arena_sight_bits_2_0_11 (row : i32) : u32 =
+    ? row <= 45 ?> ? row <= 44 ?> 2105890u32 |: 16382u32 |: ? row <= 46 ?> 2105344u32 |: 2236416u32
+
+:~ arena_sight_bits_2_0_12 (row : i32) : u32 =
+    ? row <= 49 ?> ? row <= 48 ?> 2236416u32 |: 2236416u32 |: ? row <= 50 ?> 4186112u32 |: 0u32
+
+:~ arena_sight_bits_2_0_13 (row : i32) : u32 =
+    ? row <= 53 ?> ? row <= 52 ?> 0u32 |: 0u32 |: ? row <= 54 ?> 100663551u32 |: 33554560u32
+
+:~ arena_sight_bits_2_0_14 (row : i32) : u32 =
+    ? row <= 57 ?> ? row <= 56 ?> 192u32 |: 33554496u32 |: ? row <= 58 ?> 33554496u32 |: 192u32
+
+:~ arena_sight_bits_2_0_15 (row : i32) : u32 =
+    ? row <= 61 ?> ? row <= 60 ?> 100663424u32 |: 255u32 |: ? row <= 62 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits_2_0_16 (row : i32) : u32 =
+    ? row <= 65 ?> ? row <= 64 ?> 0u32 |: 0u32 |: ? row <= 66 ?> 0u32 |: 4186112u32
+
+:~ arena_sight_bits_2_0_17 (row : i32) : u32 =
+    ? row <= 69 ?> ? row <= 68 ?> 8386560u32 |: 16776704u32 |: ? row <= 70 ?> 33554304u32 |: 134217600u32
+
+:~ arena_sight_bits_2_0_18 (row : i32) : u32 =
+    ? row <= 73
+    ?> ? row <= 72 ?> 134217665u32 |: 134217699u32
+    |? row <= 74 ?> 134217727u32 |: 134217727u32
+
+:~ arena_sight_bits_2_0_19 (row : i32) : u32 =
+    ? row <= 77
+    ?> ? row <= 76 ?> 134217727u32 |: 134217727u32
+    |? row <= 78 ?> 134217727u32 |: 134217727u32
+
+:~ arena_sight_bits_2_0_20 (row : i32) : u32 =
+    ? row <= 81
+    ?> ? row <= 80 ?> 134217727u32 |: 134217727u32
+    |? row <= 82 ?> 134217727u32 |: 134217727u32
+
+:~ arena_sight_bits_2_0_21 (row : i32) : u32 =
+    ? row <= 85
+    ?> ? row <= 84 ?> 134217727u32 |: 134217727u32
+    |? row <= 86 ?> 134217727u32 |: 134217727u32
+
+:~ arena_sight_bits_2_0_22 (row : i32) : u32 =
+    ? row <= 89 ?> ? row <= 88 ?> 262143u32 |: 131071u32 |: 65535u32
+
+:~ arena_sight_bits_2_1_0 (row : i32) : u32 =
+    ? row <= 7
+    ?> ? row <= 3 ?> arena_sight_bits_2_0_0 row |: arena_sight_bits_2_0_1 row
+    |? row <= 11 ?> arena_sight_bits_2_0_2 row |: arena_sight_bits_2_0_3 row
+
+:~ arena_sight_bits_2_1_1 (row : i32) : u32 =
+    ? row <= 23
+    ?> ? row <= 19 ?> arena_sight_bits_2_0_4 row |: arena_sight_bits_2_0_5 row
+    |? row <= 27 ?> arena_sight_bits_2_0_6 row |: arena_sight_bits_2_0_7 row
+
+:~ arena_sight_bits_2_1_2 (row : i32) : u32 =
+    ? row <= 39
+    ?> ? row <= 35 ?> arena_sight_bits_2_0_8 row |: arena_sight_bits_2_0_9 row
+    |? row <= 43 ?> arena_sight_bits_2_0_10 row |: arena_sight_bits_2_0_11 row
+
+:~ arena_sight_bits_2_1_3 (row : i32) : u32 =
+    ? row <= 55
+    ?> ? row <= 51 ?> arena_sight_bits_2_0_12 row |: arena_sight_bits_2_0_13 row
+    |? row <= 59 ?> arena_sight_bits_2_0_14 row |: arena_sight_bits_2_0_15 row
+
+:~ arena_sight_bits_2_1_4 (row : i32) : u32 =
+    ? row <= 71
+    ?> ? row <= 67 ?> arena_sight_bits_2_0_16 row |: arena_sight_bits_2_0_17 row
+    |? row <= 75 ?> arena_sight_bits_2_0_18 row |: arena_sight_bits_2_0_19 row
+
+:~ arena_sight_bits_2_1_5 (row : i32) : u32 =
+    ? row <= 87
+    ?> ? row <= 83 ?> arena_sight_bits_2_0_20 row |: arena_sight_bits_2_0_21 row
+    |: arena_sight_bits_2_0_22 row
+
+:~ arena_sight_bits_2_2_0 (row : i32) : u32 =
+    ? row <= 31
+    ?> ? row <= 15 ?> arena_sight_bits_2_1_0 row |: arena_sight_bits_2_1_1 row
+    |? row <= 47 ?> arena_sight_bits_2_1_2 row |: arena_sight_bits_2_1_3 row
+
+:~ arena_sight_bits_2_2_1 (row : i32) : u32 =
+    ? row <= 79 ?> arena_sight_bits_2_1_4 row |: arena_sight_bits_2_1_5 row
+
+:~ arena_sight_bits_2 (row : i32) : u32 =
+    ? row <= 63 ?> arena_sight_bits_2_2_0 row |: arena_sight_bits_2_2_1 row
+
+:~ arena_sight_bits_outside (word : i32) : u32 =
+    ? word = 0 ?> 0u32 |: ? word = 1 ?> 0u32 |: 0u32
+
+:~ arena_sight_bits (word : i32) (row : i32) : u32 =
+    ? row < 0 || row > 90
+    ?> arena_sight_bits_outside word
+    |? word = 0 ?> arena_sight_bits_0 row |: ? word = 1 ?> arena_sight_bits_1 row |: arena_sight_bits_2 row
+
+:~ arena_sight_blocked (p : tile) : bool =
+    ? inside_arena_spot p ?> arena_bit_set arena_sight_bits p |: !-
+
+:~ arena_protection_zone_dy35 (dx : i32) : bool =
+    (dx >= 7 && dx <= 14)
+    || (dx >= 21 && dx <= 23)
+    || (dx >= 25 && dx <= 27)
+    || (dx >= 29 && dx <= 31)
+    || (dx >= 33 && dx <= 40)
+
+:~ arena_protection_zone_dy36 (dx : i32) : bool =
+    (dx >= 7 && dx <= 14)
+    || (dx >= 21 && dx <= 23)
+    || (dx >= 25 && dx <= 27)
+    || (dx >= 29 && dx <= 31)
+    || (dx >= 33 && dx <= 40)
+
+:~ arena_protection_zone_11 (dx : i32) (dy : i32) : bool =
+    ? dy = 5 ?> (dx >= 33 && dx <= 40) |: !-
+
+:~ arena_protection_zone_10 (dx : i32) (dy : i32) : bool =
+    ? dy = 2
+    ?> dx >= 33 && dx <= 40
+    |? dy = 3
+    ?> dx >= 33 && dx <= 40
+    |? dy = 4 ?> (dx >= 33 && dx <= 40) |: arena_protection_zone_11 dx dy
+
+:~ arena_protection_zone_9 (dx : i32) (dy : i32) : bool =
+    ? dy = 0
+    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    |? dy = 1 ?> (dx >= 8 && dx <= 14) || (dx >= 33 && dx <= 40) |: arena_protection_zone_10 dx dy
+
+:~ arena_protection_zone_8 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 2)
+    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    |? dy = (0 - 1) ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40) |: arena_protection_zone_9 dx dy
+
+:~ arena_protection_zone_7 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 4)
+    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    |? dy = (0 - 3) ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40) |: arena_protection_zone_8 dx dy
+
+:~ arena_protection_zone_6 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 6)
+    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    |? dy = (0 - 5) ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40) |: arena_protection_zone_7 dx dy
+
+:~ arena_protection_zone_5 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 8)
+    ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40)
+    |? dy = (0 - 7) ?> (dx >= 7 && dx <= 14) || (dx >= 21 && dx <= 40) |: arena_protection_zone_6 dx dy
+
+:~ arena_protection_zone_4 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 10)
+    ?> arena_protection_zone_dy35 dx
+    |? dy = (0 - 9) ?> arena_protection_zone_dy36 dx |: arena_protection_zone_5 dx dy
+
+:~ arena_protection_zone_3 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 20)
+    ?> dx >= 38 && dx <= 45
+    |? dy = (0 - 19)
+    ?> dx >= 38 && dx <= 45
+    |? dy = (0 - 18) ?> (dx >= 38 && dx <= 45) |: arena_protection_zone_4 dx dy
+
+:~ arena_protection_zone_2 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 23)
+    ?> dx >= 41 && dx <= 45
+    |? dy = (0 - 22)
+    ?> dx >= 41 && dx <= 45
+    |? dy = (0 - 21) ?> (dx >= 38 && dx <= 45) |: arena_protection_zone_3 dx dy
+
+:~ arena_protection_zone_1 (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 26)
+    ?> dx >= 41 && dx <= 45
+    |? dy = (0 - 25)
+    ?> dx >= 41 && dx <= 45
+    |? dy = (0 - 24) ?> (dx >= 41 && dx <= 45) |: arena_protection_zone_2 dx dy
+
+:~ arena_protection_zone (dx : i32) (dy : i32) : bool =
+    ? dy = (0 - 29)
+    ?> (dx >= 41 && dx <= 43) || dx = 45
+    |? dy = (0 - 28)
+    ?> (dx >= 41 && dx <= 43) || dx = 45
+    |? dy = (0 - 27) ?> (dx >= 40 && dx <= 45) |: arena_protection_zone_1 dx dy
+
+:= arena_spot_world_x () : i32 = 1933
+:= arena_spot_world_y () : i32 = 1350
+
+:~ arena_spot_protected (p : tile) : bool = arena_protection_zone (p.x - 100) (p.y - 100)
+
+:= arena_world_protected (x : i32) (y : i32) : bool =
+    arena_protection_zone (x - arena_spot_world_x ()) (y - arena_spot_world_y ())
+
+:= walls (l : layout) (p : tile) : bool =
+    ?= l ?|
+    | OpenField => !-
+    | EastCorridor => p.y <> corridor_row () || p.x < corridor_mouth ()
+    | RoomAndCorridor => p.x < 100 && p.y <> corridor_row ()
+    | ArenaSpot | ArenaHunt => arena_spot_blocked p
+
+:= sight_blocks (l : layout) (p : tile) : bool =
+    ?= l ?|
+    | ArenaSpot => arena_sight_blocked p
+    | ArenaHunt => arena_sight_blocked p
+    | _ => walls l p
+
+:= blocked (l : layout) (p : tile) : bool =
+    ?= l ?|
+    | ArenaSpot => arena_spot_blocked p || arena_spot_protected p
+    | ArenaHunt => arena_spot_blocked p || arena_spot_protected p
+    | _ => walls l p
+
+:= free (l : layout) (taken : occupancy) (p : tile) : bool =
+    blocked l p = !- && taken p = !-
+
+:= direction_of (n : i32) : i32 = ? n > 0 ?> 1 |? n < 0 ?> -1 |: 0
+
+:= shifted (dx : i32) (dy : i32) (from : tile) : tile =
+    tile (from.x + dx) (from.y + dy) from.z
+
+:== candidates = { both : tile; across : tile; along : tile; left : tile; right : tile }
+
+:= side_step (sx : i32) (sy : i32) (turn : i32) (from : tile) : tile =
+    ? sy = 0 ?> shifted sx turn from |: shifted turn sy from
+
+:= live_side_step (sx : i32) (sy : i32) (turn : i32) (from : tile) : tile =
+    ? sx = 0 ?> shifted turn sy from |? sy = 0 ?> shifted sx turn from |: from
+
+:= candidates_with (side : i32 -> tile) (sx : i32) (sy : i32) (from : tile) : candidates =
+    := both, across, along = shifted sx sy from, shifted sx 0 from, shifted 0 sy from
+    { both = both; across = across; along = along; left = side 1; right = side -1 }
+
+:= candidates_of (sx : i32) (sy : i32) (from : tile) : candidates =
+    candidates_with (\ turn => side_step sx sy turn from) sx sy from
+
+:= live_candidates (sx : i32) (sy : i32) (from : tile) : candidates =
+    candidates_with (\ turn => live_side_step sx sy turn from) sx sy from
+
+:= first_usable (usable : occupancy) (c : candidates) (from : tile) : tile =
+    ? usable c.both ?> c.both |? usable c.across ?> c.across |? usable c.along ?> c.along
+    |? usable c.left ?> c.left |? usable c.right ?> c.right |: from
+
+:= free_and (l : layout) (taken : occupancy) (also : occupancy) : occupancy = \ p => free l taken p && also p
+
+:= toward_signs (a : tile) (b : tile) : i32 * i32 = direction_of (b.x - a.x), direction_of (b.y - a.y)
+
+:= candidates_away (threat : tile) (from : tile) : candidates =
+    := sx, sy = toward_signs threat from
+    candidates_of sx sy from
+
+:= closer_to (target : tile) (from : tile) : occupancy =
+    := distance = geometry.chebyshev_distance target from
+    \ p => geometry.chebyshev_distance target p < distance
+
+:= farther_from (threat : tile) (from : tile) : occupancy =
+    := distance = geometry.chebyshev_distance threat from
+    \ p => geometry.chebyshev_distance threat p > distance
+
+:= best_step (l : layout) (taken : occupancy) (improves : occupancy) (sx : i32) (sy : i32) (from : tile) : tile =
+    first_usable (free_and l taken improves) (candidates_of sx sy from) from
+
+:= greedy_step_toward (l : layout) (taken : occupancy) (target : tile) (from : tile) : tile =
+    := sx, sy = toward_signs from target
+    best_step l taken (closer_to target from) sx sy from
+
+:= region_rows () : i32 = 2 * arena_spot_radius () + 1
+:= region_words () : i32 = (region_rows () + row_word_bits () - 1) / row_word_bits ()
+:= all_bits () : u32 = 4294967295u32
+
+:= region_word_mask (word : i32) : u32 =
+    := valid = region_rows () - word * row_word_bits ()
+    ? valid >= row_word_bits () ?> all_bits () |: (1u32 <<< valid) - 1u32
+
+:| route_choice =
+    | GoEast
+    | GoWest
+    | GoSouth
+    | GoNorth
+    | Arrived
+    | NoRoute
+
+:= route_offset (c : route_choice) : i32 * i32 =
+    ?= c ?|
+    | GoEast => 1, 0
+    | GoWest => -1, 0
+    | GoSouth => 0, 1
+    | GoNorth => 0, -1
+    | _ => 0, 0
+
+:= region_bit (x : i32) : i32 = x - 100 + arena_spot_radius ()
+:= region_row (y : i32) : i32 = y - 100 + arena_spot_radius ()
+
+:= inside_region (x : i32) (y : i32) : bool =
+    region_bit x >= 0 && region_bit x < region_rows () && region_row y >= 0 && region_row y < region_rows ()
+
+:= word_holds (word : u32) (bit : i32) : bool = ((word >>> bit) &&& 1u32) = 1u32
+
+:= base_create \* el. (n : i32) : array_base el = !!!!ArrayCreate(`el, n)
+
+:= base_read \* el. (i : i32) (ar : array_base el) : el = !!!!ArrayIndex(ar, i)
+
+:= base_write \* el. (ar : array_base el) (i : i32) (v : el) : () = !!!!ArrayIndexSet(ar, i, v)
+:== route_request = { target : tile; from : tile; free : u32 }
+
+:== route_grid = { reach : array_base u32; openings : array_base u32; above : array_base u32; grown : array_base u32 }
+
+:= region_cells () : i32 = region_rows () * region_words ()
+
+:= region_array () : array_base u32 = base_create (region_cells ())
+
+:= row_array () : array_base u32 = base_create (region_words ())
+
+:= route_grid_new () : route_grid =
+    { reach = region_array (); openings = region_array (); above = row_array (); grown = row_array () }
+
+:= region_word (x : i32) : i32 = region_bit x / row_word_bits ()
+:= region_shift (x : i32) : i32 = region_bit x % row_word_bits ()
+:= region_cell (x : i32) (y : i32) : i32 = region_row y * region_words () + region_word x
+
+:= region_openings (cell : i32) : u32 =
+    arena_spot_bits (cell % region_words ()) (cell / region_words ()) ^^^ region_word_mask (cell % region_words ())
+
+:= reach_at (g : route_grid) (row : i32) (word : i32) : u32 =
+    ? row < 0 || row >= region_rows () || word < 0 || word >= region_words ()
+    ?> 0u32
+    |: base_read (row * region_words () + word) g.reach
+
+:= prepare_grid (g : route_grid) : () =
+    :~ ^ prepare (cell : i32) : () =
+        ? cell < region_cells () ?>
+            base_write g.reach cell 0u32
+            base_write g.openings cell (region_openings cell)
+            prepare (cell + 1)
+    prepare 0
+
+:= grid_open (g : route_grid) (x : i32) (y : i32) : bool =
+    inside_region x y && word_holds (base_read (region_cell x y) g.openings) (region_shift x)
+
+:= grid_reached (g : route_grid) (x : i32) (y : i32) : bool =
+    inside_region x y && word_holds (reach_at g (region_row y) (region_word x)) (region_shift x)
+
+:= grid_mark (g : route_grid) (x : i32) (y : i32) : () =
+    ? inside_region x y && grid_open g x y ?>
+        := marked = reach_at g (region_row y) (region_word x) ||| (1u32 <<< region_shift x)
+        base_write g.reach (region_cell x y) marked
+
+:= seed_target (g : route_grid) (r : route_request) : () =
+    :~ ^ seed (k : i32) : () =
+        ? k < 9 ?>
+            grid_mark g (r.target.x + k % 3 - 1) (r.target.y + k / 3 - 1)
+            seed (k + 1)
+    seed 0
+
+:= clear_above (g : route_grid) : () =
+    :~ ^ forget_above (word : i32) : () =
+        ? word < region_words () ?>
+            base_write g.above word 0u32
+            forget_above (word + 1)
+    forget_above 0
+
+:= spread_at (g : route_grid) (row : i32) (word : i32) (here : u32) (up : u32) : u32 =
+    here
+    ||| (here <<< 1)
+    ||| (here >>> 1)
+    ||| (reach_at g row (word + 1) <<< 31)
+    ||| (reach_at g row (word - 1) >>> 31)
+    ||| up
+    ||| reach_at g (row + 1) word
+
+:= grown_at (g : route_grid) (row : i32) (word : i32) : u32 =
+    := here = reach_at g row word
+    := open_bits : u32 = base_read (row * region_words () + word) g.openings
+    := up : u32 = base_read word g.above
+    spread_at g row word here up &&& open_bits
+
+:= grow_row (g : route_grid) (row : i32) : () =
+    :~ ^ grow (word : i32) : () =
+        ? word < region_words () ?>
+            base_write g.grown word (grown_at g row word)
+            grow (word + 1)
+    grow 0
+
+:= commit_word (g : route_grid) (row : i32) (word : i32) : bool =
+    := here = reach_at g row word
+    := next : u32 = base_read word g.grown
+    base_write g.above word here
+    base_write g.reach (row * region_words () + word) next
+    next <> here
+
+:= commit_row (g : route_grid) (row : i32) (changed : bool) : bool =
+    :~ ^ commit (word : i32) (changed : bool) : bool =
+        ? word >= region_words () ?> changed |: commit (word + 1) (commit_word g row word || changed)
+    commit 0 changed
+
+:= sweep_grid (g : route_grid) : bool =
+    clear_above g
+    :~ ^ sweep (row : i32) (changed : bool) : bool =
+        ? row >= region_rows () ?> changed
+        |:
+            grow_row g row
+            sweep (row + 1) (commit_row g row changed)
+    sweep 0 !-
+
+:= axis_gap (a : i32) (b : i32) : i32 = ? a - b < 0 ?> b - a |: a - b
+
+:= along_x_axis (r : route_request) : bool =
+    axis_gap r.target.x r.from.x >= axis_gap r.target.y r.from.y
+
+:= x_turns (r : route_request) : route_choice * route_choice =
+    ? r.target.x >= r.from.x ?> GoEast, GoWest |: GoWest, GoEast
+
+:= y_turns (r : route_request) : route_choice * route_choice =
+    ? r.target.y >= r.from.y ?> GoSouth, GoNorth |: GoNorth, GoSouth
+
+:== route_order = route_choice * route_choice * route_choice * route_choice
+
+:= route_order_of (r : route_request) : route_order =
+    := x_toward, x_away = x_turns r
+    := y_toward, y_away = y_turns r
+    ? along_x_axis r ?> x_toward, y_toward, y_away, x_away |: y_toward, x_toward, y_away, x_away
+
+:= route_bit (c : route_choice) : u32 = ?= c ?| GoEast => 1u32 | GoWest => 2u32 | GoSouth => 4u32 | _ => 8u32
+
+:= route_leads (g : route_grid) (r : route_request) (c : route_choice) : bool =
+    := dx, dy = route_offset c
+    (r.free &&& route_bit c) <> 0u32 && grid_reached g (r.from.x + dx) (r.from.y + dy)
+
+:= route_either (g : route_grid) (r : route_request) (first : route_choice) (second : route_choice) : route_choice =
+    ? route_leads g r first ?> first |? route_leads g r second ?> second |: NoRoute
+
+:= route_choose (g : route_grid) (r : route_request) (o : route_order) : route_choice =
+    := first, second, third, fourth = o
+    ?= route_either g r first second ?|
+    | NoRoute => route_either g r third fourth
+    | c => c
+
+:= still_searching (c : route_choice) : bool = ?= c ?| NoRoute => !+ | _ => !-
+
+:= route_continues (c : route_choice) (k : i32) : bool = still_searching c && k < region_rows () * 2
+
+:= route_layers (g : route_grid) (r : route_request) (o : route_order) : route_choice =
+    :~ ^ layers (k : i32) : route_choice =
+        := c = route_choose g r o
+        ? route_continues c k && sweep_grid g ?> layers (k + 1) |: c
+    layers 0
+
+:~ route_between (r : route_request) : route_choice =
+    := g = route_grid_new ()
+    prepare_grid g
+    seed_target g r
+    ? grid_reached g r.from.x r.from.y ?> Arrived |: route_layers g r (route_order_of r)
+
+:= straight_step_weight () : i32 = 10
+:= diagonal_step_weight () : i32 = 25
+:= unreachable_weight () : i32 = 1000000
+:= window_margin () : i32 = 6
+
+:= direction_dx (k : i32) : i32 =
+    ? k = 0
+    ?> 1
+    |? k = 1
+    ?> -1
+    |? k = 2
+    ?> 0
+    |? k = 3
+    ?> 0
+    |? k = 4 || k = 6
+    ?> 1
+    |: -1
+
+:= direction_dy (k : i32) : i32 =
+    ? k = 0 || k = 1
+    ?> 0
+    |? k = 2
+    ?> 1
+    |? k = 3
+    ?> -1
+    |? k = 4 || k = 5
+    ?> 1
+    |: -1
+
+:= direction_weight (k : i32) : i32 = ? k < 4 ?> straight_step_weight () |: diagonal_step_weight ()
+
+:== window_area = { x0 : i32; y0 : i32; w : i32; h : i32 }
+
+:== step_window =
+    {
+        area : window_area
+        target : tile
+        from : tile
+        passable : array_base i32
+        distance : array_base i32
+    }
+
+:= window_low (a : i32) (b : i32) : i32 = (? a < b ?> a |: b) - window_margin ()
+:= window_high (a : i32) (b : i32) : i32 = (? a > b ?> a |: b) + window_margin ()
+
+:= area_around (target : tile) (from : tile) : window_area =
+    := x0 = window_low from.x target.x
+    := y0 = window_low from.y target.y
+    { x0 = x0; y0 = y0; w = window_high from.x target.x - x0 + 1; h = window_high from.y target.y - y0 + 1 }
+
+:= window_around (target : tile) (from : tile) : step_window =
+    := area = area_around target from
+    := cells = area.w * area.h
+    { area = area; target = target; from = from; passable = base_create cells; distance = base_create cells }
+
+:= window_cells (v : step_window) : i32 = v.area.w * v.area.h
+:= window_x (v : step_window) (c : i32) : i32 = v.area.x0 + c % v.area.w
+:= window_y (v : step_window) (c : i32) : i32 = v.area.y0 + c / v.area.w
+
+:= window_inside (v : step_window) (x : i32) (y : i32) : bool =
+    x >= v.area.x0 && x < v.area.x0 + v.area.w && y >= v.area.y0 && y < v.area.y0 + v.area.h
+
+:= window_cell (v : step_window) (x : i32) (y : i32) : i32 = (y - v.area.y0) * v.area.w + (x - v.area.x0)
+
+:= window_passable (v : step_window) (x : i32) (y : i32) : bool =
+    window_inside v x y && base_read (window_cell v x y) v.passable = 1i32
+
+:= window_distance (v : step_window) (x : i32) (y : i32) : i32 =
+    ? window_inside v x y ?> base_read (window_cell v x y) v.distance |: unreachable_weight ()
+
+:= window_goal (v : step_window) (c : i32) : bool =
+    := x, y = window_x v c, window_y v c
+    window_passable v x y
+    && geometry.chebyshev_distance (tile x y 7) (tile v.target.x v.target.y 7) <= 1
+    && (x <> v.target.x || y <> v.target.y)
+
+:= seed_window (v : step_window) : () =
+    :~ ^ seed (c : i32) : () =
+        ? c < window_cells v ?>
+            base_write v.distance c (? window_goal v c ?> 0 |: unreachable_weight ())
+            seed (c + 1)
+    seed 0
+
+:= lower (a : i32) (b : i32) : i32 = ? b < a ?> b |: a
+
+:= through_weight (v : step_window) (x : i32) (y : i32) (k : i32) : i32 =
+    window_distance v (x + direction_dx k) (y + direction_dy k) + direction_weight k
+
+:= best_through (v : step_window) (x : i32) (y : i32) (old : i32) : i32 =
+    :~ ^ best (k : i32) (low : i32) : i32 =
+        ? k >= 8 ?> low |: best (k + 1) (lower low (through_weight v x y k))
+    best 0 old
+
+:= lower_distance (v : step_window) (c : i32) : bool =
+    := x, y = window_x v c, window_y v c
+    := old = window_distance v x y
+    := improved = best_through v x y old
+    ? improved < old ?>
+        base_write v.distance c improved
+        !+
+    |: !-
+
+:= relax_cell (v : step_window) (c : i32) : bool = window_passable v (window_x v c) (window_y v c) && lower_distance v c
+
+:= sweep_forward (v : step_window) : bool =
+    :~ ^ forward (c : i32) (changed : bool) : bool =
+        ? c >= window_cells v ?> changed |: forward (c + 1) (relax_cell v c || changed)
+    forward 0 !-
+
+:= sweep_backward (v : step_window) : bool =
+    :~ ^ backward (c : i32) (changed : bool) : bool =
+        ? c < 0 ?> changed |: backward (c - 1) (relax_cell v c || changed)
+    backward (window_cells v - 1) !-
+
+:= settle_window (v : step_window) : () =
+    :~ ^ settle (round : i32) : () =
+        ? round < 40 ?>
+            := a = sweep_forward v
+            := b = sweep_backward v
+            ? a || b ?> settle (round + 1)
+    settle 0
+
+:= neighbor_distance (v : step_window) (p : tile) : i32 =
+    ? window_passable v p.x p.y ?> window_distance v p.x p.y |: unreachable_weight ()
+
+:= pick_score (v : step_window) (k : i32) : i32 =
+    := d = neighbor_distance v (shifted (direction_dx k) (direction_dy k) v.from)
+    ? d < unreachable_weight () ?> d + direction_weight k |: unreachable_weight ()
+
+:= pick_better (v : step_window) (k : i32) (best : i32) (low : i32) : i32 * i32 =
+    := score = pick_score v k
+    ? score < low ?> k, score |: best, low
+
+:= pick_step (v : step_window) : i32 =
+    :~ ^ pick (k : i32) (best : i32) (low : i32) : i32 =
+        ? k >= 8 ?> best
+        |:
+            := best, low = pick_better v k best low
+            pick (k + 1) best low
+    pick 0 8 (unreachable_weight ())
+
+:= weighted_choice (v : step_window) : i32 =
+    seed_window v
+    settle_window v
+    ? window_distance v v.from.x v.from.y = 0 ?> 8 |: pick_step v
+
+:= walkable_at (l : layout) (taken : occupancy) (from : tile) (p : tile) : i32 =
+    ? blocked l p || (taken p && geometry.same_tile p from = !-) ?> 0i32 |: 1i32
+
+:= window_tile (v : step_window) (c : i32) : tile = tile (window_x v c) (window_y v c) v.from.z
+
+:= fill_window (l : layout) (taken : occupancy) (v : step_window) : () =
+    :~ ^ fill (c : i32) : () =
+        ? c < window_cells v ?>
+            base_write v.passable c (walkable_at l taken v.from (window_tile v c))
+            fill (c + 1)
+    fill 0
+
+:= weighted_step (l : layout) (taken : occupancy) (target : tile) (from : tile) : tile =
+    := v = window_around target from
+    fill_window l taken v
+    := k = weighted_choice v
+    ? k >= 8 ?> from |: shifted (direction_dx k) (direction_dy k) from
+
+:= free_bit (l : layout) (taken : occupancy) (from : tile) (c : route_choice) : u32 =
+    := dx, dy = route_offset c
+    ? free l taken (shifted dx dy from) ?> route_bit c |: 0u32
+
+:= route_from (l : layout) (taken : occupancy) (target : tile) (from : tile) : route_choice =
+    := bit = free_bit l taken from
+    route_between { target = target; from = from; free = bit GoEast ||| bit GoWest ||| bit GoSouth ||| bit GoNorth }
+
+:= route_step (c : route_choice) (from : tile) : tile =
+    := dx, dy = route_offset c
+    shifted dx dy from
+
+:= routed_step (l : layout) (taken : occupancy) (target : tile) (from : tile) : tile =
+    ?= route_from l taken target from ?|
+    | Arrived | NoRoute => from
+    | c => route_step c from
+
+:= step_toward
+    (l : layout) (taken : occupancy) (target : tile) (from : tile)
+    : tile
+    =
+    ?= l ?|
+    | ArenaHunt => routed_step l taken target from
+    | ArenaSpot => weighted_step l taken target from
+    | _ => greedy_step_toward l taken target from
+
+:= step_away (l : layout) (taken : occupancy) (threat : tile) (from : tile) : tile =
+    := sx, sy = toward_signs threat from
+    best_step l taken (farther_from threat from) sx sy from
+
+:= step_away_like_the_live_probe (l : layout) (taken : occupancy) (threat : tile) (from : tile) : tile =
+    := sx, sy = toward_signs threat from
+    first_usable (\ p => geometry.same_tile p from = !- && free l taken p) (live_candidates sx sy from) from
+
+:== footing = { away : i32; room : i32; crowd : i32; align : i32; diagonal : i32 }
+
+:= neighbor (k : i32) (from : tile) : tile =
+    := dx = ? k = 0 || k = 3 || k = 5 ?> -1 |? k = 2 || k = 4 || k = 7 ?> 1 |: 0
+    := dy = ? k = 0 || k = 1 || k = 2 ?> -1 |? k = 5 || k = 6 || k = 7 ?> 1 |: 0
+    shifted dx dy from
+
+:= walkable_around (l : layout) (p : tile) : i32 =
+    :~ ^ count (k : i32) (acc : i32) : i32 =
+        ? k >= 8 ?> acc |: count (k + 1) (? blocked l (neighbor k p) ?> acc |: acc + 1)
+    count 0 0
+
+:== crowding = tile -> i32
+
+:= alignment_of (threat : tile) (from : tile) (c : tile) : i32 =
+    := sx, sy = toward_signs threat from
+    (c.x - from.x) * sx + (c.y - from.y) * sy
+
+:= slant (from : tile) (c : tile) : i32 = ? c.x <> from.x && c.y <> from.y ?> 1 |: 0
+
+:= footing_room (l : layout) (w : footing) (threat : tile) (c : tile) : i32 =
+    w.away * geometry.chebyshev_distance threat c + w.room * walkable_around l c
+
+:= footing_score (l : layout) (crowd : crowding) (w : footing) (threat : tile) (from : tile) (c : tile) : i32 =
+    footing_room l w threat c - w.crowd * crowd c + w.align * alignment_of threat from c - w.diagonal * slant from c
+
+:= considered (usable : occupancy) (score : tile -> i32) (from : tile) (t : tile) (best : tile) : tile =
+    ? usable t && (geometry.same_tile best from || score t > score best) ?> t |: best
+
+:= fold_candidates (f : tile -> tile -> tile) (c : candidates) (start : tile) : tile =
+    start |> f c.both |> f c.across |> f c.along |> f c.left |> f c.right
+
+:= best_scored (usable : occupancy) (score : tile -> i32) (threat : tile) (from : tile) : tile =
+    fold_candidates (considered usable score from) (candidates_away threat from) from
+
+:= scored_step (l : layout) (taken : occupancy) (crowd : crowding) (w : footing) (threat : tile) (from : tile) : tile =
+    := usable = free_and l taken (farther_from threat from)
+    best_scored usable (footing_score l crowd w threat from) threat from
+
+:= ground_step_percent (l : layout) : i32 =
+    ?= l ?|
+    | ArenaSpot => 108
+    | ArenaHunt => 108
+    | _ => 100
+
+:= on_ground (l : layout) (step_ms : i32) : i32 = step_ms * ground_step_percent l / 100
+
+:= arena_ground_speed () : i32 = 160
+:= road_ground_speed () : i32 = 100
+:= grass_ground_speed () : i32 = 150
+
+:= ground_speed_at (l : layout) (from : tile) : i32 =
+    ?= l ?|
+    | ArenaSpot => ? arena_road from ?> road_ground_speed () |: arena_ground_speed ()
+    | ArenaHunt => ? arena_road from ?> road_ground_speed () |: arena_ground_speed ()
+    | _ => grass_ground_speed ()
+
+:= on_the_server_map (l : layout) (from : tile) (step_ms : i32) : i32 =
+    ? arena_road from
+    ?> step_ms * ground_step_percent l * road_ground_speed () / (100 * arena_ground_speed ())
+    |: on_ground l step_ms
+
+:= on_ground_at (l : layout) (from : tile) (step_ms : i32) : i32 =
+    ?= l ?|
+    | ArenaHunt => on_the_server_map l from step_ms
+    | ArenaSpot => on_the_server_map l from step_ms
+    | _ => on_ground l step_ms
+
+:= grave () : tile = tile 0 0 15
+
+:= more_spawn_points (l : layout) : tile * tile * tile =
+    ?= l ?|
+    | ArenaHunt => tile 117 95 7, tile 120 105 7, tile 108 104 7
+    | _ => grave (), grave (), grave ()
+
+:= player_start (l : layout) : tile =
+    ?= l ?|
+    | ArenaSpot => tile 99 99 7
+    | ArenaHunt => tile 103 86 7
+    | _ => tile 100 100 7
+
+:= room_and_arena_spawn_points (l : layout) : tile * tile * tile =
+    ?= l ?|
+    | RoomAndCorridor => tile 103 100 7, tile 104 102 7, tile 104 98 7
+    | ArenaSpot => tile 99 101 7, tile 98 102 7, tile 98 103 7
+    | _ => tile 125 86 7, tile 120 96 7, tile 110 84 7
+
+:= spawn_points (l : layout) : tile * tile * tile =
+    ?= l ?|
+    | OpenField => tile 106 103 7, tile 104 107 7, tile 108 98 7
+    | EastCorridor => tile 102 100 7, tile 104 100 7, tile 106 100 7
+    | _ => room_and_arena_spawn_points l
+
+:= nobody (p : tile) : bool = !-
+
+:= taken_at (x : i32) (y : i32) : occupancy = \ p => p.x = x && p.y = y
+
+///> c
+test a_corridor_turns_a_diagonal_approach_into_a_straight_one =
+    := ~x = 103i32
+    step_toward EastCorridor nobody (tile 100 100 7) (tile x 100 7) |> geometry.xy |> _assert_eq (102i32, 100i32)
+
+///> c
+test in_open_field_a_diagonal_approach_stays_diagonal =
+    := ~x = 103i32
+    step_toward OpenField nobody (tile 100 100 7) (tile x 103 7) |> geometry.xy |> _assert_eq (102i32, 102i32)
+
+///> c
+test a_taken_tile_is_walked_around_or_waited_for =
+    := ~x = 102i32
+    := step l = step_toward l (taken_at 101 100) (tile 100 100 7) (tile x 100 7) |> geometry.xy
+    (step EastCorridor, step OpenField) |> _assert_eq ((102i32, 100i32), (101i32, 101i32))
+
+///> wgsl
+test corridor_steps_on_gpu =
+    := ~x = 103i32
+    := nobody (p : tile) = !-
+    := step = step_toward EastCorridor nobody (tile 100 100 7) (tile x 100 7)
+    ? step.x = 102i32 && step.y = 100i32 ?> 0i32 |: 1i32
+
+///> c
+test the_arena_spot_matches_the_live_scan_and_the_server_map =
+    := ~x = 100i32
+    := at dx dy = walls ArenaSpot (tile (x + dx) (100 + dy) 7)
+    (at 0 0, at -1 0, at 1 0, at 4 -4, at -7 0, at 8 0, at -1 1)
+    |> _assert_eq (!-, !+, !-, !-, !-, !-, !-)
+
+:= alone (p : tile) : i32 = 0
+
+:= away_and_room (away : i32) (room : i32) : footing = { away = away; room = room; crowd = 0; align = 0; diagonal = 0 }
+
+:= room_step (w : footing) (x : i32) : tile =
+    scored_step RoomAndCorridor nobody alone w (tile (x + 1) 100 7) (tile x 100 7)
+
+///> c
+test a_scored_step_can_prefer_room_over_distance =
+    := ~x = 100i32
+    := run, roomy = room_step (away_and_room 10 0) x, room_step (away_and_room 0 10) x
+    (run.x, walkable_around RoomAndCorridor (tile 98 100 7), roomy.x) |> _assert_eq (99i32, 2i32, 99i32)
+
+:= all_open (l : layout) (a : tile) (b : tile) (c : tile) : bool =
+    blocked l a = !- && blocked l b = !- && blocked l c = !-
+
+///> c
+test the_arena_hunt_spawns_are_open_ground =
+    := ~x = 0i32
+    := a, b, c = spawn_points ArenaHunt
+    := d, e, f = more_spawn_points ArenaHunt
+    (all_open ArenaHunt a b c, all_open ArenaHunt d e f, x) |> _assert_eq (!+, !+, 0i32)
+
+///> c
+test the_arena_hunt_start_is_open_ground =
+    := ~x = 0i32
+    (blocked ArenaHunt (player_start ArenaHunt), x) |> _assert_eq (!-, 0i32)
+
+:~ ^ walk_until_adjacent (l : layout) (target : tile) (steps : i32) (at : tile) : i32 * tile =
+    ? geometry.chebyshev_distance target at <= 1 || steps >= 100 ?> steps, at
+    |: walk_until_adjacent l target (steps + 1) (step_toward l nobody target at)
+
+///> c
+test on_the_hunting_ground_a_greedy_step_sticks =
+    := ~x = 110i32
+    greedy_step_toward ArenaHunt nobody (tile 115 93 7) (tile x 88 7) |> geometry.xy |> _assert_eq (110i32, 88i32)
+
+///> c
+test on_the_hunting_ground_a_route_goes_where_a_greedy_step_sticks =
+    := ~x = 110i32
+    := steps, last = walk_until_adjacent ArenaHunt (tile 115 93 7) 0 (tile x 88 7)
+    (steps, geometry.xy last) |> _assert_eq (9i32, (115i32, 92i32))
+
+///> c
+test on_the_hunting_ground_a_road_tile_speeds_the_next_step_up =
+    := ~cyclops_ms = 650i32
+    (on_ground_at ArenaHunt (tile 115 93 7) cyclops_ms, on_ground_at ArenaHunt (tile 115 89 7) cyclops_ms)
+    |> _assert_eq (702i32, 438i32)
+
+///> c
+test at_the_spot_a_road_tile_speeds_the_next_step_up =
+    := ~cyclops_ms = 650i32
+    := at x y = on_ground_at ArenaSpot (tile x y 7) cyclops_ms
+    (at 115 89, at 99 99, arena_road (tile 99 99 7)) |> _assert_eq (438i32, 702i32, !-)
+
+:= detour_around_99_101 (from : tile) : tile = step_toward ArenaSpot (taken_at 99 101) (tile 100 100 7) from
+
+///> c
+test on_the_arena_spot_a_monster_detours_around_another_with_a_diagonal_step =
+    := ~x = 98i32
+    := f = detour_around_99_101 (tile x 102 7)
+    (geometry.xy f, geometry.xy (detour_around_99_101 f)) |> _assert_eq ((99i32, 102i32), (100i32, 101i32))
+
+///> c
+test on_the_arena_spot_a_greedy_step_waits_behind_another_monster =
+    := ~x = 98i32
+    greedy_step_toward ArenaSpot (taken_at 99 101) (tile 100 100 7) (tile x 102 7) |> geometry.xy
+    |> _assert_eq (98i32, 102i32)
+
+:= world_tile (west : i32) (x : i32) (y : i32) : tile = tile (x - west) (y - 1250) 7
+
+///> c
+test ramps_and_stairs_by_the_spot_are_walls_cyclopes_never_take =
+    := ~west = 1833i32
+    := w x y = blocked ArenaSpot (world_tile west x y)
+    (w 1940 1372, w 1941 1372, w 1927 1337, w 1958 1345, w 1939 1371) |> _assert_eq (!+, !+, !+, !+, !-)
+
+///> c
+test the_protection_zones_east_of_the_spot_stop_walkers_but_not_arrows =
+    := ~west = 1833i32
+    := zone = world_tile west 1942 1351
+    (blocked ArenaSpot zone, walls ArenaSpot zone, arena_world_protected (west + 110) 1351) |> _assert_eq (!+, !-, !+)
+
+///> c
+test the_protection_zone_edges_match_the_server_map =
+    := ~west = 1833i32
+    := at = world_tile west
+    (blocked ArenaHunt (at 1960 1343), blocked ArenaSpot (at 1942 1352), blocked ArenaSpot (at 1960 1358))
+    |> _assert_eq (!+, !-, !-)
+
+///> c
+test the_server_map_ground_speed_is_160_off_the_road_100_on_it_and_150_on_open_grass =
+    := ~x = 115i32
+    := at l y = ground_speed_at l (tile x y 7)
+    (at ArenaHunt 93, at ArenaHunt 89, at OpenField 89) |> _assert_eq (160i32, 100i32, 150i32)

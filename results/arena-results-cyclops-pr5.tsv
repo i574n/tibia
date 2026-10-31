@@ -1,0 +1,11 @@
+timestamp	competitor	run	monster	count	experience	cleared_ms	lowest_health	actions_allowed	actions_dropped	potions	gold	deaths	foreign_potions	foreign_actions
+2026-10-14T16:03:05	random-control	1	cyclops	3	675	82204	418	181	132	77	15	0	-47	0
+2026-10-14T16:05:58	random-control	2	cyclops	3	675	98417	373	202	163	93	5	0	-46	0
+2026-10-14T16:08:56	random-control	1	cyclops	3	675	90360	365	193	160	89	63	0	-46	0
+2026-10-14T16:11:51	random-control	2	cyclops	3	675	105856	383	237	170	99	81	0	-62	0
+2026-10-14T16:14:41	random-control	3	cyclops	3	675	90509	351	190	134	88	27	0	-43	0
+2026-10-14T16:18:01	random-control	1	cyclops	3	675	112366	420	233	151	99	99	0	-60	0
+2026-10-14T16:21:13	random-control	2	cyclops	3	675	114028	405	241	167	99	84	0	-72	0
+2026-10-14T16:24:25	random-control	3	cyclops	3	675	117285	239	236	159	99	63	0	-74	0
+2026-10-14T16:27:35	random-control	1	cyclops	3	675	103099	424	223	179	99	69	0	-48	0
+2026-10-14T16:30:48	random-control	2	cyclops	3	675	113342	379	245	197	99	70	0	-67	0

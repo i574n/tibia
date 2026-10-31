@@ -1,0 +1,311 @@
+///- --package .
+test arena_host static =
+    :< testing
+
+:< sm'_operators
+
+:| host_event =
+    | WindowGranted
+    | WindowLost
+    | WorldReady
+    | WorldCrashed
+    | RunEnded : block_plan.run_outcome
+    | RunTimedOut
+
+:| host_command =
+    | StartWorld
+    | RestartWorld
+    | ResetCharacter
+    | StartRun : i32 * i32
+    | StopRun
+    | Record : block_plan.run_fate
+    | ReleaseWindow
+
+:| host_phase =
+    | AwaitingWindow
+    | StartingWorld
+    | Running
+    | Ended
+
+:== host = { phase : host_phase; runs : array i32; progress : block_plan.progress }
+
+:= opened (runs : array i32) : host = { phase = AwaitingWindow; runs = runs; progress = block_plan.starting () }
+
+:= next_run (h : host) : list host_command = [ ResetCharacter; StartRun (h.progress.stage, h.progress.run) ]
+
+:= closing (h : host) (fate : block_plan.run_fate) : host * list host_command =
+    ? block_plan.finished h.runs h.progress ?> { h ?| phase = Ended }, [ Record fate; ReleaseWindow ]
+    |: h, Record fate :: next_run h
+
+:= settled (h : host) (o : block_plan.run_outcome) : host * list host_command =
+    closing { h ?| progress = block_plan.after h.runs h.progress o } (block_plan.fate_of h.progress.retried o)
+
+:= crashed () : block_plan.run_outcome = :< block_plan ;; Crashed
+
+:= timed_out (h : host) : host * list host_command =
+    ?= settled h (crashed ()) ?|
+    | after_crash, commands => after_crash, StopRun :: commands
+
+:= restarted (h : host) (after_crash : host) : host * list host_command =
+    := fate = block_plan.fate_of h.progress.retried (crashed ())
+    { after_crash ?| phase = StartingWorld }, [ Record fate; RestartWorld ]
+
+:= world_crashed (h : host) : host * list host_command =
+    ?= settled h (crashed ()) ?|
+    | after_crash, commands =>
+        ?= after_crash.phase ?|
+        | Ended => after_crash, commands
+        | _ => restarted h after_crash
+
+:= awaiting_step (h : host) (e : host_event) : host * list host_command =
+    ?= e ?|
+    | WindowGranted => { h ?| phase = StartingWorld }, [ StartWorld ]
+    | WindowLost => { h ?| phase = Ended }, []
+    | _ => h, []
+
+:= starting_step (h : host) (e : host_event) : host * list host_command =
+    ?= e ?|
+    | WorldReady => { h ?| phase = Running }, next_run h
+    | WorldCrashed => h, [ RestartWorld ]
+    | WindowLost => { h ?| phase = Ended }, []
+    | _ => h, []
+
+:= running_step (h : host) (e : host_event) : host * list host_command =
+    ?= e ?|
+    | RunEnded o => settled h o
+    | RunTimedOut => timed_out h
+    | WorldCrashed => world_crashed h
+    | WindowLost => { h ?| phase = Ended }, []
+    | _ => h, []
+
+:= step (h : host) (e : host_event) : host * list host_command =
+    ?= h.phase ?|
+    | Ended => h, []
+    | AwaitingWindow => awaiting_step h e
+    | StartingWorld => starting_step h e
+    | Running => running_step h e
+
+:= fate_text (fate : block_plan.run_fate) : string =
+    :< block_plan
+    ?= fate ?|
+    | Counted => "counted"
+    | Rerun => "rerun"
+    | Missing => "missing"
+
+:= run_text (stage : i32) (run : i32) : string = "run " ++#? stage ++# "." ++#? run
+
+:= character_command_text (c : host_command) : string =
+    ?= c ?|
+    | ResetCharacter => "reset"
+    | StopRun => "stop"
+    | _ => "release"
+
+:= command_text (c : host_command) : string =
+    ?= c ?|
+    | StartWorld => "start-world"
+    | RestartWorld => "restart-world"
+    | StartRun (stage, run) => run_text stage run
+    | Record fate => fate_text fate
+    | _ => character_command_text c
+
+:= with_command (line : string) (c : host_command) : string =
+    ? line = "" ?> command_text c |: line ++# ", " ++# command_text c
+
+:= logged (log : string) (commands : list host_command) : string =
+    := text = listm.fold with_command "" commands
+    ? text = "" ?> log |? log = "" ?> text |: log ++# " | " ++# text
+
+:~ ^ played (h : host) (events : list host_event) (log : string) : string =
+    ?= events ?|
+    | [] => log
+    | e :: rest =>
+        := next, commands = step h e
+        played next rest (logged log commands)
+
+:| world_reaction =
+    | Finishes : block_plan.run_outcome
+    | TimesOut
+    | CrashesWorld
+
+:= reaction_event (r : world_reaction) : host_event =
+    ?= r ?|
+    | Finishes o => RunEnded o
+    | TimesOut => RunTimedOut
+    | CrashesWorld => WorldCrashed
+
+:== world_script = list world_reaction
+
+:== reacting = list host_event * world_script
+
+:= run_reaction (script : world_script) (events : list host_event) : reacting =
+    ?= script ?|
+    | r :: later => reaction_event r :: events, later
+    | [] => WindowLost :: events, []
+
+:= with_reaction (c : host_command) (script : world_script) (events : list host_event) : reacting =
+    ?= c ?|
+    | StartWorld | RestartWorld => WorldReady :: events, script
+    | StartRun _ => run_reaction script events
+    | _ => events, script
+
+:~ ^ reacted (commands : list host_command) (script : world_script) (events : list host_event) : reacting =
+    ?= commands ?|
+    | [] => listm.rev events, script
+    | c :: rest =>
+        := after, left = with_reaction c script events
+        reacted rest left after
+
+:== simulation = { h : host; script : world_script; log : string }
+
+:= reacted_turn (s : simulation) (commands : list host_command) (rest : list host_event)
+    : simulation * list host_event
+    =
+    := queued, left = reacted commands s.script (listm.rev rest)
+    { s ?| script = left; log = logged s.log commands }, queued
+
+:~ ^ simulated (s : simulation) (pending : list host_event) : string =
+    ?= pending ?|
+    | [] => s.log
+    | e :: rest =>
+        := next, commands = step s.h e
+        := after, queued = reacted_turn { s ?| h = next } commands rest
+        simulated after queued
+
+:= simulate (h : host) (pending : list host_event) (script : world_script) : string =
+    simulated { h = h; script = script; log = "" } pending
+
+:= block_of (first : i32) : host = opened (block_plan.stages_of first 1)
+
+:= completed () : host_event = RunEnded (:< block_plan ;; Completed)
+
+:= played_from (first : i32) (events : list host_event) : string = played (block_of first) events ""
+
+:= finishes () : world_reaction = Finishes (:< block_plan ;; Completed)
+
+:= clean_block_trace () : string =
+    "start-world | reset, run 0.0 | counted, reset, run 0.1 | counted, reset, run 1.0 | counted, release"
+
+///> lua
+///> gleam
+test a_clean_block_resets_before_every_run_and_releases_its_window =
+    := ~first = 2i32
+    played_from first [ WindowGranted; WorldReady; completed (); completed (); completed () ]
+    |> _assert_eq (clean_block_trace ())
+
+:= timed_out_trace () : string =
+    "start-world | reset, run 0.0 | stop, rerun, reset, run 0.0 | stop, missing, reset, run 1.0 | counted, release"
+
+///> lua
+///> gleam
+test a_timed_out_run_is_stopped_and_rerun_once_then_counted_missing =
+    := ~first = 1i32
+    played_from first [ WindowGranted; WorldReady; RunTimedOut; RunTimedOut; completed () ]
+    |> _assert_eq (timed_out_trace ())
+
+:= world_crash_trace () : string =
+    "start-world | reset, run 0.0 | rerun, restart-world | reset, run 0.0 | counted, reset, run 1.0 | counted, release"
+
+///> lua
+///> gleam
+test a_world_crash_restarts_the_world_and_resets_the_character_before_the_rerun =
+    := ~first = 1i32
+    played_from first [ WindowGranted; WorldReady; WorldCrashed; WorldReady; completed (); completed () ]
+    |> _assert_eq (world_crash_trace ())
+
+///> lua
+///> gleam
+test a_lost_window_ends_the_block_and_later_events_change_nothing =
+    := ~first = 1i32
+    played_from first [ WindowGranted; WorldReady; WindowLost; completed (); WindowGranted ]
+    |> _assert_eq "start-world | reset, run 0.0"
+
+:= scripted_block_trace () : string =
+    "start-world | reset, run 0.0 | counted, reset, run 0.1 | stop, rerun, reset, run 0.1 | "
+    ^^ "counted, reset, run 1.0 | rerun, restart-world | reset, run 1.0 | counted, release"
+
+///> lua
+///> gleam
+test a_scripted_world_drives_a_whole_block_through_the_executor =
+    := ~first = 2i32
+    simulate (block_of first) [ WindowGranted ] [ finishes (); TimesOut; finishes (); CrashesWorld; finishes () ]
+    |> _assert_eq (scripted_block_trace ())
+
+///> lua
+///> gleam
+test a_world_that_stops_answering_ends_the_block =
+    := ~first = 1i32
+    simulate (block_of first) [ WindowGranted ] [ finishes () ]
+    |> _assert_eq "start-world | reset, run 0.0 | counted, reset, run 1.0"
+
+:| host_message r =
+    | Event : host_event
+    | Trace : r
+
+:~ ^ filled_runs (runs : array i32) (i : i32) (rest : list i32) : () =
+    ?= rest ?|
+    | head :: tail =>
+        set runs i head
+        filled_runs runs (i + 1) tail
+    | [] => ()
+
+:= runs_of_plan (plan : list i32) : array i32 =
+    := runs : array i32 = create (listm.length plan)
+    filled_runs runs 0 plan
+    runs
+
+:== host_state = list i32 * option host * string
+
+:= current_host (kept_plan : list i32) (current : option host) : host =
+    ?= current ?|
+    | Some running => running
+    | None => opened (runs_of_plan kept_plan)
+
+:= opened_state (state : host_state) : list i32 * host * string =
+    := kept_plan, current, log = state
+    kept_plan, current_host kept_plan current, log
+
+:= on_event (kept_plan : list i32) (h : host) (log : string) (e : host_event) =
+    := next, commands = step h e
+    step_runtime.Continue (kept_plan, Some next, logged log commands)
+
+:= traced \* r. (answer : r -> string -> ()) (kept_plan : list i32) (h : host) (log : string) (to : r) =
+    answer to log
+    step_runtime.Continue (kept_plan, Some h, log)
+
+:= handled \* r. (answer : r -> string -> ()) (state : host_state) (message : host_message r) =
+    := kept_plan, h, log = opened_state state
+    ?= message ?|
+    | Event e => on_event kept_plan h log e
+    | Trace to => traced answer kept_plan h log to
+
+:= host_actor \* r. (answer : r -> string -> ()) (plan : list i32) : step_runtime.actor host_state (host_message r) =
+    { init = \ () => plan, None, ""; handle = handled answer }
+
+:= actor_trace \* a r.
+    (post : a -> host_message r -> ()) (ask : a -> (r -> host_message r) -> string) (actor : a)
+    (events : list host_event)
+    : string
+    =
+    listm.iter (\ (e : host_event) => post actor (Event e)) events
+    ask actor Trace
+
+:= otp_trace (plan : list i32) (events : list host_event) : string =
+    := actor = step_runtime.otp_start (host_actor erlang_process.send plan)
+    actor_trace otp_actor.send (\ inbox request => otp_actor.call inbox 10000i32 request) actor events
+
+:= step_runtime_trace (plan : list i32) (events : list host_event) : string =
+    actor_trace step_runtime.send step_runtime.call (step_runtime.spawn (host_actor step_runtime.reply plan)) events
+
+:= backend_trace (plan : list i32) (events : list host_event) : string =
+    run_target \|
+        | Gleam => \ () => otp_trace plan events
+        | _ => \ () => step_runtime_trace plan events
+
+:= two_stage_trace () : string = "start-world | reset, run 0.0 | counted, reset, run 1.0 | counted, release"
+
+///> gleam
+///> lua
+test the_host_step_runs_inside_an_actor_and_gives_the_same_trace_on_every_backend =
+    := ~first = 1i32
+    backend_trace [ first; 1i32 ] [ WindowGranted; WorldReady; completed (); completed () ]
+    |> _assert_eq (two_stage_trace ())

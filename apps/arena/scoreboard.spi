@@ -1,0 +1,103 @@
+///- --package .
+test scoreboard static =
+    :< testing
+
+:< sm'_operators
+:= run_ms () : i32 = client.env_i32 "TIBIA_ARENA_RUN_MS" 150000
+:= probe_timeout_ms () : i32 = run_ms () + 50000
+:= summary_every () : i32 = 100
+
+:== tally =
+    {
+        ticks : i32
+        heals : i32
+        strikes : i32
+        holds : i32
+        kills : i32
+        retreats : i32
+        cornered : i32
+        gated : i32
+        lowest : i32
+    }
+
+:== pace = { start_experience : i32; started_at : mut i32; full_experience : i32 }
+
+:= empty () : tally =
+    { ticks = 0; heals = 0; strikes = 0; holds = 0; kills = 0; retreats = 0; cornered = 0; gated = 0; lowest = 999 }
+
+:= counted (health : i32) (t : tally) : tally =
+    { t ?| ticks = t.ticks + 1; lowest = ? health < t.lowest ?> health |: t.lowest }
+
+:= elapsed (p : pace) : i32 = client.now_ms () - *p.started_at
+
+:= gained (p : pace) : i32 = client.player_experience () - p.start_experience
+
+:= action_counts (t : tally) : string =
+    := ticks, heals, strikes, holds = t.ticks, t.heals, t.strikes, t.holds
+    "ticks " ++#? ticks ++# " heals " ++#? heals ++# " strikes " ++#? strikes ++# " holds " ++#? holds
+
+:= escape_counts (t : tally) : string =
+    := retreats, cornered, gated, kills = t.retreats, t.cornered, t.gated, t.kills
+    " retreats " ++#? retreats ++# " cornered " ++#? cornered ++# " gated " ++#? gated ++# " kills " ++#? kills
+
+:= vitals (health : i32) (lowest : i32) (plus : i32) : string =
+    " health " ++#? health ++# " lowest " ++#? lowest ++# " experience +" ++#? plus
+
+:= summary_text (health : i32) (plus : i32) (t : tally) : string =
+    action_counts t ++# escape_counts t ++# vitals health t.lowest plus
+
+:= summary (p : pace) (t : tally) : string = summary_text (client.player_health ()) (gained p) t
+
+:= due_for_summary (t : tally) : bool = t.ticks % summary_every () = 0
+
+:= trace_every () : i32 = 10
+
+:= due_for_trace (t : tally) : bool = t.ticks % trace_every () = 0
+
+:= pace_from_environment (start_experience : i32) (started_at : mut i32) : pace =
+    {
+        start_experience = start_experience
+        started_at = started_at
+        full_experience = client.env_i32 "TIBIA_ARENA_FULL_EXPERIENCE" 90
+    }
+
+:= run_complete (p : pace) (t : tally) : () =
+    probe.note ("end: " ++# summary p t)
+    probe.finish_reporting_parity "run complete"
+
+:= cleared_noted (p : pace) (t : tally) (on_cleared : () -> ()) : () =
+    := at = elapsed p
+    probe.note ("cleared at " ++#? at ++# " ms")
+    probe.note ("cleared: " ++# summary p t)
+    on_cleared ()
+    probe.finish_reporting_parity "cleared"
+
+:= finish_or_continue (p : pace) (t : tally) (on_cleared : () -> ()) (continue : () -> ()) : () =
+    ? elapsed p > run_ms () ?> run_complete p t
+    |? gained p >= p.full_experience ?> cleared_noted p t on_cleared
+    |: continue ()
+
+///> lua
+///> c
+test counted_ticks_and_keeps_the_lowest_health =
+    := t = empty () |> counted 400 |> counted 180 |> counted 300
+    (t.ticks, t.lowest, due_for_trace t, due_for_summary t, due_for_summary (empty ()))
+    |> _assert_eq (3i32, 180i32, !-, !-, !+)
+
+///> lua
+///> c
+test counters_keep_their_order =
+    := t = { (empty ()) ?| ticks = 100; heals = 4; strikes = 9; kills = 3 }
+    (action_counts t, escape_counts t)
+    |> _assert_eq ("ticks 100 heals 4 strikes 9 holds 0", " retreats 0 cornered 0 gated 0 kills 3")
+
+///> lua
+///> c
+test vitals_report_health_lowest_and_experience =
+    vitals 377 210 675 |> _assert_eq " health 377 lowest 210 experience +675"
+
+///> lua
+///> c
+test summary_text_is_counts_then_vitals =
+    := t = { (empty ()) ?| ticks = 100; kills = 3; lowest = 210 }
+    summary_text 377 675 t |> _assert_eq (action_counts t ++# escape_counts t ++# vitals 377 210 675)

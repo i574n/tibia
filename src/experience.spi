@@ -1,0 +1,78 @@
+///- --package .
+test experience static =
+    :< testing
+
+:== standing = { level : i32; experience : i32 }
+
+:= experience_for_level (level : i32) : i32 =
+    (((level - 6) * level + 17) * level - 12) / 6 * 100
+
+:= unblessed_death_loss_below_level_24 (experience : i32) : i32 = (experience + 9) / 10
+
+:= last_level_without_experience_loss () : i32 = 7
+
+:= level_of (experience : i32) (from_level : i32) : i32 =
+    :~ ^ down (level : i32) : i32 =
+        ? level > 1 && experience < experience_for_level level ?> down (level - 1) |: level
+    down from_level
+
+:= experience_left (s : standing) : i32 =
+    ? s.level > last_level_without_experience_loss ()
+    ?> s.experience - unblessed_death_loss_below_level_24 s.experience
+    |: s.experience
+
+:= after_unblessed_death (s : standing) : standing =
+    := left = experience_left s
+    { level = level_of left s.level; experience = left }
+
+///> c
+test experience_table_matches_canary_get_exp_for_low_levels =
+    := ~level = 8i32
+    (experience_for_level 1, experience_for_level 2, experience_for_level 6, experience_for_level (level - 1))
+    |> _assert_eq (0i32, 100i32, 1500i32, 2600i32)
+
+///> c
+test experience_table_matches_canary_get_exp_for_level =
+    := ~level = 8i32
+    (experience_for_level level, experience_for_level 10, experience_for_level 24, experience_for_level 100)
+    |> _assert_eq (4200i32, 9300i32, 179400i32, 15694800i32)
+
+///> c
+test a_level_8_knight_sample_death_costs_a_level_like_live =
+    := ~experience = 4200i32
+    := after = after_unblessed_death { level = 8; experience = experience }
+    (after.level, after.experience) |> _assert_eq (7i32, 3780i32)
+
+///> c
+test a_death_mid_level_keeps_the_level_when_the_loss_stays_above_its_floor =
+    := ~experience = 9000i32
+    := after = after_unblessed_death { level = 9; experience = experience }
+    (after.level, after.experience) |> _assert_eq (9i32, 8100i32)
+
+///> c
+test level_of_walks_down_to_the_level_the_experience_covers =
+    := ~experience = 2599i32
+    (level_of experience 8, level_of 0 5) |> _assert_eq (6i32, 1i32)
+
+///> c
+test the_loss_rounds_up_like_canary_ceil =
+    := ~experience = 4205i32
+    := odd = after_unblessed_death { level = 8; experience = experience }
+    (odd.level, odd.experience) |> _assert_eq (7i32, 3784i32)
+
+///> c
+test levels_up_to_7_lose_nothing =
+    := ~experience = 2600i32
+    := young = after_unblessed_death { level = 7; experience = experience }
+    (young.level, young.experience) |> _assert_eq (7i32, 2600i32)
+
+///> c
+test the_loss_of_one_point_rounds_up_and_none_stays_none =
+    := ~one = 1i32
+    (unblessed_death_loss_below_level_24 one, unblessed_death_loss_below_level_24 (one - 1)) |> _assert_eq (1i32, 0i32)
+
+///> wgsl
+test death_penalty_on_gpu =
+    := ~experience = 4200i32
+    := after = after_unblessed_death { level = 8; experience = experience }
+    ? after.level = 7i32 && after.experience = 3780i32 && experience_for_level 24 = 179400i32 ?> 0i32 |: 1i32

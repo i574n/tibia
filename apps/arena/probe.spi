@@ -1,0 +1,125 @@
+///- --package .
+test probe static =
+    :< testing
+
+:< sm'_operators
+:= note (message : string) : () = client.write_log_line ("[tibia-probe] " ++# message)
+
+:= described (s : client.spot) : string =
+    := x, y, z = s.x, s.y, s.z
+    ("" ++#? x ++# "," ++#? y ++# "," ++#? z)
+
+:= chebyshev (a : client.spot) (b : client.spot) : i32 =
+    := dx = ? a.x > b.x ?> a.x - b.x |: b.x - a.x
+    := dy = ? a.y > b.y ?> a.y - b.y |: b.y - a.y
+    ? dx > dy ?> dx |: dy
+
+:= finish (reason : string) : () =
+    note ("finish: " ++# reason)
+    ? client.online () ?> client.log_out ()
+    client.after 2000 client.exit_client
+
+:= finish_reporting_parity (reason : string) : () =
+    := parity = client.parity_summary ()
+    ? (parity <> "") ?> note parity
+    finish reason
+
+:= stored (cell : mut i32) (value : i32) : () = cell <- value
+
+:= finish_once (done : mut i32) (reason : string) : () =
+    ? *done = 0 ?>
+        done <- 1
+        finish_reporting_parity reason
+
+:= finish_once_without_parity (done : mut i32) (reason : string) : () =
+    ? *done = 0 ?>
+        done <- 1
+        finish reason
+
+:== nearest = { found : bool; index : i32; distance : i32 }
+
+:= nobody () : nearest = { found = !-; index = 0; distance = 999 }
+
+:= closer (best : nearest) (index : i32) (d : i32) : nearest =
+    ? d < best.distance ?> { found = !+; index = index; distance = d } |: best
+
+:= ranked (here : client.spot) (people : client.crowd) (index : i32) (best : nearest) : nearest =
+    := c = client.member people index
+    ? client.live_monster c ?> closer best index (chebyshev (client.creature_spot c) here) |: best
+
+:= nearest_in (here : client.spot) (people : client.crowd) (size : i32) : nearest =
+    :~ ^ scan (index : i32) (best : nearest) : nearest =
+        ? index > size ?> best |: scan (index + 1) (ranked here people index best)
+    scan 1 (nobody ())
+
+:= nearest_monster (here : client.spot) (people : client.crowd) : nearest =
+    nearest_in here people (client.crowd_size people)
+
+:= keep_hidden () : () =
+    ? client.hidden_requested () ?> client.hide_window ()
+    client.mute ()
+
+:= ignore_text (mode : string) (text : string) : () = ()
+
+:= start_delay_ms () : i32 = 2500
+
+:= settle_ms () : i32 = 1000
+
+:= knight () : string = client.env_text "TIBIA_ARENA_CHARACTER" "Knight Sample"
+
+:= bot_profile () : string = knight () ++# "_1511"
+
+:= game_master () : string = "GOD"
+
+:= login_gate () : string = client.env_text "TIBIA_LOGIN_GATE" ""
+
+:= when_gate_opens (gate : string) (go : () -> ()) : () =
+    :~ ^ poll () : () =
+        ? gate = "" || file_system.file_exists gate
+        ?> go ()
+        |: client.after 50 poll
+    poll ()
+
+:== text_handler = string -> string -> ()
+
+:= login_error (message : string) : () =
+    note ("game login error: " ++# message)
+    finish "game login error"
+
+:= entered (character : string) (on_text : text_handler) (ready : () -> ()) : () =
+    client.log_in {
+        character = character
+        on_start = ready
+        on_error = login_error
+        on_text = on_text
+        }
+
+:= gated_entry (character : string) (on_text : text_handler) (ready : () -> ()) : () =
+    when_gate_opens (login_gate ()) \ () => entered character on_text ready
+
+:= kept_hidden () : () =
+    keep_hidden ()
+    client.after 200 keep_hidden
+    client.after 1000 keep_hidden
+
+:= started_as
+    (character : string) (on_text : text_handler) (ready : () -> ()) (timeout_ms : i32) (on_timeout : () -> ())
+    : ()
+    =
+    kept_hidden ()
+    client.after 3000 \ () => gated_entry character on_text ready
+    client.after timeout_ms on_timeout
+
+:= started (ready : () -> ()) (timeout_ms : i32) : () =
+    started_as (knight ()) ignore_text ready timeout_ms \ () => finish "timeout"
+
+///> lua
+///> c
+test chebyshev_takes_the_larger_axis =
+    := a, b = { x = 10; y = 20; z = 7 }, { x = 13; y = 19; z = 7 }
+    (chebyshev a b, chebyshev b a, chebyshev a a) |> _assert_eq (3i32, 3i32, 0i32)
+
+///> lua
+///> c
+test described_joins_xyz =
+    described { x = 1936; y = 1349; z = 7 } |> _assert_eq "1936,1349,7"

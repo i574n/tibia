@@ -1,0 +1,152 @@
+:< sm'_operators
+
+:= action_gap_ms () : i32 = 250
+
+:= view_half_width () : i32 = 7
+
+:= view_half_height () : i32 = 5
+
+:= within (limit : i32) (a : i32) (b : i32) : bool = a - b <= limit && b - a <= limit
+
+:= summary_text (allowed : i32) (dropped : i32) : string =
+    "parity: gap " ++#? action_gap_ms () ++# " ms, view " ++#? (view_half_width () * 2 + 1) ++# "x"
+    ++#? (view_half_height () * 2 + 1) ++# ", actions allowed " ++#? allowed ++# " dropped " ++#? dropped
+
+:== gate_state = { last_action_at : mut i32; allowed : mut i32; dropped : mut i32 }
+
+:= new_gate_state () : gate_state = { last_action_at = mut (0i32 - 1000000); allowed = mut 0i32; dropped = mut 0i32 }
+
+:= dropped_action (s : gate_state) : bool =
+    := dropped = s.dropped
+    dropped <- *dropped + 1
+    !-
+
+:= allowed_action (s : gate_state) (now : i32) : bool =
+    := last_action_at, allowed = s.last_action_at, s.allowed
+    last_action_at <- now
+    allowed <- *allowed + 1
+    !+
+
+:= admit (s : gate_state) : bool =
+    := now = hooks.clock_ms ()
+    ? now - *s.last_action_at < action_gap_ms () ?> dropped_action s |: allowed_action s now
+
+:= admitted0 (s : gate_state) (original : hooks.host_fn) : bool =
+    ? admit s ?>
+        hooks.call0 original
+        !+
+    |: !-
+
+:= admitted1 (s : gate_state) (original : hooks.host_fn) (a : hooks.host) : bool =
+    ? admit s ?>
+        hooks.call1 original a
+        !+
+    |: !-
+
+:= admitted2 (s : gate_state) (original : hooks.host_fn) (a : hooks.host) (b : hooks.host) : bool =
+    ? admit s ?>
+        hooks.call2 original a b
+        !+
+    |: !-
+
+:= admitted3 (s : gate_state) (original : hooks.host_fn) (a : hooks.host) (b : hooks.host) (c : hooks.host) : bool =
+    ? admit s ?>
+        hooks.call3 original a b c
+        !+
+    |: !-
+
+:= gate0 (s : gate_state) (owner : hooks.host) (name : string) : () =
+    := original = hooks.field_function owner name
+    ? hooks.is_function original ?> hooks.replace0 owner name \ () => admitted0 s original
+
+:= gate1 (s : gate_state) (owner : hooks.host) (name : string) : () =
+    := original = hooks.field_function owner name
+    ? hooks.is_function original ?> hooks.replace1 owner name \ a => admitted1 s original a
+
+:= gate2 (s : gate_state) (owner : hooks.host) (name : string) : () =
+    := original = hooks.field_function owner name
+    ? hooks.is_function original ?> hooks.replace2 owner name \ (a, b) => admitted2 s original a b
+
+:= gate3 (s : gate_state) (owner : hooks.host) (name : string) : () =
+    := original = hooks.field_function owner name
+    ? hooks.is_function original ?> hooks.replace3 owner name \ (a, b, c) => admitted3 s original a b c
+
+:= login_note () : string = "[tibia-probe] parity: login protection ended for every competitor by one turn after login"
+
+:= end_login_protection (turn : hooks.host_fn) (login_ended : mut bool) : () =
+    ? hooks.online () && *login_ended = !- ?>
+        hooks.turn_south turn
+        login_ended <- !+
+        hooks.log_info (login_note ())
+
+:= watch_login (game : hooks.host) : () =
+    := native_turn = hooks.field_function game "turn"
+    := login_ended = mut !-
+    hooks.on_game_start \ () =>
+        hooks.after 300 \ () => end_login_protection native_turn login_ended
+
+:= gate_game_actions (s : gate_state) (game : hooks.host) : () =
+    gate1 s game "attack"
+    gate1 s game "follow"
+    gate1 s game "walk"
+    gate1 s game "turn"
+    gate1 s game "talk"
+    gate3 s game "talkChannel"
+    gate1 s game "use"
+
+:= gate_game_items (s : gate_state) (game : hooks.host) : () =
+    gate2 s game "useWith"
+    gate1 s game "useInventoryItem"
+    gate2 s game "useInventoryItemWith"
+    gate3 s game "move"
+    gate0 s game "cancelAttack"
+    gate0 s game "cancelAttackAndFollow"
+
+:= gate_player (s : gate_state) : () =
+    := player_class = hooks.local_player_class ()
+    ? hooks.present player_class ?> gate2 s player_class "autoWalk"
+
+:= near_view (p : hooks.host) (at : i32 * i32 * i32) : bool =
+    := ox, oy, oz = at
+    := nx = within (view_half_width ()) (hooks.position_x p) ox
+    := ny = within (view_half_height ()) (hooks.position_y p) oy
+    hooks.position_z p = oz && nx && ny
+
+:= keep_visible (visible : hooks.host) (at : i32 * i32 * i32) (c : hooks.host) : () =
+    := p = hooks.position_of c
+    ? hooks.present p ?>
+        ? near_view p at ?> hooks.list_push visible c
+
+:= origin_spot (origin : hooks.host) : i32 * i32 * i32 =
+    hooks.position_x origin, hooks.position_y origin, hooks.position_z origin
+
+:= visible_from (found : hooks.host) (o : hooks.host) : hooks.host =
+    := shown, at = hooks.new_list (), origin_spot o
+    loop.for' { from = 1i32; nearTo = hooks.list_length found + 1 } \ i =>
+        keep_visible shown at (hooks.list_at found i)
+    shown
+
+:= visible_or_found (found : hooks.host) (origin : hooks.host) : hooks.host =
+    ? hooks.present origin = !- ?> found |: visible_from found origin
+
+:= visible_to_player (found : hooks.host) : hooks.host =
+    := player = hooks.local_player ()
+    ? hooks.present player = !- ?> found
+    |: visible_or_found found (hooks.position_of player)
+
+:= filtered_spectators (native : hooks.host_fn) (center : hooks.host) (multi : bool) : hooks.host =
+    visible_to_player (hooks.spectators_of native center multi)
+
+:= watch_spectators () : () =
+    := native_spectators = hooks.field_function (hooks.map_api ()) "getSpectators"
+    hooks.replace_spectators \ (center, multi) => filtered_spectators native_spectators center multi
+
+:= main () : () =
+    := s = new_gate_state ()
+    := game = hooks.game ()
+    watch_login game
+    gate_game_actions s game
+    gate_game_items s game
+    gate_player s
+    watch_spectators ()
+    hooks.publish_parity \ () => summary_text *s.allowed *s.dropped
