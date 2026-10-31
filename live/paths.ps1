@@ -11,7 +11,7 @@ $TibiaArena = Join-Path $TibiaRepo 'apps\arena'
 $TibiaArenaTarget = Join-Path $TibiaRepo 'target\arena'
 
 function Update-ArenaProbes {
-    $sources = @(Get-ChildItem $TibiaArena, $TibiaSource -File | Where-Object { $_.Extension -in '.spi', '.spiproj' })
+    $sources = @(Get-ChildItem $TibiaArena, $TibiaSource -File | Where-Object { $_.Extension -in '.spi', '.spiproj', '.toml' })
     $newest = ($sources | Measure-Object LastWriteTimeUtc -Maximum).Maximum
     $outputs = @(Get-ChildItem $TibiaArenaTarget -File -Filter '*.lua' -ErrorAction Ignore)
     $oldest = if ($outputs) { ($outputs | Measure-Object LastWriteTimeUtc -Minimum).Minimum } else { [datetime]::MinValue }

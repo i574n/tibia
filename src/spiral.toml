@@ -1,0 +1,24 @@
+packages = ['|core-']
+modules = '''
+geometry
+terrain
+vitality
+experience
+skills
+blessings
+coins
+quantity
+rng
+cooldowns
+vocations
+readiness
+damage
+combat
+creatures
+catalog
+policy
+views
+search
+network
+hunting_pack
+'''

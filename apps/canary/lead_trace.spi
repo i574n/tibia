@@ -157,7 +157,7 @@ test watches_follow_moves =
     knight_since <- None
     knight_at <- None
     targeted <- !-
-    watched <- Nil
+    watched <- []
 
 := poll_once (g : lead) : bool =
     := knight_present = mut !-
@@ -172,7 +172,7 @@ test watches_follow_moves =
         knight_since = mut None
         knight_at = mut None
         knight_targeted = mut !-
-        watched = mut Nil
+        watched = mut []
     }
 
 := watch_thinks (g : lead) : () =

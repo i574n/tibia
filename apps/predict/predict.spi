@@ -35,9 +35,9 @@ test predict static =
     "" ++#? table_hunter () |> tabbed i |> tabbed p.score.kills |> tabbed cleared
 
 := hunter_line (camp : camp) (i : i32) (run : i32 * pack) : string =
-    := elapsed, p = run
+    := dt, p = run
     := h = p.hunter.tally
-    := head = hunter_head camp i p |> tabbed elapsed |> tabbed h.potions
+    := head = hunter_head camp i p |> tabbed dt |> tabbed h.potions
     head |> tabbed h.hits_taken |> tabbed (quantity.value_of h.damage_taken)
 
 := hunter_row (camp : camp) (t : tactic) (i : i32) (seed : u32) : string =

@@ -17,11 +17,11 @@ test search static =
 := drawn (d : gene_draw) (gene : u32) (low : i32) (high : i32) (value : i32) : i32 =
     clamp_between low high (nudge d.seed d.generation d.child gene d.spread value)
 
-:= mutate (d : gene_draw) (low : genome) (high : genome) (g : genome) : genome =
+:= mutate (d : gene_draw) (lo : genome) (hi : genome) (g : genome) : genome =
     {
-        first = drawn d 1u32 low.first high.first g.first
-        second = drawn d 2u32 low.second high.second g.second
-        third = drawn d 3u32 low.third high.third g.third
+        first = drawn d 1u32 lo.first hi.first g.first
+        second = drawn d 2u32 lo.second hi.second g.second
+        third = drawn d 3u32 lo.third hi.third g.third
     }
 
 :== genome_search = { low : genome; high : genome; seed : u32; offspring : i32; generations : i32; spread : i32 }

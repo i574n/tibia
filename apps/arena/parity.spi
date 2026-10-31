@@ -108,9 +108,9 @@
 
 := near_view (p : hooks.host) (at : i32 * i32 * i32) : bool =
     := ox, oy, oz = at
-    := near_x = within (view_half_width ()) (hooks.position_x p) ox
-    := near_y = within (view_half_height ()) (hooks.position_y p) oy
-    hooks.position_z p = oz && near_x && near_y
+    := nx = within (view_half_width ()) (hooks.position_x p) ox
+    := ny = within (view_half_height ()) (hooks.position_y p) oy
+    hooks.position_z p = oz && nx && ny
 
 := keep_visible (visible : hooks.host) (at : i32 * i32 * i32) (c : hooks.host) : () =
     := p = hooks.position_of c
@@ -120,8 +120,8 @@
 := origin_spot (origin : hooks.host) : i32 * i32 * i32 =
     hooks.position_x origin, hooks.position_y origin, hooks.position_z origin
 
-:= visible_from (found : hooks.host) (origin : hooks.host) : hooks.host =
-    := shown, at = hooks.new_list (), origin_spot origin
+:= visible_from (found : hooks.host) (o : hooks.host) : hooks.host =
+    := shown, at = hooks.new_list (), origin_spot o
     loop.for' { from = 1i32; nearTo = hooks.list_length found + 1 } \ i =>
         keep_visible shown at (hooks.list_at found i)
     shown

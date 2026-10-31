@@ -400,10 +400,10 @@ test client static =
     $'g_game.loginWorld(!account, "god", "OTServBR-Global", "127.0.0.1", 7172, !character, "", !session_key)' : ()
 
 := log_in (s : session) : () =
-    := on_start, on_error, on_text, character = s.on_start, s.on_error, s.on_text, s.character
+    := on_start, on_error, on_text, c = s.on_start, s.on_error, s.on_text, s.character
     client_version_set ()
     connect_game_events on_start (login_error_handler on_error) (text_message_handler on_text)
-    world_login character
+    world_login c
 
 ///> lua
 ///> c

@@ -24,7 +24,7 @@ test ground_trace static =
     listm.map (\ (w : watch) => ? w.id = id ?> { id = w.id; x = x; y = y } |: w) watched
 
 := still_present (present : list u32) (watched : list watch) : list watch =
-    listm.fold (\ kept (w : watch) => ? holds w.id present ?> w :: kept |: kept) Nil watched |> listm.rev
+    listm.fold (\ kept (w : watch) => ? holds w.id present ?> w :: kept |: kept) [] watched |> listm.rev
 
 := watched_two () : list watch =
     [ { id = 201u32; x = 1950i32; y = 1345i32 }; { id = 202u32; x = 1953i32; y = 1346i32 } ]
@@ -32,7 +32,7 @@ test ground_trace static =
 := x_of (id : u32) (watched : list watch) : i32 = ?= watch_of id watched ?| Some w => w.x | None => 0i32
 
 := watch_facts (moved : list watch) : i32 * bool * bool * i32 =
-    x_of 201u32 moved, holds 202u32 [ 202u32 ], holds 7u32 Nil, listm.length (still_present [ 202u32 ] moved)
+    x_of 201u32 moved, holds 202u32 [ 202u32 ], holds 7u32 [], listm.length (still_present [ 202u32 ] moved)
 
 ///> lua
 ///> c
@@ -133,7 +133,7 @@ test spot_text_joins_coordinates =
     ? knight_known g && knight_present = *g.knight_away ?> flip_view g knight_present
 
 := poll_once (g : ground) (centre : position) (reach : i32) : bool =
-    := s : sweep = { present = mut Nil; knight_present = mut !- }
+    := s : sweep = { present = mut []; knight_present = mut !- }
     saw_all g s (spectators centre reach)
     departures g *s.present
     knight_view g *s.knight_present
@@ -152,6 +152,6 @@ test spot_text_joins_coordinates =
     register_global_event poll
 
 := main () : () =
-    := g : ground = { knight_since = mut None; knight_away = mut !-; watched = mut Nil }
+    := g : ground = { knight_since = mut None; knight_away = mut !-; watched = mut [] }
     watch_deaths g
     watch_ground g

@@ -65,9 +65,9 @@ test measure static =
     samples.sample_count b.hits, samples.sample_total b.hits, samples.sample_median b.hits
 
 := swings_noted (b : bench) (label : string) : () =
-    := landed, total, median = hits_summary b
+    := l, total, median = hits_summary b
     := misses, kills = *b.counts.misses, *b.counts.kills
-    probe.note (swings_line label landed misses total median kills (experience_gained b) (client.player_health ()))
+    probe.note (swings_line label l misses total median kills (experience_gained b) (client.player_health ()))
 
 := taken_summary (b : bench) : i32 * i32 * i32 * i32 =
     := count, total = samples.sample_count b.taken, samples.sample_total b.taken

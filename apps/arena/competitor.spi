@@ -319,8 +319,8 @@ test competitor static =
 := attacked (m : moment) (chasing : bool) (target : client.creature) : () =
     struck m target
     := line = engagement_line m chasing target
-    := engaged_ms = scoreboard.elapsed m.a.pace
-    probe.note (line ++# " health " ++#? m.health ++# " @t+" ++#? engaged_ms)
+    := ms = scoreboard.elapsed m.a.pace
+    probe.note (line ++# " health " ++#? m.health ++# " @t+" ++#? ms)
 
 := aimed (m : moment) (chasing : bool) : () =
     := target = sighted m
@@ -366,8 +366,8 @@ test competitor static =
 := target_share (m : moment) : i32 = shares (target_health_of m) 100
 
 := network_inputs (m : moment) (max_health : i32) : network.inputs =
-    := own, target, distance = shares m.health max_health, target_share m, target_distance_of m
-    network.inputs_of own m.sense.danger.attackers target distance m.heal_ready (strike_ready_now m) !-
+    := own, target, d = shares m.health max_health, target_share m, target_distance_of m
+    network.inputs_of own m.sense.danger.attackers target d m.heal_ready (strike_ready_now m) !-
 
 := kite_code (m : moment) : i32 =
     := max_health = client.player_max_health ()
@@ -408,8 +408,8 @@ test competitor static =
 
 := policy_chose (m : moment) (t : tally) (k : clocks) : tallied =
     := t, k = ? policy.heals (thresholds_of m) (observed m) ?> drank m t k |: t, k
-    := retreated, t, k = ? may_retreat m ?> retreated_now m t k |: !-, t, k
-    ? retreated ?> t, k |: policy_engaged m t k
+    := r, t, k = ? may_retreat m ?> retreated_now m t k |: !-, t, k
+    ? r ?> t, k |: policy_engaged m t k
 
 := sighting_noted () : () =
     := spot = client.player_spot ()
@@ -614,7 +614,7 @@ test footing_label_names_each_footing =
 
 ///> _
 := main () =
-    := s, timeout_ms = session_from_environment (), scoreboard.probe_timeout_ms ()
+    := s, ms = session_from_environment (), scoreboard.probe_timeout_ms ()
     client.disable_client_bot (probe.bot_profile ())
-    probe.started_as (probe.knight ()) (on_text s) (\ () => ready s) timeout_ms (\ () => finish "timeout")
+    probe.started_as (probe.knight ()) (on_text s) (\ () => ready s) ms (\ () => finish "timeout")
     0i32

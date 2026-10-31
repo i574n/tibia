@@ -6,7 +6,7 @@ test readiness static =
 :! healing_group = ()
 :! action_slot = ()
 
-:| private ready group =
+:| private ready g =
     | AttackReady :: quantity.amount quantity.milliseconds -> ready attack_group
     | HealingReady :: quantity.amount quantity.milliseconds -> ready healing_group
     | ActionReady :: quantity.amount quantity.milliseconds -> ready action_slot

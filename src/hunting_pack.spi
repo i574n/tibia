@@ -576,8 +576,9 @@ test the_duo_default_is_candidate_2_with_measured_entry =
 := on_layout (l : terrain.layout) (c : camp) : camp = { c ?| layout = l }
 
 := spawns_of (c : camp) : geometry.position * geometry.position * geometry.position =
+    := at = geometry.position
     ?= c.foes.rule, c.layout ?|
-    | Clearing, OpenField => geometry.position 100 102 7, geometry.position 99 103 7, geometry.position 99 104 7
+    | Clearing, OpenField => at 100 102 7, at 99 103 7, at 99 104 7
     | _ => terrain.spawn_points c.layout
 
 := kinds_of_entries (entries : catalog.entry * catalog.entry * catalog.entry) : views.band foe_kind =
@@ -704,9 +705,9 @@ test the_duo_default_is_candidate_2_with_measured_entry =
 := hurt_by (hurt : i32) (h : hunter) : hunter =
     { h ?| health = quantity.minus h.health (quantity.hp hurt); tally = tallied_hurt hurt h.tally }
 
-:= melee_hurt (camp : camp) (seed : u32) (tick : i32) (index : i32) (shield : bool) : i32 =
+:= melee_hurt (c : camp) (seed : u32) (tick : i32) (index : i32) (shield : bool) : i32 =
     := roll = key seed tick index (purpose_creature_hit ())
-    combat.creature_hit (creatures.stats_of (kind_of index camp)).melee_max (combat.knight_sample_gear ()) shield roll
+    combat.creature_hit (creatures.stats_of (kind_of index c)).melee_max (combat.knight_sample_gear ()) shield roll
 
 := spent_charge (shielded : bool) (h : hunter) : hunter =
     := c = h.clock
@@ -723,9 +724,9 @@ test the_duo_default_is_candidate_2_with_measured_entry =
     := roll = key seed tick index (purpose_creature_shot ())
     combat.ranged_hit_spending_a_charge arrow (combat.knight_sample_gear ()) charges roll
 
-:= arrow_struck (arrow : combat.ranged_attack) (seed : u32) (tick : i32) (index : i32) (h : hunter) : hunter =
+:= arrow_struck (a : combat.ranged_attack) (seed : u32) (tick : i32) (index : i32) (h : hunter) : hunter =
     := c = h.clock
-    := hurt, charges = arrow_hurt arrow seed tick index c.block_charges
+    := hurt, charges = arrow_hurt a seed tick index c.block_charges
     hurt_by hurt (h |> with_clock { c ?| block_charges = charges })
 
 := hunter_takes_arrow (arrow : combat.ranged_attack) (seed : u32) (tick : i32) (index : i32) (p : pack) : pack =
@@ -999,35 +1000,35 @@ test the_duo_default_is_candidate_2_with_measured_entry =
     ? t.now - g.strikes_at < tick_ms () ?> melee_hits t g (g.strikes_at + period) p
     |: with_slot t.index { g ?| strikes_at = next_canary_round t g period } p
 
-:= melee_ready (t : turn) (g : foe) (p : pack) : pack =
+:= hit_ready (t : turn) (g : foe) (p : pack) : pack =
     ? adjacent_and_ready t g p ?> melee_hits t g (t.now + creature_strike_ms ()) p |: p
 
-:= melee_once (t : turn) (g : foe) (period : i32) (p : pack) : pack =
+:= hit_once (t : turn) (g : foe) (period : i32) (p : pack) : pack =
     ? adjacent_and_ready t g p && t.now >= t.camp.foes.wakes_at + period
     ?> melee_hits t g (paced_strike t g period) p
     |: p
 
-:= melee_every (t : turn) (g : foe) (period : i32) (p : pack) : pack =
+:= hit_every (t : turn) (g : foe) (period : i32) (p : pack) : pack =
     ? adjacent_and_ready t g p ?> melee_hits t g (paced_strike t g period) p |: p
 
-:= melee_round (t : turn) (g : foe) (period : i32) (p : pack) : pack =
+:= hit_round (t : turn) (g : foe) (period : i32) (p : pack) : pack =
     ? adjacent_and_ready t g p && t.now >= t.camp.foes.wakes_at + period ?> on_canary_round t g period p |: p
 
 := foe_melee (t : turn) (g : foe) (p : pack) =
     ?= t.camp.timing.melee ?|
-    | MeleeWhenReady => melee_ready t g p
-    | MeleeEveryOnceTargeted n => melee_once t g n p
-    | MeleeWhenReadyEvery n => melee_every t g n p
-    | MeleeOnCanaryRounds n => melee_round t g n p
+    | MeleeWhenReady => hit_ready t g p
+    | MeleeEveryOnceTargeted n => hit_once t g n p
+    | MeleeWhenReadyEvery n => hit_every t g n p
+    | MeleeOnCanaryRounds n => hit_round t g n p
 
 := foe_shoots (t : turn) (k : foe_kind) (g : foe) (p : pack) : pack =
     creature_shoots t (creatures.ranged_attack_of k) g p
 
-:= foe_strikes (t : turn) (k : foe_kind) (s : foe_stats) (moved : pack) : pack =
-    := g = slot t.index moved
-    ? vitality.health g.life <= s.run_health ?> moved
-    |? t.camp.foes.ranged && creatures.is_ranged k ?> foe_shoots t k g moved
-    |: foe_melee t g moved
+:= foe_strikes (t : turn) (k : foe_kind) (s : foe_stats) (q : pack) : pack =
+    := g = slot t.index q
+    ? vitality.health g.life <= s.run_health ?> q
+    |? t.camp.foes.ranged && creatures.is_ranged k ?> foe_shoots t k g q
+    |: foe_melee t g q
 
 := foe_turn (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
     := t = turn_at camp seed tick now index
@@ -1076,10 +1077,10 @@ test the_duo_default_is_candidate_2_with_measured_entry =
 := entrant_after_entry (f : foe) (moved : bool) (newcomer : i32) : i32 =
     ? f.aim.last_x < 0 || moved ?> aim_newcomer f newcomer |: newcomer
 
-:= entrant_by_entry (f : foe) (entered_first : bool) (entered_second : bool) : i32 =
+:= entrant_by_entry (f : foe) (first : bool) (second : bool) : i32 =
     := moved = foe_moved_since_aim f (f.aim.last_x < 0)
-    ? entered_second ?> entrant_after_entry f moved 1
-    |? entered_first ?> entrant_after_entry f moved 0
+    ? second ?> entrant_after_entry f moved 1
+    |? first ?> entrant_after_entry f moved 0
     |: f.aim.entrant
 
 := aimed_entrant (t : turn) (f : foe) (p : pack) (bits : i32 * i32) : i32 =
@@ -1317,11 +1318,11 @@ test the_duo_default_is_candidate_2_with_measured_entry =
     ?> conv (rng.roll_between 1 (conv drop.max_count) (key t.seed (t.tick + 1) t.index (purpose_loot ())))
     |: 0
 
-:= slain_score (timed : pack) (s : foe_stats) (coins : i32) : pack_score =
-    { (timed.score) ?|
-        kills = timed.score.kills + 1
-        experience = timed.score.experience + s.experience
-        gold = quantity.plus timed.score.gold (quantity.gp coins)
+:= slain_score (q : pack) (s : foe_stats) (coins : i32) : pack_score =
+    { (q.score) ?|
+        kills = q.score.kills + 1
+        experience = q.score.experience + s.experience
+        gold = quantity.plus q.score.gold (quantity.gp coins)
     }
 
 := strike_slain (t : turn) (k : foe_kind) (s : foe_stats) (f : foe) (h : hunter) (timed : pack) =
@@ -1348,9 +1349,9 @@ test the_duo_default_is_candidate_2_with_measured_entry =
     := h = p.hunter
     strikes_target (turn_at camp seed tick (quantity.value_of (readiness.since proof)) h.target) h p
 
-:= stepped_hunter (camp : camp) (now : i32) (to : geometry.position) (h : hunter) : hunter =
-    := moved = { h ?| at = to; next_step_at = now + geometry.step_cost (hunter_step_ms_at camp h.at) h.at to }
-    moved |> with_timers (swing_after_step camp now h.clock.timers)
+:= stepped_hunter (c : camp) (now : i32) (to : geometry.position) (h : hunter) : hunter =
+    := q = { h ?| at = to; next_step_at = now + geometry.step_cost (hunter_step_ms_at c h.at) h.at to }
+    q |> with_timers (swing_after_step c now h.clock.timers)
 
 := hunter_steps (camp : camp) (now : i32) (toward : geometry.position) (p : pack) : pack =
     p |> with_hunter (stepped_hunter camp now toward p.hunter)
@@ -1442,8 +1443,8 @@ test the_duo_default_is_candidate_2_with_measured_entry =
         cornered = ? stuck ?> h.tally.cornered + 1 |: h.tally.cornered
     }
 
-:= retreated_hunter (r : retreat_beat) (stuck : bool) (away : geometry.position) (h : hunter) : hunter =
-    := moved = { h ?| at = away; next_step_at = retreat_step_at r.camp r.now h away }
+:= retreated_hunter (r : retreat_beat) (stuck : bool) (to : geometry.position) (h : hunter) : hunter =
+    := moved = { h ?| at = to; next_step_at = retreat_step_at r.camp r.now h to }
     { moved ?| clock = retreat_clock r stuck h; tally = retreat_tally stuck h }
 
 := retreat_with (r : retreat_beat) (away : geometry.position) (p : pack) : pack =
@@ -1696,7 +1697,7 @@ test the_duo_default_is_candidate_2_with_measured_entry =
 := patrol_turn (b : beat) (t : tactic) (q : pack) : pack =
     ?= t.patrol ?|
     | Stays => q
-    | Patrols route => patrol_step b.camp route b.now q
+    | Patrols r => patrol_step b.camp r b.now q
     | SweepsSpawns => sweep_step b.camp b.now q
     | SweepsTerritory border => territory_step b.camp border b.now q
 
@@ -1712,10 +1713,10 @@ test the_duo_default_is_candidate_2_with_measured_entry =
     | Approach => player_approaches b.camp b.now q
     | Hold => q
 
-:= retreat_gate (b : beat) (t : tactic) (plan : policy.engagement) (q : pack) : pack =
+:= retreat_gate (b : beat) (t : tactic) (p : policy.engagement) (q : pack) : pack =
     ?= readiness.action_gate (quantity.ms b.now) q.hunter.clock.next_action_at ?|
     | Open slot => player_retreats b.camp t.footing slot q
-    | ClosedUntil _ => engaged b plan q
+    | ClosedUntil _ => engaged b p q
 
 := retreat_or_engage (b : beat) (t : tactic) (retreat : bool) (plan : policy.engagement) (q : pack) : pack =
     ? retreat && b.now >= q.hunter.next_step_at ?> retreat_gate b t plan q |: engaged b plan q
@@ -1960,6 +1961,8 @@ test the_duo_default_is_candidate_2_with_measured_entry =
         (quantity.scaled l.clear_potions (potion_price ()))
         (quantity.scaled l.clear_deaths (all_blessings_price_at_level_30 ()))
 
+:= clear_loss (l : clear_ledger) : gold_amount = quantity.minus (quantity.gp 0) (clear_cost l)
+
 := below_the_kill_floor () : i32 = -1000000000
 
 :! kill_score = ()
@@ -1987,7 +1990,7 @@ test the_duo_default_is_candidate_2_with_measured_entry =
 
 := clear_profit (r : seed_run) (limit : i32) : gold_amount =
     := l = clear_ledger_of r.camp r.tactic r.first r.count
-    ? l.clear_ms <= limit * r.count ?> quantity.minus (quantity.gp 0) (clear_cost l)
+    ? l.clear_ms <= limit * r.count ?> clear_loss l
     |: quantity.gp (below_the_kill_floor () - l.clear_ms / r.count)
 
 := amount_on \* u. (o : objective u) (r : seed_run) : quantity.amount u =

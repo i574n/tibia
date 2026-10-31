@@ -94,7 +94,7 @@ test the_reset_statement_matches_the_powershell_text =
 := kit_rows (items : list item) : string =
     ?= items ?|
     | head :: tail => listm.fold (\ text i => text ++# later_kit_row i) (first_kit_row head) tail
-    | Nil => ""
+    | [] => ""
 
 := kit_delete_sql (name : string) : string =
     "delete pi from player_items pi join players p on p.id = pi.player_id where p.name = '" ++# name ++# "'; "

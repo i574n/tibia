@@ -2,6 +2,7 @@ param(
     [string[]] $Files = @(),
     [string[]] $Exclude = @(),
     [string] $Label = 'all',
+    [switch] $Resume,
     $ScriptDir = $PSScriptRoot
 )
 Set-Location $ScriptDir
@@ -16,10 +17,10 @@ $Exclude = @($Exclude | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 
 . ../deps/spiral/lib/spiral/lib.ps1
 $spiral = Ensure-SpiralCompiler | Select-Object -Last 1
-$layout = @(& $spiral.Dotnet $spiral.Compiler format ../src ../apps/arena ../apps/map ../apps/host ../apps/offscreen --check 2>&1)
+$layout = @(& $spiral.Dotnet $spiral.Compiler format ../src ../apps/arena ../apps/map ../apps/host ../apps/offscreen ../apps/canary --check 2>&1)
 if ($LASTEXITCODE -ne 0) {
     $layout | Select-Object -Last 10 | ForEach-Object { Write-Output "build.ps1 / layout / $_" }
-    throw "build.ps1 / layout: run SpiralCompiler format on src, apps/arena, apps/map, apps/host and apps/offscreen"
+    throw "build.ps1 / layout: run SpiralCompiler format on src, apps/arena, apps/map, apps/host, apps/offscreen and apps/canary"
 }
 Write-Output "build.ps1 / layout / formatter check clean"
 
@@ -52,10 +53,11 @@ $testRows = [Collections.Generic.List[object]]::new()
 $wgslRows = [Collections.Generic.List[object]]::new()
 
 $notebooks = (New-Item -ItemType Directory -Force "../notebooks").FullName
-$sources = Get-ChildItem ../src, ../apps/arena, ../apps/host, ../apps/offscreen, ../apps/map, ../apps/predict -File -Filter "*.spi" |
+$sources = Get-ChildItem ../src, ../apps/arena, ../apps/host, ../apps/offscreen, ../apps/map, ../apps/predict, ../apps/canary -File -Filter "*.spi" |
     Where-Object { !$Files -or $_.BaseName -in $Files } |
     Where-Object { Select-String -Path $_.FullName -Pattern '^test ' -Quiet } |
     Where-Object { $_.BaseName -notin $Exclude } |
+    Where-Object { !$Resume -or !(Select-String -LiteralPath (Join-Path $metrics "$($_.BaseName).out") -Pattern 'spiral-tests total' -Quiet -ErrorAction Ignore) } |
     Sort-Object Name
 $labelSuffix = if ($Label -eq 'all') { '' } else { "-$Label" }
 
@@ -119,6 +121,7 @@ if ($env:GITHUB_STEP_SUMMARY) {
     $summary | Add-Content $env:GITHUB_STEP_SUMMARY
 }
 
+if (!$sources -and $Resume) { Write-Output "build.ps1 / resume / every matched test file already has a total line in target/ci-metrics"; return }
 if (!$sources) { throw "build.ps1 / no test files matched $($Files -join ', ')" }
 if ($problems) { throw "build.ps1 / $($problems.Count) of $(@($sources).Count) test files are not fully green:`n$($problems -join "`n")" }
 Write-Output "build.ps1 / all $(@($sources).Count) test files green"

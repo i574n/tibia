@@ -12,10 +12,10 @@
     hooks.raise_error_for_dofile_caller (hooks.load_error source name)
     hooks.new_list ()
 
-:= loaded_chunk (module_env : hooks.host) (full : string) : hooks.host =
+:= loaded_chunk (env : hooks.host) (full : string) : hooks.host =
     := source, name = hooks.resource_text full, "@" ++# full
     := chunk = hooks.load_chunk source name
-    ? hooks.function_present chunk ?> chunk_run_in module_env chunk |: load_failed source name
+    ? hooks.function_present chunk ?> chunk_run_in env chunk |: load_failed source name
 
 := dofile_through (module_env : hooks.host) (path : string) : hooks.host =
     := full = resolve path

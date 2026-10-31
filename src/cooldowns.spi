@@ -100,9 +100,9 @@ test fresh_timers_allow_any_spell =
 ///> c
 test attack_blocks_its_group_until_it_expires =
     := ~now = 1000i32
-    := held = idle_timers () |> after_cast now (strike_spell ())
-    can_cast (now + 1999) (strike_spell ()) held |> _assert_eq !-
-    can_cast (now + 2000) (strike_spell ()) held |> _assert_eq !+
+    := h = idle_timers () |> after_cast now (strike_spell ())
+    can_cast (now + 1999) (strike_spell ()) h |> _assert_eq !-
+    can_cast (now + 2000) (strike_spell ()) h |> _assert_eq !+
 
 ///> c
 test attack_does_not_block_healing_group =

@@ -1938,8 +1938,8 @@ test at_the_spot_a_road_tile_speeds_the_next_step_up =
 ///> c
 test on_the_arena_spot_a_monster_detours_around_another_with_a_diagonal_step =
     := ~x = 98i32
-    := first = detour_around_99_101 (tile x 102 7)
-    (geometry.xy first, geometry.xy (detour_around_99_101 first)) |> _assert_eq ((99i32, 102i32), (100i32, 101i32))
+    := f = detour_around_99_101 (tile x 102 7)
+    (geometry.xy f, geometry.xy (detour_around_99_101 f)) |> _assert_eq ((99i32, 102i32), (100i32, 101i32))
 
 ///> c
 test on_the_arena_spot_a_greedy_step_waits_behind_another_monster =
@@ -1952,8 +1952,8 @@ test on_the_arena_spot_a_greedy_step_waits_behind_another_monster =
 ///> c
 test ramps_and_stairs_by_the_spot_are_walls_cyclopes_never_take =
     := ~west = 1833i32
-    := wall x y = blocked ArenaSpot (world_tile west x y)
-    (wall 1940 1372, wall 1941 1372, wall 1927 1337, wall 1958 1345, wall 1939 1371) |> _assert_eq (!+, !+, !+, !+, !-)
+    := w x y = blocked ArenaSpot (world_tile west x y)
+    (w 1940 1372, w 1941 1372, w 1927 1337, w 1958 1345, w 1939 1371) |> _assert_eq (!+, !+, !+, !+, !-)
 
 ///> c
 test the_protection_zones_east_of_the_spot_stop_walkers_but_not_arrows =

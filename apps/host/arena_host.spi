@@ -117,7 +117,7 @@ test arena_host static =
 
 :~ ^ played (h : host) (events : list host_event) (log : string) : string =
     ?= events ?|
-    | Nil => log
+    | [] => log
     | e :: rest =>
         := next, commands = step h e
         played next rest (logged log commands)
@@ -140,7 +140,7 @@ test arena_host static =
 := run_reaction (script : world_script) (events : list host_event) : reacting =
     ?= script ?|
     | r :: later => reaction_event r :: events, later
-    | Nil => WindowLost :: events, Nil
+    | [] => WindowLost :: events, []
 
 := with_reaction (c : host_command) (script : world_script) (events : list host_event) : reacting =
     ?= c ?|
@@ -150,7 +150,7 @@ test arena_host static =
 
 :~ ^ reacted (commands : list host_command) (script : world_script) (events : list host_event) : reacting =
     ?= commands ?|
-    | Nil => listm.rev events, script
+    | [] => listm.rev events, script
     | c :: rest =>
         := after, left = with_reaction c script events
         reacted rest left after
@@ -165,7 +165,7 @@ test arena_host static =
 
 :~ ^ simulated (s : simulation) (pending : list host_event) : string =
     ?= pending ?|
-    | Nil => s.log
+    | [] => s.log
     | e :: rest =>
         := next, commands = step s.h e
         := after, queued = reacted_turn { s ?| h = next } commands rest
@@ -246,7 +246,7 @@ test a_world_that_stops_answering_ends_the_block =
     | head :: tail =>
         set runs i head
         filled_runs runs (i + 1) tail
-    | Nil => ()
+    | [] => ()
 
 := runs_of_plan (plan : list i32) : array i32 =
     := runs : array i32 = create (listm.length plan)

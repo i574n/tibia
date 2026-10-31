@@ -37,7 +37,7 @@ test creatures static =
     | Cyclops => drop 82000 47
     | _ => drop 0 0
 
-:= cave_rat_stats () : creature_stats =
+:= rat_stats () : creature_stats =
     {
         experience = 10; max_health = 30; speed = 75; target_distance = 1; melee_max = 10;
         combat_spells = 0; armor = 5; defense = 5; run_health = 3; step_ms = 800
@@ -81,7 +81,7 @@ test creatures static =
 
 := stats_of (k : arena_creature) =
     ?= k ?|
-    | CaveRat => cave_rat_stats ()
+    | CaveRat => rat_stats ()
     | Troll => troll_stats ()
     | Wolf => wolf_stats ()
     | Skeleton => skeleton_stats ()

@@ -38,9 +38,9 @@ test observer static =
 
 := cleared_now (w : watch) (health : i32) (at : i32) : () =
     probe.stored w.cleared 1
-    := plus, lowest = gained w, *w.lowest
+    := plus, low = gained w, *w.lowest
     probe.note ("cleared at " ++#? at ++# " ms")
-    probe.note (cleared_line plus health lowest)
+    probe.note (cleared_line plus health low)
     probe.finish_once w.done "cleared"
 
 := clear_if_full (w : watch) (health : i32) (at : i32) : bool =
@@ -108,8 +108,8 @@ test observer static =
     ? late_potion done text ?> probe.note (late_potion_line mode t) |: probe.note (server_text_line mode text t)
 
 := ready_noted (b : bot) (logged_in_at : mut i32) : () =
-    := name, health, banner = client.player_name (), client.player_health (), b.banner
-    probe.note ("in game as " ++# name ++# " health " ++#? health ++# " " ++# banner)
+    := name, health, tag = client.player_name (), client.player_health (), b.banner
+    probe.note ("in game as " ++# name ++# " health " ++#? health ++# " " ++# tag)
     logged_in_at <- (client.now_ms ())
 
 := bot_started (b : bot) (logged_in_at : mut i32) : () =
@@ -141,10 +141,10 @@ test observer static =
 := timed_out (done : mut i32) : () = probe.finish_once done "timeout"
 
 := run (b : bot) : () =
-    := done, logged_in_at = mut 0, mut 0
-    := ready () = on_ready b done logged_in_at
+    := done, at = mut 0, mut 0
+    := ready () = on_ready b done at
     client.disable_client_bot (probe.bot_profile ())
-    probe.started_as (probe.knight ()) (text_noted done logged_in_at) ready 200000 (\ () => timed_out done)
+    probe.started_as (probe.knight ()) (text_noted done at) ready 200000 (\ () => timed_out done)
 
 ///> lua
 ///> c

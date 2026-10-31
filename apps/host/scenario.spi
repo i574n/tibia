@@ -30,7 +30,7 @@ test scenario static =
 := mix_of (monster : string) (count : i32) : mix =
     ? sm'.contains ":" monster ?>
         := parts = monster |> sm'.split "," |> array
-        collected parts (am'.length parts - 1) Nil
+        collected parts (am'.length parts - 1) []
     |: Mix [ { name = monster; count = count } ]
 
 := order_entry (radius : i32) (o : order) : string = o.name ++# "," ++#? o.count ++# ",," ++#? radius
@@ -38,7 +38,7 @@ test scenario static =
 := summon_orders (orders : list order) (radius : i32) : string =
     ?= orders ?|
     | head :: tail => listm.fold (\ text o => text ++# ";" ++# order_entry radius o) (order_entry radius head) tail
-    | Nil => ""
+    | [] => ""
 
 := total_count (orders : list order) : i32 = listm.fold (\ total (o : order) => total + o.count) 0 orders
 

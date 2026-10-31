@@ -108,8 +108,8 @@ test world_executor static =
 
 := advanced (x : executor) (d : drive) (e : event) : drive * list event =
     := next, commands = arena_host.step d.host e
-    := after, produced = executed_all x d.current commands
-    { host = next; current = after; log = arena_host.logged d.log commands }, produced
+    := after, out = executed_all x d.current commands
+    { host = next; current = after; log = arena_host.logged d.log commands }, out
 
 := finished (d : drive) : string =
     world_port.stopped_if_running d.current

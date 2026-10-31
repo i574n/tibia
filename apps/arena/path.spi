@@ -29,9 +29,9 @@ test path static =
 := step_noted (elapsed : i32) (at : client.spot) (distance : i32) (steps : i32) : () =
     probe.note (step_line elapsed (probe.described at) distance steps)
 
-:= trail_moved (t : trail) (at : client.spot) (elapsed : i32) (distance : i32) : trail =
+:= trail_moved (t : trail) (at : client.spot) (dt : i32) (distance : i32) : trail =
     := moved, steps = followed t.has_last t.last at t.steps
-    ? moved ?> step_noted elapsed at distance steps
+    ? moved ?> step_noted dt at distance steps
     { has_last = !+; last = (? moved ?> at |: t.last); steps = steps }
 
 := seen_trail (t : trail) (people : client.crowd) (seen : probe.nearest) (elapsed : i32) : bool * trail =

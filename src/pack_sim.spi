@@ -195,10 +195,10 @@ test cyclops_pack_only_the_warm_started_network_dominates_the_tuned_cavebot_by_a
 
 :== tally5 = i32 * i32 * i32 * i32 * i32
 
-:= clear_tallied (acc : tally5) (elapsed : i32) (p : pack) : tally5 =
+:= clear_tallied (acc : tally5) (dt : i32) (p : pack) : tally5 =
     := ms, potions, deaths, hits, taken = acc
     := t, s = p.hunter.tally, p.score
-    ms + elapsed, potions + t.potions, deaths + s.deaths, hits + t.hits_taken, taken + quantity.value_of t.damage_taken
+    ms + dt, potions + t.potions, deaths + s.deaths, hits + t.hits_taken, taken + quantity.value_of t.damage_taken
 
 :== seeds = hunting_pack.seed_range
 
@@ -231,8 +231,8 @@ test open_field_clear_predictions_with_kiting_losing_the_monsters =
 test a_knight_slain_by_a_hit_cannot_drink_in_the_same_tick =
     :< hunting_pack
     :< creatures
-    := ~seed = 1u32
-    := p = simulate (uniform_camp Cyclops) (cavebot_with_heal 0) seed 600
+    := ~s = 1u32
+    := p = simulate (uniform_camp Cyclops) (cavebot_with_heal 0) s 600
     (p.hunter.tally.potions, p.score.deaths) |> _assert_eq (0i32, 4i32)
 
 := corridor_expected () : tally3 * tally3 = (85915, 153, 3), (85000, 65, 0)
@@ -613,11 +613,11 @@ test the_current_arena_bundle_pins_rules_and_retreat_potions_and_hits_over_the_h
     := cyclops = creatures.stats_of (:< creatures ;; Cyclops)
     hunting_pack.step_ms_at camp at cyclops.speed cyclops.step_ms
 
-:= formula_steps (ground : geometry.position) : kp * kp =
+:= formula_steps (at : geometry.position) : kp * kp =
     := camp = formula_spot ()
     := road = geometry.position 115 89 7
     := hunter = hunting_pack.hunter_step_ms_at camp
-    (cyclops_step_ms camp ground, cyclops_step_ms camp road), (hunter ground, hunter road)
+    (cyclops_step_ms camp at, cyclops_step_ms camp road), (hunter at, hunter road)
 
 ///> c
 test by_canary_formula_a_cyclops_steps_700_ms_on_arena_ground_and_450_on_the_road_and_the_level_30_knight_500_and_300 =

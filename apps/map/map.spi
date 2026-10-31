@@ -95,8 +95,8 @@ test map static =
     |? f.wire = 2u64 ?> bytes_field b f s v
     |: skipped_wire f.at f.wire, s
 
-:= fold_fields \* state. (b : bytes) (start : i32) (stop : i32) (seed : state) (v : visitors state) : state =
-    :~ ^ next (i : i32) (s : state) : state =
+:= fold_fields \* st. (b : bytes) (start : i32) (stop : i32) (seed : st) (v : visitors st) : st =
+    :~ ^ next (i : i32) (s : st) : st =
         ? i >= stop ?> s
         |:
             := i, s = field_next b i s v
@@ -668,9 +668,9 @@ test map static =
     := guard = "row < 0 || row > " ++ sm'.obj_to_string (spot_side () - 1)
     "    " ++ if_then guard (name ++ "_outside word") (word_choice name 0)
 
-:= emit (name : string) (cells : array bool) (outside_blocked : bool) : () =
+:= emit (name : string) (cells : array bool) (blocked : bool) : () =
     emit_words name (row_words cells)
-    emit_outside name outside_blocked
+    emit_outside name blocked
     console.write_line ("let " ++ name ++ " (word : i32) (row : i32) : u32 =")
     console.write_line (bits_root name)
 

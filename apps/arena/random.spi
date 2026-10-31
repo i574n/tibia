@@ -180,8 +180,8 @@ test heading_of_covers_eight_neighbors_once =
     { pace = scoreboard.pace_from_environment start_experience r.started_at; engaged = r.engaged }
 
 := random_started (r : run) (experience : i32) : () =
-    := at, every = probe.described (client.player_spot ()), tick_ms ()
-    probe.note (start_line at every)
+    := at, ms = probe.described (client.player_spot ()), tick_ms ()
+    probe.note (start_line at ms)
     probe.stored r.started_at (client.now_ms ())
     tick (arena_for r experience) (scoreboard.empty ())
 

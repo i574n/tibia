@@ -75,7 +75,10 @@ try {
         if ((Get-Date) -gt $deadline) { throw 'canary did not come online in 120 s' }
         Start-Sleep -Seconds 1
     }
-    $clientHome = Join-Path $env:APPDATA 'otcr\otclient\otclient'
+    $appData = [Environment]::GetFolderPath('ApplicationData')
+    if (-not [IO.Path]::IsPathFullyQualified($appData)) { throw "the roaming app data folder is unknown ('$appData'); refusing to touch the client's bot folders" }
+    $clientHome = Join-Path $appData 'otcr\otclient\otclient'
+    $botRoot = Join-Path $clientHome 'bot'
     $keptBot = switch ($Bot) { 'vBot' { 'vBot_4.8' } 'nExBot' { 'nExBot' } default { '' } }
     $botNode = if ($keptBot) { "bot:`n  Knight Sample_1511:`n    enabled: true`n    config: $keptBot" } else { "bot:`n  Knight Sample_1511:`n    enabled: false" }
     $configOtml = Join-Path $clientHome 'config.otml'
@@ -83,13 +86,13 @@ try {
         $settingsText = [regex]::Replace([IO.File]::ReadAllText($configOtml), '(?m)^bot:\r?\n(?:[ \t]+.*(?:\r?\n|$))*', '')
         [IO.File]::WriteAllText($configOtml, $settingsText.TrimEnd() + "`n" + $botNode + "`n")
     }
-    foreach ($installed in @(Get-ChildItem (Join-Path $clientHome 'bot') -Directory -ErrorAction SilentlyContinue)) {
-        if ($installed.Name -ne $keptBot) { Remove-Item $installed.FullName -Recurse -Force }
+    foreach ($installed in @(Get-ChildItem -LiteralPath $botRoot -Directory -ErrorAction SilentlyContinue)) {
+        if ($installed.Name -ne $keptBot) { Remove-Item -LiteralPath $installed.FullName -Recurse -Force }
     }
     "== client bot setting: $(if ($keptBot) { $keptBot } else { 'disabled, no bot folders' })"
     if ($Bot -eq 'vBot') {
-        $botDir = Join-Path $env:APPDATA 'otcr\otclient\otclient\bot\vBot_4.8'
-        if (Test-Path $botDir) { Remove-Item $botDir -Recurse -Force }
+        $botDir = Join-Path $botRoot 'vBot_4.8'
+        if (Test-Path -LiteralPath $botDir) { Remove-Item -LiteralPath $botDir -Recurse -Force }
         Copy-Item (Join-Path $root 'otclient-src\mods\game_bot\default_configs\vBot_4.8') $botDir -Recurse
         New-Item -ItemType Directory -Force (Join-Path $botDir 'targetbot_configs'), (Join-Path $botDir 'storage') | Out-Null
         $targeting = [IO.File]::ReadAllText((Join-Path $TibiaLive 'vbot-arena.json')).Replace('"name":"troll"', "`"name`":`"$($kinds[0])`"").Replace('"regex":"^troll$"', "`"regex`":`"^($($kinds -join '|'))`$`"")

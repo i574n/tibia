@@ -5,7 +5,7 @@
 A typed Tibia-rules simulator in Spiral, compiled to C, Rust and WGSL (GPU) from one source, used to train agents that
 are measured against the best open-source Tibia bots on a public, reproducible benchmark: the **OT Agent Arena**.
 
-## Status 2026-10-27
+## Status 2026-10-30
 
 26 `.spi` modules in `src` (plus `src/standards.spi`, the package's standards checked by `kit standards`), and six apps:
 `apps/arena` (24 files: 13 Lua programs for the live client and their shared modules), `apps/map` (the server-map tool
@@ -17,9 +17,16 @@ simulators), `apps/host` (the arena host: world port and executor), `apps/offscr
 - **Decisions:** policy, network (integer neural policy), search (evolution).
 - **Simulators and entries:** hunt with its hunt_sim tests, hunting_pack (the multi-creature simulator) with its pack_sim
   and gpu_sim tests. Its GPU shader inlines to 252k lines (probe run 281 s); `knight_turn` is shared on C only.
-- **Postable:** every top-level cell of every `.spi` fits one post (273 weighted characters): 65 files, 3,572 cells, 0
-  over. The generated terrain tables are a fan-4 tree of small inline parts, checked equal to the old tables over every
-  word, row and zone offset.
+- **Postable:** measured with the poster's own check (`SpiralCompiler --x-compat` and the x profile: 280 weighted
+  characters minus each post's `cN k/n` header and its defused dots), every top-level cell of `src` and the apps fits one
+  post (2026-10-30). The 17 remaining findings are `@` words inside log strings, which the poster defuses. The generated
+  terrain tables are a fan-4 tree of small inline parts, checked equal to the old tables over every word, row and zone
+  offset.
+- **Manifests:** each package has a `spiral.toml` (edition 3) beside its `package.spiproj`; the compiler reads the toml
+  first and Cells reads the spiproj, so `scripts/predict.ps1` patches both.
+- **Host:** the arena host's block plan runs on Gleam (BEAM) and drives the live world through real programs (Canary,
+  MariaDB, the client harness `live/run-hunt.ps1`). Its first live block (2026-10-28) counted 4 of 4 hunts with the
+  exact expected trace, released the world and left no server behind.
 - **Lib:** every app references `lib/spiral` (`spiral-`); host macros are one-call primitives, and casts and parsing go
   through typed Spiral (lib `env`, `convert`, `csv`).
 
@@ -249,14 +256,18 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 - Set up: `pwsh scripts/init.ps1` clones polyglot (which brings spiral) next to this repo, links both under `deps/`,
   installs Mesa's software Vulkan on Ubuntu, and builds the WGSL runner into `target/`. `-fast 1` only links and
   builds what is missing.
-- Test: `pwsh scripts/build.ps1` runs every `src/*.spi` file with tests through `deps/spiral/apps/cells/spi/run_notebook.ps1`
+- Test: `pwsh scripts/build.ps1` runs every file with tests in `src` and in `apps/arena`, `apps/host`, `apps/offscreen`,
+  `apps/map`, `apps/predict` and `apps/canary` through `deps/spiral/apps/cells/spi/run_notebook.ps1`
   and fails unless every test executed and passed (no failed, unsupported, skipped or missing rows); `-Files geometry,views`
   runs a subset. Notebook outputs go to `notebooks/` (ignored by git, published by `scripts/publish.ps1`).
-- Standards: `scripts/build.ps1` first runs `SpiralCompiler format src apps/arena apps/map --check` and stops on any layout
+- Standards: `scripts/build.ps1` first runs `SpiralCompiler format --check` over src and those apps (predict aside) and stops on any layout
   change; locally, `eoie standards src apps/arena apps/map` also checks the rules `src/standards.spi` declares (no
   comment lines, LF only, a target above every test, 120 columns, no floating point in 26 integer-only modules).
 - Live arena: the arena needs a local world outside the repo: Canary, MariaDB, OTClient, logs (default
-  `~/tibia-local`, or `TIBIA_WORLD`; MariaDB binaries from `TIBIA_MARIADB_BIN`, default scoop's). For example
+  `~/tibia-local`, or `TIBIA_WORLD`; MariaDB binaries from `TIBIA_MARIADB_BIN`, default scoop's). `pwsh live/setup.ps1`
+  builds it from pinned releases (Canary 3.6.1 with the data-canary datapack the arena uses, OTClient 4.1 with the
+  15.13 client assets, nExBot 19632d4, and the MariaDB schema when no data exists) and moves any folder it replaces
+  aside under `_replaced-<time>`; `pwsh live/world.ps1 -Action Start` starts the server. For example
   `pwsh live/run-arena.ps1 -Runs 1 -Monster cyclops -MonsterCount 3 -Level 30 -AxeSkill 60 -HealBelow 160
   -StrikeAbove 0 -FullExperience 675 -Competitors spiral-policy,vbot -Out results/arena-results-try.tsv`. The hunting
   ground swaps in its own spawns and runs for a fixed time: `-Scenario hunting-ground -SpawnFile
