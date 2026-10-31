@@ -136,7 +136,7 @@ test observer static =
 
 := on_ready (b : bot) (done : mut i32) (logged_in_at : mut i32) : () =
     ready_noted b logged_in_at
-    client.after (probe.start_delay_ms ()) (\ () => watch_started b logged_in_at done)
+    client.after (probe.start_delay_ms ()) \ () => watch_started b logged_in_at done
 
 := timed_out (done : mut i32) : () = probe.finish_once done "timeout"
 
@@ -144,7 +144,7 @@ test observer static =
     := done, at = mut 0, mut 0
     := ready () = on_ready b done at
     client.disable_client_bot (probe.bot_profile ())
-    probe.started_as (probe.knight ()) (text_noted done at) ready 200000 (\ () => timed_out done)
+    probe.started_as (probe.knight ()) (text_noted done at) ready 200000 \ () => timed_out done
 
 ///> lua
 ///> c

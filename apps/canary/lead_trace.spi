@@ -149,7 +149,7 @@ test watches_follow_moves =
     |? creature_is_monster c ?> saw_monster g c id x y
 
 := saw_all (g : lead) (present : mut bool) (crowd : array creature) : () =
-    loop.for' { from = 0i32; nearTo = am'.length crowd } (\ i => saw g present (am'.index i crowd))
+    loop.for' { from = 0i32; nearTo = am'.length crowd } \ i => saw g present (am'.index i crowd)
 
 := knight_gone (g : lead) : () =
     := knight_since, knight_at, targeted, watched = g.knight_since, g.knight_at, g.knight_targeted, g.watched
@@ -182,7 +182,7 @@ test watches_follow_moves =
 
 := watch_lead (g : lead) : () =
     := poll = global_event "LeadTracePoll"
-    on_think poll (\ _ => poll_once g)
+    on_think poll \ _ => poll_once g
     think_interval poll 50
     register_global_event poll
 

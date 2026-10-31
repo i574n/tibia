@@ -16,7 +16,7 @@ test game_calls static =
 
 :~ ^ counting (name : string) (cell : mut i32) : () =
     := native = hooks.field_function (hooks.game ()) name
-    hooks.replace_dispatch (hooks.game ()) name (\ () => bumped cell native)
+    hooks.replace_dispatch (hooks.game ()) name \ () => bumped cell native
 
 :~ ^ counting_if_present (name : string) (cell : mut i32) : () =
     ? hooks.is_function (hooks.field_function (hooks.game ()) name) ?> counting name cell
@@ -26,7 +26,7 @@ test game_calls static =
 
 :~ ^ guarding_cancel_follow (cell : mut i32) : () =
     := native = hooks.field_function (hooks.game ()) "cancelFollow"
-    hooks.replace_dispatch (hooks.game ()) "cancelFollow" (\ () => guarded_pick cell native)
+    hooks.replace_dispatch (hooks.game ()) "cancelFollow" \ () => guarded_pick cell native
 
 :~ ^ fresh_counts () : counts =
     := other = listm.map (\ (name : string) => name, mut 0i32) (counted_names ())

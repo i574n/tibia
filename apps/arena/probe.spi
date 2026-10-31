@@ -95,7 +95,7 @@ test probe static =
         }
 
 := gated_entry (character : string) (on_text : text_handler) (ready : () -> ()) : () =
-    when_gate_opens (login_gate ()) (\ () => entered character on_text ready)
+    when_gate_opens (login_gate ()) \ () => entered character on_text ready
 
 := kept_hidden () : () =
     keep_hidden ()
@@ -107,7 +107,7 @@ test probe static =
     : ()
     =
     kept_hidden ()
-    client.after 3000 (\ () => gated_entry character on_text ready)
+    client.after 3000 \ () => gated_entry character on_text ready
     client.after timeout_ms on_timeout
 
 := started (ready : () -> ()) (timeout_ms : i32) : () =

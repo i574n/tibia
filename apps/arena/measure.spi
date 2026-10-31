@@ -158,7 +158,7 @@ test measure static =
     ? client.player_present () = !- ?> probe.finish_once_without_parity b.run.done "offline"
     |:
         ?= tick_step b p ?|
-        | Some next => client.after (tick_ms ()) (\ () => ticked b next)
+        | Some next => client.after (tick_ms ()) \ () => ticked b next
         | None => ()
 
 := tick (b : bench) : () = ticked b { swing_at = *b.run.started_at; potion_at = 0 }
@@ -237,7 +237,7 @@ test kill_line_names_the_kill_and_experience =
 := ready (b : bench) : () =
     := name, health = client.player_name (), client.player_health ()
     probe.note (("in game as " ++# name ++# " health " ++#? health))
-    client.after 1000 (\ () => started b)
+    client.after 1000 \ () => started b
 
 ///> _
 := main () =

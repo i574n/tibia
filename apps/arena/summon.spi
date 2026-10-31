@@ -48,7 +48,7 @@ test summon static =
 
 := summon_ready (summon_at : string) (orders : array string) : () =
     probe.note ("in game as " ++# client.player_name ())
-    client.after 1500 (\ () => summon_orders summon_at orders)
+    client.after 1500 \ () => summon_orders summon_at orders
 
 := server_text_noted (mode : string) (text : string) : () = probe.note ("server text: " ++# text)
 

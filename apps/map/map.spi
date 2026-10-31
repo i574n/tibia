@@ -622,12 +622,12 @@ test map static =
 := whole_chain (items : array table_item) : string = item_chain items 0 (length items - 1)
 
 := row_items (words : array u32) (word : i32) : array table_item =
-    items_by (spot_side ()) (\ row => row, word_literal words row word)
+    items_by (spot_side ()) \ row => row, word_literal words row word
 
 := group_items (items : array table_item) (g : i32) : array table_item =
     := lo = g * table_fan ()
     := count = ? length items - lo < table_fan () ?> length items - lo |: table_fan ()
-    items_by count (\ i => index items (lo + i))
+    items_by count \ i => index items (lo + i)
 
 := row_function (name : string) (body : string) : () =
     console.write_line ("let " ++ name ++ " (row : i32) : u32 =")

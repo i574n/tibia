@@ -24,6 +24,19 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Output "build.ps1 / layout / formatter check clean"
 
+$sibling = '../../x/postability'
+if (Test-Path $sibling) {
+    foreach ($name in 'x.json', 'tlds.txt') {
+        if ((Get-FileHash "../postability/$name").Hash -ne (Get-FileHash "$sibling/$name").Hash) { throw "build.ps1 / postable: postability/$name differs from x's; copy it from $sibling" }
+    }
+}
+$postable = @(& $spiral.Dotnet $spiral.Compiler --x-compat ../src ../apps 2>&1 | ForEach-Object { "$_" })
+if ($LASTEXITCODE -ne 0) { $postable | Select-Object -Last 10 | ForEach-Object { Write-Output "build.ps1 / postable / $_" }; throw "build.ps1 / postable: x-compat exited $LASTEXITCODE" }
+$overweight = @($postable | Where-Object { $_ -match '^[^:]+:\d+:\d+: overweight' })
+$overweight | ForEach-Object { Write-Output "build.ps1 / postable / $_" }
+if ($overweight) { throw "build.ps1 / postable: $($overweight.Count) cells over one post; split them by hand" }
+Write-Output "build.ps1 / postable / every cell fits one post / $(@($postable | Where-Object { $_ -match ': mention: ' }).Count) mentions left to the poster"
+
 $runNotebook = (Resolve-Path "../deps/spiral/apps/cells/spi/run_notebook.ps1").Path
 $wgslRun = @($env:SPIRAL_WGSL_RUN, "../target/wgsl-run/release/spiral-wgsl$(_exe)") |
     Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1

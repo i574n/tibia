@@ -106,7 +106,7 @@ test the_end_lines_keep_the_probe_wording =
 ///> _
 := main () =
     := done = mut 0
-    := ready () = client.after 1500 (\ () => path_started done)
+    := ready () = client.after 1500 \ () => path_started done
     client.disable_client_bot (probe.bot_profile ())
-    probe.started_as (probe.knight ()) server_text_noted ready 60000 (\ () => timed_out done)
+    probe.started_as (probe.knight ()) server_text_noted ready 60000 \ () => timed_out done
     0i32

@@ -57,19 +57,19 @@
 
 := gate0 (s : gate_state) (owner : hooks.host) (name : string) : () =
     := original = hooks.field_function owner name
-    ? hooks.is_function original ?> hooks.replace0 owner name (\ () => admitted0 s original)
+    ? hooks.is_function original ?> hooks.replace0 owner name \ () => admitted0 s original
 
 := gate1 (s : gate_state) (owner : hooks.host) (name : string) : () =
     := original = hooks.field_function owner name
-    ? hooks.is_function original ?> hooks.replace1 owner name (\ a => admitted1 s original a)
+    ? hooks.is_function original ?> hooks.replace1 owner name \ a => admitted1 s original a
 
 := gate2 (s : gate_state) (owner : hooks.host) (name : string) : () =
     := original = hooks.field_function owner name
-    ? hooks.is_function original ?> hooks.replace2 owner name (\ (a, b) => admitted2 s original a b)
+    ? hooks.is_function original ?> hooks.replace2 owner name \ (a, b) => admitted2 s original a b
 
 := gate3 (s : gate_state) (owner : hooks.host) (name : string) : () =
     := original = hooks.field_function owner name
-    ? hooks.is_function original ?> hooks.replace3 owner name (\ (a, b, c) => admitted3 s original a b c)
+    ? hooks.is_function original ?> hooks.replace3 owner name \ (a, b, c) => admitted3 s original a b c
 
 := login_note () : string = "[tibia-probe] parity: login protection ended for every competitor by one turn after login"
 
@@ -139,7 +139,7 @@
 
 := watch_spectators () : () =
     := native_spectators = hooks.field_function (hooks.map_api ()) "getSpectators"
-    hooks.replace_spectators (\ (center, multi) => filtered_spectators native_spectators center multi)
+    hooks.replace_spectators \ (center, multi) => filtered_spectators native_spectators center multi
 
 := main () : () =
     := s = new_gate_state ()
@@ -149,4 +149,4 @@
     gate_game_items s game
     gate_player s
     watch_spectators ()
-    hooks.publish_parity (\ () => summary_text *s.allowed *s.dropped)
+    hooks.publish_parity \ () => summary_text *s.allowed *s.dropped

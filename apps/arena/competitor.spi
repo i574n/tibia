@@ -463,7 +463,7 @@ test competitor static =
 :~ ^ ticked (a : arena) (t : tally) (k : clocks) : () =
     ?= outcome_of_tick a t k ?|
     | None => ()
-    | Some (t, k) => continued a t (\ () => client.after (tick_ms ()) (\ () => ticked a t k))
+    | Some (t, k) => continued a t \ () => client.after (tick_ms ()) (\ () => ticked a t k)
 
 := tick (a : arena) (first : tally) (first_clocks : clocks) : () = ticked a first first_clocks
 
@@ -600,7 +600,7 @@ test footing_label_names_each_footing =
     := start_experience = client.player_experience ()
     client.chasing !-
     client.fight_balanced ()
-    client.after (probe.settle_ms ()) (\ () => policy_started s start_experience)
+    client.after (probe.settle_ms ()) \ () => policy_started s start_experience
 
 := ready_noted () : () =
     := name, health, mana = client.player_name (), client.player_health (), client.player_mana ()
@@ -610,7 +610,7 @@ test footing_label_names_each_footing =
     ready_noted ()
     probe.stored s.marks.logged_in_at (client.now_ms ())
     client.on_position_change (on_move s)
-    client.after (probe.start_delay_ms () - probe.settle_ms ()) (\ () => settling s)
+    client.after (probe.start_delay_ms () - probe.settle_ms ()) \ () => settling s
 
 ///> _
 := main () =

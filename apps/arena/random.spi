@@ -139,7 +139,7 @@ test random static =
 
 :~ ^ ticked (a : arena) (t : tally) (next_step_at : i32) : () =
     ?= tick_outcome a t next_step_at ?|
-    | Some (t, next_step_at) => continued a t (\ () => client.after (tick_ms ()) (\ () => ticked a t next_step_at))
+    | Some (t, next_step_at) => continued a t \ () => client.after (tick_ms ()) (\ () => ticked a t next_step_at)
     | None => ()
 
 := tick (a : arena) (first : tally) : () = ticked a first 0
@@ -189,12 +189,12 @@ test heading_of_covers_eight_neighbors_once =
     := start_experience = client.player_experience ()
     client.chasing !-
     client.fight_balanced ()
-    client.after 1000 (\ () => random_started r start_experience)
+    client.after 1000 \ () => random_started r start_experience
 
 := ready (r : run) : () =
     := name, health, mana = client.player_name (), client.player_health (), client.player_mana ()
     probe.note (("in game as " ++# name ++# " health " ++#? health ++# " mana " ++#? mana))
-    client.after 1500 (\ () => settling r)
+    client.after 1500 \ () => settling r
 
 ///> _
 := main () =

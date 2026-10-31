@@ -111,7 +111,7 @@ test spot_text_joins_coordinates =
     |? creature_is_monster c ?> saw_monster g s c x y
 
 := saw_all (g : ground) (s : sweep) (crowd : array creature) : () =
-    loop.for' { from = 0i32; nearTo = am'.length crowd } (\ i => saw g s (am'.index i crowd))
+    loop.for' { from = 0i32; nearTo = am'.length crowd } \ i => saw g s (am'.index i crowd)
 
 := departures (g : ground) (present : list u32) : () =
     := watched = g.watched
@@ -147,7 +147,7 @@ test spot_text_joins_coordinates =
 := watch_ground (g : ground) : () =
     := centre = position 1947 1345 7
     := poll = global_event "GroundTracePoll"
-    on_think poll (\ _ => poll_once g centre 16i32)
+    on_think poll \ _ => poll_once g centre 16i32
     think_interval poll 250
     register_global_event poll
 

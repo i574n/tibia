@@ -3,7 +3,7 @@
 := silent_table (silent : list string) : hooks.host =
     := table = hooks.new_list ()
     listm.iter (\ (name : string) => hooks.set_field table name (\ () => 0i32)) silent
-    hooks.set_field table "cancel" (\ () => ())
+    hooks.set_field table "cancel" \ () => ()
     table
 
 := silence_network () : () =
@@ -12,4 +12,4 @@
 
 := main () : () =
     silence_network ()
-    hooks.set_spiral_bot_dofile (\ (path : string) => hooks.call_for_value (hooks.current_dofile ()) path)
+    hooks.set_spiral_bot_dofile \ (path : string) => hooks.call_for_value (hooks.current_dofile ()) path
