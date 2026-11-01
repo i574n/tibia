@@ -7,47 +7,32 @@
 :! tiles = ()
 :! gold_coins = ()
 
-:! amount unit = i32
+:= hp (value : i32) : units::amount hitpoints = units::amount value
 
-:= amount_of \* unit. (value : i32) : amount unit = amount value
+:= ms (value : i32) : units::amount milliseconds = units::amount value
 
-:= value_of \* unit. (amount x : amount unit) : i32 = x
+:= tile_count (value : i32) : units::amount tiles = units::amount value
 
-:= plus \* unit. (amount a : amount unit) (amount b : amount unit) : amount unit = amount (a + b)
+:= gp (value : i32) : units::amount gold_coins = units::amount value
 
-:= minus \* unit. (amount a : amount unit) (amount b : amount unit) : amount unit = amount (a - b)
-
-:= scaled \* unit. (factor : i32) (amount x : amount unit) : amount unit = amount (factor * x)
-
-:= at_least \* unit. (amount a : amount unit) (amount b : amount unit) : bool = a >= b
-
-:= capped \* unit. (amount limit : amount unit) (amount x : amount unit) : amount unit =
-    amount (? x > limit ?> limit |: x)
-
-:= hp (value : i32) : amount hitpoints = amount value
-:= ms (value : i32) : amount milliseconds = amount value
-:= tile_count (value : i32) : amount tiles = amount value
-:= gp (value : i32) : amount gold_coins = amount value
+:= healed_to_cap (health : i32) : i32 = units::value_of (units::capped (hp 150) (units::plus (hp health) (hp 60)))
 
 ///> c
 :# same_unit_arithmetic =
     := ~health = 150i32
-    value_of (minus (hp health) (hp 40)) |> _assert_eq 110i32
-    value_of (capped (hp 150) (plus (hp health) (hp 60))) |> _assert_eq 150i32
-    at_least (ms 2000) (ms (health * 10)) |> _assert_eq !+
+    := left = units::value_of (units::minus (hp health) (hp 40))
+    (left, healed_to_cap health, units::at_least (ms 2000) (ms (health * 10))) |> _assert_eq (110i32, 150i32, !+)
 
 ///> c
 :# hitpoints_and_milliseconds_do_not_mix fails "Unification failure" =
-    plus (hp 10) (ms 20)
+    units::plus (hp 10) (ms 20)
 
 ///> c
 :# gold_is_not_hitpoints fails "Unification failure" =
-    := heal (amount : amount hitpoints) = amount
+    := heal (amount : units::amount hitpoints) = amount
     heal (gp 5)
 
 ///> wgsl
 :# units_on_gpu =
     := ~health = 150i32
-    ? value_of (capped (hp 150) (plus (hp health) (hp 60))) = 150i32 && value_of (minus (ms 2000) (ms 500)) = 1500i32
-    ?> 0i32
-    |: 1i32
+    ? healed_to_cap health = 150i32 && units::value_of (units::minus (ms 2000) (ms 500)) = 1500i32 ?> 0i32 |: 1i32

@@ -13,7 +13,7 @@
     tactic_evolved_on (ProfitKeepingKills (kills_floor camp)) start camp (training_block ()) plan
 
 := ledger_row (arm : i32) (l : ledger) : () =
-    := profit = quantity::value_of l::hunt_profit
+    := profit = units::value_of l::hunt_profit
     console::write_line ("" ++#? arm ++# "\t" ++#? l::hunt_kills ++# "\t" ++#? l::hunt_deaths ++# "\t" ++#? profit)
 
 := genes_row (g : search::genome) : () =

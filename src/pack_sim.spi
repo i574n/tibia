@@ -18,7 +18,7 @@
 := cyclops_melee_max () : i32 = (creatures::stats_of (:< creatures ;; Cyclops))::melee_max
 
 := cyclops_hit (seed : u32) (i : i32) : i32 =
-    := roll = rng::roll_key seed (conv i) 0u32 (hunting_pack::purpose_creature_hit ())
+    := roll = hunting_pack::key seed i 0 hunting_pack::PackCreatureHit
     combat::creature_hit (cyclops_melee_max ()) (combat::knight_sample_gear ()) !+ roll
 
 :~ ^ cyclops_hits_from (seed : u32) (i : i32) (t : hit_tally) : hit_tally =
@@ -110,7 +110,7 @@
 
 := held_out_pair (camp : camp) (t : tactic) : kp =
     := l = hunting_pack::ledger_on camp t (hunting_pack::held_out_block ())
-    l::hunt_kills, quantity::value_of l::hunt_profit
+    l::hunt_kills, units::value_of l::hunt_profit
 
 := profit_floor (camp : camp) (heal : i32) : i32 =
     (hunting_pack::ledger_on camp (hunting_pack::cavebot_with_heal heal) (hunting_pack::training_block ()))::hunt_kills
@@ -198,7 +198,7 @@
 := clear_tallied (acc : tally5) (dt : i32) (p : pack) : tally5 =
     := ms, potions, deaths, hits, taken = acc
     := t, s = p::hunter::tally, p::score
-    ms + dt, potions + t::potions, deaths + s::deaths, hits + t::hits_taken, taken + quantity::value_of t::damage_taken
+    ms + dt, potions + t::potions, deaths + s::deaths, hits + t::hits_taken, taken + units::value_of t::damage_taken
 
 :== seeds = hunting_pack::seed_range
 
@@ -516,7 +516,7 @@
     :< creatures
     := camp = uniform_camp Cyclops
     := t = cavebot_with_heal 160
-    quantity::plus (measured Kills camp t 1 1) (measured Profit camp t 1 1)
+    units::plus (measured Kills camp t 1 1) (measured Profit camp t 1 1)
 
 := cavebot_160 () : tactic = hunting_pack::cavebot_with_heal 160
 
@@ -529,7 +529,7 @@
 
 := kills_match (spot : camp) (t : tactic) (first : u32) : bool =
     := typed = hunting_pack::judged_on (:< hunting_pack ;; Kills) spot t (hunting_pack::held_out_slice 1)
-    quantity::value_of typed = hunting_pack::score spot t first 1
+    units::value_of typed = hunting_pack::score spot t first 1
 
 := typed_matches (first : u32) : bool * bool * bool =
     := potions, ms = clears_match (spot_camp ()) (cavebot_160 ()) first
@@ -565,7 +565,7 @@
     hunting_pack::cavebot_heal_tuned_on (:< hunting_pack ;; Experience) camp (hunting_pack::training_block ())
 
 := ground_xp (camp : camp) (t : tactic) : i32 =
-    quantity::value_of (
+    units::value_of (
         hunting_pack::judged_on (:< hunting_pack ;; Experience) camp t (hunting_pack::held_out_block ())
     )
 
@@ -641,7 +641,7 @@
 
 := random_hunt (camp : camp) : tally3 =
     := l = hunting_pack::ledger_on camp (hunting_pack::random_control ()) (hunting_pack::held_out_block ())
-    l::hunt_kills, l::hunt_deaths, quantity::value_of l::hunt_profit
+    l::hunt_kills, l::hunt_deaths, units::value_of l::hunt_profit
 
 := random_clear () : tally3 =
     := held = hunting_pack::held_out_block ()
@@ -665,7 +665,7 @@
 
 := ground_judged (camp : camp) (t : tactic) : tally3 =
     := l = hunting_pack::ledger_on camp t (hunting_pack::held_out_block ())
-    ground_xp camp t, l::hunt_deaths, quantity::value_of l::hunt_profit
+    ground_xp camp t, l::hunt_deaths, units::value_of l::hunt_profit
 
 := retreat_tactic () : tactic = hunting_pack::tactic_with_order (reach_order ()) { first = 154; second = 26; third = 2 }
 

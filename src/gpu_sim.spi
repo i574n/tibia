@@ -13,7 +13,7 @@
 
 := ten_tick_facts (seed : u32) : i32 * i32 * i32 * i32 =
     := p = troll_ticks seed 0 (hunting_pack::start (troll_camp ()))
-    quantity::value_of p::hunter::health,
+    units::value_of p::hunter::health,
     (hunting_pack::slot 0 p)::at::x,
     (hunting_pack::slot 0 p)::at::y,
     p::score::kills

@@ -110,12 +110,27 @@
     | OverBudget
     | Autolink
     | Mention
+    | Hashtag
+    | Cashtag
 
 := budget_kind_name (k : budget_kind) : string =
     ?= k ?|
     | OverBudget => "over_budget"
     | Autolink => "autolink"
     | Mention => "mention"
+    | Hashtag => "hashtag"
+    | Cashtag => "cashtag"
+
+:= tag_kind_of (name : string) : option budget_kind =
+    ? name = "mention" ?> Some Mention
+    |? name = "hashtag" ?> Some Hashtag
+    |? name = "cashtag" ?> Some Cashtag
+    |: None
+
+:= budget_kind_of (name : string) : option budget_kind =
+    ? name = "over_budget" ?> Some OverBudget
+    |? name = "autolink" ?> Some Autolink
+    |: tag_kind_of name
 
 :== file_row = { source : string; tenths : i32; exit_code : i32 }
 
@@ -157,6 +172,53 @@
     | FileSeconds r => file_seconds_line r
     | FileExitCode r => file_exit_line r
     | TestMs r => test_ms_line r
+
+:| budget_report =
+    | BudgetSamples : list sample
+    | BadFinding : string
+    | NoReport
+
+:= counted_kind (name : string) (count : string) : option sample =
+    ?= budget_kind_of name, convert::try_convert count ?|
+    | Some k, Some n => Some (BudgetFindings (k, n))
+    | _ => None
+
+:= finding_of (part : string) : option sample =
+    := fields = part |> sm'::split " " |> array
+    ? am'::length fields <> 2 ?> None |: counted_kind (am'::index 0 fields) (am'::index 1 fields)
+
+:~ ^ listed (parts : array string) (i : i32) (found : list string) : list string =
+    ? i < 0 ?> found |: listed parts (i - 1) (sm'::trim (am'::index i parts) :: found)
+
+:= added (r : budget_report) (part : string) : budget_report =
+    ?= r, finding_of part ?|
+    | BudgetSamples found, Some s => BudgetSamples (s :: found)
+    | BudgetSamples _, None => BadFinding part
+    | _ => r
+
+:= in_order (r : budget_report) : budget_report =
+    ?= r ?|
+    | BudgetSamples found => BudgetSamples (listm::rev found)
+    | _ => r
+
+:= by_kind_text (report : string) : string =
+    := at : i32 = sm'::index_of "file(s) (" report
+    := start = at + 9i32
+    ? at < 0i32 ?> "" |: sm'::substring start (sm'::length report - start - 1i32) report
+
+:= kind_findings (text : string) : budget_report =
+    := parts = text |> sm'::split "," |> array
+    := kinds = listed parts (am'::length parts - 1) []
+    ? text = "" ?> BudgetSamples [] |: in_order (listm::fold added (BudgetSamples []) kinds)
+
+:= budget_report_of (report : string) : budget_report =
+    ? sm'::starts_with "cell-budget report: " report ?> kind_findings (by_kind_text report) |: NoReport
+
+:= budget_text (r : budget_report) : string =
+    ?= r ?|
+    | BudgetSamples samples => samples |> listm::map sample_line |> sm'::concat_list "\n"
+    | BadFinding part => "bad cell-budget finding: " ++# part
+    | NoReport => "no cell-budget report line"
 
 := offscreen_head () : string =
     "{\"accepted\":0,\"built\":0,\"discovered\":7,\"executed\":7,\"failed\":0,\"files\":1,\"filtered\":0,"
@@ -203,6 +265,30 @@
 ///> rust
 :# a_budget_kind_becomes_one_prom_line =
     sample_line (BudgetFindings (Autolink, 9)) |> _assert_eq (autolink_line ())
+
+:= two_kind_report () : string = "cell-budget report: 11 finding(s) in 40 file(s) (autolink 9, over_budget 2)"
+
+:= two_kind_lines () : string = autolink_line () ++# "\ntibia_cell_budget_findings{kind=\"over_budget\"} 2"
+
+///> lua
+///> rust
+:# a_budget_report_becomes_one_line_per_kind =
+    budget_text (budget_report_of (two_kind_report ())) |> _assert_eq (two_kind_lines ())
+
+:= clean_report () : string = "cell-budget report: 0 finding(s) in 40 file(s)"
+
+:= unknown_kind_report () : string = "cell-budget report: 3 finding(s) in 40 file(s) (emoji 3)"
+
+:= odd_report_texts () : string * string * string = "", "bad cell-budget finding: emoji 3", "no cell-budget report line"
+
+:= odd_report_lines () : string * string * string =
+    := text report = budget_text (budget_report_of report)
+    text (clean_report ()), text (unknown_kind_report ()), text ""
+
+///> lua
+///> rust
+:# a_report_without_kinds_is_empty_and_an_unknown_kind_is_named =
+    odd_report_lines () |> _assert_eq (odd_report_texts ())
 
 := offscreen_seconds_line () : string = "tibia_file_seconds{file=\"offscreen\"} 129.9"
 

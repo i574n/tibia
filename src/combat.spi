@@ -2,27 +2,50 @@
 :# combat static =
     :< testing
 
+:< keyed_rng
+
+:| combat_roll =
+    | ArmorProbe
+    | BoutSwing
+    | StatsDraw
+    | ArrowShot
+    | ArrowFire
+
+:+ purpose_code combat_roll =
+    \ r =>
+        ?= r ?|
+        | ArmorProbe => 4u32
+        | BoutSwing => 7u32
+        | StatsDraw => 9u32
+        | ArrowShot => 11u32
+        | ArrowFire => 12u32
+
+:== roll p = keyed_rng::roll_key p
+
+:= combat_key (s : u32) (t : u32) (e : u32) (r : combat_roll) : roll combat_roll =
+    keyed_rng::roll_key (keyed_rng::seed s) (keyed_rng::tick t) (keyed_rng::entity e) r
+
 := unit_scale () : i32 = 4096
 
-:= sub_key (key : rng::roll_key) (index : u32) : rng::roll_key =
-    { key ?| purpose = key::purpose * 256u32 + index }
+:= uniform_unit \* p {purpose_code}. (key : roll p) (index : u32) : i32 =
+    conv (keyed_rng::draw (keyed_rng::sub_key key index) % 4096u32)
 
-:= uniform_unit (key : rng::roll_key) (index : u32) : i32 =
-    conv (rng::draw (sub_key key index) % 4096u32)
-
-:= irwin_hall_twelve (key : rng::roll_key) (attempt : u32) : i32 =
+:= irwin_hall_twelve \* p {purpose_code}. (key : roll p) (attempt : u32) : i32 =
     :~ ^ sum (i : u32) (total : i32) : i32 =
         ? i >= 12u32 ?> total |: sum (i + 1u32) (total + uniform_unit key (attempt * 12u32 + i))
     sum 0u32 0i32
 
-:= normal_attempt (key : rng::roll_key) (n : u32) : i32 = 2048i32 + (irwin_hall_twelve key n - 24576i32) / 4i32
+:= normal_attempt \* p {purpose_code}. (key : roll p) (n : u32) : i32 =
+    2048i32 + (irwin_hall_twelve key n - 24576i32) / 4i32
 
 := clamped_to_unit (v : i32) : i32 = ? v < 0i32 ?> 0i32 |: unit_scale ()
 
-:= truncated_normal_unit (key : rng::roll_key) : i32 =
+:= in_unit (v : i32) : bool = v >= 0i32 && v <= unit_scale ()
+
+:= truncated_normal_unit \* p {purpose_code}. (key : roll p) : i32 =
     :~ ^ attempt (n : u32) : i32 =
         := v = normal_attempt key n
-        ? v >= 0i32 && v <= unit_scale () ?> v
+        ? in_unit v ?> v
         |? n >= 7u32 ?> clamped_to_unit v
         |: attempt (n + 1u32)
     attempt 0u32
@@ -32,7 +55,7 @@
 := with_draw (v : i32) (d : draw_stats) : draw_stats =
     { total = d::total + v; low = (? v < d::low ?> v |: d::low); high = (? v > d::high ?> v |: d::high) }
 
-:= stats_draw (seed : u32) (i : i32) : i32 = truncated_normal_unit (rng::roll_key seed (conv i) 0u32 9u32)
+:= stats_draw (seed : u32) (i : i32) : i32 = truncated_normal_unit (combat_key seed (conv i) 0u32 StatsDraw)
 
 := no_draws () : draw_stats = { total = 0i32; low = unit_scale (); high = 0i32 }
 
@@ -43,27 +66,27 @@
     := d = draws_from seed count 0i32 (no_draws ())
     d::total / count, d::low, d::high
 
-:= melee_roll (low : i32) (high : i32) (key : rng::roll_key) : i32 =
+:= melee_roll \* p {purpose_code}. (low : i32) (high : i32) (key : roll p) : i32 =
     low + (truncated_normal_unit key * (high - low) + 2048i32) / unit_scale ()
 
-:= uniform_between (low : i32) (high : i32) (key : rng::roll_key) (index : u32) : i32 =
-    conv (rng::roll_between (conv low) (conv high) (sub_key key index))
+:= uniform_between \* p {purpose_code}. (low : i32) (high : i32) (key : roll p) (index : u32) : i32 =
+    conv (keyed_rng::roll_between (conv low) (conv high) (keyed_rng::sub_key key index))
 
-:= defense_block (defense : i32) (key : rng::roll_key) : i32 =
+:= defense_block \* p {purpose_code}. (defense : i32) (key : roll p) : i32 =
     uniform_between (defense / 2i32) defense key 200u32
 
-:= armor_block (armor : i32) (key : rng::roll_key) : i32 =
+:= armor_block \* p {purpose_code}. (armor : i32) (key : roll p) : i32 =
     ? armor > 3i32 ?> uniform_between (armor / 2i32) (armor - (armor % 2i32 + 1i32)) key 201u32
     |? armor > 0i32 ?> 1i32
     |: 0i32
 
-:= after_armor (hit : i32) (armor : i32) (key : rng::roll_key) : i32 =
+:= after_armor \* p {purpose_code}. (hit : i32) (armor : i32) (key : roll p) : i32 =
     := left = hit - armor_block armor key
     ? left <= 0i32 ?> 0i32 |: left
 
-:= blocked_hit (raw : i32) (defense : i32) (armor : i32) (has_block_charge : bool) (key : rng::roll_key) : i32 =
-    := after_defense = ? has_block_charge ?> raw - defense_block defense key |: raw
-    ? after_defense <= 0i32 ?> 0i32 |: after_armor after_defense armor key
+:= blocked_hit \* p {purpose_code}. (raw : i32) (defense : i32) (armor : i32) (charged : bool) (key : roll p) : i32 =
+    := left = ? charged ?> raw - defense_block defense key |: raw
+    ? left <= 0i32 ?> 0i32 |: after_armor left armor key
 
 :== gear = { armor : i32; defense : i32 }
 
@@ -91,7 +114,7 @@
 := max_block_charges () : i32 = 2i32
 := block_charge_ms () : i32 = 1000i32
 
-:= creature_hit (melee_max : i32) (defender : gear) (shielded : bool) (key : rng::roll_key) : i32 =
+:= creature_hit \* p {purpose_code}. (melee_max : i32) (defender : gear) (shielded : bool) (key : roll p) : i32 =
     blocked_hit (melee_roll 0i32 melee_max key) defender::defense defender::armor shielded key
 
 :== ranged_attack = { chance_percent : i32; max_damage : i32; range : i32; every_ms : i32 }
@@ -101,13 +124,13 @@
 := ranged_in_reach (attack : ranged_attack) (distance : i32) (sight_clear : bool) : bool =
     distance <= attack::range && sight_clear
 
-:= ranged_fires (attack : ranged_attack) (key : rng::roll_key) : bool =
+:= ranged_fires \* p {purpose_code}. (attack : ranged_attack) (key : roll p) : bool =
     uniform_between 1i32 100i32 key 202u32 <= attack::chance_percent
 
 := charge_left (charges : i32) : i32 = ? charges > 0i32 ?> charges - 1i32 |: 0i32
 
-:= ranged_hit_spending_a_charge
-    (attack : ranged_attack) (defender : gear) (charges : i32) (key : rng::roll_key)
+:= ranged_hit_spending_a_charge \* p {purpose_code}.
+    (attack : ranged_attack) (defender : gear) (charges : i32) (key : roll p)
     : i32 * i32
     =
     blocked_hit (melee_roll 0i32 attack::max_damage key) defender::defense defender::armor !- key, charge_left charges
@@ -118,7 +141,7 @@
 
 := swing_ceiling (s : swinger) : i32 = damage::max_melee_damage s::mode s::attack_value s::attack_skill s::level
 
-:= melee_hit (s : swinger) (target : gear) (key : rng::roll_key) : i32 =
+:= melee_hit \* p {purpose_code}. (s : swinger) (target : gear) (key : roll p) : i32 =
     blocked_hit (melee_roll (swing_floor s) (swing_ceiling s) key) target::defense target::armor !+ key
 
 :== bout = { s : swinger; target : gear; seed : u32; swings : i32 }
@@ -126,7 +149,7 @@
 := bout_of (s : swinger) (target : gear) (seed : u32) (swings : i32) : bout =
     { s = s; target = target; seed = seed; swings = swings }
 
-:= bout_hit (b : bout) (i : i32) : i32 = melee_hit b::s b::target (rng::roll_key b::seed (conv i) 1u32 7u32)
+:= bout_hit (b : bout) (i : i32) : i32 = melee_hit b::s b::target (combat_key b::seed (conv i) 1u32 BoutSwing)
 
 := landed_after (hit : i32) (landed : i32) : i32 = ? hit > 0i32 ?> landed + 1i32 |: landed
 
@@ -173,7 +196,7 @@
 := capped_troll_swings (mode : damage::fight_mode) (skill : i32) (health : i32) (seed : u32) : i32 * i32 =
     capped_hit_stats (level_8_axe mode skill) (armor_and_defense_10 ()) health seed 2000i32
 
-:= arrow_key (i : i32) : rng::roll_key = rng::roll_key 9u32 (conv i) 2u32 11u32
+:= arrow_key (i : i32) : roll combat_roll = combat_key 9u32 (conv i) 2u32 ArrowShot
 
 := one_if (b : bool) : i32 = ? b ?> 1i32 |: 0i32
 
@@ -201,12 +224,12 @@
 
 :~ ^ fired (arrow : ranged_attack) (i : i32) (count : i32) : i32 =
     ? i >= 10000i32 ?> count
-    |: fired arrow (i + 1i32) (? ranged_fires arrow (rng::roll_key 3u32 (conv i) 4u32 12u32) ?> count + 1i32 |: count)
+    |: fired arrow (i + 1i32) (? ranged_fires arrow (combat_key 3u32 (conv i) 4u32 ArrowFire) ?> count + 1i32 |: count)
 
 := reach_of (arrow : ranged_attack) (range : i32) : bool * bool * bool =
     ranged_in_reach arrow range !+, ranged_in_reach arrow (range + 1i32) !+, ranged_in_reach arrow 3i32 !-
 
-:= armor_blocks (armor : i32) (key : rng::roll_key) : bool * i32 * i32 =
+:= armor_blocks \* p {purpose_code}. (armor : i32) (key : roll p) : bool * i32 * i32 =
     := block = armor_block armor key
     (block >= 5i32 && block <= 9i32), armor_block (armor - 7i32) key, armor_block (armor - 10i32) key
 
@@ -228,7 +251,7 @@
 ///> c
 :# armor_block_follows_canary_bounds =
     := ~armor = 10i32
-    armor_blocks armor (rng::roll_key 1u32 2u32 3u32 4u32) |> _assert_eq (!+, 1i32, 0i32)
+    armor_blocks armor (combat_key 1u32 2u32 3u32 ArmorProbe) |> _assert_eq (!+, 1i32, 0i32)
 
 ///> c
 :# truncated_normal_stays_in_unit_range_with_mean_near_half =

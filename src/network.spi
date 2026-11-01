@@ -171,9 +171,22 @@
 
 :== weight_round = { s : weight_search; index : i32; width : i32; parent : scored }
 
+:< keyed_rng
+
+:| network_roll =
+    | WeightNudge : i32
+
+:+ purpose_code network_roll =
+    \ r =>
+        ?= r ?|
+        | WeightNudge i => conv (1000 + i)
+
+:= weight_key (r : weight_round) (child : i32) (i : i32) : keyed_rng::roll_key network_roll =
+    := s = keyed_rng::seed r::s::seed
+    keyed_rng::roll_key s (keyed_rng::tick (conv r::index)) (keyed_rng::entity (conv child)) (WeightNudge i)
+
 := weight_draw (r : weight_round) (child : i32) (i : i32) : i32 =
-    := key = rng::roll_key r::s::seed (conv r::index) (conv child) (conv (1000 + i))
-    conv (rng::roll_between 0 (conv (2 * r::width)) key)
+    conv (keyed_rng::roll_between 0 (conv (2 * r::width)) (weight_key r child i))
 
 :~ ^ copy_mutated (r : weight_round) (child : i32) (next : array i32) (i : i32) : () =
     ? i < weight_count () ?>

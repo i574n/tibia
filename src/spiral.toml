@@ -1,4 +1,5 @@
-packages = ['|core-']
+packageDir = '../deps/spiral/lib'
+packages = ['|core-', 'spiral-']
 modules = '''
 geometry
 terrain
@@ -8,7 +9,6 @@ skills
 blessings
 coins
 quantity
-rng
 cooldowns
 vocations
 readiness

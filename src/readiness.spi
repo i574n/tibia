@@ -7,43 +7,43 @@
 :! action_slot = ()
 
 :| private ready g =
-    | AttackReady :: quantity::amount quantity::milliseconds -> ready attack_group
-    | HealingReady :: quantity::amount quantity::milliseconds -> ready healing_group
-    | ActionReady :: quantity::amount quantity::milliseconds -> ready action_slot
+    | AttackReady :: units::amount quantity::milliseconds -> ready attack_group
+    | HealingReady :: units::amount quantity::milliseconds -> ready healing_group
+    | ActionReady :: units::amount quantity::milliseconds -> ready action_slot
 
 :| gate group =
     | Open : ready group
-    | ClosedUntil : quantity::amount quantity::milliseconds
+    | ClosedUntil : units::amount quantity::milliseconds
 
 :| command =
     | Strike : ready attack_group
     | Heal : ready healing_group
     | Hold
 
-:= since \* group. (proof : ready group) : quantity::amount quantity::milliseconds =
+:= since \* group. (proof : ready group) : units::amount quantity::milliseconds =
     ?= proof ?|
     | AttackReady at => at
     | HealingReady at => at
     | ActionReady at => at
 
-:== instant = quantity::amount quantity::milliseconds
+:== instant = units::amount quantity::milliseconds
 
 := closed_by \* group. (spell : cooldowns::spell) (timers : cooldowns::timers) : gate group =
     ClosedUntil (quantity::ms (cooldowns::ready_at spell timers))
 
 := attack_gate (now : instant) (timers : cooldowns::timers) : gate attack_group =
     := spell = cooldowns::strike_spell ()
-    ? cooldowns::can_cast (quantity::value_of now) spell timers ?> Open (AttackReady now) |: closed_by spell timers
+    ? cooldowns::can_cast (units::value_of now) spell timers ?> Open (AttackReady now) |: closed_by spell timers
 
 := healing_gate (now : instant) (timers : cooldowns::timers) : gate healing_group =
     := spell = vocations::as_cooldown (vocations::knight_heal ())
-    ? cooldowns::can_cast (quantity::value_of now) spell timers ?> Open (HealingReady now) |: closed_by spell timers
+    ? cooldowns::can_cast (units::value_of now) spell timers ?> Open (HealingReady now) |: closed_by spell timers
 
 := action_gate
-    (now : quantity::amount quantity::milliseconds) (next_action_at : quantity::amount quantity::milliseconds)
+    (now : units::amount quantity::milliseconds) (next_action_at : units::amount quantity::milliseconds)
     : gate action_slot
     =
-    ? quantity::at_least now next_action_at ?> Open (ActionReady now) |: ClosedUntil next_action_at
+    ? units::at_least now next_action_at ?> Open (ActionReady now) |: ClosedUntil next_action_at
 
 := command_code (c : command) : i32 =
     ?= c ?|
@@ -53,8 +53,8 @@
 
 := gate_code \* group. (g : gate group) : i32 =
     ?= g ?|
-    | Open proof => quantity::value_of (since proof)
-    | ClosedUntil until => 0 - quantity::value_of until
+    | Open proof => units::value_of (since proof)
+    | ClosedUntil until => 0 - units::value_of until
 
 := busy_after_strike (now : i32) : cooldowns::timers =
     cooldowns::after_cast now (cooldowns::strike_spell ()) (cooldowns::idle_timers ())
@@ -90,7 +90,7 @@
     := ~now = 5000i32
     := idle = cooldowns::idle_timers ()
     ?= attack_gate (quantity::ms now) idle ?|
-    | Open proof => ? quantity::value_of (since proof) = 5000i32 ?> 0i32 |: 1i32
+    | Open proof => ? units::value_of (since proof) = 5000i32 ?> 0i32 |: 1i32
     | ClosedUntil _ => 2i32
 
 ///> c

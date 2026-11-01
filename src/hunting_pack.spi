@@ -39,25 +39,42 @@
 
 := death_experience_penalty () : i32 = 5000
 
-:= purpose_player_hit () : u32 = 11
+:< keyed_rng
 
-:= purpose_player_heal () : u32 = 12
+:| pack_roll =
+    | PackPlayerHit
+    | PackPlayerHeal
+    | PackCreatureHit
+    | PackLoot
+    | PackRandomControl
+    | PackWander
+    | PackCreatureShot
+    | PackDance
+    | PackPoll
+    | PackEntry
+    | PackSearchTarget
+    | PackChangeTarget
 
-:= purpose_creature_hit () : u32 = 13
+:= target_code (r : pack_roll) : u32 =
+    ?= r ?|
+    | PackCreatureShot => 17u32
+    | PackDance => 18u32
+    | PackPoll => 19u32
+    | PackEntry => 20u32
+    | PackSearchTarget => 40u32
+    | _ => 41u32
 
-:= purpose_loot () : u32 = 14
+:= hunt_code (r : pack_roll) : u32 =
+    ?= r ?|
+    | PackPlayerHit => 11u32
+    | PackPlayerHeal => 12u32
+    | PackCreatureHit => 13u32
+    | PackLoot => 14u32
+    | PackRandomControl => 15u32
+    | PackWander => 16u32
+    | _ => target_code r
 
-:= purpose_random_control () : u32 = 15
-
-:= purpose_wander () : u32 = 16
-
-:= purpose_creature_shot () : u32 = 17
-
-:= purpose_dance () : u32 = 18
-
-:= purpose_poll () : u32 = 19
-
-:= purpose_entry () : u32 = 20
+:+ purpose_code pack_roll = \ r => hunt_code r
 
 := client_lag_ms () : i32 = 8
 
@@ -67,7 +84,7 @@
 
 :== living = vitality::vitality vitality::alive
 
-:== hit_points = quantity::amount quantity::hitpoints
+:== hit_points = units::amount quantity::hitpoints
 
 :== foe_chase = { met_target : bool; nearby : i32; acquired_at : i32 }
 
@@ -102,7 +119,7 @@
         timers : cooldowns::timers
         block_charges : i32
         next_charge_at : i32
-        next_action_at : quantity::amount quantity::milliseconds
+        next_action_at : units::amount quantity::milliseconds
         next_decision_at : i32
     }
 
@@ -133,7 +150,7 @@
         experience : i32
         escapes : i32
         deaths : i32
-        gold : quantity::amount quantity::gold_coins
+        gold : units::amount quantity::gold_coins
     }
 
 :== pack = { hunter : hunter; ally : hunter; ally_in_world : bool; foes : views::band foe; score : pack_score }
@@ -617,7 +634,7 @@
     | RetreatsAtTheServerPace => server
     | RetreatsAtTheProbePace => no_faster_than_probe server
 
-:= player_max_health (c : camp) : quantity::amount quantity::hitpoints =
+:= player_max_health (c : camp) : units::amount quantity::hitpoints =
     quantity::hp (knight_max_health (hunter_of c)::level)
 
 := kind_of (index : i32) (c : camp) : creatures::arena_creature =
@@ -693,20 +710,20 @@
 := taken_by_foes (p : pack) (q : geometry::position) : bool =
     views::counted (\ (f : foe) => geometry::same_tile q f::at) p::foes > 0 || geometry::same_tile q p::ally::at
 
-:= key (seed : u32) (tick : i32) (entity : i32) (purpose : u32) : rng::roll_key =
-    rng::roll_key seed (conv tick) (conv entity) purpose
+:= key (s : u32) (t : i32) (e : i32) (purpose : pack_roll) : keyed_rng::roll_key pack_roll =
+    keyed_rng::roll_key (keyed_rng::seed s) (keyed_rng::tick (conv t)) (keyed_rng::entity (conv e)) purpose
 
 := distance_to (f : foe) (p : pack) : i32 = geometry::chebyshev_distance p::hunter::at f::at
 
 := tallied_hurt (hurt : i32) (t : hunter_tally) : hunter_tally =
     := hits = ? hurt > 0 ?> t::hits_taken + 1 |: t::hits_taken
-    { t ?| hits_taken = hits; damage_taken = quantity::plus t::damage_taken (quantity::hp hurt) }
+    { t ?| hits_taken = hits; damage_taken = units::plus t::damage_taken (quantity::hp hurt) }
 
 := hurt_by (hurt : i32) (h : hunter) : hunter =
-    { h ?| health = quantity::minus h::health (quantity::hp hurt); tally = tallied_hurt hurt h::tally }
+    { h ?| health = units::minus h::health (quantity::hp hurt); tally = tallied_hurt hurt h::tally }
 
 := melee_hurt (c : camp) (seed : u32) (tick : i32) (index : i32) (shield : bool) : i32 =
-    := roll = key seed tick index (purpose_creature_hit ())
+    := roll = key seed tick index PackCreatureHit
     combat::creature_hit (creatures::stats_of (kind_of index c))::melee_max (combat::knight_sample_gear ()) shield roll
 
 := spent_charge (shielded : bool) (h : hunter) : hunter =
@@ -721,7 +738,7 @@
     with_slot index struck (p |> with_hunter (melee_struck camp seed tick index p::hunter))
 
 := arrow_hurt (arrow : combat::ranged_attack) (seed : u32) (tick : i32) (index : i32) (charges : i32) : i32 * i32 =
-    := roll = key seed tick index (purpose_creature_shot ())
+    := roll = key seed tick index PackCreatureShot
     combat::ranged_hit_spending_a_charge arrow (combat::knight_sample_gear ()) charges roll
 
 := arrow_struck (a : combat::ranged_attack) (seed : u32) (tick : i32) (index : i32) (h : hunter) : hunter =
@@ -743,7 +760,7 @@
     ? distance <= 1 ?> creature_hits_hunter t::camp t::seed t::tick t::index timed p |: with_slot t::index timed p
 
 := arrow_volley (t : turn) (arrow : combat::ranged_attack) (meleed : pack) : pack =
-    ? combat::ranged_fires arrow (key t::seed t::tick (t::index + 100) (purpose_creature_shot ()))
+    ? combat::ranged_fires arrow (key t::seed t::tick (t::index + 100) PackCreatureShot)
     ?> hunter_takes_arrow arrow t::seed t::tick t::index meleed
     |: meleed
 
@@ -794,7 +811,7 @@
     f::next_step_at >= never () || thinks_now t::seed t::index t::now = !- || t::now < f::next_step_at || count_open = 0
 
 := wander_pick (t : turn) (count_open : i32) : i32 =
-    conv (rng::roll_between 1 (conv count_open) (key t::seed t::tick t::index (purpose_wander ())))
+    conv (keyed_rng::roll_between 1 (conv count_open) (key t::seed t::tick t::index PackWander))
 
 :== foe_stats = creatures::creature_stats
 
@@ -837,7 +854,7 @@
     reach_side v k && geometry::chebyshev_distance q v::centre = v::reach && reach_step_clear t v p q
 
 := dance_pick (t : turn) (count_open : i32) : i32 =
-    conv (rng::roll_between 1 (conv count_open) (key t::seed t::tick (t::index + 200) (purpose_dance ())))
+    conv (keyed_rng::roll_between 1 (conv count_open) (key t::seed t::tick (t::index + 200) PackDance))
 
 := dance_toward (t : turn) (v : reach_view) (f : foe) (p : pack) (count_open : i32) : geometry::position =
     cardinal_step (nth_open_cardinal (keeps_reach t v f p) (dance_pick t count_open)) f::at
@@ -864,7 +881,7 @@
 
 := dance_rolls (t : turn) : bool =
     thinks_now t::seed t::index t::now
-    && rng::roll_between 1 100 (key t::seed t::tick t::index (purpose_dance ())) > conv (canary_static_attack_chance ())
+    && keyed_rng::roll_between 1 100 (key t::seed t::tick t::index PackDance) > conv (canary_static_attack_chance ())
 
 := dances (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
     := t = turn_at camp seed tick now index
@@ -1041,9 +1058,6 @@
     := s = creatures::stats_of k
     foe_strikes t k s (foe_moves t k s (slot index p) p)
 
-:= purpose_search_target () : u32 = 40
-
-:= purpose_change_target () : u32 = 41
 
 := change_target_percent (kind : creatures::arena_creature) : i32 =
     ?= kind ?|
@@ -1094,8 +1108,8 @@
     |: entrant_by_entry f one two
 
 := aim_rolls (t : turn) : i32 * i32 =
-    conv (rng::roll_between 1 100 (key t::seed t::tick t::index (purpose_change_target ()))),
-    conv (rng::roll_between 1 100 (key t::seed t::tick t::index (purpose_search_target ())))
+    conv (keyed_rng::roll_between 1 100 (key t::seed t::tick t::index PackChangeTarget)),
+    conv (keyed_rng::roll_between 1 100 (key t::seed t::tick t::index PackSearchTarget))
 
 := is_changing (t : turn) (k : foe_kind) (f : foe) (rolled : i32) : bool =
     (f::aim::aims_at < 0) = !- && t::now >= f::aim::retarget_at && rolled <= change_target_percent k
@@ -1247,7 +1261,7 @@
 := observe (now : i32) (p : pack) : policy::observation =
     := h = p::hunter
     {
-        health = quantity::value_of h::health
+        health = units::value_of h::health
         heal_ready = heal_castable now h
         strike_ready = strike_castable now h
         target = reach_of p
@@ -1255,24 +1269,24 @@
 
 :== action_proof = readiness::ready readiness::action_slot
 
-:= action_gap_after (slot : action_proof) : quantity::amount quantity::milliseconds =
-    quantity::plus (readiness::since slot) (quantity::ms (parity_action_gap_ms ()))
+:= action_gap_after (slot : action_proof) : units::amount quantity::milliseconds =
+    units::plus (readiness::since slot) (quantity::ms (parity_action_gap_ms ()))
 
 := heal_amount (seed : u32) (tick : i32) (o : offense) (h : hunter) : i32 =
     conv (
-        rng::roll_between (conv o::heal_low) (conv o::heal_high)
-            (key seed tick (99 + 100 * h::call_sign) (purpose_player_heal ()))
+        keyed_rng::roll_between (conv o::heal_low) (conv o::heal_high)
+            (key seed tick (99 + 100 * h::call_sign) PackPlayerHeal)
     )
 
 := heal_timers (slot : action_proof) (h : hunter) : cooldowns::timers =
-    := now = quantity::value_of (readiness::since slot)
+    := now = units::value_of (readiness::since slot)
     cooldowns::after_cast now (vocations::as_cooldown (vocations::knight_heal ())) h::clock::timers
 
 := healed_clock (slot : action_proof) (h : hunter) : hunter_clock =
     { (h::clock) ?| timers = heal_timers slot h; next_action_at = action_gap_after slot }
 
 := healed_health (camp : camp) (amount : i32) (h : hunter) : hit_points =
-    quantity::capped (player_max_health camp) (quantity::plus h::health (quantity::hp amount))
+    units::capped (player_max_health camp) (units::plus h::health (quantity::hp amount))
 
 := healed_hunter (camp : camp) (slot : action_proof) (amount : i32) (h : hunter) : hunter =
     { h ?|
@@ -1297,7 +1311,7 @@
 
 := player_hit (t : turn) (h : hunter) (o : offense) (s : foe_stats) : i32 =
     combat::melee_hit (hunter_attacker o) { armor = s::armor; defense = s::defense }
-        (key t::seed t::tick (t::index + 100 * h::call_sign) (purpose_player_hit ()))
+        (key t::seed t::tick (t::index + 100 * h::call_sign) PackPlayerHit)
 
 := strike_timed (t : turn) (h : hunter) : hunter =
     h |> with_timers (cooldowns::after_cast t::now (cooldowns::strike_spell ()) h::clock::timers)
@@ -1323,19 +1337,19 @@
     | RespawningAfter delay => returning_foe awaiting f (respawn_check t::now f delay)
 
 := loot_lucky (t : turn) (drop : creatures::gold_drop) : bool =
-    conv (rng::roll_between 1 100000 (key t::seed t::tick t::index (purpose_loot ()))) <= drop::chance_per_100000
+    conv (keyed_rng::roll_between 1 100000 (key t::seed t::tick t::index PackLoot)) <= drop::chance_per_100000
 
 := loot_coins (t : turn) (k : foe_kind) : i32 =
     := drop = creatures::gold_drop_of k
     ? loot_lucky t drop
-    ?> conv (rng::roll_between 1 (conv drop::max_count) (key t::seed (t::tick + 1) t::index (purpose_loot ())))
+    ?> conv (keyed_rng::roll_between 1 (conv drop::max_count) (key t::seed (t::tick + 1) t::index PackLoot))
     |: 0
 
 := slain_score (q : pack) (s : foe_stats) (coins : i32) : pack_score =
     { (q::score) ?|
         kills = q::score::kills + 1
         experience = q::score::experience + s::experience
-        gold = quantity::plus q::score::gold (quantity::gp coins)
+        gold = units::plus q::score::gold (quantity::gp coins)
     }
 
 := strike_slain (t : turn) (k : foe_kind) (s : foe_stats) (f : foe) (h : hunter) (timed : pack) =
@@ -1360,7 +1374,7 @@
     : pack
     =
     := h = p::hunter
-    strikes_target (turn_at camp seed tick (quantity::value_of (readiness::since proof)) h::target) h p
+    strikes_target (turn_at camp seed tick (units::value_of (readiness::since proof)) h::target) h p
 
 := stepped_hunter (c : camp) (now : i32) (to : geometry::position) (h : hunter) : hunter =
     := q = { h ?| at = to; next_step_at = now + geometry::step_cost (hunter_step_ms_at c h::at) h::at to }
@@ -1464,11 +1478,11 @@
     p |> with_hunter (retreated_hunter r (geometry::same_tile away p::hunter::at) away p::hunter)
 
 := player_retreats (camp : camp) (rule : footing_rule) (slot : action_proof) (p : pack) : pack =
-    := r = { camp = camp; now = quantity::value_of (readiness::since slot); slot = slot }
+    := r = { camp = camp; now = units::value_of (readiness::since slot); slot = slot }
     retreat_with r (retreat_target camp rule (slot_of_nearest_attacker p) p) p
 
 := health_fraction (camp : camp) (p : pack) : i32 =
-    quantity::value_of p::hunter::health * network::one () / quantity::value_of (player_max_health camp)
+    units::value_of p::hunter::health * network::one () / units::value_of (player_max_health camp)
 
 := target_health (f : foe) (s : foe_stats) : i32 = vitality::health f::life * network::one () / s::max_health
 
@@ -1642,7 +1656,7 @@
     | StandStill
 
 := random_move_of (seed : u32) (tick : i32) (sign : i32) : random_move =
-    := pick = rng::roll_between 0 3 (key seed tick (98 + 100 * sign) (purpose_random_control ()))
+    := pick = keyed_rng::roll_between 0 3 (key seed tick (98 + 100 * sign) PackRandomControl)
     ? pick = 0 ?> DrinkPotion |? pick = 1 ?> EngageTarget |? pick = 2 ?> StepSomewhere |: StandStill
 
 := action_gate_at (now : i32) (h : hunter) : readiness::gate readiness::action_slot =
@@ -1668,7 +1682,7 @@
     |: player_approaches b::camp b::now p
 
 := random_step_index (b : beat) (p : pack) : i32 =
-    conv (rng::roll_between 0 7 (key b::seed b::tick (97 + 100 * p::hunter::call_sign) (purpose_random_control ())))
+    conv (keyed_rng::roll_between 0 7 (key b::seed b::tick (97 + 100 * p::hunter::call_sign) PackRandomControl))
 
 := steps_somewhere (b : beat) (p : pack) : pack =
     := next = terrain::neighbor (random_step_index b p) p::hunter::at
@@ -1775,7 +1789,7 @@
 
 := knight_turn_inline (b : beat) (t : tactic) (p : pack) : pack =
     := h = p::hunter
-    ? quantity::at_least (quantity::hp 0) h::health ?> respawn_player b::camp p
+    ? units::at_least (quantity::hp 0) h::health ?> respawn_player b::camp p
     |? b::now < h::clock::next_decision_at ?> p
     |: decided_turn b t p
 
@@ -1799,7 +1813,7 @@
     |? index = 4 ?> 1116
     |: late_entry_ms index
 
-:= ally_entry_ms (seed : u32) : i32 = measured_entry_ms (conv (rng::roll_between 0 9 (key seed 0 0 (purpose_entry ()))))
+:= ally_entry_ms (seed : u32) : i32 = measured_entry_ms (conv (keyed_rng::roll_between 0 9 (key seed 0 0 PackEntry)))
 
 := entered_ally (camp : camp) (now : i32) (p : pack) : pack =
     := waiting = p::ally
@@ -1819,7 +1833,7 @@
     |: after_lead
 
 := poll_landing (b : beat) : i32 =
-    := phase : i32 = conv (rng::roll_between 0 99 (key b::seed b::tick 0 (purpose_poll ())))
+    := phase : i32 = conv (keyed_rng::roll_between 0 99 (key b::seed b::tick 0 PackPoll))
     b::now - tick_ms () + phase + client_lag_ms ()
 
 := early_at (p : pack) (landing : i32) (i : i32) : bool = (slot i p)::next_step_at <= landing
@@ -1890,19 +1904,19 @@
 
 := highest_tuned_heal () : i32 = 400
 
-:= potion_price () : quantity::amount quantity::gold_coins = quantity::gp 50
+:= potion_price () : units::amount quantity::gold_coins = quantity::gp 50
 
-:= all_blessings_price_at_level_30 () : quantity::amount quantity::gold_coins = quantity::gp 14000
+:= all_blessings_price_at_level_30 () : units::amount quantity::gold_coins = quantity::gp 14000
 
-:= hunt_profit (p : pack) : quantity::amount quantity::gold_coins =
-    quantity::minus
-        (quantity::minus p::score::gold (quantity::scaled (party_potions p) (potion_price ())))
-        (quantity::scaled p::score::deaths (all_blessings_price_at_level_30 ()))
+:= hunt_profit (p : pack) : units::amount quantity::gold_coins =
+    units::minus
+        (units::minus p::score::gold (units::scaled (party_potions p) (potion_price ())))
+        (units::scaled p::score::deaths (all_blessings_price_at_level_30 ()))
 
-:== gold_amount = quantity::amount quantity::gold_coins
+:== gold_amount = units::amount quantity::gold_coins
 
 :~ ^ profit_from (r : seed_run) (index : i32) (acc : gold_amount) : gold_amount =
-    ? index >= r::count ?> acc |: profit_from r (index + 1) (quantity::plus acc (hunt_profit (hunt_at r index)))
+    ? index >= r::count ?> acc |: profit_from r (index + 1) (units::plus acc (hunt_profit (hunt_at r index)))
 
 := profit (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : gold_amount =
     profit_from (seed_run_of camp t first_seed count) 0 (quantity::gp 0)
@@ -1935,13 +1949,13 @@
         patrol = Stays
     }
 
-:== ledger = { hunt_kills : i32; hunt_deaths : i32; hunt_profit : quantity::amount quantity::gold_coins }
+:== ledger = { hunt_kills : i32; hunt_deaths : i32; hunt_profit : units::amount quantity::gold_coins }
 
 := ledgered (acc : ledger) (p : pack) : ledger =
     {
         hunt_kills = acc::hunt_kills + p::score::kills
         hunt_deaths = acc::hunt_deaths + p::score::deaths
-        hunt_profit = quantity::plus acc::hunt_profit (hunt_profit p)
+        hunt_profit = units::plus acc::hunt_profit (hunt_profit p)
     }
 
 :~ ^ ledger_from (r : seed_run) (index : i32) (acc : ledger) : ledger =
@@ -1974,12 +1988,12 @@
         ? index >= count ?> acc |: loop (index + 1) (clear_step camp t first index acc)
     loop 0 (zero_clear_ledger ())
 
-:= clear_cost (l : clear_ledger) : quantity::amount quantity::gold_coins =
-    quantity::plus
-        (quantity::scaled l::clear_potions (potion_price ()))
-        (quantity::scaled l::clear_deaths (all_blessings_price_at_level_30 ()))
+:= clear_cost (l : clear_ledger) : units::amount quantity::gold_coins =
+    units::plus
+        (units::scaled l::clear_potions (potion_price ()))
+        (units::scaled l::clear_deaths (all_blessings_price_at_level_30 ()))
 
-:= clear_loss (l : clear_ledger) : gold_amount = quantity::minus (quantity::gp 0) (clear_cost l)
+:= clear_loss (l : clear_ledger) : gold_amount = units::minus (quantity::gp 0) (clear_cost l)
 
 := below_the_kill_floor () : i32 = -1000000000
 
@@ -1996,9 +2010,9 @@
     | ProfitKeepingKills :: i32 -> objective coin_unit
     | CheapClearWithin :: i32 -> objective coin_unit
 
-:= run_kills (r : seed_run) : quantity::amount kill_score = quantity::amount_of (score_from r 0 0)
+:= run_kills (r : seed_run) : units::amount kill_score = units::amount_of (score_from r 0 0)
 
-:= run_experience (r : seed_run) : quantity::amount experience_score = quantity::amount_of (experience_from r 0 0)
+:= run_experience (r : seed_run) : units::amount experience_score = units::amount_of (experience_from r 0 0)
 
 := run_profit (r : seed_run) : gold_amount = profit_from r 0 (quantity::gp 0)
 
@@ -2011,7 +2025,7 @@
     ? l::clear_ms <= limit * r::count ?> clear_loss l
     |: quantity::gp (below_the_kill_floor () - l::clear_ms / r::count)
 
-:= amount_on \* u. (o : objective u) (r : seed_run) : quantity::amount u =
+:= amount_on \* u. (o : objective u) (r : seed_run) : units::amount u =
     ?= o ?|
     | Kills => run_kills r
     | Experience => run_experience r
@@ -2021,12 +2035,12 @@
 
 := measured \* unit.
     (o : objective unit) (camp : camp) (t : tactic) (first_seed : u32) (count : i32)
-    : quantity::amount unit
+    : units::amount unit
     =
     amount_on o (seed_run_of camp t first_seed count)
 
 := worth \* unit. (o : objective unit) (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : i32 =
-    quantity::value_of (measured o camp t first_seed count)
+    units::value_of (measured o camp t first_seed count)
 
 := kept_best (heal : i32) (s : i32) (best : i32 * i32) : i32 * i32 =
     := best_heal, best_score = best
@@ -2051,7 +2065,7 @@
     tuned_cavebot_heal_for Kills camp first_seed count
 
 := heal_fraction_below (camp : camp) (heal : i32) : i32 =
-    network::fraction_below heal (quantity::value_of (player_max_health camp))
+    network::fraction_below heal (units::value_of (player_max_health camp))
 
 := network_tactic (w : network::weights) : tactic =
     { brain = Network w; order = :< policy ;; CurrentFirst; footing = StepAway; patrol = Stays }
@@ -2231,7 +2245,7 @@
 
 := judged_on \* unit.
     (o : objective unit) (camp : camp) (t : tactic) (b : seed_block held_out)
-    : quantity::amount unit
+    : units::amount unit
     =
     := r = range_of b
     measured o camp t r::first r::count

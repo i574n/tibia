@@ -7,11 +7,22 @@
 := clamp_between (low : i32) (high : i32) (x : i32) : i32 =
     ? x < low ?> low |? x > high ?> high |: x
 
-:= nudge_key (seed : u32) (generation : i32) (child : i32) (gene : u32) =
-    rng::roll_key seed (conv generation) (conv child) (100u32 + gene)
+:< keyed_rng
+
+:| search_roll =
+    | GeneNudge : u32
+
+:+ purpose_code search_roll =
+    \ r =>
+        ?= r ?|
+        | GeneNudge gene => 100u32 + gene
+
+:= nudge_key (s : u32) (generation : i32) (child : i32) (gene : u32) : keyed_rng::roll_key search_roll =
+    := t = keyed_rng::tick (conv generation)
+    keyed_rng::roll_key (keyed_rng::seed s) t (keyed_rng::entity (conv child)) (GeneNudge gene)
 
 := nudge (seed : u32) (generation : i32) (child : i32) (gene : u32) (spread : i32) (value : i32) : i32 =
-    := draw : i32 = conv (rng::roll_between 0 (conv (2 * spread)) (nudge_key seed generation child gene))
+    := draw : i32 = conv (keyed_rng::roll_between 0 (conv (2 * spread)) (nudge_key seed generation child gene))
     value + draw - spread
 
 :== gene_draw = { seed : u32; generation : i32; child : i32; spread : i32 }

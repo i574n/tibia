@@ -39,17 +39,31 @@
         attack_skill = o::weapon_skill
     }
 
-:= player_hit (foe : foe_kind) (roll : rng::roll_key) : i32 =
+:< keyed_rng
+
+:| hunt_roll =
+    | PlayerHit
+    | PlayerHeal
+    | CreatureHit
+    | Loot
+    | Policy
+
+:+ purpose_code hunt_roll =
+    \ r =>
+        ?= r ?|
+        | PlayerHit => 1u32
+        | PlayerHeal => 2u32
+        | CreatureHit => 3u32
+        | Loot => 4u32
+        | Policy => 5u32
+
+:= player_hit (foe : foe_kind) (roll : keyed_rng::roll_key hunt_roll) : i32 =
     := stats = creatures::stats_of foe
     combat::melee_hit (swinger_of (offense_against foe)) { armor = stats::armor; defense = stats::defense } roll
 
 := creature_strike_ms () : i32 = 2000
 := heal_below () : i32 = 60
 
-:= purpose_player_hit () : u32 = 1
-:= purpose_player_heal () : u32 = 2
-:= purpose_creature_hit () : u32 = 3
-:= purpose_loot () : u32 = 4
 
 :== knight_state = { at : tile; health : i32; timers : cooldowns::timers; next_step_at : i32 }
 
@@ -78,8 +92,8 @@
 := start (foe : foe_kind) : hunt =
     { player = knight_start (); creature = foe_start foe; kills = 0; gold = 0; escapes = 0 }
 
-:= key (m : moment) (purpose : u32) : rng::roll_key =
-    rng::roll_key m::seed (conv m::tick) 1 purpose
+:= key (m : moment) (purpose : hunt_roll) : keyed_rng::roll_key hunt_roll =
+    keyed_rng::roll_key (keyed_rng::seed m::seed) (keyed_rng::tick (conv m::tick)) (keyed_rng::entity 1u32) purpose
 
 := adjacent (s : hunt) : bool =
     geometry::within_range 1 s::player::at s::creature::at
@@ -120,7 +134,7 @@
     |: { s ?| creature = (? adjacent s ?> met c |: approached foe now s::player::at c) }
 
 := creature_damage (foe : foe_kind) (m : moment) : i32 =
-    := roll = key m (purpose_creature_hit ())
+    := roll = key m CreatureHit
     combat::creature_hit (conv (creature_melee_max foe)) (combat::knight_sample_gear ()) !+ roll
 
 := struck_by (damage : i32) (now : i32) (s : hunt) : hunt =
@@ -136,7 +150,7 @@
     { p ?| health = p::health + amount; timers = cooldowns::after_cast now (heal_spell ()) p::timers }
 
 := heal_now (m : moment) (s : hunt) : hunt =
-    := amount : i32 = conv (rng::roll_between 30 60 (key m (purpose_player_heal ())))
+    := amount : i32 = conv (keyed_rng::roll_between 30 60 (key m PlayerHeal))
     { s ?| player = healed amount m::now s::player }
 
 := struck (now : i32) (p : knight_state) : knight_state =
@@ -145,7 +159,7 @@
 := looted (foe : foe_kind) (bounty : i32) (s : hunt) : hunt =
     { s ?| creature = respawned_foe foe s::creature; kills = s::kills + 1; gold = s::gold + bounty }
 
-:= bounty (m : moment) : i32 = conv (rng::roll_between 10 30 (key m (purpose_loot ())))
+:= bounty (m : moment) : i32 = conv (keyed_rng::roll_between 10 30 (key m Loot))
 
 := after_hit (foe : foe_kind) (m : moment) (damage : i32) (s : hunt) : hunt =
     :< vitality
@@ -155,7 +169,7 @@
     | Slain _ => looted foe (bounty m) s
 
 := strike_now (foe : foe_kind) (m : moment) (s : hunt) : hunt =
-    := damage = player_hit foe (key m (purpose_player_hit ()))
+    := damage = player_hit foe (key m PlayerHit)
     after_hit foe m damage { s ?| player = struck m::now s::player }
 
 := heal_ready (now : i32) (p : knight_state) : bool = cooldowns::can_cast now (heal_spell ()) p::timers
@@ -202,7 +216,6 @@
     | Tuned : i32 * i32
     | RandomControl
 
-:= purpose_policy () : u32 = 5
 
 := cavebot_baseline () : policy = Tuned (120, 0)
 
@@ -210,7 +223,7 @@
     s |> player_heals_below threshold m |> player_strikes foe m
 
 := random_act (foe : foe_kind) (m : moment) (s : hunt) : hunt =
-    := pick = rng::roll_between 0 2 (key m (purpose_policy ()))
+    := pick = keyed_rng::roll_between 0 2 (key m Policy)
     ? pick = 1 ?> player_heals_below 100000 m s |? pick = 2 ?> player_strikes foe m s |: s
 
 := tuned_act (foe : foe_kind) (heal : i32) (strike : i32) (m : moment) (s : hunt) : hunt =
