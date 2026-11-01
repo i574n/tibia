@@ -1,0 +1,15 @@
+///- --package .
+:# table_rows static =
+    :< testing
+
+:| table_row =
+    | Columns : list string
+    | Row : list string
+
+:= line_of (cells : list string) : string = sm'::concat_list "\t" cells
+
+///> lua
+///> rust
+:# cells_join_back_into_their_tsv_line =
+    := ~first = "a"
+    line_of [ first; ""; "c" ] |> _assert_eq "a\t\tc"

@@ -73,14 +73,7 @@
     | OnWgsl
     | OnZig
 
-:= backend_name (b : backend) : string =
-    ?= b ?|
-    | OnC => "c"
-    | OnRust => "rust"
-    | OnLua => "lua"
-    | OnGleam => "gleam"
-    | OnWgsl => "wgsl"
-    | OnZig => "zig"
+:= backend_name (b : backend) : string = case_labels::case_label "On" "_" b
 
 :| test_status =
     | TestPassed
@@ -89,22 +82,13 @@
     | TestSkipped
     | TestNotRun
 
-:= status_name (s : test_status) : string =
-    ?= s ?|
-    | TestPassed => "passed"
-    | TestFailed => "failed"
-    | TestUnsupported => "unsupported"
-    | TestSkipped => "skipped"
-    | TestNotRun => "not_run"
+:= status_name (s : test_status) : string = case_labels::case_label "Test" "_" s
 
 :| memo_state =
     | MemoHit
     | MemoMiss
 
-:= memo_name (m : memo_state) : string =
-    ?= m ?|
-    | MemoHit => "hit"
-    | MemoMiss => "miss"
+:= memo_name (m : memo_state) : string = case_labels::case_label "Memo" "_" m
 
 :| budget_kind =
     | OverBudget
@@ -113,24 +97,9 @@
     | Hashtag
     | Cashtag
 
-:= budget_kind_name (k : budget_kind) : string =
-    ?= k ?|
-    | OverBudget => "over_budget"
-    | Autolink => "autolink"
-    | Mention => "mention"
-    | Hashtag => "hashtag"
-    | Cashtag => "cashtag"
+:= budget_kind_name (k : budget_kind) : string = case_labels::case_label "" "_" k
 
-:= tag_kind_of (name : string) : option budget_kind =
-    ? name = "mention" ?> Some Mention
-    |? name = "hashtag" ?> Some Hashtag
-    |? name = "cashtag" ?> Some Cashtag
-    |: None
-
-:= budget_kind_of (name : string) : option budget_kind =
-    ? name = "over_budget" ?> Some OverBudget
-    |? name = "autolink" ?> Some Autolink
-    |: tag_kind_of name
+:= budget_kind_of (name : string) : option budget_kind = case_labels::case_of_label "" "_" name
 
 :== file_row = { source : string; tenths : i32; exit_code : i32 }
 
@@ -145,7 +114,8 @@
 := file_seconds_line (r : file_row) : string =
     prom_line "tibia_file_seconds" (prom_label "file" r::source) (tenths_text r::tenths)
 
-:= file_exit_line (r : file_row) : string = prom_line "tibia_file_exit_code" (prom_label "file" r::source) ("" ++#? r::exit_code)
+:= file_exit_line (r : file_row) : string =
+    prom_line "tibia_file_exit_code" (prom_label "file" r::source) ("" ++#? r::exit_code)
 
 := outcome_labels (o : test_outcome) : string =
     := target = prom_label "target" (backend_name o::target)

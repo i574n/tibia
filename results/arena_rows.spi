@@ -1,0 +1,352 @@
+///- --package .
+:# arena_rows static =
+    :< testing
+
+:! v10 = ()
+
+:! v13 = ()
+
+:! v15 = ()
+
+:| competitor =
+    | SpiralPolicy
+    | SpiralRetreat
+    | SpiralKiting
+    | SpiralReach
+    | SpiralPolicyAlly
+    | Vbot
+    | Nexbot
+    | RandomControl
+
+:= competitor_of (name : string) : option competitor = case_labels::case_of_label "" "-" name
+
+:| monster =
+    | Cyclops
+    | Troll
+    | Hunter
+    | HuntingGround
+
+:= monster_of (name : string) : option monster = case_labels::case_of_label "" "-" name
+
+:== counted = monster * i32
+
+:| monster_spec =
+    | Lone : monster
+    | Mix : list counted
+
+:| column =
+    | Run
+    | Count
+    | Experience
+    | ClearedMs
+    | LowestHealth
+    | ActionsAllowed
+    | ActionsDropped
+    | Potions
+    | Gold
+    | Deaths
+    | ForeignPotions
+    | ForeignActions
+
+:= economy_slot (c : column) : i32 =
+    ?= c ?|
+    | Potions => 10
+    | Gold => 11
+    | Deaths => 12
+    | ForeignPotions => 13
+    | _ => 14
+
+:= column_slot (c : column) : i32 =
+    ?= c ?|
+    | Run => 2
+    | Count => 4
+    | Experience => 5
+    | ClearedMs => 6
+    | LowestHealth => 7
+    | ActionsAllowed => 8
+    | ActionsDropped => 9
+    | _ => economy_slot c
+
+:| row_rejection =
+    | WrongWidth : i32
+    | NotANumber : column
+    | UnknownCompetitor : string
+    | UnknownMonster : string
+    | BadArmCell : i32
+
+:| decoded t =
+    | Decoded : t
+    | Rejected : row_rejection
+
+:= then \* a b. (next : a -> decoded b) (d : decoded a) : decoded b =
+    ?= d ?|
+    | Decoded x => next x
+    | Rejected r => Rejected r
+
+:= cell (cells : array string) (c : column) : string = am'::index (column_slot c) cells
+
+:= number (cells : array string) (c : column) : decoded i32 =
+    ?= convert::try_convert (cell cells c) ?|
+    | Some n => Decoded n
+    | None => Rejected (NotANumber c)
+
+:= named \* t. (found : option t) (rejection : row_rejection) : decoded t =
+    ?= found ?|
+    | Some x => Decoded x
+    | None => Rejected rejection
+
+:= monster_count (name : string) (count : string) : option (monster * i32) =
+    ?= monster_of name, convert::try_convert count ?|
+    | Some m, Some n => Some (m, n)
+    | _ => None
+
+:= counted_monster (part : string) : option (monster * i32) =
+    := fields = part |> sm'::split ":" |> array
+    ? am'::length fields <> 2 ?> None |: monster_count (am'::index 0 fields) (am'::index 1 fields)
+
+:~ ^ mixed_from (parts : array string) (i : i32) (found : list counted) : option monster_spec =
+    ? i < 0 ?> Some (Mix found)
+    |:
+        ?= counted_monster (am'::index i parts) ?|
+        | Some pair => mixed_from parts (i - 1) (pair :: found)
+        | None => None
+
+:= spec_of (name : string) : option monster_spec =
+    := parts = name |> sm'::split "," |> array
+    ? sm'::contains ":" name ?> mixed_from parts (am'::length parts - 1) [] |: optionm'::map Lone (monster_of name)
+
+:== run_head = { timestamp : string; competitor : competitor; run : i32; monster : monster_spec; count : i32 }
+
+:| clear_time =
+    | Cleared : i32
+    | NotCleared
+
+:== client = { experience : i32; lowest_health : i32; actions_allowed : i32; actions_dropped : i32 }
+
+:| client_data =
+    | Client : client
+    | NoClientData
+
+:== base_run = { head : run_head; client : client_data; cleared : clear_time }
+
+:== economy = { potions : i32; gold : i32; deaths : i32 }
+
+:| foreign =
+    | NotRecorded
+    | Recorded : i32 * i32
+
+:| arena_row v =
+    | Base :: base_run -> arena_row v10
+    | WithEconomy :: base_run * economy -> arena_row v13
+    | WithForeign :: base_run * economy * foreign -> arena_row v15
+
+:! some_arena_row = \? v. arena_row v
+
+:= head_with_run
+    (cells : array string) (who : competitor) (spec : monster_spec) (run : i32) (n : i32)
+    : decoded run_head
+    =
+    Decoded { timestamp = am'::index 0 cells; competitor = who; run = run; monster = spec; count = n }
+
+:= head_with_spec (cells : array string) (who : competitor) (spec : monster_spec) (run : i32) : decoded run_head =
+    number cells Count |> then (head_with_run cells who spec run)
+
+:= head_with_competitor (cells : array string) (who : competitor) (spec : monster_spec) : decoded run_head =
+    number cells Run |> then (head_with_spec cells who spec)
+
+:= head_of (cells : array string) (who : competitor) : decoded run_head =
+    := name = am'::index 3 cells
+    named (spec_of name) (UnknownMonster name) |> then (head_with_competitor cells who)
+
+:= client_done (e : i32) (l : i32) (a : i32) (d : i32) : decoded client_data =
+    Decoded (Client { experience = e; lowest_health = l; actions_allowed = a; actions_dropped = d })
+
+:= client_with (cells : array string) (e : i32) (l : i32) (a : i32) : decoded client_data =
+    number cells ActionsDropped |> then (client_done e l a)
+
+:= client_from (cells : array string) (e : i32) (l : i32) : decoded client_data =
+    number cells ActionsAllowed |> then (client_with cells e l)
+
+:= client_read (cells : array string) (e : i32) : decoded client_data =
+    number cells LowestHealth |> then (client_from cells e)
+
+:= client_of (cells : array string) : decoded client_data =
+    ? cell cells Experience = "" ?> Decoded NoClientData |: number cells Experience |> then (client_read cells)
+
+:= cleared_of (cells : array string) : decoded clear_time =
+    ? cell cells ClearedMs = "" ?> Decoded NotCleared |: number cells ClearedMs |> then (\ ms => Decoded (Cleared ms))
+
+:= base_with_client (cells : array string) (head : run_head) (client : client_data) : decoded base_run =
+    cleared_of cells |> then (\ cleared => Decoded { head = head; client = client; cleared = cleared })
+
+:= base_with_head (cells : array string) (head : run_head) : decoded base_run =
+    client_of cells |> then (base_with_client cells head)
+
+:= base_of (cells : array string) : decoded base_run =
+    := name = am'::index 1 cells
+    named (competitor_of name) (UnknownCompetitor name) |> then (head_of cells) |> then (base_with_head cells)
+
+:= economy_with (cells : array string) (p : i32) (g : i32) : decoded economy =
+    number cells Deaths |> then (\ d => Decoded { potions = p; gold = g; deaths = d })
+
+:= economy_of (cells : array string) : decoded economy =
+    number cells Potions |> then (\ p => number cells Gold |> then (economy_with cells p))
+
+:= foreign_with (cells : array string) (p : i32) : decoded foreign =
+    number cells ForeignActions |> then (\ a => Decoded (Recorded (p, a)))
+
+:= foreign_of (cells : array string) : decoded foreign =
+    ? cell cells ForeignPotions = "" && cell cells ForeignActions = "" ?> Decoded NotRecorded
+    |: number cells ForeignPotions |> then (foreign_with cells)
+
+:= packed \* v. (row : arena_row v) : decoded some_arena_row = Decoded (some_arena_row (\? row))
+
+:= economy_row (cells : array string) (b : base_run) : decoded some_arena_row =
+    economy_of cells |> then (\ e => packed (WithEconomy (b, e)))
+
+:= foreign_row (cells : array string) (b : base_run) : decoded some_arena_row =
+    economy_of cells |> then (\ e => foreign_of cells |> then (\ f => packed (WithForeign (b, e, f))))
+
+:= row_by_width (cells : array string) (width : i32) (b : base_run) : decoded some_arena_row =
+    ? width = 10 ?> packed (Base b) |? width = 13 ?> economy_row cells b |: foreign_row cells b
+
+:= row_of_cells (cells : array string) : decoded some_arena_row =
+    := width : i32 = am'::length cells
+    ? width = 10 || width = 13 || width = 15 ?> base_of cells |> then (row_by_width cells width)
+    |: Rejected (WrongWidth width)
+
+:= row_of_line (line : string) : decoded some_arena_row = line |> sm'::split "\t" |> array |> row_of_cells
+
+:= row_of_table (r : table_rows::table_row) : option (decoded some_arena_row) =
+    :< table_rows
+    ?= r ?|
+    | Row cells => Some (row_of_line (line_of cells))
+    | Columns _ => None
+
+:= base_of_row (some_arena_row r : some_arena_row) : base_run =
+    := \? v. row = r
+    ?= row ?|
+    | Base b => b
+    | WithEconomy (b, _) => b
+    | WithForeign (b, _, _) => b
+
+:= version_of (some_arena_row r : some_arena_row) : i32 =
+    := \? v. row = r
+    ?= row ?|
+    | Base _ => 10
+    | WithEconomy _ => 13
+    | WithForeign _ => 15
+
+:= foreign_counts (row : arena_row v15) : foreign =
+    ?= row ?|
+    | WithForeign (_, _, f) => f
+
+:= rejection_of \* t. (d : decoded t) : option row_rejection =
+    ?= d ?|
+    | Decoded _ => None
+    | Rejected r => Some r
+
+:= summary (d : decoded some_arena_row) : i32 * i32 * clear_time =
+    ?= d ?|
+    | Decoded r => version_of r, (base_of_row r)::head::count, (base_of_row r)::cleared
+    | Rejected _ => 0, 0, NotCleared
+
+:= v10_line () : string = "2026-10-13T08:54:41\tspiral-policy\t1\ttroll\t3\t90\t98750\t169\t21\t8"
+
+:= v13_uncleared_line () : string = "2026-10-14T07:31:54\tspiral-retreat\t1\tcyclops\t3\t675\t\t118\t21\t10\t9\t66\t0"
+
+:= v15_line () : string = "2026-10-23T03:20:34\tspiral-retreat\t1\tcyclops\t3\t675\t97797\t113\t24\t6\t15\t53\t0\t\t"
+
+:== row_summary = i32 * i32 * clear_time
+
+:= schema_summaries (first : string) : row_summary * row_summary * row_summary =
+    summary (row_of_line first), summary (row_of_line (v13_uncleared_line ())), summary (row_of_line (v15_line ()))
+
+:= expected_summaries () : row_summary * row_summary * row_summary =
+    (10i32, 3i32, Cleared 98750i32), (13i32, 3i32, NotCleared), (15i32, 3i32, Cleared 97797i32)
+
+///> lua
+///> rust
+:# each_schema_decodes_to_its_version =
+    := ~line = v10_line ()
+    schema_summaries line |> _assert_eq (expected_summaries ())
+
+:= unknown_bot_line () : string = "2026-10-13T08:54:41\topenbot\t1\ttroll\t3\t90\t98750\t169\t21\t8"
+
+:= rejections (short : string) : option row_rejection * option row_rejection =
+    rejection_of (row_of_line short), rejection_of (row_of_line (unknown_bot_line ()))
+
+///> lua
+///> rust
+:# a_bad_row_is_rejected_with_its_reason =
+    := ~short = "a\tb\tc"
+    rejections short |> _assert_eq (Some (WrongWidth 3i32), Some (UnknownCompetitor "openbot"))
+
+:= mixed_line () : string = "2026-10-20T01:00:00\tspiral-policy\t2\tcyclops:1,troll:2\t3\t90\t\t\t\t\t1\t2\t0"
+
+:= spec_size (s : monster_spec) : i32 =
+    ?= s ?|
+    | Mix parts => listm::length parts
+    | Lone _ => 1
+
+:= mix_size (d : decoded some_arena_row) : i32 =
+    ?= d ?|
+    | Decoded r => spec_size (base_of_row r)::head::monster
+    | Rejected _ => 0
+
+///> lua
+///> rust
+:# a_mixed_camp_and_missing_client_data_decode =
+    := ~line = mixed_line ()
+    mix_size (row_of_line line) |> _assert_eq 2i32
+
+:! log_name = string
+
+:= log_of (path : string) : log_name =
+    := at : i32 = sm'::last_index_of "/" path
+    log_name (sm'::substring (at + 1) (sm'::length path - at - 1) path)
+
+:| arm =
+    | Ally
+    | Arm : competitor
+
+:= arm_of (name : string) : option arm = ? name = "ally" ?> Some Ally |: optionm'::map Arm (competitor_of name)
+
+:== arm_step = { log : log_name; arm : arm; steps : i32; taken : i32; potions : i32 }
+
+:= arm_number (cells : array string) (slot : i32) : decoded i32 =
+    ?= convert::try_convert (am'::index slot cells) ?|
+    | Some n => Decoded n
+    | None => Rejected (BadArmCell slot)
+
+:= arm_done (cells : array string) (a : arm) (steps : i32) (taken : i32) (potions : i32) : decoded arm_step =
+    Decoded { log = log_of (am'::index 0 cells); arm = a; steps = steps; taken = taken; potions = potions }
+
+:= arm_with (cells : array string) (a : arm) (steps : i32) : decoded arm_step =
+    arm_number cells 3 |> then (\ taken => arm_number cells 4 |> then (arm_done cells a steps taken))
+
+:= arm_read (cells : array string) (a : arm) : decoded arm_step = arm_number cells 2 |> then (arm_with cells a)
+
+:= arm_step_of_cells (cells : array string) : decoded arm_step =
+    := name = am'::index 1 cells
+    ? am'::length cells <> 5 ?> Rejected (WrongWidth (am'::length cells))
+    |: named (arm_of name) (UnknownCompetitor name) |> then (arm_read cells)
+
+:= arm_step_of_line (line : string) : decoded arm_step = line |> sm'::split "\t" |> array |> arm_step_of_cells
+
+:= arm_line () : string =
+    "C:/Users/i574n/tibia-local/arena-logs/20261023-183122-cyclops-spiral-retreat-1.log"
+    ^^ "\tspiral-retreat\t10\t76\t18"
+
+:= log_text (log_name n : log_name) : string = n
+
+:= arm_summary (d : decoded arm_step) : string * i32 * i32 =
+    ?= d ?|
+    | Decoded (s : arm_step) => log_text s::log, s::steps, s::potions
+    | Rejected _ => "", 0, 0
+
+///> lua
+///> rust
+:# an_arm_step_keeps_only_the_log_basename =
+    := ~line = arm_line ()
+    arm_summary (arm_step_of_line line) |> _assert_eq ("20261023-183122-cyclops-spiral-retreat-1.log", 10i32, 18i32)

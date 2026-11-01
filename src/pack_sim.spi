@@ -872,7 +872,7 @@
     |> \ (t : tactic) => t
 
 := one_point_route () : hunting_pack::patrol_route =
-    { points = views::band_of (geometry::position 1936 1349 7); count = 1 }
+    { points = fixed_views::band_of (geometry::position 1936 1349 7); count = 1 }
 
 ///> c
 :# a_patrol_route_is_not_a_patrol_without_its_case fails "Unification failure" =

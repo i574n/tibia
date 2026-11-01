@@ -153,7 +153,7 @@
         gold : units::amount quantity::gold_coins
     }
 
-:== pack = { hunter : hunter; ally : hunter; ally_in_world : bool; foes : views::band foe; score : pack_score }
+:== pack = { hunter : hunter; ally : hunter; ally_in_world : bool; foes : fixed_views::band foe; score : pack_score }
 
 := with_hunter (h : hunter) (p : pack) : pack = { p ?| hunter = h }
 
@@ -184,7 +184,7 @@
     | StepAwayLikeTheLiveProbe
     | ScoredStep : terrain::footing
 
-:== patrol_route = { points : views::band geometry::position; count : i32 }
+:== patrol_route = { points : fixed_views::band geometry::position; count : i32 }
 
 :| patrol =
     | Stays
@@ -351,7 +351,7 @@
 
 :== foe_kind = creatures::arena_creature
 
-:== camp_foes = { kinds : views::band foe_kind; size : i32; ranged : bool; rule : respawn_rule; wakes_at : i32 }
+:== camp_foes = { kinds : fixed_views::band foe_kind; size : i32; ranged : bool; rule : respawn_rule; wakes_at : i32 }
 
 :== camp_crew =
     {
@@ -376,12 +376,12 @@
 
 := harder (a : foe_kind) (b : foe_kind) : foe_kind = ? (offense_against b)::level > (offense_against a)::level ?> b |: a
 
-:= hardest_kind (kinds : views::band foe_kind) (size : i32) : foe_kind =
+:= hardest_kind (kinds : fixed_views::band foe_kind) (size : i32) : foe_kind =
     :~ ^ pick (i : i32) (best : foe_kind) : foe_kind =
-        ? i >= size ?> best |: pick (i + 1) (harder best (views::band_at i kinds))
-    pick 1 (views::band_at 0 kinds)
+        ? i >= size ?> best |: pick (i + 1) (harder best (fixed_views::band_at i kinds))
+    pick 1 (fixed_views::band_at 0 kinds)
 
-:= default_hunter_level (kinds : views::band creatures::arena_creature) (size : i32) : i32 =
+:= default_hunter_level (kinds : fixed_views::band creatures::arena_creature) (size : i32) : i32 =
     (offense_against (hardest_kind kinds size))::level
 
 := crew_of (foes : camp_foes) : camp_crew =
@@ -429,11 +429,17 @@
         knight = sample_knight ()
     }
 
-:= foes_of (kinds : views::band foe_kind) (size : i32) (rule : respawn_rule) : camp_foes =
-    { kinds = kinds; size = size; ranged = views::counted creatures::is_ranged kinds > 0; rule = rule; wakes_at = 0 }
+:= foes_of (kinds : fixed_views::band foe_kind) (size : i32) (rule : respawn_rule) : camp_foes =
+    {
+        kinds = kinds
+        size = size
+        ranged = fixed_views::counted creatures::is_ranged kinds > 0
+        rule = rule
+        wakes_at = 0
+    }
 
 := uniform_camp (kind : creatures::arena_creature) : camp =
-    sample_camp (foes_of (views::band_of kind) 3 Respawning) (:< terrain ;; OpenField)
+    sample_camp (foes_of (fixed_views::band_of kind) 3 Respawning) (:< terrain ;; OpenField)
 
 := with_crew (crew : camp_crew) (c : camp) : camp = { c ?| crew = crew }
 
@@ -598,10 +604,10 @@
     | Clearing, OpenField => at 100 102 7, at 99 103 7, at 99 104 7
     | _ => terrain::spawn_points c::layout
 
-:= kinds_of_entries (entries : catalog::entry * catalog::entry * catalog::entry) : views::band foe_kind =
+:= kinds_of_entries (entries : catalog::entry * catalog::entry * catalog::entry) : fixed_views::band foe_kind =
     := a, b, c = entries
     := first = catalog::entry_creature a
-    views::band (first, catalog::entry_creature b, catalog::entry_creature c, first, first, first)
+    fixed_views::band (first, catalog::entry_creature b, catalog::entry_creature c, first, first, first)
 
 := camp_of_entries (entries : catalog::entry * catalog::entry * catalog::entry) : camp =
     sample_camp (foes_of (kinds_of_entries entries) 3 Respawning) (:< terrain ;; OpenField)
@@ -638,7 +644,7 @@
     quantity::hp (knight_max_health (hunter_of c)::level)
 
 := kind_of (index : i32) (c : camp) : creatures::arena_creature =
-    views::band_at index c::foes::kinds
+    fixed_views::band_at index c::foes::kinds
 
 := knight_start (camp : camp) (sign : i32) : geometry::position =
     := first = ?= camp::knight::placement ?| AtLayoutStart => terrain::player_start camp::layout | StandsAt at => at
@@ -678,11 +684,11 @@
 := placed_foe (camp : camp) (i : i32) (at : geometry::position) : foe =
     ? i < camp::foes::size ?> fresh_foe (kind_of i camp) at |: buried_foe (kind_of i camp)
 
-:= placed_foes (camp : camp) : views::band foe =
+:= placed_foes (camp : camp) : fixed_views::band foe =
     := a, b, c = spawns_of camp
     := d, e, g = terrain::more_spawn_points camp::layout
     := placed = placed_foe camp
-    views::band (placed 0 a, placed 1 b, placed 2 c, placed 3 d, placed 4 e, placed 5 g)
+    fixed_views::band (placed 0 a, placed 1 b, placed 2 c, placed 3 d, placed 4 e, placed 5 g)
 
 := zero_score () : pack_score = { kills = 0; experience = 0; escapes = 0; deaths = 0; gold = quantity::gp 0 }
 
@@ -696,10 +702,10 @@
     }
 
 := slot (index : i32) (p : pack) : foe =
-    views::band_at index p::foes
+    fixed_views::band_at index p::foes
 
 := with_slot (index : i32) (f : foe) (p : pack) : pack =
-    { p ?| foes = views::band_with index f p::foes }
+    { p ?| foes = fixed_views::band_with index f p::foes }
 
 :~ ^ other_on (index : i32) (p : pack) (q : geometry::position) (i : i32) : bool =
     ? i >= band_size () ?> !- |? i <> index && geometry::same_tile q (slot i p)::at ?> !+ |: other_on index p q (i + 1)
@@ -708,7 +714,7 @@
     geometry::same_tile q p::hunter::at || geometry::same_tile q p::ally::at || other_on index p q 0
 
 := taken_by_foes (p : pack) (q : geometry::position) : bool =
-    views::counted (\ (f : foe) => geometry::same_tile q f::at) p::foes > 0 || geometry::same_tile q p::ally::at
+    fixed_views::counted (\ (f : foe) => geometry::same_tile q f::at) p::foes > 0 || geometry::same_tile q p::ally::at
 
 := key (s : u32) (t : i32) (e : i32) (purpose : pack_roll) : keyed_rng::roll_key pack_roll =
     keyed_rng::roll_key (keyed_rng::seed s) (keyed_rng::tick (conv t)) (keyed_rng::entity (conv e)) purpose
@@ -1438,7 +1444,7 @@
 :== retreat_beat = { camp : camp; now : i32; slot : action_proof }
 
 := foes_near (p : pack) (q : geometry::position) : i32 =
-    views::counted (\ (f : foe) => geometry::chebyshev_distance f::at q <= 1) p::foes
+    fixed_views::counted (\ (f : foe) => geometry::chebyshev_distance f::at q <= 1) p::foes
 
 := plain_step_away (camp : camp) (threat : foe) (p : pack) : geometry::position =
     terrain::step_away camp::layout (taken_by_foes p) threat::at p::hunter::at
@@ -1581,7 +1587,7 @@
     walk_or_advance camp route now (terrain::step_toward camp::layout (taken_by_foes p) goal p::hunter::at) p
 
 := patrol_goal (camp : camp) (route : patrol_route) (now : i32) (p : pack) : pack =
-    := goal = views::band_at p::hunter::waypoint route::points
+    := goal = fixed_views::band_at p::hunter::waypoint route::points
     ? geometry::chebyshev_distance goal p::hunter::at <= 1 ?> next_waypoint route p |: patrol_walk camp route now goal p
 
 := patrol_step (camp : camp) (route : patrol_route) (now : i32) (p : pack) : pack =
@@ -1711,7 +1717,7 @@
 := random_acts (camp : camp) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
     random_pick camp seed tick now p |> auto_attack camp seed tick now
 
-:= attackers_of (p : pack) : i32 = views::counted (\ (f : foe) => distance_to f p <= 1) p::foes
+:= attackers_of (p : pack) : i32 = fixed_views::counted (\ (f : foe) => distance_to f p <= 1) p::foes
 
 := heals_now (b : beat) (t : tactic) (attackers : i32) (q : pack) : bool =
     q::hunter::tally::potions < b::camp::crew::potion_budget && wants_heal b t::brain attackers q
@@ -2161,16 +2167,16 @@
 
 := arena_hunt () : camp =
     :< creatures
-    := kinds = views::band (Cyclops, Cyclops, Troll, Troll, Troll, Troll)
+    := kinds = fixed_views::band (Cyclops, Cyclops, Troll, Troll, Troll, Troll)
     sample_camp (foes_of kinds 6 (RespawningAfter 60000)) (:< terrain ;; ArenaHunt)
 
 := cyclops_hunting_ground () : camp =
     := ground = arena_hunt ()
-    ground |> with_foes { (ground::foes) ?| kinds = views::band_of (:< creatures ;; Cyclops) }
+    ground |> with_foes { (ground::foes) ?| kinds = fixed_views::band_of (:< creatures ;; Cyclops) }
 
 := plaza_and_fields_route () : patrol_route =
     := at x y = geometry::position x y 7
-    { points = views::band (at 104 86, at 125 86, at 117 88, at 124 96, at 119 104, at 117 92); count = 6 }
+    { points = fixed_views::band (at 104 86, at 125 86, at 117 88, at 124 96, at 119 104, at 117 92); count = 6 }
 
 := patrolling (route : patrol_route) (t : tactic) : tactic = { t ?| patrol = Patrols route }
 
@@ -2270,21 +2276,22 @@
 
 := route_of_genes (v : search::vector) : patrol_route =
     := at i = geometry::position (search::gene v (2 * i)) (search::gene v (2 * i + 1)) 7
-    { points = views::band (at 0, at 1, at 2, at 3, at 4, at 5); count = search::gene v 12 }
+    { points = fixed_views::band (at 0, at 1, at 2, at 3, at 4, at 5); count = search::gene v 12 }
 
 := with_point (i : i32) (point : geometry::position) (v : search::vector) : search::vector =
     v |> search::with_gene (2 * i) point::x |> search::with_gene (2 * i + 1) point::y
 
 :~ ^ route_genes_from (r : patrol_route) (i : i32) (v : search::vector) : search::vector =
-    ? i >= band_size () ?> v |: route_genes_from r (i + 1) (with_point i (views::band_at i r::points) v)
+    ? i >= band_size () ?> v |: route_genes_from r (i + 1) (with_point i (fixed_views::band_at i r::points) v)
 
 := route_genes (r : patrol_route) : search::vector =
     route_genes_from r 0 (search::vector_of 13 0) |> search::with_gene 12 r::count
 
-:= hunt_route_low () : search::vector = route_genes { points = views::band_of (geometry::position 100 82 7); count = 2 }
+:= hunt_route_low () : search::vector =
+    route_genes { points = fixed_views::band_of (geometry::position 100 82 7); count = 2 }
 
 := hunt_route_high () : search::vector =
-    route_genes { points = views::band_of (geometry::position 128 108 7); count = 6 }
+    route_genes { points = fixed_views::band_of (geometry::position 128 108 7); count = 6 }
 
 := evolved_route (fitness : search::vector -> i32) (s : search::vector_search) (start : patrol_route) : patrol_route =
     route_of_genes (search::evolve_vector fitness s (route_genes start))
@@ -2303,11 +2310,11 @@
 
 := central_shuttle_route () : patrol_route =
     := at x y = geometry::position x y 7
-    { points = views::band (at 117 92, at 116 96, at 118 88, at 124 92, at 109 93, at 120 92); count = 2 }
+    { points = fixed_views::band (at 117 92, at 116 96, at 118 88, at 124 92, at 109 93, at 120 92); count = 2 }
 
 := spawn_side_loop_route () : patrol_route =
     := at x y = geometry::position x y 7
-    { points = views::band (at 117 88, at 124 96, at 117 92, at 117 92, at 117 92, at 117 92); count = 3 }
+    { points = fixed_views::band (at 117 88, at 124 96, at 117 92, at 117 92, at 117 92, at 117 92); count = 3 }
 
 := sized (size : i32) (c : camp) : camp = c |> with_foes { (c::foes) ?| size = size }
 
