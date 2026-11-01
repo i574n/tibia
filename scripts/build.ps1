@@ -30,8 +30,15 @@ foreach ($tool in 'erlang', 'elixir') {
 }
 $checked = @((Resolve-Path ../src).Path, (Resolve-Path ../apps).Path)
 Push-Location ../deps/spiral/apps/cells
+if ($IsWindows) {
+    . ./spi/erl_memory_limit.ps1
+    $erlMemoryLimit = Start-ErlMemoryLimit
+}
 try { $budget = @(mix spiral.cell_budget --check @checked 2>&1 | ForEach-Object { "$_" }); $budgetExit = $LASTEXITCODE }
-finally { Pop-Location }
+finally {
+    if ($erlMemoryLimit) { $erlMemoryLimit.Stop() }
+    Pop-Location
+}
 $over = @($budget | Where-Object { $_ -match ': over_budget:' } | Select-Object -Unique)
 $over | ForEach-Object { Write-Output "build.ps1 / cell budget / $_" }
 if ($budgetExit -ne 0) { $budget | Select-Object -Last 5 | ForEach-Object { Write-Output "build.ps1 / cell budget / $_" }; throw "build.ps1 / cell budget: mix spiral.cell_budget exited $budgetExit ($($over.Count) definitions over the cell budget; split them by hand)" }

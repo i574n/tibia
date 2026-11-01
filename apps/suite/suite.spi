@@ -48,6 +48,29 @@
 := missing_total (name : string) (exit_code : i32) : string =
     name ++# ": no spiral-tests total line (exit code " ++#? exit_code ++# ")"
 
+:= prom_label (key : string) (value : string) : string = key ++# "=\"" ++# value ++# "\""
+
+:= prom_line (name : string) (labels : string) (value : string) : string = name ++# "{" ++# labels ++# "} " ++# value
+
+:== file_row = { source : string; tenths : i32; exit_code : i32 }
+
+:== test_row = { source : string; case_name : string; target : string; status : string; ms : i32; memo : string }
+
+:= tenths_text (t : i32) : string = "" ++#? t / 10 ++# "." ++#? t % 10
+
+:= file_seconds_line (r : file_row) : string =
+    prom_line "tibia_file_seconds" (prom_label "file" r::source) (tenths_text r::tenths)
+
+:= file_exit_line (r : file_row) : string = prom_line "tibia_file_exit_code" (prom_label "file" r::source) ("" ++#? r::exit_code)
+
+:= outcome_labels (r : test_row) : string =
+    prom_label "target" r::target ++# "," ++# prom_label "status" r::status ++# "," ++# prom_label "memo" r::memo
+
+:= test_labels (r : test_row) : string =
+    prom_label "file" r::source ++# "," ++# prom_label "test" r::case_name ++# "," ++# outcome_labels r
+
+:= test_ms_line (r : test_row) : string = prom_line "tibia_test_ms" (test_labels r) ("" ++#? r::ms)
+
 := offscreen_head () : string =
     "{\"accepted\":0,\"built\":0,\"discovered\":7,\"executed\":7,\"failed\":0,\"files\":1,\"filtered\":0,"
 
@@ -56,21 +79,57 @@
 
 := offscreen_total () : string = offscreen_head () ++# offscreen_tail () ++# "\"static\":0,\"unsupported\":0}"
 
+///> lua
+///> rust
 :# a_green_total_reads_back_as_green =
     := t = totals_of (offscreen_total ())
     (t::ran::discovered, t::ran::executed, t::ran::passed, green t) |> _assert_eq (7, 7, 7, !+)
 
 := failed_problem () : string = "offscreen: failed 2, unsupported 0, skipped 0, not run 0, not executed 0 (a, b)"
 
+///> lua
+///> rust
 :# a_failed_test_names_every_count =
     := base = totals_of (offscreen_total ())
-    := t = { base ?| ran = { base::ran ?| passed = 5; failed = 2 } }
+    := r = base::ran
+    := t = { base ?| ran = { r ?| passed = 5; failed = 2 } }
     (green t, problem_of "offscreen" "a, b" t) |> _assert_eq (!-, failed_problem ())
 
+///> lua
+///> rust
 :# a_test_neither_run_nor_static_is_not_executed =
     := base = totals_of (offscreen_total ())
-    := t = { base ?| ran = { base::ran ?| discovered = 8 } }
+    := r = base::ran
+    := t = { base ?| ran = { r ?| discovered = 8 } }
     (not_executed t, green t) |> _assert_eq (1, !-)
 
+///> lua
+///> rust
 :# a_missing_total_line_names_the_exit_code =
     missing_total "map" 3 |> _assert_eq "map: no spiral-tests total line (exit code 3)"
+
+:= autolink_line () : string = "tibia_cell_budget_findings{kind=\"autolink\"} 9"
+
+///> lua
+///> rust
+:# a_budget_kind_becomes_one_prom_line =
+    prom_line "tibia_cell_budget_findings" (prom_label "kind" "autolink") "9" |> _assert_eq (autolink_line ())
+
+:= offscreen_seconds_line () : string = "tibia_file_seconds{file=\"offscreen\"} 129.9"
+
+:= offscreen_exit_line () : string = "tibia_file_exit_code{file=\"offscreen\"} 0"
+
+///> lua
+///> rust
+:# a_file_row_becomes_its_seconds_and_exit_lines =
+    := r = { source = "offscreen"; tenths = 1299; exit_code = 0 }
+    (file_seconds_line r, file_exit_line r) |> _assert_eq (offscreen_seconds_line (), offscreen_exit_line ())
+
+:= memo_hit_line () : string =
+    "tibia_test_ms{file=\"offscreen\",test=\"t\",target=\"lua\",status=\"passed\",memo=\"hit\"} 34097"
+
+///> lua
+///> rust
+:# a_test_row_becomes_one_ms_line_with_its_memo_label =
+    := r = { source = "offscreen"; case_name = "t"; target = "lua"; status = "passed"; ms = 34097; memo = "hit" }
+    test_ms_line r |> _assert_eq (memo_hit_line ())

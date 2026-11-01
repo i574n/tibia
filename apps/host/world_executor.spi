@@ -135,21 +135,18 @@
         client_args = [ "-c"; run_script ]
     }
 
-:= fake_run_log () : string = file_system::get_temp_path () ++# "/tibia-world-executor-run.log"
+:= fake_log (tag : string) (kind : string) : string =
+    file_system::get_temp_path () ++# "/tibia-world-executor-" ++# tag ++# "-" ++# kind ++# ".log"
 
-:= fake_files () : executor_files =
-    {
-        run_log = fake_run_log ()
-        block_log = file_system::get_temp_path () ++# "/tibia-world-executor-block.log"
-        experience_prefix = "experience "
-    }
+:= fake_files (tag : string) : executor_files =
+    { run_log = fake_log tag "run"; block_log = fake_log tag "block"; experience_prefix = "experience " }
 
 := fake_character () : character::character = { name = "Knight"; level = 8; axe_skill = 10; x = 100; y = 100 }
 
-:= fake_executor (run_script : string) : executor =
+:= fake_executor (tag : string) (run_script : string) : executor =
     {
         programs = fake_programs run_script
-        files = fake_files ()
+        files = fake_files tag
         limits = { run_ms = 3000i32; start_ms = 20000i32 }
         character = fake_character ()
     }
@@ -158,10 +155,10 @@
     := h = arena_host::opened (block_plan::stages_of first 1)
     driven x { host = h; current = None; log = "" } [ arena_host::WindowGranted ]
 
-:= counted_run_script () : string = "open(r'" ++# fake_run_log () ++# "', 'w').write('experience 120\\n')"
+:= counted_run_script () : string = "open(r'" ++# fake_log "counted" "run" ++# "', 'w').write('experience 120\\n')"
 
 := counted_block (first : i32) : string * string =
-    := x = fake_executor (counted_run_script ())
+    := x = fake_executor "counted" (counted_run_script ())
     file_system::write_all_text x::files::block_log ""
     := trace = block_run first x
     trace, file_system::read_all_text x::files::block_log
@@ -170,7 +167,7 @@
     "start-world | reset, run 0.0 | counted, reset, run 0.1 | counted, reset, run 1.0 | counted, release"
 
 := sleeping_executor () : executor =
-    := x = fake_executor "import time; time.sleep(30)"
+    := x = fake_executor "sleeping" "import time; time.sleep(30)"
     { x ?| limits = { (x::limits) ?| run_ms = 500i32 } }
 
 := stop_rerun_trace () : string =

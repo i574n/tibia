@@ -115,9 +115,11 @@
 
 := expected_kit_where () : string = " v where p.name = 'Knight Sample'"
 
-:= expected_kit_last_rows () : string =
-    ("union all select 6, 105, 7773, 1 union all select 7, 106, 3372, 1 union all select 8, 107, 3552, 1 union all "
-    ^^ "select 11, 108, 23396, 1 union all select 102, 109, 266, 100)") ++# expected_kit_where ()
+:= expected_kit_tail_rows () : string =
+    "union all select 6, 105, 7773, 1 union all select 7, 106, 3372, 1 union all select 8, 107, 3552, 1 union all "
+    ^^ "select 11, 108, 23396, 1 union all select 102, 109, 266, 100)"
+
+:= expected_kit_last_rows () : string = expected_kit_tail_rows () ++# expected_kit_where ()
 
 := expected_kit_statement () : string =
     expected_kit_delete () ++# kit_insert_head () ++# expected_kit_first_rows () ++# expected_kit_last_rows ()
