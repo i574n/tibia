@@ -1,5 +1,5 @@
 ///- --package .
-test skills static =
+:# skills static =
     :< testing
 
 :== skill = { level : i32; tries : i32 }
@@ -194,28 +194,28 @@ test skills static =
     |? level <= 10 ?> { level = 10; tries = 0 }
     |: skill_drop (level - 1) (knight_skill_tries_up_to_130 level) (lost - tries)
 
-:= after_unblessed_death (s : skill) : skill = skill_drop s.level s.tries ((total_tries_to s.level + s.tries) / 10)
+:= after_unblessed_death (s : skill) : skill = skill_drop s::level s::tries ((total_tries_to s::level + s::tries) / 10)
 
 := tries_pins (level : i32) : i32 * i32 * i32 * i32 * i32 * i32 * i32 * i32 =
     := at = knight_skill_tries_up_to_130
     at 10, at 11, at 12, at level, at 60, at 100, at 130, total_tries_to level
 
 ///> c
-test knight_skill_tries_match_canary_pow_of_the_float_multiplier =
+:# knight_skill_tries_match_canary_pow_of_the_float_multiplier =
     := ~level = 30i32
     tries_pins level |> _assert_eq (0i32, 50i32, 55i32, 305i32, 5335i32, 241501i32, 4214059i32, 2852i32)
 
 ///> c
-test an_axe_30_knight_loses_a_skill_level_on_death_like_live =
+:# an_axe_30_knight_loses_a_skill_level_on_death_like_live =
     := ~level = 30i32
     := after = after_unblessed_death { level = level; tries = 0 }
-    (after.level, after.tries) |> _assert_eq (29i32, 20i32)
+    (after::level, after::tries) |> _assert_eq (29i32, 20i32)
 
 :== level_tries = i32 * i32
 
 := skill_after_death (level : i32) (tries : i32) : level_tries =
     := after = after_unblessed_death { level = level; tries = tries }
-    after.level, after.tries
+    after::level, after::tries
 
 := loss_rows (tries : i32) : level_tries * level_tries * level_tries * level_tries * level_tries * level_tries =
     := at = skill_after_death
@@ -225,12 +225,12 @@ test an_axe_30_knight_loses_a_skill_level_on_death_like_live =
     (59, 629), (11, 48), (10, 45), (99, 20904), (10, 0), (128, 3409614)
 
 ///> c
-test skill_loss_matches_canary_death_loop_across_levels =
+:# skill_loss_matches_canary_death_loop_across_levels =
     := ~tries = 1234i32
     loss_rows tries |> _assert_eq (loss_expected ())
 
 ///> wgsl
-test skill_loss_on_gpu =
+:# skill_loss_on_gpu =
     := ~level = 30i32
     := after = after_unblessed_death { level = level; tries = 0 }
-    ? after.level = 29i32 && after.tries = 20i32 && knight_skill_tries_up_to_130 100 = 241501i32 ?> 0i32 |: 1i32
+    ? after::level = 29i32 && after::tries = 20i32 && knight_skill_tries_up_to_130 100 = 241501i32 ?> 0i32 |: 1i32

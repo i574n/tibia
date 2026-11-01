@@ -1,10 +1,10 @@
 ///- --package .
-test terrain static =
+:# terrain static =
     :< testing
 
-:== tile = geometry.position
+:== tile = geometry::position
 
-:= tile (x : i32) (y : i32) (z : i32) : tile = geometry.position x y z
+:= tile (x : i32) (y : i32) (z : i32) : tile = geometry::position x y z
 
 :== occupancy = tile -> bool
 
@@ -445,12 +445,12 @@ test terrain static =
 
 := arena_bit_set (bits : i32 -> i32 -> u32) (p : tile) : bool =
     := r = arena_spot_radius ()
-    := bit = p.x - 100 + r
-    ((bits (bit / row_word_bits ()) (p.y - 100 + r) >>> (bit % row_word_bits ())) &&& 1u32) = 1u32
+    := bit = p::x - 100 + r
+    ((bits (bit / row_word_bits ()) (p::y - 100 + r) >>> (bit % row_word_bits ())) &&& 1u32) = 1u32
 
 := inside_arena_spot (p : tile) : bool =
     := r = arena_spot_radius ()
-    p.x - 100 >= 0 - r && p.x - 100 <= r && p.y - 100 >= 0 - r && p.y - 100 <= r
+    p::x - 100 >= 0 - r && p::x - 100 <= r && p::y - 100 >= 0 - r && p::y - 100 <= r
 
 :~ arena_spot_blocked (p : tile) : bool =
     ? inside_arena_spot p
@@ -1289,7 +1289,7 @@ test terrain static =
 := arena_spot_world_x () : i32 = 1933
 := arena_spot_world_y () : i32 = 1350
 
-:~ arena_spot_protected (p : tile) : bool = arena_protection_zone (p.x - 100) (p.y - 100)
+:~ arena_spot_protected (p : tile) : bool = arena_protection_zone (p::x - 100) (p::y - 100)
 
 := arena_world_protected (x : i32) (y : i32) : bool =
     arena_protection_zone (x - arena_spot_world_x ()) (y - arena_spot_world_y ())
@@ -1297,8 +1297,8 @@ test terrain static =
 := walls (l : layout) (p : tile) : bool =
     ?= l ?|
     | OpenField => !-
-    | EastCorridor => p.y <> corridor_row () || p.x < corridor_mouth ()
-    | RoomAndCorridor => p.x < 100 && p.y <> corridor_row ()
+    | EastCorridor => p::y <> corridor_row () || p::x < corridor_mouth ()
+    | RoomAndCorridor => p::x < 100 && p::y <> corridor_row ()
     | ArenaSpot | ArenaHunt => arena_spot_blocked p
 
 := sight_blocks (l : layout) (p : tile) : bool =
@@ -1319,7 +1319,7 @@ test terrain static =
 := direction_of (n : i32) : i32 = ? n > 0 ?> 1 |? n < 0 ?> -1 |: 0
 
 := shifted (dx : i32) (dy : i32) (from : tile) : tile =
-    tile (from.x + dx) (from.y + dy) from.z
+    tile (from::x + dx) (from::y + dy) from::z
 
 :== candidates = { both : tile; across : tile; along : tile; left : tile; right : tile }
 
@@ -1340,24 +1340,24 @@ test terrain static =
     candidates_with (\ turn => live_side_step sx sy turn from) sx sy from
 
 := first_usable (usable : occupancy) (c : candidates) (from : tile) : tile =
-    ? usable c.both ?> c.both |? usable c.across ?> c.across |? usable c.along ?> c.along
-    |? usable c.left ?> c.left |? usable c.right ?> c.right |: from
+    ? usable c::both ?> c::both |? usable c::across ?> c::across |? usable c::along ?> c::along
+    |? usable c::left ?> c::left |? usable c::right ?> c::right |: from
 
 := free_and (l : layout) (taken : occupancy) (also : occupancy) : occupancy = \ p => free l taken p && also p
 
-:= toward_signs (a : tile) (b : tile) : i32 * i32 = direction_of (b.x - a.x), direction_of (b.y - a.y)
+:= toward_signs (a : tile) (b : tile) : i32 * i32 = direction_of (b::x - a::x), direction_of (b::y - a::y)
 
 := candidates_away (threat : tile) (from : tile) : candidates =
     := sx, sy = toward_signs threat from
     candidates_of sx sy from
 
 := closer_to (target : tile) (from : tile) : occupancy =
-    := distance = geometry.chebyshev_distance target from
-    \ p => geometry.chebyshev_distance target p < distance
+    := distance = geometry::chebyshev_distance target from
+    \ p => geometry::chebyshev_distance target p < distance
 
 := farther_from (threat : tile) (from : tile) : occupancy =
-    := distance = geometry.chebyshev_distance threat from
-    \ p => geometry.chebyshev_distance threat p > distance
+    := distance = geometry::chebyshev_distance threat from
+    \ p => geometry::chebyshev_distance threat p > distance
 
 := best_step (l : layout) (taken : occupancy) (improves : occupancy) (sx : i32) (sy : i32) (from : tile) : tile =
     first_usable (free_and l taken improves) (candidates_of sx sy from) from
@@ -1426,18 +1426,18 @@ test terrain static =
 := reach_at (g : route_grid) (row : i32) (word : i32) : u32 =
     ? row < 0 || row >= region_rows () || word < 0 || word >= region_words ()
     ?> 0u32
-    |: base_read (row * region_words () + word) g.reach
+    |: base_read (row * region_words () + word) g::reach
 
 := prepare_grid (g : route_grid) : () =
     :~ ^ prepare (cell : i32) : () =
         ? cell < region_cells () ?>
-            base_write g.reach cell 0u32
-            base_write g.openings cell (region_openings cell)
+            base_write g::reach cell 0u32
+            base_write g::openings cell (region_openings cell)
             prepare (cell + 1)
     prepare 0
 
 := grid_open (g : route_grid) (x : i32) (y : i32) : bool =
-    inside_region x y && word_holds (base_read (region_cell x y) g.openings) (region_shift x)
+    inside_region x y && word_holds (base_read (region_cell x y) g::openings) (region_shift x)
 
 := grid_reached (g : route_grid) (x : i32) (y : i32) : bool =
     inside_region x y && word_holds (reach_at g (region_row y) (region_word x)) (region_shift x)
@@ -1445,19 +1445,19 @@ test terrain static =
 := grid_mark (g : route_grid) (x : i32) (y : i32) : () =
     ? inside_region x y && grid_open g x y ?>
         := marked = reach_at g (region_row y) (region_word x) ||| (1u32 <<< region_shift x)
-        base_write g.reach (region_cell x y) marked
+        base_write g::reach (region_cell x y) marked
 
 := seed_target (g : route_grid) (r : route_request) : () =
     :~ ^ seed (k : i32) : () =
         ? k < 9 ?>
-            grid_mark g (r.target.x + k % 3 - 1) (r.target.y + k / 3 - 1)
+            grid_mark g (r::target::x + k % 3 - 1) (r::target::y + k / 3 - 1)
             seed (k + 1)
     seed 0
 
 := clear_above (g : route_grid) : () =
     :~ ^ forget_above (word : i32) : () =
         ? word < region_words () ?>
-            base_write g.above word 0u32
+            base_write g::above word 0u32
             forget_above (word + 1)
     forget_above 0
 
@@ -1472,22 +1472,22 @@ test terrain static =
 
 := grown_at (g : route_grid) (row : i32) (word : i32) : u32 =
     := here = reach_at g row word
-    := open_bits : u32 = base_read (row * region_words () + word) g.openings
-    := up : u32 = base_read word g.above
+    := open_bits : u32 = base_read (row * region_words () + word) g::openings
+    := up : u32 = base_read word g::above
     spread_at g row word here up &&& open_bits
 
 := grow_row (g : route_grid) (row : i32) : () =
     :~ ^ grow (word : i32) : () =
         ? word < region_words () ?>
-            base_write g.grown word (grown_at g row word)
+            base_write g::grown word (grown_at g row word)
             grow (word + 1)
     grow 0
 
 := commit_word (g : route_grid) (row : i32) (word : i32) : bool =
     := here = reach_at g row word
-    := next : u32 = base_read word g.grown
-    base_write g.above word here
-    base_write g.reach (row * region_words () + word) next
+    := next : u32 = base_read word g::grown
+    base_write g::above word here
+    base_write g::reach (row * region_words () + word) next
     next <> here
 
 := commit_row (g : route_grid) (row : i32) (changed : bool) : bool =
@@ -1507,13 +1507,13 @@ test terrain static =
 := axis_gap (a : i32) (b : i32) : i32 = ? a - b < 0 ?> b - a |: a - b
 
 := along_x_axis (r : route_request) : bool =
-    axis_gap r.target.x r.from.x >= axis_gap r.target.y r.from.y
+    axis_gap r::target::x r::from::x >= axis_gap r::target::y r::from::y
 
 := x_turns (r : route_request) : route_choice * route_choice =
-    ? r.target.x >= r.from.x ?> GoEast, GoWest |: GoWest, GoEast
+    ? r::target::x >= r::from::x ?> GoEast, GoWest |: GoWest, GoEast
 
 := y_turns (r : route_request) : route_choice * route_choice =
-    ? r.target.y >= r.from.y ?> GoSouth, GoNorth |: GoNorth, GoSouth
+    ? r::target::y >= r::from::y ?> GoSouth, GoNorth |: GoNorth, GoSouth
 
 :== route_order = route_choice * route_choice * route_choice * route_choice
 
@@ -1526,7 +1526,7 @@ test terrain static =
 
 := route_leads (g : route_grid) (r : route_request) (c : route_choice) : bool =
     := dx, dy = route_offset c
-    (r.free &&& route_bit c) <> 0u32 && grid_reached g (r.from.x + dx) (r.from.y + dy)
+    (r::free &&& route_bit c) <> 0u32 && grid_reached g (r::from::x + dx) (r::from::y + dy)
 
 := route_either (g : route_grid) (r : route_request) (first : route_choice) (second : route_choice) : route_choice =
     ? route_leads g r first ?> first |? route_leads g r second ?> second |: NoRoute
@@ -1551,7 +1551,7 @@ test terrain static =
     := g = route_grid_new ()
     prepare_grid g
     seed_target g r
-    ? grid_reached g r.from.x r.from.y ?> Arrived |: route_layers g r (route_order_of r)
+    ? grid_reached g r::from::x r::from::y ?> Arrived |: route_layers g r (route_order_of r)
 
 := straight_step_weight () : i32 = 10
 := diagonal_step_weight () : i32 = 25
@@ -1599,40 +1599,40 @@ test terrain static =
 := window_high (a : i32) (b : i32) : i32 = (? a > b ?> a |: b) + window_margin ()
 
 := area_around (target : tile) (from : tile) : window_area =
-    := x0 = window_low from.x target.x
-    := y0 = window_low from.y target.y
-    { x0 = x0; y0 = y0; w = window_high from.x target.x - x0 + 1; h = window_high from.y target.y - y0 + 1 }
+    := x0 = window_low from::x target::x
+    := y0 = window_low from::y target::y
+    { x0 = x0; y0 = y0; w = window_high from::x target::x - x0 + 1; h = window_high from::y target::y - y0 + 1 }
 
 := window_around (target : tile) (from : tile) : step_window =
     := area = area_around target from
-    := cells = area.w * area.h
+    := cells = area::w * area::h
     { area = area; target = target; from = from; passable = base_create cells; distance = base_create cells }
 
-:= window_cells (v : step_window) : i32 = v.area.w * v.area.h
-:= window_x (v : step_window) (c : i32) : i32 = v.area.x0 + c % v.area.w
-:= window_y (v : step_window) (c : i32) : i32 = v.area.y0 + c / v.area.w
+:= window_cells (v : step_window) : i32 = v::area::w * v::area::h
+:= window_x (v : step_window) (c : i32) : i32 = v::area::x0 + c % v::area::w
+:= window_y (v : step_window) (c : i32) : i32 = v::area::y0 + c / v::area::w
 
 := window_inside (v : step_window) (x : i32) (y : i32) : bool =
-    x >= v.area.x0 && x < v.area.x0 + v.area.w && y >= v.area.y0 && y < v.area.y0 + v.area.h
+    x >= v::area::x0 && x < v::area::x0 + v::area::w && y >= v::area::y0 && y < v::area::y0 + v::area::h
 
-:= window_cell (v : step_window) (x : i32) (y : i32) : i32 = (y - v.area.y0) * v.area.w + (x - v.area.x0)
+:= window_cell (v : step_window) (x : i32) (y : i32) : i32 = (y - v::area::y0) * v::area::w + (x - v::area::x0)
 
 := window_passable (v : step_window) (x : i32) (y : i32) : bool =
-    window_inside v x y && base_read (window_cell v x y) v.passable = 1i32
+    window_inside v x y && base_read (window_cell v x y) v::passable = 1i32
 
 := window_distance (v : step_window) (x : i32) (y : i32) : i32 =
-    ? window_inside v x y ?> base_read (window_cell v x y) v.distance |: unreachable_weight ()
+    ? window_inside v x y ?> base_read (window_cell v x y) v::distance |: unreachable_weight ()
 
 := window_goal (v : step_window) (c : i32) : bool =
     := x, y = window_x v c, window_y v c
     window_passable v x y
-    && geometry.chebyshev_distance (tile x y 7) (tile v.target.x v.target.y 7) <= 1
-    && (x <> v.target.x || y <> v.target.y)
+    && geometry::chebyshev_distance (tile x y 7) (tile v::target::x v::target::y 7) <= 1
+    && (x <> v::target::x || y <> v::target::y)
 
 := seed_window (v : step_window) : () =
     :~ ^ seed (c : i32) : () =
         ? c < window_cells v ?>
-            base_write v.distance c (? window_goal v c ?> 0 |: unreachable_weight ())
+            base_write v::distance c (? window_goal v c ?> 0 |: unreachable_weight ())
             seed (c + 1)
     seed 0
 
@@ -1651,7 +1651,7 @@ test terrain static =
     := old = window_distance v x y
     := improved = best_through v x y old
     ? improved < old ?>
-        base_write v.distance c improved
+        base_write v::distance c improved
         !+
     |: !-
 
@@ -1676,10 +1676,10 @@ test terrain static =
     settle 0
 
 := neighbor_distance (v : step_window) (p : tile) : i32 =
-    ? window_passable v p.x p.y ?> window_distance v p.x p.y |: unreachable_weight ()
+    ? window_passable v p::x p::y ?> window_distance v p::x p::y |: unreachable_weight ()
 
 := pick_score (v : step_window) (k : i32) : i32 =
-    := d = neighbor_distance v (shifted (direction_dx k) (direction_dy k) v.from)
+    := d = neighbor_distance v (shifted (direction_dx k) (direction_dy k) v::from)
     ? d < unreachable_weight () ?> d + direction_weight k |: unreachable_weight ()
 
 := pick_better (v : step_window) (k : i32) (best : i32) (low : i32) : i32 * i32 =
@@ -1697,17 +1697,17 @@ test terrain static =
 := weighted_choice (v : step_window) : i32 =
     seed_window v
     settle_window v
-    ? window_distance v v.from.x v.from.y = 0 ?> 8 |: pick_step v
+    ? window_distance v v::from::x v::from::y = 0 ?> 8 |: pick_step v
 
 := walkable_at (l : layout) (taken : occupancy) (from : tile) (p : tile) : i32 =
-    ? blocked l p || (taken p && geometry.same_tile p from = !-) ?> 0i32 |: 1i32
+    ? blocked l p || (taken p && geometry::same_tile p from = !-) ?> 0i32 |: 1i32
 
-:= window_tile (v : step_window) (c : i32) : tile = tile (window_x v c) (window_y v c) v.from.z
+:= window_tile (v : step_window) (c : i32) : tile = tile (window_x v c) (window_y v c) v::from::z
 
 := fill_window (l : layout) (taken : occupancy) (v : step_window) : () =
     :~ ^ fill (c : i32) : () =
         ? c < window_cells v ?>
-            base_write v.passable c (walkable_at l taken v.from (window_tile v c))
+            base_write v::passable c (walkable_at l taken v::from (window_tile v c))
             fill (c + 1)
     fill 0
 
@@ -1749,7 +1749,7 @@ test terrain static =
 
 := step_away_like_the_live_probe (l : layout) (taken : occupancy) (threat : tile) (from : tile) : tile =
     := sx, sy = toward_signs threat from
-    first_usable (\ p => geometry.same_tile p from = !- && free l taken p) (live_candidates sx sy from) from
+    first_usable (\ p => geometry::same_tile p from = !- && free l taken p) (live_candidates sx sy from) from
 
 :== footing = { away : i32; room : i32; crowd : i32; align : i32; diagonal : i32 }
 
@@ -1767,21 +1767,21 @@ test terrain static =
 
 := alignment_of (threat : tile) (from : tile) (c : tile) : i32 =
     := sx, sy = toward_signs threat from
-    (c.x - from.x) * sx + (c.y - from.y) * sy
+    (c::x - from::x) * sx + (c::y - from::y) * sy
 
-:= slant (from : tile) (c : tile) : i32 = ? c.x <> from.x && c.y <> from.y ?> 1 |: 0
+:= slant (from : tile) (c : tile) : i32 = ? c::x <> from::x && c::y <> from::y ?> 1 |: 0
 
 := footing_room (l : layout) (w : footing) (threat : tile) (c : tile) : i32 =
-    w.away * geometry.chebyshev_distance threat c + w.room * walkable_around l c
+    w::away * geometry::chebyshev_distance threat c + w::room * walkable_around l c
 
 := footing_score (l : layout) (crowd : crowding) (w : footing) (threat : tile) (from : tile) (c : tile) : i32 =
-    footing_room l w threat c - w.crowd * crowd c + w.align * alignment_of threat from c - w.diagonal * slant from c
+    footing_room l w threat c - w::crowd * crowd c + w::align * alignment_of threat from c - w::diagonal * slant from c
 
 := considered (usable : occupancy) (score : tile -> i32) (from : tile) (t : tile) (best : tile) : tile =
-    ? usable t && (geometry.same_tile best from || score t > score best) ?> t |: best
+    ? usable t && (geometry::same_tile best from || score t > score best) ?> t |: best
 
 := fold_candidates (f : tile -> tile -> tile) (c : candidates) (start : tile) : tile =
-    start |> f c.both |> f c.across |> f c.along |> f c.left |> f c.right
+    start |> f c::both |> f c::across |> f c::along |> f c::left |> f c::right
 
 := best_scored (usable : occupancy) (score : tile -> i32) (threat : tile) (from : tile) : tile =
     fold_candidates (considered usable score from) (candidates_away threat from) from
@@ -1846,33 +1846,33 @@ test terrain static =
 
 := nobody (p : tile) : bool = !-
 
-:= taken_at (x : i32) (y : i32) : occupancy = \ p => p.x = x && p.y = y
+:= taken_at (x : i32) (y : i32) : occupancy = \ p => p::x = x && p::y = y
 
 ///> c
-test a_corridor_turns_a_diagonal_approach_into_a_straight_one =
+:# a_corridor_turns_a_diagonal_approach_into_a_straight_one =
     := ~x = 103i32
-    step_toward EastCorridor nobody (tile 100 100 7) (tile x 100 7) |> geometry.xy |> _assert_eq (102i32, 100i32)
+    step_toward EastCorridor nobody (tile 100 100 7) (tile x 100 7) |> geometry::xy |> _assert_eq (102i32, 100i32)
 
 ///> c
-test in_open_field_a_diagonal_approach_stays_diagonal =
+:# in_open_field_a_diagonal_approach_stays_diagonal =
     := ~x = 103i32
-    step_toward OpenField nobody (tile 100 100 7) (tile x 103 7) |> geometry.xy |> _assert_eq (102i32, 102i32)
+    step_toward OpenField nobody (tile 100 100 7) (tile x 103 7) |> geometry::xy |> _assert_eq (102i32, 102i32)
 
 ///> c
-test a_taken_tile_is_walked_around_or_waited_for =
+:# a_taken_tile_is_walked_around_or_waited_for =
     := ~x = 102i32
-    := step l = step_toward l (taken_at 101 100) (tile 100 100 7) (tile x 100 7) |> geometry.xy
+    := step l = step_toward l (taken_at 101 100) (tile 100 100 7) (tile x 100 7) |> geometry::xy
     (step EastCorridor, step OpenField) |> _assert_eq ((102i32, 100i32), (101i32, 101i32))
 
 ///> wgsl
-test corridor_steps_on_gpu =
+:# corridor_steps_on_gpu =
     := ~x = 103i32
     := nobody (p : tile) = !-
     := step = step_toward EastCorridor nobody (tile 100 100 7) (tile x 100 7)
-    ? step.x = 102i32 && step.y = 100i32 ?> 0i32 |: 1i32
+    ? step::x = 102i32 && step::y = 100i32 ?> 0i32 |: 1i32
 
 ///> c
-test the_arena_spot_matches_the_live_scan_and_the_server_map =
+:# the_arena_spot_matches_the_live_scan_and_the_server_map =
     := ~x = 100i32
     := at dx dy = walls ArenaSpot (tile (x + dx) (100 + dy) 7)
     (at 0 0, at -1 0, at 1 0, at 4 -4, at -7 0, at 8 0, at -1 1)
@@ -1886,49 +1886,49 @@ test the_arena_spot_matches_the_live_scan_and_the_server_map =
     scored_step RoomAndCorridor nobody alone w (tile (x + 1) 100 7) (tile x 100 7)
 
 ///> c
-test a_scored_step_can_prefer_room_over_distance =
+:# a_scored_step_can_prefer_room_over_distance =
     := ~x = 100i32
     := run, roomy = room_step (away_and_room 10 0) x, room_step (away_and_room 0 10) x
-    (run.x, walkable_around RoomAndCorridor (tile 98 100 7), roomy.x) |> _assert_eq (99i32, 2i32, 99i32)
+    (run::x, walkable_around RoomAndCorridor (tile 98 100 7), roomy::x) |> _assert_eq (99i32, 2i32, 99i32)
 
 := all_open (l : layout) (a : tile) (b : tile) (c : tile) : bool =
     blocked l a = !- && blocked l b = !- && blocked l c = !-
 
 ///> c
-test the_arena_hunt_spawns_are_open_ground =
+:# the_arena_hunt_spawns_are_open_ground =
     := ~x = 0i32
     := a, b, c = spawn_points ArenaHunt
     := d, e, f = more_spawn_points ArenaHunt
     (all_open ArenaHunt a b c, all_open ArenaHunt d e f, x) |> _assert_eq (!+, !+, 0i32)
 
 ///> c
-test the_arena_hunt_start_is_open_ground =
+:# the_arena_hunt_start_is_open_ground =
     := ~x = 0i32
     (blocked ArenaHunt (player_start ArenaHunt), x) |> _assert_eq (!-, 0i32)
 
 :~ ^ walk_until_adjacent (l : layout) (target : tile) (steps : i32) (at : tile) : i32 * tile =
-    ? geometry.chebyshev_distance target at <= 1 || steps >= 100 ?> steps, at
+    ? geometry::chebyshev_distance target at <= 1 || steps >= 100 ?> steps, at
     |: walk_until_adjacent l target (steps + 1) (step_toward l nobody target at)
 
 ///> c
-test on_the_hunting_ground_a_greedy_step_sticks =
+:# on_the_hunting_ground_a_greedy_step_sticks =
     := ~x = 110i32
-    greedy_step_toward ArenaHunt nobody (tile 115 93 7) (tile x 88 7) |> geometry.xy |> _assert_eq (110i32, 88i32)
+    greedy_step_toward ArenaHunt nobody (tile 115 93 7) (tile x 88 7) |> geometry::xy |> _assert_eq (110i32, 88i32)
 
 ///> c
-test on_the_hunting_ground_a_route_goes_where_a_greedy_step_sticks =
+:# on_the_hunting_ground_a_route_goes_where_a_greedy_step_sticks =
     := ~x = 110i32
     := steps, last = walk_until_adjacent ArenaHunt (tile 115 93 7) 0 (tile x 88 7)
-    (steps, geometry.xy last) |> _assert_eq (9i32, (115i32, 92i32))
+    (steps, geometry::xy last) |> _assert_eq (9i32, (115i32, 92i32))
 
 ///> c
-test on_the_hunting_ground_a_road_tile_speeds_the_next_step_up =
+:# on_the_hunting_ground_a_road_tile_speeds_the_next_step_up =
     := ~cyclops_ms = 650i32
     (on_ground_at ArenaHunt (tile 115 93 7) cyclops_ms, on_ground_at ArenaHunt (tile 115 89 7) cyclops_ms)
     |> _assert_eq (702i32, 438i32)
 
 ///> c
-test at_the_spot_a_road_tile_speeds_the_next_step_up =
+:# at_the_spot_a_road_tile_speeds_the_next_step_up =
     := ~cyclops_ms = 650i32
     := at x y = on_ground_at ArenaSpot (tile x y 7) cyclops_ms
     (at 115 89, at 99 99, arena_road (tile 99 99 7)) |> _assert_eq (438i32, 702i32, !-)
@@ -1936,40 +1936,40 @@ test at_the_spot_a_road_tile_speeds_the_next_step_up =
 := detour_around_99_101 (from : tile) : tile = step_toward ArenaSpot (taken_at 99 101) (tile 100 100 7) from
 
 ///> c
-test on_the_arena_spot_a_monster_detours_around_another_with_a_diagonal_step =
+:# on_the_arena_spot_a_monster_detours_around_another_with_a_diagonal_step =
     := ~x = 98i32
     := f = detour_around_99_101 (tile x 102 7)
-    (geometry.xy f, geometry.xy (detour_around_99_101 f)) |> _assert_eq ((99i32, 102i32), (100i32, 101i32))
+    (geometry::xy f, geometry::xy (detour_around_99_101 f)) |> _assert_eq ((99i32, 102i32), (100i32, 101i32))
 
 ///> c
-test on_the_arena_spot_a_greedy_step_waits_behind_another_monster =
+:# on_the_arena_spot_a_greedy_step_waits_behind_another_monster =
     := ~x = 98i32
-    greedy_step_toward ArenaSpot (taken_at 99 101) (tile 100 100 7) (tile x 102 7) |> geometry.xy
+    greedy_step_toward ArenaSpot (taken_at 99 101) (tile 100 100 7) (tile x 102 7) |> geometry::xy
     |> _assert_eq (98i32, 102i32)
 
 := world_tile (west : i32) (x : i32) (y : i32) : tile = tile (x - west) (y - 1250) 7
 
 ///> c
-test ramps_and_stairs_by_the_spot_are_walls_cyclopes_never_take =
+:# ramps_and_stairs_by_the_spot_are_walls_cyclopes_never_take =
     := ~west = 1833i32
     := w x y = blocked ArenaSpot (world_tile west x y)
     (w 1940 1372, w 1941 1372, w 1927 1337, w 1958 1345, w 1939 1371) |> _assert_eq (!+, !+, !+, !+, !-)
 
 ///> c
-test the_protection_zones_east_of_the_spot_stop_walkers_but_not_arrows =
+:# the_protection_zones_east_of_the_spot_stop_walkers_but_not_arrows =
     := ~west = 1833i32
     := zone = world_tile west 1942 1351
     (blocked ArenaSpot zone, walls ArenaSpot zone, arena_world_protected (west + 110) 1351) |> _assert_eq (!+, !-, !+)
 
 ///> c
-test the_protection_zone_edges_match_the_server_map =
+:# the_protection_zone_edges_match_the_server_map =
     := ~west = 1833i32
     := at = world_tile west
     (blocked ArenaHunt (at 1960 1343), blocked ArenaSpot (at 1942 1352), blocked ArenaSpot (at 1960 1358))
     |> _assert_eq (!+, !-, !-)
 
 ///> c
-test the_server_map_ground_speed_is_160_off_the_road_100_on_it_and_150_on_open_grass =
+:# the_server_map_ground_speed_is_160_off_the_road_100_on_it_and_150_on_open_grass =
     := ~x = 115i32
     := at l y = ground_speed_at l (tile x y 7)
     (at ArenaHunt 93, at ArenaHunt 89, at OpenField 89) |> _assert_eq (160i32, 100i32, 150i32)

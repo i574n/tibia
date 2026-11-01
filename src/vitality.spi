@@ -1,5 +1,5 @@
 ///- --package .
-test vitality static =
+:# vitality static =
     :< testing
 
 :! alive = ()
@@ -42,34 +42,34 @@ test vitality static =
     | Slain _ => 0
 
 ///> c
-test strike_reduces_health =
+:# strike_reduces_health =
     := ~damage = 30i32
     spawn 100 |> strike damage |> survivor_health |> _assert_eq 70i32
 
 ///> c
-test lethal_strike_slays =
+:# lethal_strike_slays =
     := ~damage = 100i32
     spawn 100 |> strike damage |> survivor_health |> _assert_eq 0i32
 
 ///> c
-test heal_caps_at_maximum =
+:# heal_caps_at_maximum =
     := ~amount = 500i32
     := healed = spawn 100 |> heal amount
     health healed |> _assert_eq (maximum_health healed)
 
 ///> c
-test strike_then_heal =
+:# strike_then_heal =
     := ~damage = 60i32
     ?= spawn 100 |> strike damage ?|
     | Survived wounded => wounded |> heal 25 |> health |> _assert_eq 65i32
     | Slain _ => _assert_eq 0i32 1i32
 
 ///> c
-test healing_the_fallen_does_not_compile fails "Unification failure" =
+:# healing_the_fallen_does_not_compile fails "Unification failure" =
     heal 10 (Fallen 100)
 
 ///> wgsl
-test strike_then_heal_on_gpu =
+:# strike_then_heal_on_gpu =
     := ~damage = 60i32
     ?= spawn 100 |> strike damage ?|
     | Survived wounded => ? (wounded |> heal 25 |> health) = 65i32 ?> 0i32 |: 1i32

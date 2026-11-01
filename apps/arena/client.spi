@@ -1,5 +1,5 @@
 ///- --package .
-test client static =
+:# client static =
     :< testing
 
 :< sm'_operators
@@ -23,15 +23,15 @@ test client static =
 := wall_seconds () : i32 = $'os.time()' : i32
 
 :~ env_text (name : string) (fallback : string) : string =
-    := value = env.get_environment_variable name
+    := value = env::get_environment_variable name
     ? value = "" ?> fallback |: value
 
 :~ env_i32 (name : string) (fallback : i32) : i32 =
-    optionm'.default_value fallback (convert.try_convert (sm'.trim (env.get_environment_variable name)))
+    optionm'::default_value fallback (convert::try_convert (sm'::trim (env::get_environment_variable name)))
 
 := seed_random_from_clock () : () = $'math.randomseed(os.time())' : ()
 
-:= env_is (name : string) (value : string) : bool = env.get_environment_variable name = value
+:= env_is (name : string) (value : string) : bool = env::get_environment_variable name = value
 
 := spot_of (p : native_position) : spot = { x = $'!p.x' : i32; y = $'!p.y' : i32; z = $'!p.z' : i32 }
 
@@ -96,13 +96,13 @@ test client static =
     |: Blocked
 
 :~ footing_at (s : spot) : footing =
-    := tile = tile_at s.x s.y s.z
+    := tile = tile_at s::x s::y s::z
     ? tile_present tile
     ?> footing_of !+ (tile_walkable tile) (tile_floor_change tile) (tile_walkable_through_creatures tile)
     |: Unknown
 
 := spectators (s : spot) : crowd =
-    := x, y, z = s.x, s.y, s.z
+    := x, y, z = s::x, s::y, s::z
     $'g_map.getSpectators({ x = !x, y = !y, z = !z }, false)' : crowd
 
 := crowd_size (c : crowd) : i32 = $'##(!c)' : i32
@@ -124,7 +124,7 @@ test client static =
 
 := creature_present (c : creature) : bool = $'(!c) ~= nil' : bool
 
-:= spot_text (s : spot) : string = "" ++#? s.x ++# "," ++#? s.y ++# "," ++#? s.z
+:= spot_text (s : spot) : string = "" ++#? s::x ++# "," ++#? s::y ++# "," ++#? s::z
 
 := target_line (a : creature) : string = creature_name a ++# " " ++#? creature_health_percent a ++# "%"
 
@@ -295,16 +295,16 @@ test client static =
 
 :~ ^ remember (t : engaged) (c : creature) : () =
     := id = creature_id c
-    t <- (id, c) :: listm'.filter (\ (seen, _) => seen <> id) *t
+    t <- (id, c) :: listm'::filter (\ (seen, _) => seen <> id) *t
 
 :~ ^ forget_dead (t : engaged) : i32 =
-    := dead = listm'.filter (\ (_, c) => creature_dead c) *t
-    t <- listm'.filter (\ (_, c) => creature_dead c = !-) *t
-    listm.length dead
+    := dead = listm'::filter (\ (_, c) => creature_dead c) *t
+    t <- listm'::filter (\ (_, c) => creature_dead c = !-) *t
+    listm::length dead
 
 := monster_line (c : creature) : string =
     := at = creature_spot c
-    target_line c ++# " " ++#? at.x ++# "," ++#? at.y
+    target_line c ++# " " ++#? at::x ++# "," ++#? at::y
 
 :~ ^ monster_lines (seen : crowd) (i : i32) (acc : list string) : list string =
     ? i < 1 ?> acc
@@ -314,7 +314,7 @@ test client static =
 
 :~ ^ monsters_described (s : spot) : string =
     := seen = spectators s
-    ?= monster_lines seen (crowd_size seen) [] ?| [] => "none" | lines => sm'.concat_list "; " lines
+    ?= monster_lines seen (crowd_size seen) [] ?| [] => "none" | lines => sm'::concat_list "; " lines
 
 := position_known (p : native_position) : bool = $'(!p) ~= nil' : bool
 
@@ -400,13 +400,13 @@ test client static =
     $'g_game.loginWorld(!account, "god", "OTServBR-Global", "127.0.0.1", 7172, !character, "", !session_key)' : ()
 
 := log_in (s : session) : () =
-    := on_start, on_error, on_text, c = s.on_start, s.on_error, s.on_text, s.character
+    := on_start, on_error, on_text, c = s::on_start, s::on_error, s::on_text, s::character
     client_version_set ()
     connect_game_events on_start (login_error_handler on_error) (text_message_handler on_text)
     world_login c
 
 ///> lua
 ///> c
-test footing_follows_the_host_tile_facts =
+:# footing_follows_the_host_tile_facts =
     (footing_of !+ !+ !- !+, footing_of !+ !+ !+ !+, footing_of !+ !- !- !+) |> _assert_eq (Free, Ramp, Occupied)
     (footing_of !+ !- !- !-, footing_of !- !+ !- !+) |> _assert_eq (Blocked, Unknown)

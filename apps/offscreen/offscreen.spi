@@ -1,5 +1,5 @@
 ///- --package .
-test offscreen static =
+:# offscreen static =
     :< testing
 
 :< sm'_operators
@@ -22,7 +22,7 @@ test offscreen static =
 := defaults () : launch = { exe = ""; directory = ""; arguments = ""; desktop = "tibia-probe"; timeout_seconds = 120 }
 
 := timeout_set (l : launch) (value : string) : parsed =
-    ?= convert.try_convert value ?|
+    ?= convert::try_convert value ?|
     | Some seconds => Ready { l ?| timeout_seconds = seconds }
     | None => BadTimeout value
 
@@ -39,7 +39,7 @@ test offscreen static =
     |? flag = "--directory" ?> Ready { l ?| directory = value }
     |: option_flag l flag value
 
-:= finished_parse (l : launch) : parsed = ? l.exe = "" ?> MissingExe |: Ready l
+:= finished_parse (l : launch) : parsed = ? l::exe = "" ?> MissingExe |: Ready l
 
 :~ ^ parse_from (args : list string) (l : launch) : parsed =
     ?= args ?|
@@ -50,15 +50,15 @@ test offscreen static =
 := parse (args : list string) : parsed = parse_from args (defaults ())
 
 := command_line (l : launch) : string =
-    := quoted = "\"" ++# l.exe ++# "\""
-    ? l.arguments = "" ?> quoted |: quoted ++# " " ++# l.arguments
+    := quoted = "\"" ++# l::exe ++# "\""
+    ? l::arguments = "" ?> quoted |: quoted ++# " " ++# l::arguments
 
-:= station_desktop (l : launch) : string = "WinSta0\\" ++# l.desktop
+:= station_desktop (l : launch) : string = "WinSta0\\" ++# l::desktop
 
 := exit_line (l : launch) (pid : u32) (code : u32) : string =
-    "offscreen: pid " ++#? pid ++# " exit " ++#? code ++# " on desktop " ++# l.desktop
+    "offscreen: pid " ++#? pid ++# " exit " ++#? code ++# " on desktop " ++# l::desktop
 
-:= killed_line (l : launch) : string = "offscreen: killed after " ++#? l.timeout_seconds ++# " s"
+:= killed_line (l : launch) : string = "offscreen: killed after " ++#? l::timeout_seconds ++# " s"
 
 := failure_report (o : outcome) : list string =
     ?= o ?|
@@ -107,7 +107,7 @@ test offscreen static =
 
 := win32_close_desktop () =
     global """
-        #[link(name = "user32")]
+        #[cfg_attr(windows, link(name = "user32"))]
         unsafe extern "system" {
             safe fn CloseDesktop(desktop: i64) -> i32;
         }
@@ -248,7 +248,7 @@ test offscreen static =
 := working_folder (exe : string) (directory : string) : string =
     ? directory <> "" ?> directory
     |:
-        ?= file_system.directory_get_parent exe |> optionm'.unbox ?|
+        ?= file_system::directory_get_parent exe |> optionm'::unbox ?|
         | Some parent => parent
         | None => ""
 
@@ -262,10 +262,10 @@ test offscreen static =
         desktop = wide_of station
     }
 
-:= startup_for (w : process_wides) : startup_info = startup_on (startup_size ()) (wide_address w.desktop)
+:= startup_for (w : process_wides) : startup_info = startup_on (startup_size ()) (wide_address w::desktop)
 
 := created_with (w : process_wides) (information : process_information) : i32 =
-    := app, line, folder = wide_start w.application, wide_mutable_start w.command, wide_start w.folder
+    := app, line, folder = wide_start w::application, wide_mutable_start w::command, wide_start w::folder
     create_process_at app line folder (startup_for w) (information_start information)
 
 := started_process (information : process_information) (created : i32) : i64 =
@@ -308,16 +308,16 @@ test offscreen static =
 
 := waited_out (l : launch) (process : i64) : outcome =
     := pid = process_id process
-    := timed_out = wait_for process (conv l.timeout_seconds * 1000u32) <> 0
+    := timed_out = wait_for process (conv l::timeout_seconds * 1000u32) <> 0
     ? timed_out ?> terminate process (killed_exit_code ())
     finished_outcome process pid timed_out
 
 := run_started (l : launch) : outcome =
-    := process = start_on (station_desktop l) l.exe (command_line l) l.directory
+    := process = start_on (station_desktop l) l::exe (command_line l) l::directory
     ? process = 0 ?> NotStarted (last_error ()) |: waited_out l process
 
 := run_on_desktop (l : launch) : outcome =
-    := desktop = create_desktop l.desktop
+    := desktop = create_desktop l::desktop
     ? desktop = 0 ?> NoDesktop (last_error ())
     |:
         := o = run_started l
@@ -325,9 +325,9 @@ test offscreen static =
         o
 
 :~ ^ arguments_from (i : i32) (found : list string) : list string =
-    ?= env.try_command_line_argument i ?|
+    ?= env::try_command_line_argument i ?|
     | Some value => arguments_from (i + 1) (value :: found)
-    | None => listm.rev found
+    | None => listm::rev found
 
 := arguments () : list string = arguments_from 0 []
 
@@ -355,25 +355,25 @@ test offscreen static =
 
 ///> lua
 ///> rust
-test flags_fill_the_launch_and_keep_the_script_defaults =
+:# flags_fill_the_launch_and_keep_the_script_defaults =
     := l = probe_launch ()
-    (l.desktop, l.timeout_seconds) |> _assert_eq ("tibia-probe", 120i32)
+    (l::desktop, l::timeout_seconds) |> _assert_eq ("tibia-probe", 120i32)
 
 ///> lua
 ///> rust
-test flags_build_the_quoted_command_line_on_the_probe_station =
+:# flags_build_the_quoted_command_line_on_the_probe_station =
     := l = probe_launch ()
     (command_line l, station_desktop l) |> _assert_eq ("\"C:\\otc\\otclient.exe\" --mode probe", "WinSta0\\tibia-probe")
 
 ///> lua
 ///> rust
-test bad_input_names_its_cause =
+:# bad_input_names_its_cause =
     missing_exe (parse [ "--desktop"; "x" ]) |> _assert_eq !+
     missing_value (parse [ "--exe" ]) |> _assert_eq "--exe"
 
 ///> lua
 ///> rust
-test a_bad_timeout_names_its_value =
+:# a_bad_timeout_names_its_value =
     bad_timeout (parse [ "--exe"; "a.exe"; "--timeout-seconds"; "soon" ]) |> _assert_eq "soon"
 
 := thirty_second_launch () : launch =
@@ -382,13 +382,13 @@ test a_bad_timeout_names_its_value =
 
 ///> lua
 ///> rust
-test reports_match_run_offscreen_ps1 =
+:# reports_match_run_offscreen_ps1 =
     report (thirty_second_launch ()) (Exited (77u32, 0u32))
     |> _assert_eq [ "offscreen: pid 77 exit 0 on desktop tibia-probe" ]
 
 ///> lua
 ///> rust
-test a_timeout_report_matches_run_offscreen_ps1 =
+:# a_timeout_report_matches_run_offscreen_ps1 =
     report (thirty_second_launch ()) (TimedOut (77u32, 124u32))
     |> _assert_eq [ "offscreen: killed after 30 s"; "offscreen: pid 77 exit 124 on desktop tibia-probe" ]
 
@@ -409,8 +409,8 @@ test a_timeout_report_matches_run_offscreen_ps1 =
     waited, code
 
 ///> rust
-test a_hidden_desktop_runs_a_program_and_reports_its_exit_code =
-    := windows = platform.is_windows ()
+:# a_hidden_desktop_runs_a_program_and_reports_its_exit_code =
+    := windows = platform::is_windows ()
     := desktop, process = hidden_exit windows
     (desktop <> 0, process <> 0, hidden_result windows desktop process) |> _assert_eq (!+, !+, (0u32, 3u32))
 
@@ -427,12 +427,12 @@ test a_hidden_desktop_runs_a_program_and_reports_its_exit_code =
     | _ => input_refusal p
 
 := refusal_code (p : parsed) : i32 =
-    console.write_line (refusal_text p)
+    console::write_line (refusal_text p)
     2
 
 := launched_code (l : launch) : i32 =
     := o = run_on_desktop l
-    listm.iter console.write_line (report l o)
+    listm::iter console::write_line (report l o)
     exit_code_of o
 
 ///> _

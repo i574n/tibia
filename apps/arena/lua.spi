@@ -1,5 +1,5 @@
 ///- --package .
-test lua static =
+:# lua static =
     :< testing
 
 :< sm'_operators

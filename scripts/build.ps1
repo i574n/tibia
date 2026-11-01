@@ -24,18 +24,18 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Output "build.ps1 / layout / formatter check clean"
 
-$sibling = '../../x/postability'
-if (Test-Path $sibling) {
-    foreach ($name in 'x.json', 'tlds.txt') {
-        if ((Get-FileHash "../postability/$name").Hash -ne (Get-FileHash "$sibling/$name").Hash) { throw "build.ps1 / postable: postability/$name differs from x's; copy it from $sibling" }
-    }
+foreach ($tool in 'erlang', 'elixir') {
+    $bin = Join-Path $HOME "scoop/apps/$tool/current/bin"
+    if (Test-Path $bin) { $env:PATH = "$bin$([IO.Path]::PathSeparator)$env:PATH" }
 }
-$postable = @(& $spiral.Dotnet $spiral.Compiler --x-compat ../src ../apps 2>&1 | ForEach-Object { "$_" })
-if ($LASTEXITCODE -ne 0) { $postable | Select-Object -Last 10 | ForEach-Object { Write-Output "build.ps1 / postable / $_" }; throw "build.ps1 / postable: x-compat exited $LASTEXITCODE" }
-$overweight = @($postable | Where-Object { $_ -match '^[^:]+:\d+:\d+: overweight' })
-$overweight | ForEach-Object { Write-Output "build.ps1 / postable / $_" }
-if ($overweight) { throw "build.ps1 / postable: $($overweight.Count) cells over one post; split them by hand" }
-Write-Output "build.ps1 / postable / every cell fits one post / $(@($postable | Where-Object { $_ -match ': mention: ' }).Count) mentions left to the poster"
+$checked = @((Resolve-Path ../src).Path, (Resolve-Path ../apps).Path)
+Push-Location ../deps/spiral/apps/cells
+try { $budget = @(mix spiral.cell_budget --check @checked 2>&1 | ForEach-Object { "$_" }); $budgetExit = $LASTEXITCODE }
+finally { Pop-Location }
+$over = @($budget | Where-Object { $_ -match ': over_budget:' } | Select-Object -Unique)
+$over | ForEach-Object { Write-Output "build.ps1 / cell budget / $_" }
+if ($budgetExit -ne 0) { $budget | Select-Object -Last 5 | ForEach-Object { Write-Output "build.ps1 / cell budget / $_" }; throw "build.ps1 / cell budget: mix spiral.cell_budget exited $budgetExit ($($over.Count) definitions over the cell budget; split them by hand)" }
+Write-Output "build.ps1 / cell budget / $(@($budget | Where-Object { $_ -match '^cell-budget report:' } | Select-Object -Last 1))"
 
 $runNotebook = (Resolve-Path "../deps/spiral/apps/cells/spi/run_notebook.ps1").Path
 $wgslRun = @($env:SPIRAL_WGSL_RUN, "../target/wgsl-run/release/spiral-wgsl$(_exe)") |
@@ -66,9 +66,9 @@ $testRows = [Collections.Generic.List[object]]::new()
 $wgslRows = [Collections.Generic.List[object]]::new()
 
 $notebooks = (New-Item -ItemType Directory -Force "../notebooks").FullName
-$sources = Get-ChildItem ../src, ../apps/arena, ../apps/host, ../apps/offscreen, ../apps/map, ../apps/predict, ../apps/canary -File -Filter "*.spi" |
+$sources = Get-ChildItem ../src, ../apps/arena, ../apps/host, ../apps/offscreen, ../apps/map, ../apps/predict, ../apps/canary, ../apps/suite -File -Filter "*.spi" |
     Where-Object { !$Files -or $_.BaseName -in $Files } |
-    Where-Object { Select-String -Path $_.FullName -Pattern '^test ' -Quiet } |
+    Where-Object { Select-String -Path $_.FullName -Pattern '^(test|:#) ' -Quiet } |
     Where-Object { $_.BaseName -notin $Exclude } |
     Where-Object { !$Resume -or !(Select-String -LiteralPath (Join-Path $metrics "$($_.BaseName).out") -Pattern 'spiral-tests total' -Quiet -ErrorAction Ignore) } |
     Sort-Object Name
@@ -121,6 +121,12 @@ foreach ($source in $sources) {
 $fileRows | ConvertTo-Csv -Delimiter "`t" -UseQuotes Never | Set-Content (Join-Path $metrics "files$labelSuffix.tsv")
 $testRows | ConvertTo-Csv -Delimiter "`t" -UseQuotes Never | Set-Content (Join-Path $metrics "tests$labelSuffix.tsv")
 $wgslRows | ConvertTo-Csv -Delimiter "`t" -UseQuotes Never | Set-Content (Join-Path $metrics "wgsl$labelSuffix.tsv")
+$budgetKinds = @([regex]::Matches("$($budget | Where-Object { $_ -match '^cell-budget report:' } | Select-Object -Last 1)", '(\w+) (\d+)(?=[,)])') | ForEach-Object { "tibia_cell_budget_findings{kind=`"$($_.Groups[1].Value)`"} $($_.Groups[2].Value)" })
+$prom = @('# TYPE tibia_cell_budget_findings gauge') + $budgetKinds +
+    '# TYPE tibia_file_seconds gauge' + @($fileRows | ForEach-Object { "tibia_file_seconds{file=`"$($_.File)`"} $($_.Seconds)" }) +
+    '# TYPE tibia_file_exit_code gauge' + @($fileRows | ForEach-Object { "tibia_file_exit_code{file=`"$($_.File)`"} $($_.ExitCode)" }) +
+    '# TYPE tibia_test_ms gauge' + @($testRows | ForEach-Object { "tibia_test_ms{file=`"$($_.File)`",test=`"$($_.Test)`",target=`"$($_.Target)`",status=`"$($_.Status)`",memo=`"$($_.Memo)`"} $($_.Ms)" })
+$prom | Set-Content (Join-Path $metrics "tibia$labelSuffix.prom")
 foreach ($row in $wgslRows) { Write-Output "build.ps1 / wgsl / $($row.File) / $($row.Shader) $($row.Bytes) bytes / compile $($row.CompileMs) ms / run $($row.RunMs) ms / $($row.Adapter)" }
 if ($env:GITHUB_STEP_SUMMARY) {
     $summary = @("### $Label tests on $platform", "", "$($machine.Cpu), $([Environment]::ProcessorCount) logical cores, $([math]::Round($machine.Memory / 1GB, 1)) GiB, $(@($fileRows).Count) files in $([math]::Round(($fileRows | Measure-Object Seconds -Sum).Sum / 60, 1)) min", "", "| slowest file | s |", "|---|---|")

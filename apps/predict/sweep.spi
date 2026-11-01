@@ -5,19 +5,19 @@
 
 := validated_arm () : tactic = cavebot_with_heal 160
 
-:= kills_floor (camp : camp) : i32 = (ledger_on camp (validated_arm ()) (training_block ())).hunt_kills
+:= kills_floor (camp : camp) : i32 = (ledger_on camp (validated_arm ()) (training_block ()))::hunt_kills
 
-:= evolved_rules (camp : camp) : search.genome =
+:= evolved_rules (camp : camp) : search::genome =
     := start = { first = 160; second = 0; third = 4 }
     := plan = { seed = 91u32; generations = 6; offspring = 6 }
     tactic_evolved_on (ProfitKeepingKills (kills_floor camp)) start camp (training_block ()) plan
 
 := ledger_row (arm : i32) (l : ledger) : () =
-    := profit = quantity.value_of l.hunt_profit
-    console.write_line ("" ++#? arm ++# "\t" ++#? l.hunt_kills ++# "\t" ++#? l.hunt_deaths ++# "\t" ++#? profit)
+    := profit = quantity::value_of l::hunt_profit
+    console::write_line ("" ++#? arm ++# "\t" ++#? l::hunt_kills ++# "\t" ++#? l::hunt_deaths ++# "\t" ++#? profit)
 
-:= genes_row (g : search.genome) : () =
-    console.write_line ("" ++#? g.first ++# "\t" ++#? g.second ++# "\t" ++#? g.third)
+:= genes_row (g : search::genome) : () =
+    console::write_line ("" ++#? g::first ++# "\t" ++#? g::second ++# "\t" ++#? g::third)
 
 := main () =
     := camp = duo_ground ()

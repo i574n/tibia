@@ -1,5 +1,5 @@
 ///- --package .
-test activity static =
+:# activity static =
     :< testing
 
 :== counts =
@@ -13,12 +13,12 @@ test activity static =
         dropped : option i32
     }
 
-:= foreign_potions (c : counts) : i32 = c.server_potions - c.own_potions
+:= foreign_potions (c : counts) : i32 = c::server_potions - c::own_potions
 
-:= own_actions (c : counts) : i32 = c.own_potions + c.own_other + c.retreats + c.gated_walks
+:= own_actions (c : counts) : i32 = c::own_potions + c::own_other + c::retreats + c::gated_walks
 
 := foreign_actions (c : counts) : option i32 =
-    ?= c.allowed, c.dropped ?|
+    ?= c::allowed, c::dropped ?|
     | Some allowed, Some dropped => Some (allowed + dropped - own_actions c)
     | _ => None
 
@@ -36,7 +36,7 @@ test activity static =
 ///> c
 ///> lua
 ///> gleam
-test foreign_activity_follows_the_arena_check =
+:# foreign_activity_follows_the_arena_check =
     := ~server = 6i32
     := c = checked_counts server
     foreign_potions c |> _assert_eq 1i32
@@ -45,7 +45,7 @@ test foreign_activity_follows_the_arena_check =
 ///> c
 ///> lua
 ///> gleam
-test foreign_actions_need_both_parity_counters =
+:# foreign_actions_need_both_parity_counters =
     := ~server = 6i32
     := c = checked_counts server
     foreign_actions c |> _assert_eq (Some 0i32)

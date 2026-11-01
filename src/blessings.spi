@@ -1,5 +1,5 @@
 ///- --package .
-test blessings static =
+:# blessings static =
     :< testing
 
 :| death_cover =
@@ -42,19 +42,19 @@ test blessings static =
     count 1 0
 
 ///> c
-test an_unblessed_knight_always_drops_the_backpack_and_each_other_item_one_time_in_ten =
+:# an_unblessed_knight_always_drops_the_backpack_and_each_other_item_one_time_in_ten =
     := ~bless = 0i32
     (drops_over_every_roll (Unprotected bless) ContainerItem, drops_over_every_roll (Unprotected bless) EquippedItem)
     |> _assert_eq (10000i32, 1000i32)
 
 ///> c
-test one_blessing_cuts_the_drop_chance_like_canary_blessing_lua =
+:# one_blessing_cuts_the_drop_chance_like_canary_blessing_lua =
     := ~one = 1i32
     (drops_over_every_roll (Unprotected one) ContainerItem, drops_over_every_roll (Unprotected one) EquippedItem)
     |> _assert_eq (7000i32, 700i32)
 
 ///> c
-test four_and_five_blessings_follow_canary_blessing_lua =
+:# four_and_five_blessings_follow_canary_blessing_lua =
     := ~one = 1i32
     (
         drops_over_every_roll (Unprotected (one + 3)) EquippedItem,
@@ -63,12 +63,12 @@ test four_and_five_blessings_follow_canary_blessing_lua =
     |> _assert_eq (100i32, 0i32)
 
 ///> c
-test the_amulet_of_loss_keeps_everything_and_a_skull_drops_everything =
+:# the_amulet_of_loss_keeps_everything_and_a_skull_drops_everything =
     (drops_over_every_roll AmuletOfLoss ContainerItem, drops_over_every_roll Skulled EquippedItem)
     |> _assert_eq (0i32, 10000i32)
 
 ///> wgsl
-test unblessed_drops_on_gpu =
+:# unblessed_drops_on_gpu =
     := ~roll = 1000i32
     ?
         dropped (Unprotected 0) EquippedItem roll

@@ -1,0 +1,76 @@
+///- --package .
+:# suite static =
+    :< testing
+
+:< sm'_operators
+
+:== ran = { discovered : i32; executed : i32; passed : i32; failed : i32 }
+
+:== held = { statics : i32; unsupported : i32; skipped : i32; not_run : i32 }
+
+:== totals = { ran : ran; held : held }
+
+:= total_count (json : string) (key : string) : i32 = json_scan::parse_i32 json (json_scan::value_at json key)
+
+:= ran_of (json : string) : ran =
+    {
+        discovered = total_count json "discovered"
+        executed = total_count json "executed"
+        passed = total_count json "passed"
+        failed = total_count json "failed"
+    }
+
+:= held_of (json : string) : held =
+    {
+        statics = total_count json "static"
+        unsupported = total_count json "unsupported"
+        skipped = total_count json "skipped"
+        not_run = total_count json "not_run"
+    }
+
+:= totals_of (json : string) : totals = { ran = ran_of json; held = held_of json }
+
+:= not_executed (t : totals) : i32 = t::ran::discovered - t::ran::executed - t::held::statics
+
+:= all_passed (t : totals) : bool = t::ran::passed = t::ran::executed && not_executed t = 0
+
+:= none_held (h : held) : bool = h::unsupported = 0 && h::skipped = 0 && h::not_run = 0
+
+:= green (t : totals) : bool = t::ran::failed = 0 && none_held t::held && all_passed t
+
+:= held_text (h : held) : string =
+    ", unsupported " ++#? h::unsupported ++# ", skipped " ++#? h::skipped ++# ", not run " ++#? h::not_run
+
+:= problem_of (name : string) (failed_tests : string) (t : totals) : string =
+    := counts = "failed " ++#? t::ran::failed ++# held_text t::held ++# ", not executed " ++#? not_executed t
+    name ++# ": " ++# counts ++# " (" ++# failed_tests ++# ")"
+
+:= missing_total (name : string) (exit_code : i32) : string =
+    name ++# ": no spiral-tests total line (exit code " ++#? exit_code ++# ")"
+
+:= offscreen_head () : string =
+    "{\"accepted\":0,\"built\":0,\"discovered\":7,\"executed\":7,\"failed\":0,\"files\":1,\"filtered\":0,"
+
+:= offscreen_tail () : string =
+    "\"memo_hits\":7,\"no_agree_reasons\":{},\"not_run\":0,\"passed\":7,\"preludes\":1,\"skipped\":0,"
+
+:= offscreen_total () : string = offscreen_head () ++# offscreen_tail () ++# "\"static\":0,\"unsupported\":0}"
+
+:# a_green_total_reads_back_as_green =
+    := t = totals_of (offscreen_total ())
+    (t::ran::discovered, t::ran::executed, t::ran::passed, green t) |> _assert_eq (7, 7, 7, !+)
+
+:= failed_problem () : string = "offscreen: failed 2, unsupported 0, skipped 0, not run 0, not executed 0 (a, b)"
+
+:# a_failed_test_names_every_count =
+    := base = totals_of (offscreen_total ())
+    := t = { base ?| ran = { base::ran ?| passed = 5; failed = 2 } }
+    (green t, problem_of "offscreen" "a, b" t) |> _assert_eq (!-, failed_problem ())
+
+:# a_test_neither_run_nor_static_is_not_executed =
+    := base = totals_of (offscreen_total ())
+    := t = { base ?| ran = { base::ran ?| discovered = 8 } }
+    (not_executed t, green t) |> _assert_eq (1, !-)
+
+:# a_missing_total_line_names_the_exit_code =
+    missing_total "map" 3 |> _assert_eq "map: no spiral-tests total line (exit code 3)"

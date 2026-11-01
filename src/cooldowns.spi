@@ -1,5 +1,5 @@
 ///- --package .
-test cooldowns static =
+:# cooldowns static =
     :< testing
 
 :| spell_group =
@@ -39,16 +39,16 @@ test cooldowns static =
 
 := group_ready_at (group : spell_group) (held : timers) : i32 =
     ?= group ?|
-    | AttackGroup => held.attack_ready_at
-    | HealingGroup => held.healing_ready_at
-    | SupportGroup => held.support_ready_at
+    | AttackGroup => held::attack_ready_at
+    | HealingGroup => held::healing_ready_at
+    | SupportGroup => held::support_ready_at
 
 := own_ready_at (id : spell_id) (held : timers) : i32 =
     ?= id ?|
-    | StrikeSpell => held.strike_ready_at
-    | LightHealingSpell => held.light_healing_ready_at
-    | WoundCleansingSpell => held.wound_cleansing_ready_at
-    | HasteSpell => held.haste_ready_at
+    | StrikeSpell => held::strike_ready_at
+    | LightHealingSpell => held::light_healing_ready_at
+    | WoundCleansingSpell => held::wound_cleansing_ready_at
+    | HasteSpell => held::haste_ready_at
 
 := with_strike (at : i32) (t : timers) : timers = { t ?| strike_ready_at = at }
 
@@ -75,14 +75,14 @@ test cooldowns static =
     ? a < b ?> b |: a
 
 := ready_at (cast : spell) (held : timers) : i32 =
-    later (group_ready_at cast.group held) (own_ready_at cast.id held)
+    later (group_ready_at cast::group held) (own_ready_at cast::id held)
 
 := can_cast (now : i32) (cast : spell) (held : timers) : bool =
     ready_at cast held <= now
 
 := after_cast (now : i32) (cast : spell) (held : timers) : timers =
-    := own_until = later (own_ready_at cast.id held) (now + cast.own_ms)
-    with_own_ready_at cast.id own_until held |> with_group_ready_at cast.group (now + cast.group_ms)
+    := own_until = later (own_ready_at cast::id held) (now + cast::own_ms)
+    with_own_ready_at cast::id own_until held |> with_group_ready_at cast::group (now + cast::group_ms)
 
 := strike_spell () : spell = { id = StrikeSpell; group = AttackGroup; own_ms = 2000; group_ms = 2000 }
 
@@ -93,52 +93,52 @@ test cooldowns static =
 := after_strike_at (now : i32) : timers = idle_timers () |> after_cast now (strike_spell ())
 
 ///> c
-test fresh_timers_allow_any_spell =
+:# fresh_timers_allow_any_spell =
     := ~now = 0i32
     can_cast now (strike_spell ()) (idle_timers ()) |> _assert_eq !+
 
 ///> c
-test attack_blocks_its_group_until_it_expires =
+:# attack_blocks_its_group_until_it_expires =
     := ~now = 1000i32
     := h = idle_timers () |> after_cast now (strike_spell ())
     can_cast (now + 1999) (strike_spell ()) h |> _assert_eq !-
     can_cast (now + 2000) (strike_spell ()) h |> _assert_eq !+
 
 ///> c
-test attack_does_not_block_healing_group =
+:# attack_does_not_block_healing_group =
     := ~now = 1000i32
     := held = idle_timers () |> after_cast now (strike_spell ())
     group_ready_at HealingGroup held |> _assert_eq 0i32
 
 ///> c
-test own_cooldown_gates_only_the_same_spell_like_canary =
+:# own_cooldown_gates_only_the_same_spell_like_canary =
     := ~now = 1000i32
     := held = after_strike_at now
     can_cast (now + 500) (light_healing ()) held |> _assert_eq !+
     can_cast (now + 500) (strike_spell ()) held |> _assert_eq !-
 
 ///> c
-test the_own_cooldown_ends_with_the_group_cooldown =
+:# the_own_cooldown_ends_with_the_group_cooldown =
     := ~now = 1000i32
     can_cast (now + 2000) (strike_spell ()) (after_strike_at now) |> _assert_eq !+
 
 ///> c
-test support_sets_only_support_group =
+:# support_sets_only_support_group =
     := ~now = 0i32
     := held = idle_timers () |> after_cast now (haste ())
-    held.support_ready_at |> _assert_eq 2000i32
-    held.attack_ready_at |> _assert_eq 0i32
+    held::support_ready_at |> _assert_eq 2000i32
+    held::attack_ready_at |> _assert_eq 0i32
 
 ///> wgsl
-test attack_cooldown_on_gpu =
+:# attack_cooldown_on_gpu =
     := ~now = 1000i32
     := held, strike = after_strike_at now, strike_spell ()
-    ? can_cast (now + 1999) strike held = !- && can_cast (now + 2000) strike held && held.healing_ready_at = 0i32
+    ? can_cast (now + 1999) strike held = !- && can_cast (now + 2000) strike held && held::healing_ready_at = 0i32
     ?> 0i32
     |: 1i32
 
 ///> c
-test healing_right_after_a_strike_is_allowed_like_canary =
+:# healing_right_after_a_strike_is_allowed_like_canary =
     := ~now = 1000i32
     := held = after_cast now (strike_spell ()) (idle_timers ())
     can_cast now (light_healing ()) held |> _assert_eq !+

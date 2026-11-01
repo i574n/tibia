@@ -1,5 +1,5 @@
 ///- --package .
-test quantity static =
+:# quantity static =
     :< testing
 
 :! hitpoints = ()
@@ -30,23 +30,23 @@ test quantity static =
 := gp (value : i32) : amount gold_coins = amount value
 
 ///> c
-test same_unit_arithmetic =
+:# same_unit_arithmetic =
     := ~health = 150i32
     value_of (minus (hp health) (hp 40)) |> _assert_eq 110i32
     value_of (capped (hp 150) (plus (hp health) (hp 60))) |> _assert_eq 150i32
     at_least (ms 2000) (ms (health * 10)) |> _assert_eq !+
 
 ///> c
-test hitpoints_and_milliseconds_do_not_mix fails "Unification failure" =
+:# hitpoints_and_milliseconds_do_not_mix fails "Unification failure" =
     plus (hp 10) (ms 20)
 
 ///> c
-test gold_is_not_hitpoints fails "Unification failure" =
+:# gold_is_not_hitpoints fails "Unification failure" =
     := heal (amount : amount hitpoints) = amount
     heal (gp 5)
 
 ///> wgsl
-test units_on_gpu =
+:# units_on_gpu =
     := ~health = 150i32
     ? value_of (capped (hp 150) (plus (hp health) (hp 60))) = 150i32 && value_of (minus (ms 2000) (ms 500)) = 1500i32
     ?> 0i32
