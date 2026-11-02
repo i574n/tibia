@@ -1,0 +1,5 @@
+///- --no-respell
+open table_rows
+inl columns () = Columns [ "timestamp"; "competitor"; "run"; "monster"; "count"; "experience"; "cleared_ms"; "lowest_health"; "actions_allowed"; "actions_dropped"; "potions"; "gold"; "deaths"; "foreign_potions"; "foreign_actions" ]
+inl row_1 () = Row [ "2026-10-15T06:23:50"; "spiral-retreat"; "1"; "cyclops"; "3"; "675"; "89214"; "138"; "14"; "2"; "7"; "79"; "0"; "0"; "0" ]
+inl rows () : list table_row = [ row_1 () ]

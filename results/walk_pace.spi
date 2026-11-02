@@ -1,0 +1,98 @@
+///- --package .
+:# walk_pace static =
+    :< testing
+
+:< sm'_operators
+
+:== straight_step = { direction : i32; after_straight : bool; interval : i32 }
+
+:== bands = { formula_ms : i32; formula_slack_ms : i32; base_ms : i32; base_slack_ms : i32 }
+
+:= pc4_bands () : bands = { formula_ms = 486; formula_slack_ms = 60; base_ms = 702; base_slack_ms = 30 }
+
+:= sign (n : i32) : i32 = ? n > 0 ?> 1 |? n < 0 ?> -1 |: 0
+
+:= coordinate (text : string) (at : i32) : option i32 =
+    convert::try_convert (am'::index at (text |> sm'::split "," |> array))
+
+:= heading (from : string) (onto : string) : option i32 =
+    ?= coordinate from 0, coordinate from 1, coordinate onto 0, coordinate onto 1 ?|
+    | Some x, Some y, Some x', Some y' => Some (sign (x' - x) + 10 * sign (y' - y))
+    | _ => None
+
+:= tokens_after (marker : string) (line : string) : array string =
+    := at : i32 = sm'::index_of marker line
+    := start = at + sm'::length marker
+    := rest = ? at < 0i32 ?> "" |: sm'::substring start (sm'::length line - start) line
+    rest |> sm'::split " " |> array
+
+:= straight_from (t : array string) (d : i32) (ms : i32) : straight_step =
+    { direction = d; after_straight = am'::index 6 t = "knight-straight"; interval = ms }
+
+:= step_of_tokens (t : array string) : option straight_step =
+    := onto = sm'::replace ";" "" (am'::index 2 t)
+    ?= heading (am'::index 0 t) onto, convert::try_convert (am'::index 8 t) ?|
+    | Some d, Some ms => Some (straight_from t d ms)
+    | _ => None
+
+:= step_of (line : string) : option straight_step =
+    := t = tokens_after " knight-straight step " line
+    ? am'::length t < 10 ?> None |: step_of_tokens t
+
+:== pace = { previous : i32; kept : list i32; turns : i32 }
+
+:= paced (p : pace) (s : straight_step) : pace =
+    := kept = s::after_straight && s::direction = p::previous
+    := turns = ? kept ?> p::turns |: p::turns + 1
+    { previous = s::direction; kept = (? kept ?> s::interval :: p::kept |: p::kept); turns = turns }
+
+:= pace_of_log (p : pace) (lines : list string) : pace =
+    listm::fold paced { p ?| previous = 0 } (listm'::choose step_of lines)
+
+:~ ^ inserted (n : i32) (sorted : list i32) : list i32 =
+    ?= sorted ?|
+    | [] => [ n ]
+    | head :: rest => ? n < head ?> n :: sorted |: head :: inserted n rest
+
+:~ ^ item_at (i : i32) (xs : list i32) : i32 =
+    ?= xs ?|
+    | [] => 0
+    | x :: rest => ? i = 0 ?> x |: item_at (i - 1) rest
+
+:= doubled_median (xs : list i32) : i32 =
+    := sorted = listm::fold (\ acc x => inserted x acc) [] xs
+    := n : i32 = listm::length sorted
+    ? n % 2 = 1 ?> 2 * item_at (n / 2) sorted |: item_at (n / 2 - 1) sorted + item_at (n / 2) sorted
+
+:| pace_verdict =
+    | FormulaSpeed
+    | BaseSpeed
+    | NeitherBand
+
+:= within (low : i32) (high : i32) (x : i32) : bool = x >= low && x <= high
+
+:= formula_pace (b : bands) (twice : i32) : bool =
+    within (2 * b::formula_ms) (2 * (b::formula_ms + b::formula_slack_ms)) twice
+
+:= base_pace (b : bands) (twice : i32) : bool =
+    within (2 * (b::base_ms - b::base_slack_ms)) (2 * (b::base_ms + b::base_slack_ms)) twice
+
+:= verdict_of (b : bands) (twice : i32) : pace_verdict =
+    ? formula_pace b twice ?> FormulaSpeed |? base_pace b twice ?> BaseSpeed |: NeitherBand
+
+:= step_line (x : i32) (y : i32) (kind : string) (ms : i32) : string =
+    := onto = "" ++#? x ++# "," ++#? y ++# ",7"
+    " knight-straight step 0,0,7 -> " ++# onto ++# "; interval after its " ++# kind ++# " step " ++#? ms ++# " ms"
+
+:= walk_lines () : list string =
+    [ step_line 1 0 "knight-straight" 500; step_line 1 0 "knight-straight" 490; step_line 0 1 "knight-straight" 900 ]
+
+:= walk_facts (lines : list string) : i32 * i32 * pace_verdict =
+    := p = pace_of_log { previous = 0; kept = []; turns = 0 } lines
+    listm::length p::kept, p::turns, verdict_of (pc4_bands ()) (doubled_median p::kept)
+
+///> lua
+///> rust
+:# a_turn_is_excluded_and_the_straight_run_is_kept =
+    := ~lines = walk_lines ()
+    walk_facts lines |> _assert_eq (1i32, 2i32, FormulaSpeed)

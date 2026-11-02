@@ -93,3 +93,11 @@
 :# hits_split_into_grid_step_and_off_grid_pairs =
     := ~lines = sample_lines ()
     tally_of (counts_of (pc3_grid ()) lines) |> _assert_eq (1i32, 1i32, 0i32, 1i32, 0i32)
+
+:= step_lines () : list string = [ hit_at 0; step_at 500; hit_at 2010; step_at 2500; hit_at 5510 ]
+
+///> lua
+///> rust
+:# a_step_pair_on_the_grid_or_far_off_it_has_its_own_bucket =
+    := ~lines = step_lines ()
+    tally_of (counts_of (pc3_grid ()) lines) |> _assert_eq (0i32, 0i32, 1i32, 0i32, 1i32)

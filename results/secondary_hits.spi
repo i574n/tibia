@@ -1,0 +1,76 @@
+///- --package .
+:# secondary_hits static =
+    :< testing
+
+:< sm'_operators
+
+:== run_hits = { started : bool; start_ms : i32; early : i32; late : i32; below_ground : bool }
+
+:= fresh_run () : run_hits = { started = !-; start_ms = 0; early = 0; late = 0; below_ground = !- }
+
+:= stamp_of (line : string) : option i32 =
+    := mark : i32 = sm'::index_of "@t+" line
+    := rest = ? mark < 0i32 ?> "" |: sm'::substring (mark + 3i32) (sm'::length line - mark - 3i32) line
+    convert::try_convert (am'::index 0 (rest |> sm'::split " " |> array))
+
+:= trimmed_token (token : string) : string =
+    token |> sm'::replace ";" "" |> sm'::replace ":" "" |> sm'::replace "(" "" |> sm'::replace ")" ""
+
+:= floor_six (token : string) : bool =
+    := parts = trimmed_token token |> sm'::split "," |> array
+    ?= (? am'::length parts = 3 ?> convert::try_convert (am'::index 2 parts) |: None) ?|
+    | Some (floor : i32) => floor = 6
+    | None => !-
+
+:= below_ground (line : string) : bool = line |> sm'::split " " |> am'::any floor_six
+
+:= started_at (line : string) : option i32 =
+    ? sm'::contains "client bot starts @t+" line ?> stamp_of line
+    |? sm'::contains "policy starts at " line ?> Some 0
+    |: None
+
+:= hit_at (line : string) : option i32 =
+    ? sm'::contains "You lose " line && sm'::contains " hitpoints due to an attack by " line ?> stamp_of line |: None
+
+:= counted_hit (window_ms : i32) (r : run_hits) (at : i32) : run_hits =
+    ? at - r::start_ms < window_ms ?> { r ?| early = r::early + 1 } |: { r ?| late = r::late + 1 }
+
+:= after_start (window_ms : i32) (r : run_hits) (line : string) : run_hits =
+    ?= started_at line, hit_at line ?|
+    | Some ms, _ => { r ?| started = !+; start_ms = ms }
+    | None, Some at => ? r::started ?> counted_hit window_ms r at |: r
+    | None, None => r
+
+:= scanned (window_ms : i32) (r : run_hits) (line : string) : run_hits =
+    after_start window_ms { r ?| below_ground = r::below_ground || below_ground line } line
+
+:= run_of (window_ms : i32) (lines : list string) : run_hits = listm::fold (scanned window_ms) (fresh_run ()) lines
+
+:== summary = { runs : i32; unstarted : i32; early_sum : i32; late_sum : i32; floor_changes : i32 }
+
+:= no_runs () : summary = { runs = 0; unstarted = 0; early_sum = 0; late_sum = 0; floor_changes = 0 }
+
+:= added_run (s : summary) (r : run_hits) (floor : i32) : summary =
+    := hits = { s ?| early_sum = s::early_sum + r::early; late_sum = s::late_sum + r::late }
+    { hits ?| runs = s::runs + 1; floor_changes = s::floor_changes + floor }
+
+:= summed (s : summary) (r : run_hits) : summary =
+    := floor = ? r::below_ground ?> 1 |: 0
+    ? r::started = !- ?> { s ?| unstarted = s::unstarted + 1 }
+    |: added_run s r floor
+
+:= hurt_at (t : i32) : string = "You lose 20 hitpoints due to an attack by a cyclops. @t+" ++#? t
+
+:= started_run () : list string = [ "client bot starts @t+1000"; hurt_at 4000; "at 100,200,6 now"; hurt_at 15000 ]
+
+:= runs_summary (window_ms : i32) : summary =
+    := unstarted = [ hurt_at 500 ]
+    listm::fold summed (no_runs ()) [ run_of window_ms (started_run ()); run_of window_ms unstarted ]
+
+///> lua
+///> rust
+:# hits_split_at_the_window_and_floor_changes_count =
+    := ~window = 10000
+    := s = runs_summary window
+    := got = s::runs, s::unstarted, s::early_sum, s::late_sum, s::floor_changes
+    got |> _assert_eq (1i32, 1i32, 1i32, 1i32, 1i32)

@@ -4,4 +4,6 @@ modules = '''
 table_rows
 arena_rows
 hit_grid
+walk_pace
+secondary_hits
 '''
