@@ -1,0 +1,75 @@
+///- --package .
+:# row_census static =
+    :< testing
+
+:== tally = i32 * i32
+
+:~ counted \* t. ((ok, bad) : tally) (d : arena_rows::decoded t) : tally =
+    :< arena_rows
+    ?= d ?|
+    | Decoded _ => ok + 1i32, bad
+    | Rejected _ => ok, bad + 1i32
+
+:~ arm_counted (t : tally) (r : table_rows::table_row) : tally =
+    :< table_rows
+    ?= r ?|
+    | Row cells => counted t (arena_rows::arm_step_of_line (line_of cells))
+    | Columns _ => t
+
+:= tally_of (f : tally -> table_rows::table_row -> tally) (tables : list (list table_rows::table_row)) : tally =
+    := ~runtime = tables
+    listm::fold (\ t table => listm::fold f t table) (0i32, 0i32) runtime
+
+:= plus ((a, b) : tally) ((c, d) : tally) : tally = a + c, b + d
+
+:= arm_a () : tally =
+    tally_of arm_counted [
+        rows::arena_results_cyclops_pc10_secondary::rows ()
+        rows::arena_results_cyclops_pr17_secondary::rows ()
+    ]
+
+:= arm_b () : tally =
+    tally_of arm_counted [
+        rows::arena_results_cyclops_pr20_secondary::rows ()
+        rows::arena_results_hunter_pc10_secondary::rows ()
+        rows::arena_results_hunter_pc11_secondary::rows ()
+    ]
+
+:= arm_c () : tally =
+    tally_of arm_counted [
+        rows::arena_results_hunter_pc9_secondary::rows ()
+        rows::arena_results_hunter_pr18_secondary::rows ()
+        rows::arena_results_hunter_pr19_secondary::rows ()
+    ]
+
+:= arm_d () : tally =
+    tally_of arm_counted [
+        rows::arena_results_hunter_pr21_secondary::rows ()
+        rows::arena_results_hunter_pr22_secondary::rows ()
+    ]
+
+:= arm_e () : tally =
+    tally_of arm_counted [
+        rows::arena_results_hunting_ground_pr23_secondary::rows ()
+        rows::arena_results_hunting_ground_pr24_secondary::rows ()
+    ]
+
+:= arm_f () : tally =
+    tally_of arm_counted [
+        rows::arena_results_hunting_ground_pr25_secondary::rows ()
+        rows::arena_results_hunting_ground_pr26_secondary::rows ()
+    ]
+
+:= arm_g () : tally =
+    tally_of arm_counted [
+        rows::arena_results_hunting_ground_pr27_secondary::rows ()
+        rows::arena_results_hunting_ground_pr28_secondary::rows ()
+    ]
+
+:= arm_tally () : tally =
+    listm::fold plus (0i32, 0i32) [ arm_a (); arm_b (); arm_c (); arm_d (); arm_e (); arm_f (); arm_g () ]
+
+///> rust
+:# every_arm_step_row_decodes =
+    := ~expected = 284i32
+    arm_tally () |> _assert_eq (expected, 0i32)

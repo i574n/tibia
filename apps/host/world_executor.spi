@@ -33,15 +33,13 @@
 
 :== stepped = maybe_world * list event
 
-:= first_line (text : string) : string =
-    := stop : i32 = sm'::index_of "\n" text
-    ? stop < 0i32 ?> sm'::trim text |: sm'::trim (sm'::substring 0i32 stop text)
+:= trimmed_first_line (text : string) : string = sm'::trim (sm'::first_line text)
 
 := rest_from (at : i32) (text : string) : string = sm'::substring at (sm'::length text - at) text
 
 := line_after (prefix : string) (text : string) : string =
     := at : i32 = sm'::index_of prefix text
-    ? at < 0i32 ?> "" |: first_line (rest_from (at + sm'::length prefix) text)
+    ? at < 0i32 ?> "" |: trimmed_first_line (rest_from (at + sm'::length prefix) text)
 
 :~ ^ awaited_start (w : world_port::world) (left_ms : i32) : event =
     ?= world_port::world_event_within w 50i32 ?|

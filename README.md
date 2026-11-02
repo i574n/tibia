@@ -242,7 +242,7 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 | --- | --- |
 | `src/` | The Spiral package (`package.spiproj` and its modules): rules, typed domain, simulators and their test blocks |
 | `docs/` | The plan, the benchmark with every pre-registration and its result (the one record of each experiment), the modeling notes and prior art |
-| `apps/arena/` | Every OTClient probe, written in Spiral and compiled with the Lua backend. Layers: generic Lua-side state (`lua.spi`), typed client bindings (`client.spi`), the shared probe lifecycle (`probe.spi`), shared run modules (`scoreboard`, `observer`, `adjacency`), and one entry per probe: competitor, random, vbot, nexbot, summon, scan, path, measure, steps. `build.ps1` writes `target/arena/<probe>.lua`; `-ProbeBody <probe>` picks one and rebuilds stale outputs |
+| `apps/arena/` | Every OTClient probe, compiled with the Lua backend. Layers: generic Lua-side state (`lua.spi`), typed client bindings (`client.spi`), the shared probe lifecycle (`probe.spi`), shared run modules (`scoreboard`, `observer`, `adjacency`), and one entry per probe: competitor, random, vbot, nexbot, summon, scan, path, measure, steps. `build.ps1` writes `target/arena/<probe>.lua`; `-ProbeBody <probe>` picks one and rebuilds stale outputs |
 | `apps/map/` | The server-map tool (Rust backend): reads Canary's map, writes the generated terrain definitions and the region dump in `results/` |
 | `apps/predict/` | One C entry that prints the model's prediction tables for the current bundle (cyclops clears per policy, hunter clears, hunting-ground hunts) |
 | `live/` | The live arena harness: the parity layer, bot shims and configs, the run and check scripts, scenario assets, and the block runner |

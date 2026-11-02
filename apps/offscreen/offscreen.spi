@@ -298,13 +298,6 @@
         close_desktop desktop
         o
 
-:~ ^ arguments_from (i : i32) (found : list string) : list string =
-    ?= env::try_command_line_argument i ?|
-    | Some value => arguments_from (i + 1) (value :: found)
-    | None => listm::rev found
-
-:= arguments () : list string = arguments_from 0 []
-
 := ready_launch (p : parsed) : launch =
     ?= p ?|
     | Ready l => l
@@ -411,6 +404,6 @@
 
 ///> _
 := main () =
-    := p = parse (arguments ())
+    := p = parse (env::command_line_arguments ())
     := code = ?= p ?| Ready l => launched_code l | _ => refusal_code p
     $'std::process::exit(!code)' : ()
