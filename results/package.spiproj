@@ -5,3 +5,4 @@ packages:
 modules:
     table_rows
     arena_rows
+    hit_grid

@@ -82,83 +82,47 @@
 := killed_exit_code () : u32 = 124
 
 := win32_pointer_types () =
-    global """
-        type Wide = *const u16;
-        type Line = *mut u16;
-        type Bytes = *const u8;
-        type Startup = *const StartupInfo;
-        type Information = *mut ProcessInformation;
-        """
+    global "type Wide = *const u16;"
+    global "type Line = *mut u16;"
+    global "type Bytes = *const u8;"
+    global "type Startup = *const StartupInfo;"
+    global "type Information = *mut ProcessInformation;"
 
 := win32_null_pointers () =
-    global """
-        const NONE: Bytes = std::ptr::null();
-        const NO_WIDE: Wide = std::ptr::null();
-        """
+    global "const NONE: Bytes = std::ptr::null();"
+    global "const NO_WIDE: Wide = std::ptr::null();"
 
 := win32_create_desktop () =
-    global """
-        unsafe extern "system" {
-            safe fn CreateDesktopW(
-                name: Wide, device: Wide, mode: Bytes, flags: u32, access: u32, security: Bytes,
-            ) -> i64;
-        }
-        """
+    global "unsafe extern \"system\" { safe fn CreateDesktopW("
+    ^^ "_: Wide, _: Wide, _: Bytes, _: u32, _: u32, _: Bytes) -> i64; }"
 
 := win32_close_desktop () =
-    global """
-        #[cfg_attr(windows, link(name = "user32"))]
-        unsafe extern "system" {
-            safe fn CloseDesktop(desktop: i64) -> i32;
-        }
-        """
+    global "#[cfg_attr(windows, link(name = \"user32\"))] "
+    ^^ "unsafe extern \"system\" { safe fn CloseDesktop(_: i64) -> i32; }"
 
 := win32_process_queries () =
-    global """
-        unsafe extern "system" {
-            safe fn GetLastError() -> u32;
-            safe fn GetProcessId(process: i64) -> u32;
-        }
-        """
+    global "unsafe extern \"system\" { safe fn GetLastError() -> u32; }"
+    global "unsafe extern \"system\" { safe fn GetProcessId(process: i64) -> u32; }"
 
 := win32_process_control () =
-    global """
-        unsafe extern "system" {
-            safe fn WaitForSingleObject(handle: i64, milliseconds: u32) -> u32;
-            safe fn TerminateProcess(process: i64, code: u32) -> i32;
-        }
-        """
+    global "unsafe extern \"system\" { safe fn WaitForSingleObject(handle: i64, milliseconds: u32) -> u32; }"
+    global "unsafe extern \"system\" { safe fn TerminateProcess(process: i64, code: u32) -> i32; }"
 
 := win32_handle_declarations () =
-    global """
-        unsafe extern "system" {
-            safe fn GetExitCodeProcess(process: i64, code: *mut u32) -> i32;
-            safe fn CloseHandle(handle: i64) -> i32;
-        }
-        """
+    global "unsafe extern \"system\" { safe fn GetExitCodeProcess(process: i64, code: *mut u32) -> i32; }"
+    global "unsafe extern \"system\" { safe fn CloseHandle(handle: i64) -> i32; }"
 
 := win32_create_process () =
-    global """
-        unsafe extern "system" { safe fn CreateProcessW(
-            _: Wide, _: Line, _: Bytes, _: Bytes, _: i32, _: u32, _: Bytes, _: Wide, _: Startup, _: Information,
-        ) -> i32; }
-        """
+    global "unsafe extern \"system\" { safe fn CreateProcessW(_: Wide, _: Line, _: Bytes, _: Bytes, _: i32, "
+    ^^ "_: u32, _: Bytes, _: Wide, _: Startup, _: Information) -> i32; }"
 
 := win32_startup_declaration () =
-    global """
-        #[repr(C)]
-        #[derive(Default)]
-        struct StartupInfo {
-            cb: u32, pointers: [usize; 3], geometry: [u32; 8], show: [u16; 2], reserved2: usize, handles: [i64; 3],
-        }
-        """
+    global "#[repr(C)] #[derive(Default)] struct StartupInfo { cb: u32, pointers: [usize; 3], geometry: [u32; 8], "
+    ^^ "show: [u16; 2], reserved2: usize, handles: [i64; 3] }"
 
 := win32_information_declaration () =
-    global """
-        #[repr(C)]
-        #[derive(Default, Clone, Copy)]
-        struct ProcessInformation { process: i64, thread: i64, process_id: u32, thread_id: u32 }
-        """
+    global "#[repr(C)] #[derive(Default, Clone, Copy)] "
+    ^^ "struct ProcessInformation { process: i64, thread: i64, process_id: u32, thread_id: u32 }"
 
 := win32_types () =
     win32_pointer_types ()

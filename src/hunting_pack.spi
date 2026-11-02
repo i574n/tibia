@@ -604,12 +604,14 @@
     | Clearing, OpenField => at 100 102 7, at 99 103 7, at 99 104 7
     | _ => terrain::spawn_points c::layout
 
-:= kinds_of_entries (entries : catalog::entry * catalog::entry * catalog::entry) : fixed_views::band foe_kind =
+:== entry_trio = catalog::entry * catalog::entry * catalog::entry
+
+:= kinds_of_entries (entries : entry_trio) : fixed_views::band foe_kind =
     := a, b, c = entries
     := first = catalog::entry_creature a
     fixed_views::band (first, catalog::entry_creature b, catalog::entry_creature c, first, first, first)
 
-:= camp_of_entries (entries : catalog::entry * catalog::entry * catalog::entry) : camp =
+:= camp_of_entries (entries : entry_trio) : camp =
     sample_camp (foes_of (kinds_of_entries entries) 3 Respawning) (:< terrain ;; OpenField)
 
 := hunter_step_pace (c : camp) (base : offense) : i32 =
@@ -1586,9 +1588,9 @@
 := patrol_walk (camp : camp) (route : patrol_route) (now : i32) (goal : geometry::position) (p : pack) : pack =
     walk_or_advance camp route now (terrain::step_toward camp::layout (taken_by_foes p) goal p::hunter::at) p
 
-:= patrol_goal (camp : camp) (route : patrol_route) (now : i32) (p : pack) : pack =
+:= patrol_goal (c : camp) (route : patrol_route) (now : i32) (p : pack) : pack =
     := goal = fixed_views::band_at p::hunter::waypoint route::points
-    ? geometry::chebyshev_distance goal p::hunter::at <= 1 ?> next_waypoint route p |: patrol_walk camp route now goal p
+    ? geometry::chebyshev_distance goal p::hunter::at <= 1 ?> next_waypoint route p |: patrol_walk c route now goal p
 
 := patrol_step (camp : camp) (route : patrol_route) (now : i32) (p : pack) : pack =
     ? now < p::hunter::next_step_at ?> p |: patrol_goal camp route now p

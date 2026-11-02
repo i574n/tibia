@@ -130,11 +130,19 @@
 := budget_line (k : budget_kind) (count : i32) : string =
     prom_line "tibia_cell_budget_findings" (prom_label "kind" (budget_kind_name k)) ("" ++#? count)
 
+:== sim_run = { target : backend; hunts : i32; ms : i32 }
+
+:= hunts_per_second (r : sim_run) : i32 = ? r::ms <= 0 ?> 0 |: r::hunts * 1000 / r::ms
+
+:= sim_rate_line (r : sim_run) : string =
+    prom_line "tibia_sim_hunts_per_second" (prom_label "backend" (backend_name r::target)) ("" ++#? hunts_per_second r)
+
 :| sample =
     | BudgetFindings : budget_kind * i32
     | FileSeconds : file_row
     | FileExitCode : file_row
     | TestMs : test_row
+    | SimHuntsPerSecond : sim_run
 
 := sample_line (s : sample) : string =
     ?= s ?|
@@ -142,6 +150,7 @@
     | FileSeconds r => file_seconds_line r
     | FileExitCode r => file_exit_line r
     | TestMs r => test_ms_line r
+    | SimHuntsPerSecond r => sim_rate_line r
 
 :| budget_report =
     | BudgetSamples : list sample
@@ -285,3 +294,11 @@
 ///> rust
 :# a_test_row_becomes_one_ms_line_with_its_memo_label =
     sample_line (TestMs (memo_hit_row ())) |> _assert_eq (memo_hit_line ())
+
+:= sweep_rate_line () : string = "tibia_sim_hunts_per_second{backend=\"c\"} 2000"
+
+///> lua
+///> rust
+:# a_sweep_run_becomes_its_hunts_per_second_line =
+    := ~ms = 2000
+    sample_line (SimHuntsPerSecond { target = OnC; hunts = 4000; ms = ms }) |> _assert_eq (sweep_rate_line ())

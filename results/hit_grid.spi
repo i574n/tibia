@@ -1,0 +1,95 @@
+///- --package .
+:# hit_grid static =
+    :< testing
+
+:< sm'_operators
+
+:| event_kind =
+    | Hit
+    | Step
+    | Kill
+
+:== event = { kind : event_kind; at : i32 }
+
+:== grid = { grid_ms : i32; tolerance_ms : i32; think_ms : i32 }
+
+:= pc3_grid () : grid = { grid_ms = 2000; tolerance_ms = 60; think_ms = 1000 }
+
+:= stamp_of (line : string) : option i32 =
+    := mark : i32 = sm'::index_of "@t+" line
+    := rest = sm'::substring (mark + 3i32) (sm'::length line - mark - 3i32) line
+    ? mark < 0i32 ?> None |: convert::try_convert (am'::index 0 (rest |> sm'::split " " |> array))
+
+:= is_hit (line : string) : bool = sm'::contains "due to your" line && sm'::contains "attack. @t+" line
+
+:= is_kill (line : string) : bool = sm'::contains "You gained " line && sm'::contains " experience points. @t+" line
+
+:= kind_of (line : string) : option event_kind =
+    ? is_hit line ?> Some Hit |? sm'::contains "step away from " line ?> Some Step |? is_kill line ?> Some Kill |: None
+
+:= event_of (line : string) : option event =
+    ?= kind_of line, stamp_of line ?|
+    | Some k, Some t => Some { kind = k; at = t }
+    | _ => None
+
+:== counts = { on_grid : i32; off_grid : i32; step_on_grid : i32; step_in_window : i32; step_other : i32 }
+
+:= no_counts () : counts = { on_grid = 0; off_grid = 0; step_on_grid = 0; step_in_window = 0; step_other = 0 }
+
+:= on_grid (g : grid) (residual : i32) : bool = residual <= g::tolerance_ms || residual >= g::grid_ms - g::tolerance_ms
+
+:= in_window (g : grid) (residual : i32) : bool = residual <= g::think_ms + g::tolerance_ms
+
+:= stepped_pair (g : grid) (residual : i32) (c : counts) : counts =
+    ? on_grid g residual ?> { c ?| step_on_grid = c::step_on_grid + 1 }
+    |? in_window g residual ?> { c ?| step_in_window = c::step_in_window + 1 }
+    |: { c ?| step_other = c::step_other + 1 }
+
+:= plain_pair (g : grid) (residual : i32) (c : counts) : counts =
+    ? on_grid g residual ?> { c ?| on_grid = c::on_grid + 1 } |: { c ?| off_grid = c::off_grid + 1 }
+
+:== walk = { previous : option i32; stepped : bool; killed : bool; tally : counts }
+
+:= scored_pair (g : grid) (w : walk) (residual : i32) : counts =
+    ? w::killed ?> w::tally |? w::stepped ?> stepped_pair g residual w::tally |: plain_pair g residual w::tally
+
+:= hit_pair (g : grid) (w : walk) (at : i32) : counts =
+    ?= w::previous ?|
+    | Some before => scored_pair g w ((at - before) % g::grid_ms)
+    | None => w::tally
+
+:= walked (g : grid) (w : walk) (e : event) : walk =
+    ?= e::kind ?|
+    | Step => { w ?| stepped = !+ }
+    | Kill => { w ?| killed = !+ }
+    | Hit => { previous = Some e::at; stepped = !-; killed = !-; tally = hit_pair g w e::at }
+
+:~ ^ inserted (e : event) (sorted : list event) : list event =
+    ?= sorted ?|
+    | [] => [ e ]
+    | head :: rest => ? e::at < head::at ?> e :: sorted |: head :: inserted e rest
+
+:= sorted_events (lines : list string) : list event =
+    listm::fold (\ acc e => inserted e acc) [] (listm'::choose event_of lines)
+
+:= counts_of (g : grid) (lines : list string) : counts =
+    := start = { previous = None; stepped = !-; killed = !-; tally = no_counts () }
+    (listm::fold (walked g) start (sorted_events lines))::tally
+
+:= tally_of (c : counts) : i32 * i32 * i32 * i32 * i32 =
+    c::on_grid, c::off_grid, c::step_on_grid, c::step_in_window, c::step_other
+
+:= hit_at (t : i32) : string = "due to your attack. @t+" ++#? t
+
+:= step_at (t : i32) : string = "step away from c @t+" ++#? t
+
+:= kill_at (t : i32) : string = "You gained 1 experience points. @t+" ++#? t
+
+:= sample_lines () : list string =
+    [ hit_at 1000; hit_at 3010; step_at 3500; hit_at 5800; kill_at 6000; hit_at 7000; hit_at 8300 ]
+
+///> lua
+///> rust
+:# hits_split_into_grid_step_and_off_grid_pairs =
+    := ~lines = sample_lines ()
+    tally_of (counts_of (pc3_grid ()) lines) |> _assert_eq (1i32, 1i32, 0i32, 1i32, 0i32)
