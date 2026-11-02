@@ -18,13 +18,25 @@ function Set-Text([string] $path, [string] $old, [string] $new) {
     [IO.File]::WriteAllText($path, $text.Replace($old, $new))
 }
 $lib = (Resolve-Path (Join-Path $repo 'deps/spiral/lib')).Path -replace '\\', '/'
-Set-Text (Join-Path $work 'apps/predict/package.spiproj') 'packageDir: ../../deps/spiral/lib' "packageDir: $lib"
-$listed = [IO.File]::ReadAllText((Join-Path $work 'apps/predict/package.spiproj')) -match "(?m)^\s+$Module\s*$"
-if ($Module -ne 'predict' -and -not $listed) { Set-Text (Join-Path $work 'apps/predict/package.spiproj') '    predict' "    predict`n    $Module" }
-Set-Text (Join-Path $work 'apps/predict/spiral.toml') "packageDir = '../../deps/spiral/lib'" "packageDir = '$lib'"
-Set-Text (Join-Path $work 'src/package.spiproj') 'packageDir: ../deps/spiral/lib' "packageDir: $lib"
-Set-Text (Join-Path $work 'src/spiral.toml') "packageDir = '../deps/spiral/lib'" "packageDir = '$lib'"
-if ($Module -ne 'predict' -and -not $listed) { Set-Text (Join-Path $work 'apps/predict/spiral.toml') "`npredict`n" "`npredict`n$Module`n" }
+function Set-Manifests([string] $dir, [string] $relative) {
+    $toml = Join-Path $work "$dir/spiral.toml"; $proj = Join-Path $work "$dir/package.spiproj"
+    if (!(Test-Path $toml) -and !(Test-Path $proj)) { throw "predict / $dir has neither spiral.toml nor package.spiproj" }
+    if (Test-Path $toml) {
+        Set-Text $toml "packageDir = '$relative'" "packageDir = '$lib'"
+        $text = [IO.File]::ReadAllText($toml)
+        if ($Module -ne 'predict' -and $dir -eq 'apps/predict' -and $text -match "(?m)^modules" -and $text -notmatch "(?m)^$Module\s*$") {
+            Set-Text $toml "`npredict`n" "`npredict`n$Module`n"
+        }
+    }
+    if (Test-Path $proj) {
+        Set-Text $proj "packageDir: $relative" "packageDir: $lib"
+        if ($Module -ne 'predict' -and $dir -eq 'apps/predict' -and [IO.File]::ReadAllText($proj) -notmatch "(?m)^\s+$Module\s*$") {
+            Set-Text $proj '    predict' "    predict`n    $Module"
+        }
+    }
+}
+Set-Manifests 'apps/predict' '../../deps/spiral/lib'
+Set-Manifests 'src' '../deps/spiral/lib'
 if ($Candidate.Count) {
     $chain = ($Candidate | ForEach-Object { "|> $_" }) -join ' '
     $predict = Join-Path $work 'apps/predict/predict.spi'
