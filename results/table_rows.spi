@@ -3,13 +3,21 @@
     :< testing
 
 :| table_row =
-    | Columns : list string
-    | Row : list string
+    | Table : string
 
-:= line_of (cells : list string) : string = sm'::concat_list "\t" cells
+:= text_of (r : table_row) : string =
+    ?= r ?|
+    | Table text => text
+
+:= data_step \* s. (f : s -> string -> s) ((started, acc) : bool * s) (line : string) : bool * s =
+    ? started && line <> "" ?> !+, f acc line |: !+, acc
+
+:= fold_data \* s. (f : s -> string -> s) (init : s) (r : table_row) : s =
+    := _, out = listm::fold (data_step f) (!-, init) (sm'::split_list "\n" (text_of r))
+    out
 
 ///> lua
 ///> rust
-:# cells_join_back_into_their_tsv_line =
-    := ~first = "a"
-    line_of [ first; ""; "c" ] |> _assert_eq "a\t\tc"
+:# a_table_folds_over_its_data_lines_only =
+    := ~text = "a\tb\nx\ty\n\nz\tw\n"
+    fold_data (\ n _ => n + 1i32) 0i32 (Table text) |> _assert_eq 2i32

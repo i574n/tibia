@@ -22,4 +22,5 @@ modules:
     views
     search
     network
+    typed_network
     hunting_pack

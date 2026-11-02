@@ -1,0 +1,112 @@
+///- --package .
+:# typed_network static =
+    :< testing
+
+:! eight = ()
+
+:! raw = ()
+
+:! planned = ()
+
+:! frozen = ()
+
+:? width size : size -> i32
+
+:+ width eight = \ _ => network::input_count ()
+
+:! graph size state = size * network::weights * array i32
+
+:! features size = network::inputs
+
+:= weight_count_of \* size {width}. (s : size) : i32 =
+    width s * network::hidden_count () + network::hidden_count () * network::output_count ()
+
+:= of_weights \* size {width}. (s : size) (w : network::weights) : graph size raw = graph (s, w, network::filled 0 0)
+
+:= blank \* size {width}. (s : size) : graph size raw =
+    of_weights s (network::weights (network::filled (weight_count_of s) 0))
+
+:= plan \* size. ((graph (s, w, _)) : graph size raw) : graph size planned =
+    graph (s, w, network::filled (network::hidden_count ()) 0)
+
+:= freeze \* size. ((graph (s, w, h)) : graph size planned) : graph size frozen = graph (s, w, h)
+
+:= with_weight \* size. (i : i32) (value : i32) ((graph (s, w, h)) : graph size planned) : graph size planned =
+    graph (s, network::with_weight i value w, h)
+
+:= weights_of \* size state. ((graph (_, w, _)) : graph size state) : network::weights = w
+
+:= eight_features (x : network::inputs) : features eight = features x
+
+:~ ^ activate (w : network::weights) (x : network::inputs) (hidden : array i32) (j : i32) : () =
+    ? j < network::hidden_count () ?>
+        set hidden j (network::hidden_unit w x j)
+        activate w x hidden (j + 1)
+
+:= decide ((graph (_, w, hidden)) : graph eight frozen) ((features x) : features eight) : network::decision =
+    activate w x hidden 0
+    := out = network::output_unit w hidden
+    network::decision_of (out 0) (out 1) (out 2)
+
+:= frozen_of (w : network::weights) : graph eight frozen = of_weights eight w |> plan |> freeze
+
+:= evolve
+    (fitness : graph eight frozen -> i32) (s : network::weight_search) (start : graph eight frozen)
+    : graph eight frozen
+    =
+    network::evolve (\ w => fitness (frozen_of w)) s (weights_of start) |> frozen_of
+
+:= same_decision (a : network::decision) (b : network::decision) : bool =
+    a::heal = b::heal && a::engage = b::engage && a::retreat = b::retreat
+
+:= kiter () : network::weights = network::threshold_healer 100 |> network::with_kiting 2
+
+:= sweep_inputs (h : i32) : network::inputs = network::inputs_of h 2 0 1 !+ (h % 2 = 0) !-
+
+:= agrees_at (typed : graph eight frozen) (h : i32) : bool =
+    := x = sweep_inputs h
+    same_decision (network::decide (kiter ()) x) (decide typed (eight_features x))
+
+:~ ^ agreements (typed : graph eight frozen) (h : i32) (agree : i32) : i32 =
+    ? h > 400 ?> agree |: agreements typed (h + 1) (? agrees_at typed h ?> agree + 1 |: agree)
+
+///> c
+///> lua
+:# typed_decide_matches_the_untyped_network_bit_for_bit =
+    := ~start = 0i32
+    agreements (frozen_of (kiter ())) start 0 |> _assert_eq 401i32
+
+:= typed_score (g : graph eight frozen) : i32 = network::heal_score (weights_of g) 0 0
+
+:~ ^ same_from (a : network::weights) (b : network::weights) (i : i32) : bool =
+    ? i >= network::weight_count () ?> !+
+    |? network::weight a i <> network::weight b i ?> !-
+    |: same_from a b (i + 1)
+
+:= same_weights (a : network::weights) (b : network::weights) : bool = same_from a b 0
+
+:= untyped_evolved (seed : u32) : network::weights =
+    network::evolve (\ w => network::heal_score w 0 0) (network::quarter_healer_search seed) (network::zero_weights ())
+
+:= typed_evolved (seed : u32) : graph eight frozen =
+    evolve typed_score (network::quarter_healer_search seed) (frozen_of (network::zero_weights ()))
+
+///> c
+:# typed_evolution_reproduces_the_untyped_weights =
+    := ~seed = 5u32
+    := typed = typed_evolved seed
+    (typed_score typed, same_weights (untyped_evolved seed) (weights_of typed)) |> _assert_eq (17i32, !+)
+
+///> c
+:# a_written_frozen_graph_still_decides =
+    := ~value = 1i32
+    := g = blank eight |> plan |> with_weight 0 value |> freeze
+    (decide g (eight_features (network::inputs_of 0 0 0 0 !- !- !-)))::heal |> _assert_eq !-
+
+///> c
+:# a_planned_graph_cannot_decide fails "Unification failure" =
+    decide (blank eight |> plan) (eight_features (network::inputs_of 0 0 0 0 !- !- !-))
+
+///> c
+:# a_frozen_graph_cannot_be_written fails "Unification failure" =
+    blank eight |> plan |> freeze |> with_weight 0 1

@@ -1,14 +1,3 @@
 ///- --no-respell
 open table_rows
-inl columns () = Columns [ "timestamp"; "competitor"; "run"; "monster"; "count"; "experience"; "cleared_ms"; "lowest_health"; "actions_allowed"; "actions_dropped"; "potions"; "gold"; "deaths"; "foreign_potions"; "foreign_actions" ]
-inl row_1 () = Row [ "2026-10-14T16:03:05"; "random-control"; "1"; "cyclops"; "3"; "675"; "82204"; "418"; "181"; "132"; "77"; "15"; "0"; "-47"; "0" ]
-inl row_2 () = Row [ "2026-10-14T16:05:58"; "random-control"; "2"; "cyclops"; "3"; "675"; "98417"; "373"; "202"; "163"; "93"; "5"; "0"; "-46"; "0" ]
-inl row_3 () = Row [ "2026-10-14T16:08:56"; "random-control"; "1"; "cyclops"; "3"; "675"; "90360"; "365"; "193"; "160"; "89"; "63"; "0"; "-46"; "0" ]
-inl row_4 () = Row [ "2026-10-14T16:11:51"; "random-control"; "2"; "cyclops"; "3"; "675"; "105856"; "383"; "237"; "170"; "99"; "81"; "0"; "-62"; "0" ]
-inl row_5 () = Row [ "2026-10-14T16:14:41"; "random-control"; "3"; "cyclops"; "3"; "675"; "90509"; "351"; "190"; "134"; "88"; "27"; "0"; "-43"; "0" ]
-inl row_6 () = Row [ "2026-10-14T16:18:01"; "random-control"; "1"; "cyclops"; "3"; "675"; "112366"; "420"; "233"; "151"; "99"; "99"; "0"; "-60"; "0" ]
-inl row_7 () = Row [ "2026-10-14T16:21:13"; "random-control"; "2"; "cyclops"; "3"; "675"; "114028"; "405"; "241"; "167"; "99"; "84"; "0"; "-72"; "0" ]
-inl row_8 () = Row [ "2026-10-14T16:24:25"; "random-control"; "3"; "cyclops"; "3"; "675"; "117285"; "239"; "236"; "159"; "99"; "63"; "0"; "-74"; "0" ]
-inl row_9 () = Row [ "2026-10-14T16:27:35"; "random-control"; "1"; "cyclops"; "3"; "675"; "103099"; "424"; "223"; "179"; "99"; "69"; "0"; "-48"; "0" ]
-inl row_10 () = Row [ "2026-10-14T16:30:48"; "random-control"; "2"; "cyclops"; "3"; "675"; "113342"; "379"; "245"; "197"; "99"; "70"; "0"; "-67"; "0" ]
-inl rows () : list table_row = [ row_1 (); row_2 (); row_3 (); row_4 (); row_5 (); row_6 (); row_7 (); row_8 (); row_9 (); row_10 () ]
+inl table () = Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-14T16:03:05\trandom-control\t1\tcyclops\t3\t675\t82204\t418\t181\t132\t77\t15\t0\t-47\t0\n2026-10-14T16:05:58\trandom-control\t2\tcyclops\t3\t675\t98417\t373\t202\t163\t93\t5\t0\t-46\t0\n2026-10-14T16:08:56\trandom-control\t1\tcyclops\t3\t675\t90360\t365\t193\t160\t89\t63\t0\t-46\t0\n2026-10-14T16:11:51\trandom-control\t2\tcyclops\t3\t675\t105856\t383\t237\t170\t99\t81\t0\t-62\t0\n2026-10-14T16:14:41\trandom-control\t3\tcyclops\t3\t675\t90509\t351\t190\t134\t88\t27\t0\t-43\t0\n2026-10-14T16:18:01\trandom-control\t1\tcyclops\t3\t675\t112366\t420\t233\t151\t99\t99\t0\t-60\t0\n2026-10-14T16:21:13\trandom-control\t2\tcyclops\t3\t675\t114028\t405\t241\t167\t99\t84\t0\t-72\t0\n2026-10-14T16:24:25\trandom-control\t3\tcyclops\t3\t675\t117285\t239\t236\t159\t99\t63\t0\t-74\t0\n2026-10-14T16:27:35\trandom-control\t1\tcyclops\t3\t675\t103099\t424\t223\t179\t99\t69\t0\t-48\t0\n2026-10-14T16:30:48\trandom-control\t2\tcyclops\t3\t675\t113342\t379\t245\t197\t99\t70\t0\t-67\t0"

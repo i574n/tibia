@@ -7,7 +7,7 @@ param(
 )
 Set-Location $ScriptDir
 $ErrorActionPreference = "Stop"
-. ../deps/polyglot/scripts/core.ps1
+. ../deps/spiral/scripts/core.ps1
 
 $Files = @($Files | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $Exclude = @($Exclude | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
@@ -30,6 +30,13 @@ foreach ($tool in 'erlang', 'elixir') {
 }
 $checked = @((Resolve-Path ../src).Path, (Resolve-Path ../apps).Path)
 Push-Location ../deps/spiral/apps/cells
+if (-not (Test-Path 'deps/kino/mix.exs')) {
+    foreach ($task in 'local.hex', 'local.rebar', 'deps.get') {
+        $taskArgs = $task -like 'local.*' ? @('--force', '--if-missing') : @()
+        mix $task @taskArgs
+        if ($LASTEXITCODE -ne 0) { Pop-Location; throw "build.ps1 / cells / mix $task failed (exit code $LASTEXITCODE)" }
+    }
+}
 if ($IsWindows) {
     . ./spi/erl_memory_limit.ps1
     $erlMemoryLimit = Start-ErlMemoryLimit

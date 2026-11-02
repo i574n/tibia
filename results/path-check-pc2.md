@@ -1,3 +1,8 @@
+# PC-2 path check: raw probe log
+
+The arena probe's output for the PC2 runs on 2026-10-14, kept verbatim as evidence for docs/BENCHMARK.md.
+
+```text
 === PC-2 run 1 18:51:07
 [tibia-probe] finish: summoned
 [tibia-probe] path t=10690 ms monster at 1950,1338,7 distance 7 step 0
@@ -46,3 +51,4 @@
 [tibia-probe] path t=13075 ms monster at 1944,1337,7 distance 1 step 6
 [tibia-probe] arrived at 13075 ms after 6 steps, knight at 1943,1338,7
 [tibia-probe] finish: arrived
+```

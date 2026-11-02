@@ -216,6 +216,21 @@
 := evolve (fitness : weights -> i32) (s : weight_search) (start : weights) : weights =
     weight_climb fitness { s = s; index = 0; width = s::spread; parent = { w = start; score = fitness start } }
 
+:? judge f : f -> weights -> i32
+
+:= fitter_by \* f {judge}. (j : f) (candidate : weights) (best : scored) : scored =
+    := score = judge j candidate
+    ? score > best::score ?> { w = candidate; score = score } |: best
+
+:~ ^ offspring_by \* f {judge}. (j : f) (r : weight_round) (child : i32) (best : scored) : scored =
+    ? child >= r::s::offspring ?> best |: offspring_by j r (child + 1) (fitter_by j (mutate r child) best)
+
+:~ ^ climb_by \* f {judge}. (j : f) (r : weight_round) : weights =
+    ? r::index >= r::s::generations ?> r::parent::w |: climb_by j (next_weight_round r (offspring_by j r 0 r::parent))
+
+:= evolve_by \* f {judge}. (j : f) (s : weight_search) (start : weights) : weights =
+    climb_by j { s = s; index = 0; width = s::spread; parent = { w = start; score = judge j start } }
+
 ///> c
 :# a_zero_network_holds =
     := ~health = 128i32

@@ -1,7 +1,3 @@
 ///- --no-respell
 open table_rows
-inl columns () = Columns [ "timestamp"; "competitor"; "run"; "monster"; "count"; "experience"; "cleared_ms"; "lowest_health"; "actions_allowed"; "actions_dropped"; "potions"; "gold"; "deaths"; "foreign_potions"; "foreign_actions" ]
-inl row_1 () = Row [ "2026-10-14T10:37:12"; "nexbot"; "1"; "cyclops"; "3"; ""; ""; ""; ""; ""; "0"; "0"; "0"; ""; "" ]
-inl row_2 () = Row [ "2026-10-14T10:39:08"; "nexbot"; "1"; "cyclops"; "3"; ""; ""; ""; ""; ""; "0"; "0"; "0"; ""; "" ]
-inl row_3 () = Row [ "2026-10-14T16:32:44"; "nexbot"; "1"; "cyclops"; "3"; ""; ""; ""; ""; ""; "0"; "0"; "0"; ""; "" ]
-inl rows () : list table_row = [ row_1 (); row_2 (); row_3 () ]
+inl table () = Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-14T10:37:12\tnexbot\t1\tcyclops\t3\t\t\t\t\t\t0\t0\t0\t\t\n2026-10-14T10:39:08\tnexbot\t1\tcyclops\t3\t\t\t\t\t\t0\t0\t0\t\t\n2026-10-14T16:32:44\tnexbot\t1\tcyclops\t3\t\t\t\t\t\t0\t0\t0\t\t"

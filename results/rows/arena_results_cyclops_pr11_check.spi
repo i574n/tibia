@@ -1,6 +1,3 @@
 ///- --no-respell
 open table_rows
-inl columns () = Columns [ "timestamp"; "competitor"; "run"; "monster"; "count"; "experience"; "cleared_ms"; "lowest_health"; "actions_allowed"; "actions_dropped"; "potions"; "gold"; "deaths"; "foreign_potions"; "foreign_actions" ]
-inl row_1 () = Row [ "2026-10-15T14:17:17"; "spiral-policy"; "1"; "cyclops"; "3"; "675"; "76845"; "103"; "16"; "0"; "13"; "12"; "0"; "0"; "0" ]
-inl row_2 () = Row [ "2026-10-15T14:20:09"; "vbot"; "1"; "cyclops"; "3"; "675"; "100411"; "69"; "27"; "2"; "17"; "91"; "0"; ""; "" ]
-inl rows () : list table_row = [ row_1 (); row_2 () ]
+inl table () = Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-15T14:17:17\tspiral-policy\t1\tcyclops\t3\t675\t76845\t103\t16\t0\t13\t12\t0\t0\t0\n2026-10-15T14:20:09\tvbot\t1\tcyclops\t3\t675\t100411\t69\t27\t2\t17\t91\t0\t\t"

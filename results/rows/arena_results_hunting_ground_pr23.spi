@@ -1,14 +1,3 @@
 ///- --no-respell
 open table_rows
-inl columns () = Columns [ "timestamp"; "competitor"; "run"; "monster"; "count"; "experience"; "cleared_ms"; "lowest_health"; "actions_allowed"; "actions_dropped"; "potions"; "gold"; "deaths"; "foreign_potions"; "foreign_actions" ]
-inl row_1 () = Row [ "2026-10-22T10:36:07"; "spiral-policy"; "1"; "hunting-ground"; "0"; "1425"; ""; "83"; "36"; "6"; "18"; "125"; "0"; "0"; "0" ]
-inl row_2 () = Row [ "2026-10-22T10:41:35"; "spiral-policy"; "2"; "hunting-ground"; "0"; "1140"; ""; "115"; "31"; "2"; "17"; "84"; "0"; "0"; "0" ]
-inl row_3 () = Row [ "2026-10-22T10:47:03"; "spiral-policy"; "3"; "hunting-ground"; "0"; "1425"; ""; "93"; "33"; "8"; "14"; "175"; "0"; "0"; "0" ]
-inl row_4 () = Row [ "2026-10-22T10:52:31"; "spiral-policy"; "4"; "hunting-ground"; "0"; "1425"; ""; "104"; "31"; "6"; "13"; "177"; "0"; "0"; "0" ]
-inl row_5 () = Row [ "2026-10-22T10:58:00"; "spiral-policy"; "5"; "hunting-ground"; "0"; "1110"; ""; "102"; "31"; "4"; "17"; "89"; "0"; "0"; "0" ]
-inl row_6 () = Row [ "2026-10-22T11:03:28"; "spiral-policy"; "6"; "hunting-ground"; "0"; "1335"; ""; "98"; "32"; "4"; "17"; "85"; "0"; "0"; "0" ]
-inl row_7 () = Row [ "2026-10-22T11:08:57"; "spiral-policy"; "7"; "hunting-ground"; "0"; "1425"; ""; "95"; "31"; "4"; "13"; "75"; "0"; "0"; "0" ]
-inl row_8 () = Row [ "2026-10-22T11:14:25"; "spiral-policy"; "8"; "hunting-ground"; "0"; "1395"; ""; "98"; "29"; "2"; "13"; "174"; "0"; "0"; "0" ]
-inl row_9 () = Row [ "2026-10-22T11:19:53"; "spiral-policy"; "9"; "hunting-ground"; "0"; "1455"; ""; "113"; "32"; "2"; "15"; "65"; "0"; "0"; "0" ]
-inl row_10 () = Row [ "2026-10-22T11:25:21"; "spiral-policy"; "10"; "hunting-ground"; "0"; "1455"; ""; "99"; "28"; "2"; "11"; "135"; "0"; "0"; "0" ]
-inl rows () : list table_row = [ row_1 (); row_2 (); row_3 (); row_4 (); row_5 (); row_6 (); row_7 (); row_8 (); row_9 (); row_10 () ]
+inl table () = Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-22T10:36:07\tspiral-policy\t1\thunting-ground\t0\t1425\t\t83\t36\t6\t18\t125\t0\t0\t0\n2026-10-22T10:41:35\tspiral-policy\t2\thunting-ground\t0\t1140\t\t115\t31\t2\t17\t84\t0\t0\t0\n2026-10-22T10:47:03\tspiral-policy\t3\thunting-ground\t0\t1425\t\t93\t33\t8\t14\t175\t0\t0\t0\n2026-10-22T10:52:31\tspiral-policy\t4\thunting-ground\t0\t1425\t\t104\t31\t6\t13\t177\t0\t0\t0\n2026-10-22T10:58:00\tspiral-policy\t5\thunting-ground\t0\t1110\t\t102\t31\t4\t17\t89\t0\t0\t0\n2026-10-22T11:03:28\tspiral-policy\t6\thunting-ground\t0\t1335\t\t98\t32\t4\t17\t85\t0\t0\t0\n2026-10-22T11:08:57\tspiral-policy\t7\thunting-ground\t0\t1425\t\t95\t31\t4\t13\t75\t0\t0\t0\n2026-10-22T11:14:25\tspiral-policy\t8\thunting-ground\t0\t1395\t\t98\t29\t2\t13\t174\t0\t0\t0\n2026-10-22T11:19:53\tspiral-policy\t9\thunting-ground\t0\t1455\t\t113\t32\t2\t15\t65\t0\t0\t0\n2026-10-22T11:25:21\tspiral-policy\t10\thunting-ground\t0\t1455\t\t99\t28\t2\t11\t135\t0\t0\t0"

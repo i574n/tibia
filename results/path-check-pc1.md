@@ -1,3 +1,8 @@
+# PC-1 path check: raw probe log
+
+The arena probe's output for the PC1 runs on 2026-10-14, kept verbatim as evidence for docs/BENCHMARK.md.
+
+```text
 === PC-1 run 1 15:47:23
 [tibia-probe] finish: summoned
 [tibia-probe] in game as Knight Sample at nil (path check, standing, no attack)
@@ -74,3 +79,4 @@
 [tibia-probe] path t=15380 ms monster at 1944,1338,7 distance 1 step 12
 [tibia-probe] arrived at 15380 ms after 12 steps, knight at 1943,1338,7
 [tibia-probe] finish: arrived
+```

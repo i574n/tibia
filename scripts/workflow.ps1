@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 
 pwsh init.ps1 -fast $($fast ?? '')
 
-. ../deps/polyglot/scripts/core.ps1
+. ../deps/spiral/scripts/core.ps1
 
 { pwsh build.ps1 -Exclude gpu_sim,hunt_sim -Label short } | Invoke-Block
 

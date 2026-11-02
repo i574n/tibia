@@ -4,7 +4,7 @@ param(
 Push-Location $ScriptDir
 $ErrorActionPreference = "Stop"
 try {
-    . ../../deps/polyglot/scripts/core.ps1
+    . ../../deps/spiral/scripts/core.ps1
     . ../../deps/spiral/lib/spiral/lib.ps1
 
     $targetDir = (New-Item -ItemType Directory -Force "../../target/canary").FullName

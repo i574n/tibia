@@ -1,0 +1,43 @@
+///- --package .
+:# lanes static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:= spot () : camp =
+    uniform_camp (:< creatures ;; Cyclops) |> on_layout (:< terrain ;; ArenaSpot) |> mirroring_the_current_arena
+
+:= clear_limit_ms () : i32 = 94934
+
+:== lane_plan = { generations : i32; offspring : i32; seeds : i32 }
+
+:= full_plan () : lane_plan = { generations = 8; offspring = 64; seeds = training_count () }
+
+:= tiny_plan () : lane_plan = { generations = 1; offspring = 2; seeds = 2 }
+
+:= lane_fitness (p : lane_plan) (w : network::weights) : i32 =
+    worth (CheapClearWithin (clear_limit_ms ())) (spot ()) (network_tactic w) (training_first ()) p::seeds
+
+:= lane_search (p : lane_plan) (lane : u32) : network::weight_search =
+    { seed = 1u32 + lane; generations = p::generations; offspring = p::offspring; spread = 256 }
+
+:! pf1 = lane_plan
+
+:< network
+
+:+ judge pf1 = \ (pf1 p) w => lane_fitness p w
+
+:= lane_weights (p : lane_plan) (lane : u32) : network::weights =
+    network::evolve_by (pf1 p) (lane_search p lane) (network::zero_weights ())
+
+:= lane_score (p : lane_plan) (lane : u32) : i32 = lane_fitness p (lane_weights p lane)
+
+:~ ^ print_lanes (p : lane_plan) (lane : u32) (count : u32) : () =
+    ? lane < count ?>
+        console::write_line ("lane\t" ++#? lane ++# "\t" ++#? lane_score p lane)
+        print_lanes p (lane + 1u32) count
+
+:= main () : i32 =
+    print_lanes (tiny_plan ()) 0u32 4u32
+    0

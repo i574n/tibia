@@ -1,9 +1,3 @@
 ///- --no-respell
 open table_rows
-inl columns () = Columns [ "timestamp"; "competitor"; "run"; "monster"; "count"; "experience"; "cleared_ms"; "lowest_health"; "actions_allowed"; "actions_dropped"; "potions"; "gold"; "deaths"; "foreign_potions"; "foreign_actions" ]
-inl row_1 () = Row [ "2026-10-15T06:27:00"; "spiral-retreat"; "1"; "cyclops"; "3"; "675"; "93974"; "58"; "26"; "8"; "16"; "70"; "0"; "0"; "0" ]
-inl row_2 () = Row [ "2026-10-15T06:29:21"; "spiral-retreat"; "2"; "cyclops"; "3"; "675"; "98099"; "102"; "54"; "12"; "10"; "70"; "0"; "0"; "0" ]
-inl row_3 () = Row [ "2026-10-15T06:32:32"; "spiral-retreat"; "3"; "cyclops"; "3"; "0"; ""; "108"; "33"; "10"; "3"; "0"; "0"; "0"; "0" ]
-inl row_4 () = Row [ "2026-10-15T06:34:52"; "spiral-retreat"; "1"; "cyclops"; "3"; "675"; "90009"; "111"; "18"; "3"; "12"; "80"; "0"; "0"; "0" ]
-inl row_5 () = Row [ "2026-10-15T06:37:18"; "spiral-retreat"; "2"; "cyclops"; "3"; "675"; "104806"; "90"; "30"; "3"; "17"; "74"; "0"; "0"; "0" ]
-inl rows () : list table_row = [ row_1 (); row_2 (); row_3 (); row_4 (); row_5 () ]
+inl table () = Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-15T06:27:00\tspiral-retreat\t1\tcyclops\t3\t675\t93974\t58\t26\t8\t16\t70\t0\t0\t0\n2026-10-15T06:29:21\tspiral-retreat\t2\tcyclops\t3\t675\t98099\t102\t54\t12\t10\t70\t0\t0\t0\n2026-10-15T06:32:32\tspiral-retreat\t3\tcyclops\t3\t0\t\t108\t33\t10\t3\t0\t0\t0\t0\n2026-10-15T06:34:52\tspiral-retreat\t1\tcyclops\t3\t675\t90009\t111\t18\t3\t12\t80\t0\t0\t0\n2026-10-15T06:37:18\tspiral-retreat\t2\tcyclops\t3\t675\t104806\t90\t30\t3\t17\t74\t0\t0\t0"

@@ -1,14 +1,3 @@
 ///- --no-respell
 open table_rows
-inl columns () = Columns [ "timestamp"; "competitor"; "run"; "monster"; "count"; "experience"; "cleared_ms"; "lowest_health"; "actions_allowed"; "actions_dropped" ]
-inl row_1 () = Row [ "2026-10-13T08:54:41"; "spiral-policy"; "1"; "troll"; "3"; "90"; "98750"; "169"; "21"; "8" ]
-inl row_2 () = Row [ "2026-10-13T08:58:28"; "vbot"; "1"; "troll"; "3"; "90"; "110034"; "179"; "17"; "5" ]
-inl row_3 () = Row [ "2026-10-13T09:01:06"; "spiral-policy"; "2"; "troll"; "3"; "90"; "84250"; "181"; "14"; "6" ]
-inl row_4 () = Row [ "2026-10-13T09:04:50"; "vbot"; "2"; "troll"; "3"; "90"; "140016"; "165"; "39"; "4" ]
-inl row_5 () = Row [ "2026-10-13T09:07:23"; "spiral-policy"; "3"; "troll"; "3"; "90"; "79250"; "176"; "17"; "6" ]
-inl row_6 () = Row [ "2026-10-13T09:11:08"; "vbot"; "3"; "troll"; "3"; "90"; "80007"; "185"; "6"; "3" ]
-inl row_7 () = Row [ "2026-10-13T09:13:29"; "spiral-policy"; "4"; "troll"; "3"; "60"; "67250"; "180"; "10"; "5" ]
-inl row_8 () = Row [ "2026-10-13T09:17:20"; "vbot"; "4"; "troll"; "3"; "90"; "100048"; "185"; "40"; "8" ]
-inl row_9 () = Row [ "2026-10-13T09:20:20"; "spiral-policy"; "5"; "troll"; "3"; "90"; "106000"; "169"; "14"; "4" ]
-inl row_10 () = Row [ "2026-10-13T09:24:03"; "vbot"; "5"; "troll"; "3"; "90"; "110022"; "171"; "12"; "8" ]
-inl rows () : list table_row = [ row_1 (); row_2 (); row_3 (); row_4 (); row_5 (); row_6 (); row_7 (); row_8 (); row_9 (); row_10 () ]
+inl table () = Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\n2026-10-13T08:54:41\tspiral-policy\t1\ttroll\t3\t90\t98750\t169\t21\t8\n2026-10-13T08:58:28\tvbot\t1\ttroll\t3\t90\t110034\t179\t17\t5\n2026-10-13T09:01:06\tspiral-policy\t2\ttroll\t3\t90\t84250\t181\t14\t6\n2026-10-13T09:04:50\tvbot\t2\ttroll\t3\t90\t140016\t165\t39\t4\n2026-10-13T09:07:23\tspiral-policy\t3\ttroll\t3\t90\t79250\t176\t17\t6\n2026-10-13T09:11:08\tvbot\t3\ttroll\t3\t90\t80007\t185\t6\t3\n2026-10-13T09:13:29\tspiral-policy\t4\ttroll\t3\t60\t67250\t180\t10\t5\n2026-10-13T09:17:20\tvbot\t4\ttroll\t3\t90\t100048\t185\t40\t8\n2026-10-13T09:20:20\tspiral-policy\t5\ttroll\t3\t90\t106000\t169\t14\t4\n2026-10-13T09:24:03\tvbot\t5\ttroll\t3\t90\t110022\t171\t12\t8"

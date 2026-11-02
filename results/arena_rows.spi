@@ -223,12 +223,6 @@
 
 := row_of_line (line : string) : decoded some_arena_row = line |> sm'::split "\t" |> array |> row_of_cells
 
-:= row_of_table (r : table_rows::table_row) : option (decoded some_arena_row) =
-    :< table_rows
-    ?= r ?|
-    | Row cells => Some (row_of_line (line_of cells))
-    | Columns _ => None
-
 := base_in \* v. (row : arena_row v) : base_run =
     ?= row ?|
     | Base b => b

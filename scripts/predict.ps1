@@ -19,9 +19,12 @@ function Set-Text([string] $path, [string] $old, [string] $new) {
 }
 $lib = (Resolve-Path (Join-Path $repo 'deps/spiral/lib')).Path -replace '\\', '/'
 Set-Text (Join-Path $work 'apps/predict/package.spiproj') 'packageDir: ../../deps/spiral/lib' "packageDir: $lib"
-if ($Module -ne 'predict') { Set-Text (Join-Path $work 'apps/predict/package.spiproj') '    predict' "    predict`n    $Module" }
+$listed = [IO.File]::ReadAllText((Join-Path $work 'apps/predict/package.spiproj')) -match "(?m)^\s+$Module\s*$"
+if ($Module -ne 'predict' -and -not $listed) { Set-Text (Join-Path $work 'apps/predict/package.spiproj') '    predict' "    predict`n    $Module" }
 Set-Text (Join-Path $work 'apps/predict/spiral.toml') "packageDir = '../../deps/spiral/lib'" "packageDir = '$lib'"
-if ($Module -ne 'predict') { Set-Text (Join-Path $work 'apps/predict/spiral.toml') "`npredict`n" "`npredict`n$Module`n" }
+Set-Text (Join-Path $work 'src/package.spiproj') 'packageDir: ../deps/spiral/lib' "packageDir: $lib"
+Set-Text (Join-Path $work 'src/spiral.toml') "packageDir = '../deps/spiral/lib'" "packageDir = '$lib'"
+if ($Module -ne 'predict' -and -not $listed) { Set-Text (Join-Path $work 'apps/predict/spiral.toml') "`npredict`n" "`npredict`n$Module`n" }
 if ($Candidate.Count) {
     $chain = ($Candidate | ForEach-Object { "|> $_" }) -join ' '
     $predict = Join-Path $work 'apps/predict/predict.spi'

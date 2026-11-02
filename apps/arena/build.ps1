@@ -4,7 +4,7 @@ param(
 Push-Location $ScriptDir
 $ErrorActionPreference = "Stop"
 try {
-    . ../../deps/polyglot/scripts/core.ps1
+    . ../../deps/spiral/scripts/core.ps1
     . ../../deps/spiral/lib/spiral/lib.ps1
 
     $hostCalls = Select-String -Path lua.spi -Pattern '\b(os|io|debug)\.|\bg_\w+|\b(require|dofile|loadfile)\b'

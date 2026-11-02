@@ -6,3 +6,5 @@ packages:
     ../../src-
 modules:
     predict
+    lanes
+    lanes_gpu

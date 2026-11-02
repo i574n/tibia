@@ -1,14 +1,3 @@
 ///- --no-respell
 open table_rows
-inl columns () = Columns [ "file"; "arm"; "steps"; "taken"; "potions" ]
-inl row_1 () = Row [ "C:/Users/i574n/tibia-local/arena-logs/20261023-102227-hunting-ground-spiral-policy-1.log"; "spiral-policy"; "0"; "47"; "8" ]
-inl row_2 () = Row [ "C:/Users/i574n/tibia-local/arena-logs/20261023-102823-hunting-ground-spiral-policy-2.log"; "spiral-policy"; "0"; "82"; "14" ]
-inl row_3 () = Row [ "C:/Users/i574n/tibia-local/arena-logs/20261023-103423-hunting-ground-spiral-policy-3.log"; "spiral-policy"; "0"; "69"; "13" ]
-inl row_4 () = Row [ "C:/Users/i574n/tibia-local/arena-logs/20261023-104022-hunting-ground-spiral-policy-4.log"; "spiral-policy"; "0"; "64"; "13" ]
-inl row_5 () = Row [ "C:/Users/i574n/tibia-local/arena-logs/20261023-104612-hunting-ground-spiral-policy-5.log"; "spiral-policy"; "0"; "56"; "10" ]
-inl row_6 () = Row [ "C:/Users/i574n/tibia-local/arena-logs/20261023-105157-hunting-ground-spiral-policy-6.log"; "spiral-policy"; "0"; "58"; "12" ]
-inl row_7 () = Row [ "C:/Users/i574n/tibia-local/arena-logs/20261023-105745-hunting-ground-spiral-policy-7.log"; "spiral-policy"; "0"; "71"; "13" ]
-inl row_8 () = Row [ "C:/Users/i574n/tibia-local/arena-logs/20261023-110333-hunting-ground-spiral-policy-8.log"; "spiral-policy"; "0"; "61"; "12" ]
-inl row_9 () = Row [ "C:/Users/i574n/tibia-local/arena-logs/20261023-110920-hunting-ground-spiral-policy-9.log"; "spiral-policy"; "0"; "63"; "13" ]
-inl row_10 () = Row [ "C:/Users/i574n/tibia-local/arena-logs/20261023-111503-hunting-ground-spiral-policy-10.log"; "spiral-policy"; "0"; "80"; "16" ]
-inl rows () : list table_row = [ row_1 (); row_2 (); row_3 (); row_4 (); row_5 (); row_6 (); row_7 (); row_8 (); row_9 (); row_10 () ]
+inl table () = Table "file\tarm\tsteps\ttaken\tpotions\nC:/Users/i574n/tibia-local/arena-logs/20261023-102227-hunting-ground-spiral-policy-1.log\tspiral-policy\t0\t47\t8\nC:/Users/i574n/tibia-local/arena-logs/20261023-102823-hunting-ground-spiral-policy-2.log\tspiral-policy\t0\t82\t14\nC:/Users/i574n/tibia-local/arena-logs/20261023-103423-hunting-ground-spiral-policy-3.log\tspiral-policy\t0\t69\t13\nC:/Users/i574n/tibia-local/arena-logs/20261023-104022-hunting-ground-spiral-policy-4.log\tspiral-policy\t0\t64\t13\nC:/Users/i574n/tibia-local/arena-logs/20261023-104612-hunting-ground-spiral-policy-5.log\tspiral-policy\t0\t56\t10\nC:/Users/i574n/tibia-local/arena-logs/20261023-105157-hunting-ground-spiral-policy-6.log\tspiral-policy\t0\t58\t12\nC:/Users/i574n/tibia-local/arena-logs/20261023-105745-hunting-ground-spiral-policy-7.log\tspiral-policy\t0\t71\t13\nC:/Users/i574n/tibia-local/arena-logs/20261023-110333-hunting-ground-spiral-policy-8.log\tspiral-policy\t0\t61\t12\nC:/Users/i574n/tibia-local/arena-logs/20261023-110920-hunting-ground-spiral-policy-9.log\tspiral-policy\t0\t63\t13\nC:/Users/i574n/tibia-local/arena-logs/20261023-111503-hunting-ground-spiral-policy-10.log\tspiral-policy\t0\t80\t16"
