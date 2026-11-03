@@ -67,9 +67,13 @@
     := sx, sy = direction_of (here::x - there::x), direction_of (here::y - there::y)
     ? sx <> 0 || sy <> 0 ?> client::step sx sy |> ignore
 
-:= away_from_seen (here : client::spot) (people : client::crowd) (seen : probe::nearest) : () =
-    ? seen::found && seen::distance <= 2 && client::player_walking () = !- ?>
-        step_from here (client::creature_spot (client::member people seen::index))
+:= away_from (here : client::spot) (people : client::crowd) (n : probe::nearest) : () =
+    ? client::player_walking () = !- ?> step_from here (client::creature_spot (client::member people n::index))
+
+:= away_from_seen (here : client::spot) (people : client::crowd) (seen : probe::spotted) : () =
+    ?= probe::within 2 seen ?|
+    | Some n => away_from here people n
+    | None => ()
 
 := away_once () : () =
     := here = client::player_spot ()

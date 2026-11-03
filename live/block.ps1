@@ -22,7 +22,7 @@ if ($wait -lt 1) { "block / past $($StartBy.ToString('HH:mm')) before the window
 "block / window run exit $LASTEXITCODE at $(Get-Date -Format s)"
 if (!(Test-Path $table)) { "block / no results table: the block did not run"; return }
 foreach ($id in $Ledger) { & $kit experiment analyze $ledgerDir $id $table }
-$rows = @(Import-Csv $table -Delimiter "`t")
+$rows = @(Read-ResultRows $table timestamp, competitor, run, monster)
 $logs = @(foreach ($row in $rows) {
     $stamp = [datetime]$row.timestamp
     Get-ChildItem $TibiaLogs -Filter "*-$($row.monster)-$($row.competitor)-$($row.run).log" |
@@ -34,7 +34,7 @@ $boosted = @($logs | ForEach-Object { Select-String -LiteralPath $_ -Pattern 'bo
 "block / boosted creature in these logs: $(if ($boosted.Count) { $boosted -join ', ' } else { 'none logged' })"
 $spawnedKinds = @($Arena | Where-Object { $_ -match '^(troll|cyclops|hunter)$' }) + @('Troll', 'Cyclops')
 if (@($boosted | Where-Object { $spawnedKinds -contains $_ }).Count) { "block / WARNING: a spawned kind was boosted, so respawns ran twice as fast (spawn_monster.cpp boostedrate); spawn-based results are not comparable" }
-$secondary = Join-Path $TibiaResults ([IO.Path]::GetFileNameWithoutExtension($Results) + '-secondary.tsv')
+$secondary = Join-Path (Split-Path $table) ([IO.Path]::GetFileNameWithoutExtension($table) + '_secondary.spi')
 & $kit table logs @logs --field arm='-(spiral-\w+|\w+)-\d+\.log' --count steps='step away from' --count taken='You lose \d+ hitpoints due to an attack' --count potions='Using one of \d+ health potions' --out $secondary
 & $kit table query $secondary --group arm --count file --mean steps,taken,potions --sd steps,taken
 foreach ($id in $SecondaryLedger) { & $kit experiment analyze $ledgerDir $id $secondary }

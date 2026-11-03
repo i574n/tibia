@@ -26,18 +26,47 @@
     | Some seconds => Ready { l ?| timeout_seconds = seconds }
     | None => BadTimeout value
 
-:= settings_flag (l : launch) (flag : string) (value : string) : parsed =
-    ? flag = "--timeout-seconds" ?> timeout_set l value |: UnknownFlag flag
+:| text_flag =
+    | Exe
+    | Directory
+    | Arguments
+    | Desktop
 
-:= option_flag (l : launch) (flag : string) (value : string) : parsed =
-    ? flag = "--arguments" ?> Ready { l ?| arguments = value }
-    |? flag = "--desktop" ?> Ready { l ?| desktop = value }
-    |: settings_flag l flag value
+:| number_flag =
+    | TimeoutSeconds
 
-:= flag_set (l : launch) (flag : string) (value : string) : parsed =
-    ? flag = "--exe" ?> Ready { l ?| exe = value }
-    |? flag = "--directory" ?> Ready { l ?| directory = value }
-    |: option_flag l flag value
+:| flag =
+    | Text : text_flag
+    | Number : number_flag
+
+:= flag_named (name : string) : option flag =
+    ?= case_labels::case_of_label "" "-" name ?|
+    | Some t => Some (Text t)
+    | None => ?= case_labels::case_of_label "" "-" name ?| Some n => Some (Number n) | None => None
+
+:= flag_of (text : string) : option flag =
+    ? sm'::starts_with "--" text ?> flag_named (case_labels::unprefixed "--" text) |: None
+
+:= text_set (l : launch) (f : text_flag) (v : string) : launch =
+    ?= f ?|
+    | Exe => { l ?| exe = v }
+    | Directory => { l ?| directory = v }
+    | Arguments => { l ?| arguments = v }
+    | Desktop => { l ?| desktop = v }
+
+:= number_set (l : launch) (f : number_flag) (v : string) : parsed =
+    ?= f ?|
+    | TimeoutSeconds => timeout_set l v
+
+:= flag_set (l : launch) (f : flag) (v : string) : parsed =
+    ?= f ?|
+    | Text t => Ready (text_set l t v)
+    | Number n => number_set l n v
+
+:= flag_step (l : launch) (text : string) (value : string) : parsed =
+    ?= flag_of text ?|
+    | Some f => flag_set l f value
+    | None => UnknownFlag text
 
 := finished_parse (l : launch) : parsed = ? l::exe = "" ?> MissingExe |: Ready l
 
@@ -45,7 +74,7 @@
     ?= args ?|
     | [] => finished_parse l
     | flag :: [] => MissingValue flag
-    | flag :: value :: rest => ?= flag_set l flag value ?| Ready next => parse_from rest next | failed => failed
+    | flag :: value :: rest => ?= flag_step l flag value ?| Ready next => parse_from rest next | failed => failed
 
 := parse (args : list string) : parsed = parse_from args (defaults ())
 
@@ -342,6 +371,18 @@
 ///> rust
 :# a_bad_timeout_names_its_value =
     bad_timeout (parse [ "--exe"; "a.exe"; "--timeout-seconds"; "soon" ]) |> _assert_eq "soon"
+
+///> lua
+///> rust
+:# a_flag_is_its_case_after_two_dashes =
+    (flag_of "--timeout-seconds", flag_of "--directory", flag_of "timeout-seconds", flag_of "--speed")
+    |> _assert_eq (Some (Number TimeoutSeconds), Some (Text Directory), None, None)
+
+///> lua
+///> rust
+:# every_flag_reaches_its_field =
+    := l = ready_launch (parse [ "--exe"; "a.exe"; "--directory"; "C:\\otc"; "--timeout-seconds"; "9" ])
+    (l::directory, l::timeout_seconds) |> _assert_eq ("C:\\otc", 9i32)
 
 := thirty_second_launch () : launch =
     := base = defaults ()

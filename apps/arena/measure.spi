@@ -100,10 +100,12 @@
     now
 
 := adjacent_engaged
-    (b : bench) (people : client::crowd) (seen : probe::nearest) (now : i32) (last_swing_at : i32)
+    (b : bench) (people : client::crowd) (seen : probe::spotted) (now : i32) (last_swing_at : i32)
     : i32
     =
-    ? seen::found && seen::distance <= 1 ?> engaged b (client::member people seen::index) now |: last_swing_at
+    ?= probe::within 1 seen ?|
+    | Some n => engaged b (client::member people n::index) now
+    | None => last_swing_at
 
 := engaged_adjacent (b : bench) (now : i32) (last_swing_at : i32) : i32 =
     := here = client::player_spot ()

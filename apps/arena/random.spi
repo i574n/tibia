@@ -77,10 +77,12 @@
     { t ?| strikes = t::strikes + 1 }, next_step_at
 
 := engage_found
-    (r : turn) (t : tally) (step_at : i32) (here : client::spot) (people : client::crowd) (seen : probe::nearest)
+    (r : turn) (t : tally) (step_at : i32) (here : client::spot) (people : client::crowd) (seen : probe::spotted)
     : stepped
     =
-    ? seen::found ?> engaged_seen r t step_at here (client::member people seen::index) |: t, step_at
+    ?= seen ?|
+    | Some n => engaged_seen r t step_at here (client::member people n::index)
+    | None => t, step_at
 
 := engaged_nearest (r : turn) (t : tally) (next_step_at : i32) : stepped =
     := here = client::player_spot ()

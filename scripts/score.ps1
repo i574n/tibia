@@ -20,7 +20,7 @@ function Get-Moments([object[]] $rows, [string] $group, [string] $column) {
     foreach ($s in $stats) { [pscustomobject]@{ group = $s.$group; n = [int]$s."count_$column"; mean = [double]$s."mean_$column"; var = [math]::Pow([double]$s."sd_$column", 2) } }
 }
 function Get-RetreatLogs([string] $results) {
-    foreach ($row in @(Import-Csv (Join-Path $TibiaResults $results) -Delimiter "`t" | Where-Object competitor -eq 'spiral-retreat')) {
+    foreach ($row in @(Read-ResultRows (Join-Path $TibiaResults $results) timestamp, competitor, run | Where-Object competitor -eq 'spiral-retreat')) {
         $stamp = [datetime]$row.timestamp
         Get-ChildItem $TibiaLogs -Filter "*-cyclops-spiral-retreat-$($row.run).log" |
             Where-Object { [math]::Abs(([datetime]::ParseExact($_.Name.Substring(0, 15), 'yyyyMMdd-HHmmss', $null) - $stamp).TotalSeconds) -le 5 } |
@@ -36,7 +36,7 @@ function Get-Tables([string] $label, [string[]] $builders, [int] $shield) {
     }
 }
 
-$logs = @(Get-RetreatLogs 'arena-results-cyclops-pr12.tsv') + @(Get-RetreatLogs 'arena-results-cyclops-pr16.tsv')
+$logs = @(Get-RetreatLogs 'rows/arena_results_cyclops_pr12.spi') + @(Get-RetreatLogs 'rows/arena_results_cyclops_pr16.spi')
 $stepsTable = Join-Path $scratch 'live-steps.tsv'
 & $kit table logs @logs --count steps='step away from' --out $stepsTable | Out-Null
 $live = Get-Moments @(Import-Csv $stepsTable -Delimiter "`t" | Select-Object steps) all steps

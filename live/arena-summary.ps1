@@ -1,4 +1,4 @@
-param([string] $Results = (Join-Path (Split-Path $PSScriptRoot -Parent) 'results\arena-results-cyclops.tsv'), [string] $Monster = 'cyclops', [datetime] $Since = [datetime]::MinValue)
+param([string] $Results = (Join-Path (Split-Path $PSScriptRoot -Parent) 'results\rows\arena_results_cyclops.spi'), [string] $Monster = 'cyclops', [datetime] $Since = [datetime]::MinValue)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'paths.ps1')
 $kitPaths = 'C:\home\git\kit\kit.exe', 'C:\home\git\eoie\kit.exe', 'C:\home\git\eoie\eoie.exe'

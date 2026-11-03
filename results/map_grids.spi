@@ -1,0 +1,60 @@
+///- --package .
+:# map_grids static =
+    :< testing
+
+:== frame = { x : i32; y : i32; radius : i32 }
+
+:== tally = i32 * i32
+
+:= region_frame () : frame = { x = 1933; y = 1350; radius = 45 }
+
+:= scan_frame () : frame = { x = 1932; y = 1349; radius = 12 }
+
+:= lines_of (t : table_rows::table_row) : list string = sm'::split_list "\n" (table_rows::text_of t)
+
+:= region_lines () : list string = lines_of (rows::arena_region_r45::table ())
+
+:= scan_lines () : list string = lines_of (rows::arena_spot_scan_r12::table ())
+
+:~ ^ line_at (lines : list string) (i : i32) : string =
+    ?= lines ?|
+    | [] => ""
+    | l :: rest => ? i = 0 ?> l |: line_at rest (i - 1)
+
+:~ ^ marker_from (lines : list string) (i : i32) : i32 =
+    ?= lines ?|
+    | [] => -1
+    | l :: rest => ? sm'::index_of "client-loaded check" l >= 0 ?> i |: marker_from rest (i + 1)
+
+:= region_walkable (region : list string) (r : frame) (x : i32) (y : i32) : bool =
+    sm'::index (5 + x - r::x + r::radius) (line_at region (1 + y - r::y + r::radius)) = '.'
+
+:= cell_step (g : list string) (r : frame) (s : frame) (dy : i32) (line : string) (c : i32) ((cells, agree) : tally) =
+    := mark = sm'::index (4 + c) line
+    ? mark = '?' ?> cells, agree
+    |:
+        := walkable = region_walkable g r (s::x - s::radius + c) (s::y + dy)
+        cells + 1, ? walkable = (mark <> '#') ?> agree + 1 |: agree
+
+:~ ^ row_cells (g : list string) (r : frame) (s : frame) (dy : i32) (line : string) (c : i32) (t : tally) : tally =
+    ? c > 2 * s::radius ?> t |: row_cells g r s dy line (c + 1) (cell_step g r s dy line c t)
+
+:~ ^ scan_rows (g : list string) (r : frame) (s : frame) (scan : list string) (at : i32) (k : i32) (t : tally) : tally =
+    ? k > 2 * s::radius ?> t
+    |: scan_rows g r s scan at (k + 1) (row_cells g r s (k - s::radius) (line_at scan (at + k)) 0 t)
+
+:= agreement () : tally =
+    := scan = scan_lines ()
+    scan_rows (region_lines ()) (region_frame ()) (scan_frame ()) scan (marker_from scan 0 + 2) 0 (0, 0)
+
+///> rust
+:# the_live_scan_agrees_with_the_server_map =
+    agreement () |> _assert_eq (252i32, 251i32)
+
+///> rust
+:# the_grids_carry_the_frames_the_check_assumes =
+    := scan = scan_lines ()
+    := m = marker_from scan 0
+    := scan_head = sm'::substring 0 23 (line_at scan (m + 1)), sm'::substring 0 3 (line_at scan (m + 2))
+    := region_head = "walkability around 1933,1350,7 radius 45 (# blocked, . walkable)"
+    (line_at (region_lines ()) 0, scan_head) |> _assert_eq (region_head, ("scan around 1932,1349,7", "-12"))

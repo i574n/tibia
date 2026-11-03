@@ -36,23 +36,33 @@
         done <- 1
         finish reason
 
-:== nearest = { found : bool; index : i32; distance : i32 }
+:== nearest = { index : i32; distance : i32 }
 
-:= nobody () : nearest = { found = !-; index = 0; distance = 999 }
+:== spotted = option nearest
 
-:= closer (best : nearest) (index : i32) (d : i32) : nearest =
-    ? d < best::distance ?> { found = !+; index = index; distance = d } |: best
+:= beats (best : option nearest) (d : i32) : bool =
+    ?= best ?|
+    | Some b => d < b::distance
+    | None => d < 999
 
-:= ranked (here : client::spot) (people : client::crowd) (index : i32) (best : nearest) : nearest =
+:= closer (best : option nearest) (index : i32) (d : i32) : option nearest =
+    ? beats best d ?> Some { index = index; distance = d } |: best
+
+:= within (reach : i32) (seen : option nearest) : option nearest =
+    ?= seen ?|
+    | Some n => ? n::distance <= reach ?> seen |: None
+    | None => None
+
+:= ranked (here : client::spot) (people : client::crowd) (index : i32) (best : option nearest) : option nearest =
     := c = client::member people index
     ? client::live_monster c ?> closer best index (chebyshev (client::creature_spot c) here) |: best
 
-:= nearest_in (here : client::spot) (people : client::crowd) (size : i32) : nearest =
-    :~ ^ scan (index : i32) (best : nearest) : nearest =
+:= nearest_in (here : client::spot) (people : client::crowd) (size : i32) : option nearest =
+    :~ ^ scan (index : i32) (best : option nearest) : option nearest =
         ? index > size ?> best |: scan (index + 1) (ranked here people index best)
-    scan 1 (nobody ())
+    scan 1 None
 
-:= nearest_monster (here : client::spot) (people : client::crowd) : nearest =
+:= nearest_monster (here : client::spot) (people : client::crowd) : spotted =
     nearest_in here people (client::crowd_size people)
 
 := keep_hidden () : () =

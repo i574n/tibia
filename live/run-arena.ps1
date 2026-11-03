@@ -1,4 +1,4 @@
-param([int] $Runs = 3, [string] $Monster = 'troll', [int] $MonsterCount = 3, [int] $AxeSkill = 30, [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [int] $FullExperience = 90, [int] $TimeoutSeconds = 240, [int] $KiteAt = 3, [int] $RetreatAt = 2, [string[]] $Competitors = @('spiral-policy', 'vbot'), [string] $Out = (Join-Path (Split-Path $PSScriptRoot -Parent) 'results\arena-results.tsv'), [string] $SpawnFile = '', [string] $KnightAt = '', [int] $RunMs = 0, [string] $Scenario = '', [string] $Ally = '', [string] $AllyAt = '', [string] $ServerProbe = '')
+param([int] $Runs = 3, [string] $Monster = 'troll', [int] $MonsterCount = 3, [int] $AxeSkill = 30, [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [int] $FullExperience = 90, [int] $TimeoutSeconds = 240, [int] $KiteAt = 3, [int] $RetreatAt = 2, [string[]] $Competitors = @('spiral-policy', 'vbot'), [string] $Out = (Join-Path (Split-Path $PSScriptRoot -Parent) 'results\rows\arena_results.spi'), [string] $SpawnFile = '', [string] $KnightAt = '', [int] $RunMs = 0, [string] $Scenario = '', [string] $Ally = '', [string] $AllyAt = '', [string] $ServerProbe = '')
 $ErrorActionPreference = 'Stop'
 $Competitors = @($Competitors -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $root = $PSScriptRoot
@@ -7,7 +7,7 @@ $scenarioScript = Join-Path $root 'run-policy-scenario.ps1'
 $env:TIBIA_ARENA_FULL_EXPERIENCE = "$FullExperience"
 if ($RunMs -gt 0) { $env:TIBIA_ARENA_RUN_MS = "$RunMs" }
 $label = if ($Scenario) { $Scenario } else { $Monster -replace '[:,]', '_' }
-if (-not (Test-Path $Out)) { "timestamp`tcompetitor`trun`tmonster`tcount`texperience`tcleared_ms`tlowest_health`tactions_allowed`tactions_dropped`tpotions`tgold`tdeaths`tforeign_potions`tforeign_actions" | Set-Content $Out }
+if (-not (Test-Path $Out)) { New-ResultTable $Out "timestamp`tcompetitor`trun`tmonster`tcount`texperience`tcleared_ms`tlowest_health`tactions_allowed`tactions_dropped`tpotions`tgold`tdeaths`tforeign_potions`tforeign_actions" }
 . (Join-Path $root 'arena-check.ps1')
 $probeInstalled = ''
 $probeTrace = ''
@@ -38,7 +38,7 @@ function Write-ArenaRow([string[]] $lines, [string] $who) {
     $deaths = @($lines | Where-Object { $_ -match 'You are dead' }).Count
     $foreign = if ($who -like 'spiral-*' -or $who -like 'random-control*') { Get-ForeignActivity $lines } else { $null }
     $row = "$(Get-Date -Format s)`t$who`t$run`t$(if ($Scenario) { $Scenario } else { $Monster })`t$MonsterCount`t$experience`t$cleared`t$lowest`t$allowed`t$dropped`t$potions`t$gold`t$deaths`t$(if ($foreign) { $foreign.ForeignPotions })`t$(if ($foreign) { $foreign.ForeignActions })"
-    Add-Content $Out $row
+    Add-ResultRow $Out $row
     $row
 }
 

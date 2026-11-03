@@ -1711,10 +1711,13 @@
             fill (c + 1)
     fill 0
 
-:= weighted_step (l : layout) (taken : occupancy) (target : tile) (from : tile) : tile =
+:= step_choice (l : layout) (taken : occupancy) (target : tile) (from : tile) : i32 =
     := v = window_around target from
     fill_window l taken v
-    := k = weighted_choice v
+    weighted_choice v
+
+:= weighted_step (l : layout) (taken : occupancy) (target : tile) (from : tile) : tile =
+    := k = heap_scope::scoped (\ () => step_choice l taken target from)
     ? k >= 8 ?> from |: shifted (direction_dx k) (direction_dy k) from
 
 := free_bit (l : layout) (taken : occupancy) (from : tile) (c : route_choice) : u32 =

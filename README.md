@@ -269,7 +269,7 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
   15.13 client assets, nExBot 19632d4, and the MariaDB schema when no data exists) and moves any folder it replaces
   aside under `_replaced-<time>`; `pwsh live/world.ps1 -Action Start` starts the server. For example
   `pwsh live/run-arena.ps1 -Runs 1 -Monster cyclops -MonsterCount 3 -Level 30 -AxeSkill 60 -HealBelow 160
-  -StrikeAbove 0 -FullExperience 675 -Competitors spiral-policy,vbot -Out results/arena-results-try.tsv`. The hunting
+  -StrikeAbove 0 -FullExperience 675 -Competitors spiral-policy,vbot -Out results/rows/arena_results_try.spi`. The hunting
   ground swaps in its own spawns and runs for a fixed time: `-Scenario hunting-ground -SpawnFile
   live/hunting-ground-spawns.xml -KnightAt 1936,1336 -RunMs 300000 -MonsterCount 0 -FullExperience 1000000`. nExBot is not
   part of the repo (no license); `-Competitors nexbot` expects it under the world's `bots/`.

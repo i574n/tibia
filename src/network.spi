@@ -10,7 +10,10 @@
 := weight_count () : i32 = input_count () * hidden_count () + hidden_count () * output_count ()
 
 :! weights = array i32
-:! inputs = array i32
+
+:== sensed = { health : i32; attackers : i32; target : i32; distance : i32; heal : i32; strike : i32; flees : i32 }
+
+:! inputs = sensed
 
 :| feature =
     | HealthFraction
@@ -70,40 +73,31 @@
 
 := sensed_distance (distance : i32) : i32 = (? distance > 7 ?> 7 |: distance) * 32
 
-:= put (x : array i32) (f : feature) (value : i32) : () = set x (feature_slot f) value
+:= flags_of (heal : bool) (strike : bool) (flees : bool) : i32 * i32 * i32 =
+    feature_flag heal, feature_flag strike, feature_flag flees
 
-:= biased () : array i32 =
-    := x = filled (input_count ()) 0
-    put x Bias (one ())
-    x
-
-:= own_slots (health : i32) (attackers : i32) (x : array i32) : array i32 =
-    put x HealthFraction health
-    put x Attackers (attackers * attacker_unit ())
-    x
-
-:= ready_slots (heal : bool) (strike : bool) (x : array i32) : array i32 =
-    put x HealReady (feature_flag heal)
-    put x StrikeReady (feature_flag strike)
-    x
-
-:= target_slots (target : i32) (distance : i32) (flees : bool) (x : array i32) : array i32 =
-    put x TargetHealth target
-    put x TargetDistance (sensed_distance distance)
-    put x TargetFleeing (feature_flag flees)
-    x
+:= sensed_of (h : i32) (a : i32) (t : i32) (d : i32) ((x, y, z) : i32 * i32 * i32) : sensed =
+    {
+        health = h; attackers = a * attacker_unit (); target = t; distance = sensed_distance d
+        heal = x; strike = y; flees = z
+    }
 
 := inputs_of
     (health : i32) (attackers : i32) (target : i32) (distance : i32) (heal : bool) (strike : bool) (flees : bool)
     : inputs
     =
-    biased () |> own_slots health attackers |> ready_slots heal strike |> target_slots target distance flees
-    |> inputs
+    inputs (sensed_of health attackers target distance (flags_of heal strike flees))
 
-:= hidden_unit (w : weights) (inputs x) (j : i32) : i32 =
-    :~ ^ sum (i : i32) (total : i32) : i32 =
-        ? i >= input_count () ?> total |: sum (i + 1) (total + weight w (j * input_count () + i) * index x i)
-    := h = sum 0 0 / one ()
+:= term (w : weights) (j : i32) (i : i32) (value : i32) : i32 = weight w (j * input_count () + i) * value
+
+:= sensed_terms (w : weights) ((inputs s) : inputs) (j : i32) : i32 =
+    term w j 0 s::health + term w j 1 s::attackers + term w j 2 s::target + term w j 3 s::distance
+
+:= flag_terms (w : weights) ((inputs s) : inputs) (j : i32) : i32 =
+    term w j 4 s::heal + term w j 5 s::strike + term w j 6 s::flees + term w j 7 (one ())
+
+:= hidden_unit (w : weights) (x : inputs) (j : i32) : i32 =
+    := h = (sensed_terms w x j + flag_terms w x j) / one ()
     ? h > 0 ?> h |: 0
 
 := hidden_layer (w : weights) (x : inputs) : array i32 =
@@ -126,9 +120,18 @@
 := decision_of (heal : i32) (engage : i32) (retreat : i32) : decision =
     { heal = heal > 0; engage = engage > 0 && engage >= retreat; retreat = retreat > 0 && retreat > engage }
 
-:= decide (w : weights) (x : inputs) : decision =
-    := hidden = hidden_layer w x
-    decision_of (output_unit w hidden 0) (output_unit w hidden 1) (output_unit w hidden 2)
+:= scaled (heal : i32) (engage : i32) (retreat : i32) : decision =
+    decision_of (heal / one ()) (engage / one ()) (retreat / one ())
+
+:= added (w : weights) (j : i32) (a : i32) (k : i32) (acc : i32) : i32 = acc + output_weight_at w k j * a
+
+:~ ^ outputs_from (w : weights) (x : inputs) (j : i32) (h : i32) (e : i32) (r : i32) : decision =
+    ? j >= hidden_count () ?> scaled h e r
+    |:
+        := a = hidden_unit w x j
+        outputs_from w x (j + 1) (added w j a 0 h) (added w j a 1 e) (added w j a 2 r)
+
+:= decide (w : weights) (x : inputs) : decision = outputs_from w x 0 0 0 0
 
 := with_weight (i : i32) (value : i32) (weights w) : weights =
     set w i value

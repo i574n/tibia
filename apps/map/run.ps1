@@ -36,37 +36,19 @@ $listing = Join-Path $out 'floor-changes.txt'
 [IO.File]::WriteAllText($listing, ($output[$listingAt..($output.Count - 1)] -join "`n") + "`n")
 "map / floor-change listing in $listing"
 $dumpRadius = [regex]::Match($dump[0], ' radius (\d+) ').Groups[1].Value
-$regionName = "results/arena-region-r$dumpRadius.txt"
+$regionName = "results/rows/arena_region_r$dumpRadius.spi"
 $region = Join-Path $repo $regionName
-$committed = @(Get-Content $region -ErrorAction Ignore)
-if (($committed -join "`n") -ne ($dump -join "`n")) {
+$dumpText = ($dump -join "`n") + "`n"
+if ($dumpText -match '["\\]') { throw "map / the walkability dump has a quote or backslash, which the row module literal cannot hold" }
+$module = "///- --no-respell`nopen table_rows`ninl table () = Table `"$($dumpText.Replace("`n", '\n'))`"`n"
+$committed = if (Test-Path $region) { [IO.File]::ReadAllText($region) } else { '' }
+if ($committed -ne $module) {
     if (!$Update) { throw "map / the walkability dump differs from $regionName; rerun with -Update to rewrite it" }
-    [IO.File]::WriteAllText($region, ($dump -join "`n") + "`n")
+    [IO.File]::WriteAllText($region, $module)
     "map / rewrote $regionName from the server map"
 }
 "map / walkability dump matches $regionName ($($dump.Count - 1) rows)"
 
-$scan = @(Get-Content (Join-Path $repo 'results/arena-spot-scan-r12.txt'))
-$marker = [array]::FindIndex([string[]]$scan, [Predicate[string]] { param($line) $line.Contains('client-loaded check') })
-$center = [regex]::Match($scan[$marker + 1], 'scan around (\d+),(\d+),(\d+)')
-$cx, $cy = [int]$center.Groups[1].Value, [int]$center.Groups[2].Value
-$dumpCenter = [regex]::Match($dump[0], 'walkability around (\d+),(\d+),\d+ radius (\d+)')
-$mx, $my, $radius = [int]$dumpCenter.Groups[1].Value, [int]$dumpCenter.Groups[2].Value, [int]$dumpCenter.Groups[3].Value
-$agree = 0; $cells = 0
-foreach ($line in $scan[($marker + 2)..($marker + 26)]) {
-    $row = [regex]::Match($line, '^\s*([+-]?\d+) (\S+)$')
-    if (!$row.Success) { continue }
-    $dy = [int]$row.Groups[1].Value
-    $marks = $row.Groups[2].Value
-    for ($column = 0; $column -lt $marks.Length; $column++) {
-        if ($marks[$column] -eq '?') { continue }
-        $x = $cx - 12 + $column; $y = $cy + $dy
-        $mapWalkable = $dump[1 + $y - $my + $radius][5 + $x - $mx + $radius] -eq '.'
-        $cells++
-        if ($mapWalkable -eq ($marks[$column] -ne '#')) { $agree++ }
-    }
-}
-"map / live client scan: $cells cells, agree $agree, disagree $($cells - $agree)"
 $terrainPath = Join-Path $repo 'src/terrain.spi'
 $terrain = [Collections.Generic.List[string]]::new([string[]](Get-Content $terrainPath))
 $differ = [Collections.Generic.List[string]]::new()

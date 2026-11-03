@@ -66,8 +66,11 @@ modules:
         arena_results_mixed_pr2
         arena_results_pc3
         arena_results_pc3_smoke
+        arena_region_r45
+        arena_spot_scan_r12
     arena_rows
     hit_grid
     walk_pace
     secondary_hits
     row_census
+    map_grids

@@ -6,9 +6,12 @@
 := watch_ms () : i32 = 30000
 := sample_ms () : i32 = 50
 
-:= followed (has_last : bool) (last : client::spot) (at : client::spot) (steps : i32) : bool * i32 =
-    := moved = has_last = !- || at::x <> last::x || at::y <> last::y
-    moved, (? moved && has_last ?> steps + 1 |: steps)
+:= followed (last : option client::spot) (at : client::spot) (steps : i32) : bool * i32 =
+    ?= last ?|
+    | Some l =>
+        := moved = at::x <> l::x || at::y <> l::y
+        moved, (? moved ?> steps + 1 |: steps)
+    | None => !+, steps
 
 := step_line (elapsed : i32) (from : string) (distance : i32) (steps : i32) : string =
     "path t=" ++#? elapsed ++# " ms monster at " ++# from ++# " distance " ++#? distance ++# " step " ++#? steps
@@ -19,9 +22,9 @@
 := not_arrived_line (elapsed : i32) (steps : i32) : string =
     "not arrived after " ++#? elapsed ++# " ms, " ++#? steps ++# " steps"
 
-:== trail = { has_last : bool; last : client::spot; steps : i32 }
+:== trail = { last : option client::spot; steps : i32 }
 
-:= fresh_trail () : trail = { has_last = !-; last = { x = 0; y = 0; z = 0 }; steps = 0 }
+:= fresh_trail () : trail = { last = None; steps = 0 }
 
 := seen_spot (people : client::crowd) (seen : probe::nearest) : client::spot =
     client::creature_spot (client::member people seen::index)
@@ -30,13 +33,14 @@
     probe::note (step_line elapsed (probe::described at) distance steps)
 
 := trail_moved (t : trail) (at : client::spot) (dt : i32) (distance : i32) : trail =
-    := moved, steps = followed t::has_last t::last at t::steps
+    := moved, steps = followed t::last at t::steps
     ? moved ?> step_noted dt at distance steps
-    { has_last = !+; last = (? moved ?> at |: t::last); steps = steps }
+    { last = (? moved ?> Some at |: t::last); steps = steps }
 
-:= seen_trail (t : trail) (people : client::crowd) (seen : probe::nearest) (elapsed : i32) : bool * trail =
-    := t = ? seen::found ?> trail_moved t (seen_spot people seen) elapsed seen::distance |: t
-    seen::found && seen::distance <= 1, t
+:= seen_trail (t : trail) (people : client::crowd) (seen : probe::spotted) (elapsed : i32) : bool * trail =
+    ?= seen ?|
+    | Some n => n::distance <= 1, trail_moved t (seen_spot people n) elapsed n::distance
+    | None => !-, t
 
 := sample_at (here : client::spot) (t : trail) (elapsed : i32) : bool * trail =
     := people = client::spectators here
@@ -71,17 +75,17 @@
 ///> lua
 ///> c
 :# a_first_sighting_is_not_a_step =
-    followed !- { x = 0; y = 0; z = 0 } { x = 1940; y = 1352; z = 7 } 0 |> _assert_eq (!+, 0i32)
+    followed None { x = 1940; y = 1352; z = 7 } 0 |> _assert_eq (!+, 0i32)
 
 ///> lua
 ///> c
 :# standing_still_keeps_the_step_count =
-    followed !+ { x = 1940; y = 1352; z = 7 } { x = 1940; y = 1352; z = 7 } 3 |> _assert_eq (!-, 3i32)
+    followed (Some { x = 1940; y = 1352; z = 7 }) { x = 1940; y = 1352; z = 7 } 3 |> _assert_eq (!-, 3i32)
 
 ///> lua
 ///> c
 :# a_move_after_a_sighting_counts_a_step =
-    followed !+ { x = 1940; y = 1352; z = 7 } { x = 1939; y = 1352; z = 7 } 3 |> _assert_eq (!+, 4i32)
+    followed (Some { x = 1940; y = 1352; z = 7 }) { x = 1939; y = 1352; z = 7 } 3 |> _assert_eq (!+, 4i32)
 
 ///> lua
 ///> c

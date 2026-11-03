@@ -3,7 +3,8 @@ param(
     [string[]] $Candidate = @(),
     [int] $Shield = 11,
     [string] $Out = '',
-    [string] $Module = 'predict'
+    [string] $Module = 'predict',
+    [ValidateSet('c', 'rust')] [string] $Backend = 'c'
 )
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -49,12 +50,21 @@ if ($Shield -ne 11) {
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path (Resolve-Path (Join-Path $repo 'deps/spiral')) 'deps/The-Spiral-Language/VS Code Plugin'
 $dotnet = Join-Path $env:LOCALAPPDATA "spiral-bin/toolchains/dotnet/dotnet$(if ($IsWindows) { '.exe' })"
 $compiler = Join-Path $env:LOCALAPPDATA 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'
-$c = Join-Path $work 'predict.c'
-& $dotnet $compiler --backend C (Join-Path $work "apps/predict/$Module.spi") $c 2>&1 | Select-Object -Last 2 | Write-Host
+$source = Join-Path $work "predict.$(if ($Backend -eq 'rust') { 'rs' } else { 'c' })"
+& $dotnet $compiler --backend ($Backend -eq 'rust' ? 'Rust' : 'C') (Join-Path $work "apps/predict/$Module.spi") $source 2>&1 | Select-Object -Last 2 | Write-Host
 if ($LASTEXITCODE -ne 0) { throw "predict / $Label / compile failed" }
 $exe = Join-Path $work "predict$(if ($IsWindows) { '.exe' })"
-& gcc -O2 -o $exe $c -lm
-if ($LASTEXITCODE -ne 0) { throw "predict / $Label / gcc failed" }
+if ($Backend -eq 'rust') { & rustc --edition 2024 -O -A warnings -o $exe $source } else { & gcc -O2 -o $exe $source -lm }
+if ($LASTEXITCODE -ne 0) { throw "predict / $Label / $Backend build failed" }
+$watch = [Diagnostics.Stopwatch]::StartNew()
 $rows = @(& $exe)
+$ms = $watch.ElapsedMilliseconds
 if ($LASTEXITCODE -ne 0) { throw "predict / $Label / run failed ($LASTEXITCODE)" }
+$hunts = $rows | Select-String "^hunts`t(\d+)$" | Select-Object -Last 1
+if ($hunts) {
+    $metrics = (New-Item -ItemType Directory -Force (Join-Path $repo 'target/ci-metrics')).FullName
+    $rate = $ms -le 0 ? 0 : [long][math]::Floor([long]$hunts.Matches[0].Groups[1].Value * 1000 / $ms)
+    @('# TYPE tibia_sim_hunts_per_second gauge', "tibia_sim_hunts_per_second{backend=`"$Backend`"} $rate") | Set-Content (Join-Path $metrics "sim-$Label.prom")
+    Write-Host "predict / $Label / $($hunts.Matches[0].Groups[1].Value) hunts in $ms ms = $rate hunts/s"
+}
 if ($Out) { $rows | Set-Content $Out } else { $rows }
