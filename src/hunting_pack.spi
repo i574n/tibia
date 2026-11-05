@@ -76,6 +76,22 @@
 
 :+ purpose_code pack_roll = \ r => hunt_code r
 
+:= roll_count () : i32 = ~> real_core::union_type_length `pack_roll
+
+:= roll_code (i : i32) : u32 = hunt_code (pickler::case_at i)
+
+:= codes_distinct () : bool =
+    := n = roll_count ()
+    :~ ^ clash (i : i32) (j : i32) : bool =
+        ? i >= n ?> !-
+        |? j >= n ?> clash (i + 1) (i + 2)
+        |: roll_code i = roll_code j || clash i (j + 1)
+    not (clash 0 1)
+
+///> c
+:# every_pack_roll_has_its_own_purpose_code =
+    (roll_count (), codes_distinct ()) |> _assert_eq (12i32, !+)
+
 := client_lag_ms () : i32 = 8
 
 := target_nearby_step_factor () : i32 = 2
@@ -90,16 +106,46 @@
 
 :== foe_respawn = { returns_at : i32; check_until : i32 }
 
+:| party_slot =
+    | Hunter
+    | Ally
+
+:= other_slot (s : party_slot) : party_slot =
+    ?= s ?|
+    | Hunter => Ally
+    | Ally => Hunter
+
+:= slot_number (s : party_slot) : i32 =
+    ?= s ?|
+    | Hunter => 0
+    | Ally => 1
+
+:= is_ally (s : party_slot) : bool =
+    ?= s ?|
+    | Ally => !+
+    | Hunter => !-
+
+:== per_slot a = { hunter : a; ally : a }
+
+:= slot_of \* a. (s : party_slot) (v : per_slot a) : a = ? is_ally s ?> v::ally |: v::hunter
+
+:= slot_with \* a. (s : party_slot) (x : a) (v : per_slot a) : per_slot a =
+    ? is_ally s ?> { v ?| ally = x } |: { v ?| hunter = x }
+
+///> c
+:# a_per_slot_reads_and_writes_one_member =
+    := v = { hunter = 1; ally = 2 }
+    (slot_of Hunter v, slot_of Ally v, slot_with Ally 5 v, slot_with Hunter 7 v)
+    |> _assert_eq (1, 2, { hunter = 1; ally = 5 }, { hunter = 7; ally = 2 })
+
 :== foe_aim =
     {
-        aims_at : i32
-        entrant : i32
-        in_view : i32
-        damage_first : i32
-        damage_second : i32
+        aims_at : option party_slot
+        entrant : party_slot
+        in_view : per_slot bool
+        dealt : per_slot i32
         retarget_at : i32
-        last_x : i32
-        last_y : i32
+        last_seen : option geometry::position
     }
 
 :== foe =
@@ -137,11 +183,11 @@
         at : geometry::position
         health : hit_points
         next_step_at : i32
-        target : i32
+        target : option i32
         clock : hunter_clock
         tally : hunter_tally
         waypoint : i32
-        call_sign : i32
+        call_sign : party_slot
     }
 
 :== pack_score =
@@ -231,14 +277,12 @@
 
 := fresh_aim () : foe_aim =
     {
-        aims_at = -1
-        entrant = 0
-        in_view = 0
-        damage_first = 0
-        damage_second = 0
+        aims_at = None
+        entrant = Hunter
+        in_view = { hunter = !-; ally = !- }
+        dealt = { hunter = 0; ally = 0 }
         retarget_at = 0
-        last_x = -1
-        last_y = -1
+        last_seen = None
     }
 
 := foe_at (at : geometry::position) (life : living) : foe =
@@ -469,6 +513,11 @@
     := ~c = duo_default (uniform_camp (:< creatures ;; Troll))
     (c::crew::party, c::crew::party_targeting, ally_enters_with_the_knight c) |> _assert_eq (2, !+, !-)
 
+///> c
+:# a_party_slot_flips_to_the_other_member =
+    (other_slot Hunter, other_slot Ally, is_ally (other_slot Hunter), is_ally Hunter)
+    |> _assert_eq (Ally, Hunter, !+, !-)
+
 := waking_at (ms : i32) (c : camp) : camp = c |> with_foes { (c::foes) ?| wakes_at = ms }
 
 := live_wake_ms () : i32 = 10000
@@ -648,9 +697,9 @@
 := kind_of (index : i32) (c : camp) : creatures::arena_creature =
     fixed_views::band_at index c::foes::kinds
 
-:= knight_start (camp : camp) (sign : i32) : geometry::position =
+:= knight_start (camp : camp) (s : party_slot) : geometry::position =
     := first = ?= camp::knight::placement ?| AtLayoutStart => terrain::player_start camp::layout | StandsAt at => at
-    ? sign = 0 ?> first |: geometry::position (first::x + 1) first::y first::z
+    ? is_ally s ?> geometry::position (first::x + 1) first::y first::z |: first
 
 := idle_clock () : hunter_clock =
     {
@@ -664,23 +713,23 @@
 := zero_tally () : hunter_tally =
     { potions = 0; hits_taken = 0; damage_taken = quantity::hp 0; retreats = 0; cornered = 0 }
 
-:= idle_knight (sign : i32) : hunter =
+:= idle_knight (s : party_slot) : hunter =
     {
         at = terrain::grave ()
         health = quantity::hp 0
         next_step_at = 0
-        target = -1
+        target = None
         clock = idle_clock ()
         tally = zero_tally ()
         waypoint = 0
-        call_sign = sign
+        call_sign = s
     }
 
-:= knight_of (camp : camp) (sign : i32) : hunter =
+:= knight_of (camp : camp) (sign : party_slot) : hunter =
     { (idle_knight sign) ?| at = knight_start camp sign; health = player_max_health camp }
 
 := ally_at_start (camp : camp) : hunter =
-    := ally = knight_of camp 1
+    := ally = knight_of camp Ally
     ? ally_starts_in_world camp ?> ally |: { ally ?| at = terrain::grave () }
 
 := placed_foe (camp : camp) (i : i32) (at : geometry::position) : foe =
@@ -696,7 +745,7 @@
 
 :~ start (camp : camp) : pack =
     {
-        hunter = knight_of camp 0
+        hunter = knight_of camp Hunter
         ally = ally_at_start camp
         ally_in_world = ally_starts_in_world camp
         foes = placed_foes camp
@@ -873,7 +922,7 @@
 
 := retimed_target (t : turn) (p : pack) : pack =
     := h = p::hunter
-    ? h::target = t::index
+    ? h::target = Some t::index
     ?> p |> with_hunter (h |> with_timers (swing_after_target_moves t::camp t::now h::clock::timers))
     |: p
 
@@ -916,7 +965,7 @@
 := foe_escapes (t : turn) (k : foe_kind) (f : foe) (p : pack) : pack =
     := reset = with_slot t::index (fresh_foe k f::spawn) p
     := h = p::hunter
-    { reset ?| score = escaped_score p; hunter = { h ?| target = ? h::target = t::index ?> -1 |: h::target } }
+    { reset ?| score = escaped_score p; hunter = { h ?| target = ? h::target = Some t::index ?> None |: h::target } }
 
 := foe_flees (t : turn) (k : foe_kind) (s : foe_stats) (f : foe) (p : pack) : pack =
     := fled = fled_foe t s f p
@@ -1078,103 +1127,130 @@
     | Cyclops => 30
     | _ => 0
 
-:= sees_bits (f : foe) (p : pack) : i32 * i32 =
-    (? geometry::sees f::at p::hunter::at ?> 1 |: 0), (? geometry::sees f::at p::ally::at ?> 2 |: 0)
+:= sight_of (f : foe) (p : pack) : per_slot bool =
+    { hunter = geometry::sees f::at p::hunter::at; ally = geometry::sees f::at p::ally::at }
 
-:= seen_of (bits : i32 * i32) : i32 =
-    := first, second = bits
-    first + second
+:= anyone (v : per_slot bool) : bool = v::hunter || v::ally
 
-:= entered_bits (f : foe) (bits : i32 * i32) : bool * bool =
-    := first, second = bits
-    first = 1 && (f::aim::in_view &&& 1) = 0, second = 2 && (f::aim::in_view &&& 2) = 0
+:= entered (f : foe) (sight : per_slot bool) : per_slot bool =
+    := was = f::aim::in_view
+    { hunter = sight::hunter && was::hunter = !-; ally = sight::ally && was::ally = !- }
+
+:= seen_by_hunter () : foe =
+    := f = fresh_foe (:< creatures ;; Troll) (geometry::position 5 5 7)
+    { f ?| aim = { (f::aim) ?| in_view = { hunter = !+; ally = !- } } }
+
+///> c
+:# a_foe_enters_only_the_sight_that_was_not_on_it =
+    entered (seen_by_hunter ()) { hunter = !+; ally = !+ } |> _assert_eq { hunter = !-; ally = !+ }
 
 := sector_rank (at : geometry::position) : i32 = (at::y / 16) * 65536 + at::x / 16
 
-:= aim_newcomer (f : foe) (newcomer : i32) : i32 = ? f::aim::in_view = 0 ?> newcomer |: f::aim::entrant
+:= aim_newcomer (f : foe) (newcomer : party_slot) : party_slot =
+    ? anyone f::aim::in_view = !- ?> newcomer |: f::aim::entrant
 
-:= foe_moved_since_aim (f : foe) (appeared : bool) : bool =
-    appeared = !- && (f::at::x <> f::aim::last_x || f::at::y <> f::aim::last_y)
+:= never_aimed (f : foe) : bool = f::aim::last_seen = None
 
-:= entrant_by_order (t : turn) (appeared : bool) (p : pack) : i32 =
-    ? appeared && t::now < 1000 ?> 1
-    |? sector_rank p::hunter::at <= sector_rank p::ally::at ?> 0
-    |: 1
+:= foe_moved_since_aim (f : foe) : bool =
+    ?= f::aim::last_seen ?|
+    | Some q => f::at::x <> q::x || f::at::y <> q::y
+    | None => !-
 
-:= entrant_after_entry (f : foe) (moved : bool) (newcomer : i32) : i32 =
-    ? f::aim::last_x < 0 || moved ?> aim_newcomer f newcomer |: newcomer
+:= entrant_by_order (t : turn) (appeared : bool) (p : pack) : party_slot =
+    ? appeared && t::now < 1000 ?> Ally
+    |? sector_rank p::hunter::at <= sector_rank p::ally::at ?> Hunter
+    |: Ally
 
-:= entrant_by_entry (f : foe) (first : bool) (second : bool) : i32 =
-    := moved = foe_moved_since_aim f (f::aim::last_x < 0)
-    ? second ?> entrant_after_entry f moved 1
-    |? first ?> entrant_after_entry f moved 0
+:= entrant_after_entry (f : foe) (moved : bool) (newcomer : party_slot) : party_slot =
+    ? never_aimed f || moved ?> aim_newcomer f newcomer |: newcomer
+
+:= entrant_by_entry (f : foe) (first : bool) (second : bool) : party_slot =
+    := moved = foe_moved_since_aim f
+    ? second ?> entrant_after_entry f moved Ally
+    |? first ?> entrant_after_entry f moved Hunter
     |: f::aim::entrant
 
-:= aimed_entrant (t : turn) (f : foe) (p : pack) (bits : i32 * i32) : i32 =
-    := one, two = entered_bits f bits
-    ? one && two ?> entrant_by_order t (f::aim::last_x < 0) p
-    |: entrant_by_entry f one two
+:= aimed_entrant (t : turn) (f : foe) (p : pack) (sight : per_slot bool) : party_slot =
+    := e = entered f sight
+    ? e::hunter && e::ally ?> entrant_by_order t (never_aimed f) p
+    |: entrant_by_entry f e::hunter e::ally
 
 := aim_rolls (t : turn) : i32 * i32 =
     conv (keyed_rng::roll_between 1 100 (key t::seed t::tick t::index PackChangeTarget)),
     conv (keyed_rng::roll_between 1 100 (key t::seed t::tick t::index PackSearchTarget))
 
+:= aiming (f : foe) : bool =
+    ?= f::aim::aims_at ?|
+    | Some _ => !+
+    | None => !-
+
+:= aims_ally (f : foe) : bool =
+    ?= f::aim::aims_at ?|
+    | Some s => is_ally s
+    | None => !-
+
 := is_changing (t : turn) (k : foe_kind) (f : foe) (rolled : i32) : bool =
-    (f::aim::aims_at < 0) = !- && t::now >= f::aim::retarget_at && rolled <= change_target_percent k
+    aiming f && t::now >= f::aim::retarget_at && rolled <= change_target_percent k
 
-:= aim_kept (f : foe) (bits : i32 * i32) (changing : bool) : bool =
-    seen_of bits = 0 || (f::aim::aims_at < 0) = !- && changing = !-
+:= aim_kept (f : foe) (sight : per_slot bool) (changing : bool) : bool =
+    anyone sight = !- || aiming f && changing = !-
 
-:= distance_from (p : pack) (who : i32) (f : foe) : i32 =
-    geometry::chebyshev_distance (? who = 0 ?> p::hunter::at |: p::ally::at) f::at
+:= member_at (p : pack) (who : party_slot) : geometry::position =
+    ?= who ?|
+    | Hunter => p::hunter::at
+    | Ally => p::ally::at
 
-:= nearest_of (p : pack) (f : foe) (entrant : i32) : i32 =
-    := other = 1 - entrant
+:= distance_from (p : pack) (who : party_slot) (f : foe) : i32 = geometry::chebyshev_distance (member_at p who) f::at
+
+:= nearest_of (p : pack) (f : foe) (entrant : party_slot) : party_slot =
+    := other = other_slot entrant
     ? distance_from p other f < distance_from p entrant f ?> other |: entrant
 
-:= other_dealt (f : foe) (other : i32) : i32 = ? other = 0 ?> f::aim::damage_first |: f::aim::damage_second
+:= other_dealt (f : foe) (other : party_slot) : i32 = slot_of other f::aim::dealt
 
-:= by_damage (k : foe_kind) (f : foe) (entrant : i32) (strategy : i32) (nearest : i32) : i32 =
-    := other = 1 - entrant
+:= by_damage (k : foe_kind) (f : foe) (entrant : party_slot) (strategy : i32) (nearest : party_slot) : party_slot =
+    := other = other_slot entrant
     ? strategy > 100 - damage_strategy_percent k ?> (? other_dealt f other > 0 ?> other |: entrant) |: nearest
 
-:= changed_aim (k : foe_kind) (entrant : i32) (strategy : i32) (nearest : i32) : i32 =
-    ? (creatures::stats_of k)::target_distance <= 1 ?> (? strategy <= 50 ?> entrant |: 1 - entrant) |: nearest
+:= changed_aim (k : foe_kind) (entrant : party_slot) (strategy : i32) (nearest : party_slot) : party_slot =
+    ? (creatures::stats_of k)::target_distance <= 1 ?> (? strategy <= 50 ?> entrant |: other_slot entrant) |: nearest
 
-:= chosen_aim (k : foe_kind) (f : foe) (p : pack) (entrant : i32) (changing : bool) (strategy : i32) : i32 =
+:= chosen_aim
+    (k : foe_kind) (f : foe) (p : pack) (entrant : party_slot) (changing : bool) (strategy : i32) : party_slot
+    =
     := nearest = nearest_of p f entrant
     ? changing ?> changed_aim k entrant strategy nearest |: by_damage k f entrant strategy nearest
 
 := aim_after_roll
-    (k : foe_kind) (f : foe) (p : pack) (bits : i32 * i32) (entrant : i32) (changing : bool) (strategy : i32) : i32
+    (k : foe_kind) (f : foe) (p : pack) (s : per_slot bool) (entrant : party_slot) (changing : bool) (strategy : i32)
+    : option party_slot
     =
-    ? aim_kept f bits changing ?> f::aim::aims_at |: chosen_aim k f p entrant changing strategy
+    ? aim_kept f s changing ?> f::aim::aims_at |: Some (chosen_aim k f p entrant changing strategy)
 
-:= next_aim (t : turn) (f : foe) (p : pack) (bits : i32 * i32) (entrant : i32) : i32 =
+:= next_aim (t : turn) (f : foe) (p : pack) (sight : per_slot bool) (entrant : party_slot) : option party_slot =
     := k = kind_of t::index t::camp
     := rolled, strategy = aim_rolls t
-    aim_after_roll k f p bits entrant (is_changing t k f rolled) strategy
+    aim_after_roll k f p sight entrant (is_changing t k f rolled) strategy
 
 := retarget_due (t : turn) (f : foe) : i32 = ? t::now >= f::aim::retarget_at ?> t::now + 4000 |: f::aim::retarget_at
 
-:= aim_seen (t : turn) (f : foe) (aims_at : i32) (entrant : i32) (seen : i32) =
+:= aim_seen (t : turn) (f : foe) (a : option party_slot) (e : party_slot) (seen : per_slot bool) =
     { (f::aim) ?|
-        aims_at = aims_at
-        entrant = entrant
+        aims_at = a
+        entrant = e
         in_view = seen
         retarget_at = retarget_due t f
-        last_x = f::at::x
-        last_y = f::at::y
+        last_seen = Some f::at
     }
 
-:= aimed_foe (t : turn) (f : foe) (p : pack) (bits : i32 * i32) : foe =
-    := entrant = aimed_entrant t f p bits
-    { f ?| aim = aim_seen t f (next_aim t f p bits entrant) entrant (seen_of bits) }
+:= aimed_foe (t : turn) (f : foe) (p : pack) (sight : per_slot bool) : foe =
+    := entrant = aimed_entrant t f p sight
+    { f ?| aim = aim_seen t f (next_aim t f p sight entrant) entrant sight }
 
 := aimed_by_canary (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : foe =
     := t = turn_at camp seed tick now index
     := f = slot index p
-    aimed_foe t f p (sees_bits f p)
+    aimed_foe t f p (sight_of f p)
 
 := ally_is_nearer (f : foe) (p : pack) : bool =
     geometry::chebyshev_distance p::ally::at f::at < geometry::chebyshev_distance p::hunter::at f::at
@@ -1189,7 +1265,7 @@
 := aimed_view (t : turn) (p : pack) : bool * pack =
     := aimed = aimed_by_canary t::camp t::seed t::tick t::now t::index p
     := q = with_slot t::index aimed p
-    ? aimed::aim::aims_at = 1 ?> !+, turned q |: !-, q
+    ? aims_ally aimed ?> !+, turned q |: !-, q
 
 := ally_view (t : turn) (p : pack) : bool * pack =
     ? t::camp::crew::party > 1 && ally_is_nearer (slot t::index p) p ?> !+, turned p |: !-, p
@@ -1232,21 +1308,23 @@
 := candidate_of (index : i32) (p : pack) (camp : camp) : policy::candidate =
     := f = slot index p
     {
-        is_current = p::hunter::target = index
+        is_current = p::hunter::target = Some index
         distance = distance_to f p
         health_percent = health_percent_of camp index f
     }
 
-:= better_target (camp : camp) (order : policy::targeting) (p : pack) (a : i32) (b : i32) : i32 =
-    ? a < 0 ?> b
-    |? b < 0 ?> a
-    |? policy::prefers_by order (candidate_of a p camp) (candidate_of b p camp) ?> a
-    |: b
+:== pick = option i32
 
-:= visible_pick (p : pack) (index : i32) : i32 = ? distance_to (slot index p) p <= sight_range () ?> index |: -1
+:= better_target (camp : camp) (order : policy::targeting) (p : pack) (a : pick) (b : pick) : pick =
+    ?= a, b ?|
+    | Some x, Some y => ? policy::prefers_by order (candidate_of x p camp) (candidate_of y p camp) ?> a |: b
+    | None, _ => b
+    | _ => a
 
-:= choose_target (camp : camp) (order : policy::targeting) (p : pack) : i32 =
-    :~ ^ fold (i : i32) (best : i32) : i32 =
+:= visible_pick (p : pack) (index : i32) : pick = ? distance_to (slot index p) p <= sight_range () ?> Some index |: None
+
+:= choose_target (camp : camp) (order : policy::targeting) (p : pack) : pick =
+    :~ ^ fold (i : i32) (best : pick) : pick =
         ? i >= band_size () ?> best |: fold (i + 1) (better_target camp order p best (visible_pick p i))
     fold 1 (visible_pick p 0)
 
@@ -1264,7 +1342,9 @@
 := reach_of (p : pack) =
     :< policy
     := h = p::hunter
-    ? h::target < 0 ?> NoTarget |? distance_to (slot h::target p) p <= 1 ?> InReach |: OutOfReach
+    ?= h::target ?|
+    | None => NoTarget
+    | Some aim => ? distance_to (slot aim p) p <= 1 ?> InReach |: OutOfReach
 
 := observe (now : i32) (p : pack) : policy::observation =
     := h = p::hunter
@@ -1283,7 +1363,7 @@
 := heal_amount (seed : u32) (tick : i32) (o : offense) (h : hunter) : i32 =
     conv (
         keyed_rng::roll_between (conv o::heal_low) (conv o::heal_high)
-            (key seed tick (99 + 100 * h::call_sign) PackPlayerHeal)
+            (key seed tick (99 + 100 * slot_number h::call_sign) PackPlayerHeal)
     )
 
 := heal_timers (slot : action_proof) (h : hunter) : cooldowns::timers =
@@ -1319,14 +1399,14 @@
 
 := player_hit (t : turn) (h : hunter) (o : offense) (s : foe_stats) : i32 =
     combat::melee_hit (hunter_attacker o) { armor = s::armor; defense = s::defense }
-        (key t::seed t::tick (t::index + 100 * h::call_sign) PackPlayerHit)
+        (key t::seed t::tick (t::index + 100 * slot_number h::call_sign) PackPlayerHit)
 
 := strike_timed (t : turn) (h : hunter) : hunter =
     h |> with_timers (cooldowns::after_cast t::now (cooldowns::strike_spell ()) h::clock::timers)
 
 := dealt_aim (h : hunter) (f : foe) (dealt : i32) : foe_aim =
-    ? h::call_sign = 0 ?> { (f::aim) ?| damage_first = f::aim::damage_first + dealt }
-    |: { (f::aim) ?| damage_second = f::aim::damage_second + dealt }
+    := s, so_far = h::call_sign, f::aim::dealt
+    { (f::aim) ?| dealt = slot_with s (slot_of s so_far + dealt) so_far }
 
 := strike_survived (t : turn) (h : hunter) (f : foe) (wounded : living) (timed : pack) : pack =
     := dealt = vitality::health f::life - vitality::health wounded
@@ -1362,7 +1442,7 @@
 
 := strike_slain (t : turn) (k : foe_kind) (s : foe_stats) (f : foe) (h : hunter) (timed : pack) =
     := reset = with_slot t::index (slain_foe t k f (buried_foe k)) timed
-    { reset ?| score = slain_score timed s (loot_coins t k); hunter = { h ?| target = -1 } }
+    { reset ?| score = slain_score timed s (loot_coins t k); hunter = { h ?| target = None } }
 
 := strike_outcome (t : turn) (k : foe_kind) (s : foe_stats) (h : hunter) (q : pack) (hit : i32) =
     :< vitality
@@ -1378,11 +1458,10 @@
     strike_outcome t k s timed (p |> with_hunter timed) (player_hit t h (hunter_of t::camp) s)
 
 := player_strikes
-    (camp : camp) (seed : u32) (tick : i32) (proof : readiness::ready readiness::attack_group) (p : pack)
+    (camp : camp) (seed : u32) (tick : i32) (proof : readiness::ready readiness::attack_group) (aim : i32) (p : pack)
     : pack
     =
-    := h = p::hunter
-    strikes_target (turn_at camp seed tick (units::value_of (readiness::since proof)) h::target) h p
+    strikes_target (turn_at camp seed tick (units::value_of (readiness::since proof)) aim) p::hunter p
 
 := stepped_hunter (c : camp) (now : i32) (to : geometry::position) (h : hunter) : hunter =
     := q = { h ?| at = to; next_step_at = now + geometry::step_cost (hunter_step_ms_at c h::at) h::at to }
@@ -1423,26 +1502,52 @@
     |? approach_delayed camp now h toward ?> approach_waits camp now h toward p
     |: approach_walks camp now h toward p
 
-:= player_approaches (camp : camp) (now : i32) (p : pack) : pack =
+:= player_approaches (camp : camp) (now : i32) (aim : i32) (p : pack) : pack =
     := h = p::hunter
-    approach_from camp now h (terrain::step_toward camp::layout (taken_by_foes p) (slot h::target p)::at h::at) p
+    approach_from camp now h (terrain::step_toward camp::layout (taken_by_foes p) (slot aim p)::at h::at) p
 
 := threat_rank (f : foe) : i32 = f::at::x * 100000 + f::at::y
 
-:= earlier_threat (p : pack) (a : i32) (b : i32) : i32 =
-    ? a < 0 ?> b |? b < 0 ?> a |? threat_rank (slot b p) < threat_rank (slot a p) ?> b |: a
+:= earlier_threat (p : pack) (a : pick) (b : pick) : pick =
+    ?= a, b ?|
+    | Some x, Some y => ? threat_rank (slot y p) < threat_rank (slot x p) ?> b |: a
+    | None, _ => b
+    | _ => a
 
-:= adjacent_pick (p : pack) (index : i32) : i32 = ? distance_to (slot index p) p <= 1 ?> index |: -1
+:= adjacent_pick (p : pack) (index : i32) : pick = ? distance_to (slot index p) p <= 1 ?> Some index |: None
 
-:= nearest_attacker_index (p : pack) : i32 =
-    :~ ^ fold (i : i32) (best : i32) : i32 =
+:= nearest_attacker_index (p : pack) : pick =
+    :~ ^ fold (i : i32) (best : pick) : pick =
         ? i >= band_size () ?> best |: fold (i + 1) (earlier_threat p best (adjacent_pick p i))
     fold 1 (adjacent_pick p 0)
 
 := slot_of_nearest_attacker (p : pack) : foe =
-    := chosen = nearest_attacker_index p
-    slot (? chosen < 0 ?> 0 |: chosen) p
+    ?= nearest_attacker_index p ?|
+    | Some i => slot i p
+    | None => slot 0 p
 
+:= foe_moved_to (x : i32) (y : i32) (f : foe) : foe = { f ?| at = { (f::at) ?| x = x; y = y } }
+
+:= two_threats () : pack =
+    := p = start (uniform_camp (:< creatures ;; Troll))
+    p |> with_slot 0 (foe_moved_to 10 20 (slot 0 p)) |> with_slot 1 (foe_moved_to 10 30 (slot 1 p))
+
+///> c
+:# the_earlier_threat_wins_in_either_order =
+    := e = earlier_threat (two_threats ())
+    (e (Some 0) (Some 1), e (Some 1) (Some 0), e None (Some 1), e (Some 0) None)
+    |> _assert_eq (Some 0, Some 0, Some 1, Some 0)
+
+:= aiming_at (aim : option i32) (p : pack) : pack = p |> with_hunter { (p::hunter) ?| target = aim }
+
+:= one_adjacent () : pack =
+    := p, h = two_threats (), (two_threats ())::hunter::at
+    p |> with_slot 0 (foe_moved_to (h::x + 1) h::y (slot 0 p))
+
+///> c
+:# reach_follows_the_target_option =
+    := r a = reach_of (aiming_at a (one_adjacent ()))
+    (r None, r (Some 0), r (Some 1)) |> _assert_eq (policy::NoTarget, policy::InReach, policy::OutOfReach)
 :== retreat_beat = { camp : camp; now : i32; slot : action_proof }
 
 := foes_near (p : pack) (q : geometry::position) : i32 =
@@ -1498,13 +1603,14 @@
     network::inputs_of hp attackers (target_health f s) (distance_to f p) o::heal_ready o::strike_ready
         (vitality::health f::life <= s::run_health)
 
-:= target_inputs (camp : camp) (now : i32) (p : pack) (hp : i32) (attackers : i32) : network::inputs =
-    := f = slot p::hunter::target p
-    observed_inputs hp attackers f (creatures::stats_of (kind_of p::hunter::target camp)) (observe now p) p
+:= target_inputs (camp : camp) (now : i32) (aim : i32) (p : pack) (hp : i32) (attackers : i32) : network::inputs =
+    observed_inputs hp attackers (slot aim p) (creatures::stats_of (kind_of aim camp)) (observe now p) p
 
 := features (camp : camp) (attackers : i32) (now : i32) (p : pack) : network::inputs =
     := hp = health_fraction camp p
-    ? p::hunter::target < 0 ?> network::inputs_of hp attackers 0 0 !- !- !- |: target_inputs camp now p hp attackers
+    ?= p::hunter::target ?|
+    | None => network::inputs_of hp attackers 0 0 !- !- !-
+    | Some aim => target_inputs camp now aim p hp attackers
 
 := temperament_of (kind : creatures::arena_creature) : policy::temperament =
     :< policy
@@ -1542,7 +1648,9 @@
     | Temperate r => temperate_heals b r p
     | RandomControl => !-
 
-:= network_engagement (o : policy::observation) (engage : bool) : policy::engagement =
+:== stance = policy::engagement
+
+:= network_engagement (o : policy::observation) (engage : bool) : stance =
     :< policy
     ? engage ?>
         ?= o::target ?|
@@ -1551,7 +1659,7 @@
         | NoTarget => Hold
     |: Hold
 
-:== plan = bool * policy::engagement
+:== plan = bool * stance
 
 := rules_plan (a : policy::adaptive) (attackers : i32) (now : i32) (p : pack) : plan =
     :< policy
@@ -1600,7 +1708,7 @@
 := east_of (border : i32) (f : foe) : bool = f::spawn::x >= border
 
 := in_territory (border : i32) (index : i32) (p : pack) : bool =
-    east_of border (slot index p) = (p::hunter::call_sign = 0)
+    east_of border (slot index p) = (is_ally p::hunter::call_sign = !-)
 
 := travel_ms (camp : camp) (f : foe) (p : pack) : i32 =
     geometry::chebyshev_distance f::spawn p::hunter::at * terrain::on_ground camp::layout (hunter_of camp)::step_ms
@@ -1679,18 +1787,22 @@
     | Open slot => ? can_drink b p ?> player_heals b::camp b::seed b::tick slot p |: p
     | ClosedUntil _ => p
 
-:= strike_if_ready (b : beat) (p : pack) : pack =
+:= strike_if_ready (b : beat) (aim : i32) (p : pack) : pack =
     ?= readiness::attack_gate (quantity::ms b::now) p::hunter::clock::timers ?|
-    | Open proof => player_strikes b::camp b::seed b::tick proof p
+    | Open proof => player_strikes b::camp b::seed b::tick proof aim p
     | ClosedUntil _ => p
 
 := engages_target (b : beat) (p : pack) : pack =
-    ? p::hunter::target < 0 ?> p
-    |? distance_to (slot p::hunter::target p) p <= 1 ?> strike_if_ready b p
-    |: player_approaches b::camp b::now p
+    ?= p::hunter::target ?|
+    | None => p
+    | Some aim => ? distance_to (slot aim p) p <= 1 ?> strike_if_ready b aim p |: player_approaches b::camp b::now aim p
 
 := random_step_index (b : beat) (p : pack) : i32 =
-    conv (keyed_rng::roll_between 0 7 (key b::seed b::tick (97 + 100 * p::hunter::call_sign) PackRandomControl))
+    conv (
+        keyed_rng::roll_between 0 7 (
+            key b::seed b::tick (97 + 100 * slot_number p::hunter::call_sign) PackRandomControl
+        )
+    )
 
 := steps_somewhere (b : beat) (p : pack) : pack =
     := next = terrain::neighbor (random_step_index b p) p::hunter::at
@@ -1699,7 +1811,7 @@
     |: p
 
 := random_moved (b : beat) (p : pack) : pack =
-    ?= random_move_of b::seed b::tick p::hunter::call_sign ?|
+    ?= random_move_of b::seed b::tick (slot_number p::hunter::call_sign) ?|
     | DrinkPotion => drinks b p
     | EngageTarget => engages_target b p
     | StepSomewhere => steps_somewhere b p
@@ -1712,9 +1824,9 @@
     random_moved (beat_at camp seed tick now) p
 
 := auto_attack (camp : camp) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
-    ? p::hunter::target < 0 ?> p
-    |? distance_to (slot p::hunter::target p) p <= 1 ?> strike_if_ready (beat_at camp seed tick now) p
-    |: p
+    ?= p::hunter::target ?|
+    | Some aim => ? distance_to (slot aim p) p <= 1 ?> strike_if_ready (beat_at camp seed tick now) aim p |: p
+    | None => p
 
 := random_acts (camp : camp) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
     random_pick camp seed tick now p |> auto_attack camp seed tick now
@@ -1736,34 +1848,38 @@
     | SweepsSpawns => sweep_step b::camp b::now q
     | SweepsTerritory border => territory_step b::camp border b::now q
 
-:= strike_gate (b : beat) (q : pack) : pack =
+:= strike_gate (b : beat) (aim : i32) (q : pack) : pack =
     ?= readiness::attack_gate (quantity::ms b::now) q::hunter::clock::timers ?|
-    | Open proof => player_strikes b::camp b::seed b::tick proof q
+    | Open proof => player_strikes b::camp b::seed b::tick proof aim q
     | ClosedUntil _ => q
 
-:= engaged (b : beat) (plan : policy::engagement) (q : pack) : pack =
+:= engaged (b : beat) (plan : stance) (aim : i32) (q : pack) : pack =
     :< policy
     ?= plan ?|
-    | Strike => strike_gate b q
-    | Approach => player_approaches b::camp b::now q
+    | Strike => strike_gate b aim q
+    | Approach => player_approaches b::camp b::now aim q
     | Hold => q
 
-:= retreat_gate (b : beat) (t : tactic) (p : policy::engagement) (q : pack) : pack =
+:= retreat_gate (b : beat) (t : tactic) (p : stance) (aim : i32) (q : pack) : pack =
     ?= readiness::action_gate (quantity::ms b::now) q::hunter::clock::next_action_at ?|
-    | Open slot => player_retreats b::camp t::footing slot q
-    | ClosedUntil _ => engaged b p q
+    | Open s => player_retreats b::camp t::footing s q
+    | ClosedUntil _ => engaged b p aim q
 
-:= retreat_or_engage (b : beat) (t : tactic) (retreat : bool) (plan : policy::engagement) (q : pack) : pack =
-    ? retreat && b::now >= q::hunter::next_step_at ?> retreat_gate b t plan q |: engaged b plan q
+:= retreat_or_engage (b : beat) (t : tactic) (retreat : bool) (plan : stance) (aim : i32) (q : pack) : pack =
+    ? retreat && b::now >= q::hunter::next_step_at ?> retreat_gate b t plan aim q |: engaged b plan aim q
 
-:= target_turn (b : beat) (t : tactic) (attackers : i32) (q : pack) : pack =
+:= target_turn (b : beat) (t : tactic) (attackers : i32) (aim : i32) (q : pack) : pack =
     ?= after_heal_plan b t::brain attackers q ?|
-    | retreat, plan => retreat_or_engage b t retreat plan q
+    | retreat, plan => retreat_or_engage b t retreat plan aim q
+
+:= acts_on_target (b : beat) (t : tactic) (attackers : i32) (q : pack) : pack =
+    ?= q::hunter::target ?|
+    | None => patrol_turn b t q
+    | Some aim => target_turn b t attackers aim q
 
 := acts_after_aim (b : beat) (t : tactic) (aimed : pack) : pack =
     := attackers = attackers_of aimed
-    := healed = heal_gate b (heals_now b t attackers aimed) aimed
-    ? healed::hunter::target < 0 ?> patrol_turn b t healed |: target_turn b t attackers healed
+    acts_on_target b t attackers (heal_gate b (heals_now b t attackers aimed) aimed)
 
 := ruled_acts (camp : camp) (t : tactic) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
     acts_after_aim { camp = camp; seed = seed; tick = tick; now = now } t (aimed_by camp t::order p)
@@ -1776,7 +1892,7 @@
 := respawn_player (camp : camp) (p : pack) : pack =
     := h = p::hunter
     { p ?|
-        hunter = { h ?| at = knight_start camp h::call_sign; health = player_max_health camp; target = -1 }
+        hunter = { h ?| at = knight_start camp h::call_sign; health = player_max_health camp; target = None }
         score = { (p::score) ?| deaths = p::score::deaths + 1 }
     }
 
@@ -1804,11 +1920,11 @@
 :~ ^ knight_turn_shared (b : beat) (t : tactic) (p : pack) : pack = knight_turn_inline b t p
 
 := knight_turn (b : beat) (t : tactic) (p : pack) : pack =
-    !!!!BackendSwitch({
+    backend_switch {
         C = \ () => knight_turn_shared b t p : pack
         Rust = \ () => knight_turn_shared b t p : pack
         Wgsl = \ () => knight_turn_inline b t p : pack
-    })
+    }
 
 := late_entry_ms (index : i32) : i32 =
     ? index = 5 ?> 1193 |? index = 6 ?> 1318 |? index = 7 ?> 2346 |? index = 8 ?> 1847 |: 1520
@@ -1826,7 +1942,9 @@
 := entered_ally (camp : camp) (now : i32) (p : pack) : pack =
     := waiting = p::ally
     := c = waiting::clock
-    now_in_world (with_ally ({ waiting ?| at = knight_start camp 1 } |> with_clock { c ?| next_decision_at = now }) p)
+    now_in_world (
+        with_ally ({ waiting ?| at = knight_start camp Ally } |> with_clock { c ?| next_decision_at = now }) p
+    )
 
 := ally_entered (camp : camp) (seed : u32) (now : i32) (p : pack) : pack =
     ? camp::crew::party > 1 && p::ally_in_world = !- && now >= ally_entry_ms seed ?> entered_ally camp now p |: p

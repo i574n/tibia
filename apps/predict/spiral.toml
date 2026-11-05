@@ -5,4 +5,5 @@ modules = '''
 predict
 lanes
 lanes_gpu
+gpu_plan
 '''

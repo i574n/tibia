@@ -1,0 +1,33 @@
+///- --package .
+:# gpu_plan static =
+    :< testing
+
+:< sm'_operators
+
+:= lanes_kernel () : occupancy::kernel = { threads = 64i32; regs = 0i32; smem = 0i32 }
+
+:= device_line (d : occupancy::device) : string =
+    := s = d::per_sm
+    "device sms "
+    ++#? d::sms
+    ++# ", threads/sm "
+    ++#? s::threads
+    ++# ", blocks/sm "
+    ++#? s::blocks
+    ++# ", regs/sm "
+    ++#? s::regs
+    ++# ", smem/sm "
+    ++#? s::smem
+
+:= plan_line (d : occupancy::device) : string =
+    "lanes kernel, 64 threads, registers not counted: " ++# occupancy::described (occupancy::launch d (lanes_kernel ()))
+
+:= main () : i32 =
+    ?= occupancy::probed 0i32 ?|
+    | Some d =>
+        console::write_line (device_line d)
+        console::write_line (plan_line d)
+        0
+    | None =>
+        console::write_line "no CUDA device: probed 0 is None"
+        1

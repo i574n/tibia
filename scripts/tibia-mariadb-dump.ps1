@@ -5,8 +5,6 @@ param(
     [int] $Keep = 14
 )
 $ErrorActionPreference = 'Stop'
-# A consistent (--single-transaction, InnoDB) logical backup of the canary DB. Safe on a live server;
-# a file-by-file copy of the datadir while mariadbd runs is NOT a consistent restore point, this is.
 $cfg = Get-Content -LiteralPath $ConfigLua -Raw
 function Val($n) { if ($cfg -match "(?m)^\s*$n\s*=\s*`"?([^`"\r\n]*)`"?") { $matches[1].Trim() } }
 $db = Val 'mysqlDatabase'; $user = Val 'mysqlUser'; $port = Val 'mysqlPort'; $pass = Val 'mysqlPass'

@@ -1398,20 +1398,15 @@
 
 := word_holds (word : u32) (bit : i32) : bool = ((word >>> bit) &&& 1u32) = 1u32
 
-:= base_create \* el. (n : i32) : array_base el = !!!!ArrayCreate(`el, n)
-
-:= base_read \* el. (i : i32) (ar : array_base el) : el = !!!!ArrayIndex(ar, i)
-
-:= base_write \* el. (ar : array_base el) (i : i32) (v : el) : () = !!!!ArrayIndexSet(ar, i, v)
 :== route_request = { target : tile; from : tile; free : u32 }
 
 :== route_grid = { reach : array_base u32; openings : array_base u32; above : array_base u32; grown : array_base u32 }
 
 := region_cells () : i32 = region_rows () * region_words ()
 
-:= region_array () : array_base u32 = base_create (region_cells ())
+:= region_array () : array_base u32 = am'::create_base (region_cells ())
 
-:= row_array () : array_base u32 = base_create (region_words ())
+:= row_array () : array_base u32 = am'::create_base (region_words ())
 
 := route_grid_new () : route_grid =
     { reach = region_array (); openings = region_array (); above = row_array (); grown = row_array () }
@@ -1426,18 +1421,18 @@
 := reach_at (g : route_grid) (row : i32) (word : i32) : u32 =
     ? row < 0 || row >= region_rows () || word < 0 || word >= region_words ()
     ?> 0u32
-    |: base_read (row * region_words () + word) g::reach
+    |: am'::index_base (row * region_words () + word) g::reach
 
 := prepare_grid (g : route_grid) : () =
     :~ ^ prepare (cell : i32) : () =
         ? cell < region_cells () ?>
-            base_write g::reach cell 0u32
-            base_write g::openings cell (region_openings cell)
+            am'::set_base g::reach cell 0u32
+            am'::set_base g::openings cell (region_openings cell)
             prepare (cell + 1)
     prepare 0
 
 := grid_open (g : route_grid) (x : i32) (y : i32) : bool =
-    inside_region x y && word_holds (base_read (region_cell x y) g::openings) (region_shift x)
+    inside_region x y && word_holds (am'::index_base (region_cell x y) g::openings) (region_shift x)
 
 := grid_reached (g : route_grid) (x : i32) (y : i32) : bool =
     inside_region x y && word_holds (reach_at g (region_row y) (region_word x)) (region_shift x)
@@ -1445,7 +1440,7 @@
 := grid_mark (g : route_grid) (x : i32) (y : i32) : () =
     ? inside_region x y && grid_open g x y ?>
         := marked = reach_at g (region_row y) (region_word x) ||| (1u32 <<< region_shift x)
-        base_write g::reach (region_cell x y) marked
+        am'::set_base g::reach (region_cell x y) marked
 
 := seed_target (g : route_grid) (r : route_request) : () =
     :~ ^ seed (k : i32) : () =
@@ -1457,7 +1452,7 @@
 := clear_above (g : route_grid) : () =
     :~ ^ forget_above (word : i32) : () =
         ? word < region_words () ?>
-            base_write g::above word 0u32
+            am'::set_base g::above word 0u32
             forget_above (word + 1)
     forget_above 0
 
@@ -1472,22 +1467,22 @@
 
 := grown_at (g : route_grid) (row : i32) (word : i32) : u32 =
     := here = reach_at g row word
-    := open_bits : u32 = base_read (row * region_words () + word) g::openings
-    := up : u32 = base_read word g::above
+    := open_bits = am'::index_base (row * region_words () + word) g::openings
+    := up = am'::index_base word g::above
     spread_at g row word here up &&& open_bits
 
 := grow_row (g : route_grid) (row : i32) : () =
     :~ ^ grow (word : i32) : () =
         ? word < region_words () ?>
-            base_write g::grown word (grown_at g row word)
+            am'::set_base g::grown word (grown_at g row word)
             grow (word + 1)
     grow 0
 
 := commit_word (g : route_grid) (row : i32) (word : i32) : bool =
     := here = reach_at g row word
-    := next : u32 = base_read word g::grown
-    base_write g::above word here
-    base_write g::reach (row * region_words () + word) next
+    := next : u32 = am'::index_base word g::grown
+    am'::set_base g::above word here
+    am'::set_base g::reach (row * region_words () + word) next
     next <> here
 
 := commit_row (g : route_grid) (row : i32) (changed : bool) : bool =
@@ -1606,7 +1601,7 @@
 := window_around (target : tile) (from : tile) : step_window =
     := area = area_around target from
     := cells = area::w * area::h
-    { area = area; target = target; from = from; passable = base_create cells; distance = base_create cells }
+    { area = area; target = target; from = from; passable = am'::create_base cells; distance = am'::create_base cells }
 
 := window_cells (v : step_window) : i32 = v::area::w * v::area::h
 := window_x (v : step_window) (c : i32) : i32 = v::area::x0 + c % v::area::w
@@ -1618,10 +1613,10 @@
 := window_cell (v : step_window) (x : i32) (y : i32) : i32 = (y - v::area::y0) * v::area::w + (x - v::area::x0)
 
 := window_passable (v : step_window) (x : i32) (y : i32) : bool =
-    window_inside v x y && base_read (window_cell v x y) v::passable = 1i32
+    window_inside v x y && am'::index_base (window_cell v x y) v::passable = 1i32
 
 := window_distance (v : step_window) (x : i32) (y : i32) : i32 =
-    ? window_inside v x y ?> base_read (window_cell v x y) v::distance |: unreachable_weight ()
+    ? window_inside v x y ?> am'::index_base (window_cell v x y) v::distance |: unreachable_weight ()
 
 := window_goal (v : step_window) (c : i32) : bool =
     := x, y = window_x v c, window_y v c
@@ -1632,7 +1627,7 @@
 := seed_window (v : step_window) : () =
     :~ ^ seed (c : i32) : () =
         ? c < window_cells v ?>
-            base_write v::distance c (? window_goal v c ?> 0 |: unreachable_weight ())
+            am'::set_base v::distance c (? window_goal v c ?> 0 |: unreachable_weight ())
             seed (c + 1)
     seed 0
 
@@ -1651,7 +1646,7 @@
     := old = window_distance v x y
     := improved = best_through v x y old
     ? improved < old ?>
-        base_write v::distance c improved
+        am'::set_base v::distance c improved
         !+
     |: !-
 
@@ -1707,7 +1702,7 @@
 := fill_window (l : layout) (taken : occupancy) (v : step_window) : () =
     :~ ^ fill (c : i32) : () =
         ? c < window_cells v ?>
-            base_write v::passable c (walkable_at l taken v::from (window_tile v c))
+            am'::set_base v::passable c (walkable_at l taken v::from (window_tile v c))
             fill (c + 1)
     fill 0
 

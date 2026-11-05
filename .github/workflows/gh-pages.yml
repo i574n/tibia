@@ -70,6 +70,12 @@ jobs:
         if: ${{ !cancelled() && steps.init.outcome == 'success' }}
         run: pwsh scripts/build.ps1 -Files gpu_sim,hunt_sim -Label long-gpu
 
+      - id: sim-rate
+        if: ${{ !cancelled() && steps.init.outcome == 'success' && contains(matrix.os, 'ubuntu') }}
+        run: |
+          pwsh scripts/predict.ps1 -Module sweep -Label ci-c -Backend c -Out "${{ runner.temp }}/sweep-c.tsv"
+          pwsh scripts/predict.ps1 -Module sweep -Label ci-rust -Backend rust -Out "${{ runner.temp }}/sweep-rust.tsv"
+
       - run: pwsh scripts/publish.ps1
         if: ${{ !cancelled() && contains(matrix.os, 'ubuntu') }}
 

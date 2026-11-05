@@ -7,13 +7,26 @@
     | HealingGroup
     | SupportGroup
 
-:| spell_id =
-    | StrikeSpell
-    | LightHealingSpell
-    | WoundCleansingSpell
-    | HasteSpell
+:! attack = ()
 
-:== spell = { id : spell_id; group : spell_group; own_ms : i32; group_ms : i32 }
+:! healing = ()
+
+:! support = ()
+
+:| spell_id g =
+    | StrikeSpell :: spell_id attack
+    | LightHealingSpell :: spell_id healing
+    | WoundCleansingSpell :: spell_id healing
+    | HasteSpell :: spell_id support
+
+:= group_of \* g. (id : spell_id g) : spell_group =
+    ?= id ?|
+    | StrikeSpell => AttackGroup
+    | LightHealingSpell => HealingGroup
+    | WoundCleansingSpell => HealingGroup
+    | HasteSpell => SupportGroup
+
+:== spell g = { id : spell_id g; own_ms : i32; group_ms : i32 }
 
 :== timers =
     {
@@ -43,12 +56,12 @@
     | HealingGroup => held::healing_ready_at
     | SupportGroup => held::support_ready_at
 
-:= own_ready_at (id : spell_id) (held : timers) : i32 =
+:= own_ready_at \* g. (id : spell_id g) (t : timers) : i32 =
     ?= id ?|
-    | StrikeSpell => held::strike_ready_at
-    | LightHealingSpell => held::light_healing_ready_at
-    | WoundCleansingSpell => held::wound_cleansing_ready_at
-    | HasteSpell => held::haste_ready_at
+    | StrikeSpell => t::strike_ready_at
+    | LightHealingSpell => t::light_healing_ready_at
+    | WoundCleansingSpell => t::wound_cleansing_ready_at
+    | HasteSpell => t::haste_ready_at
 
 := with_strike (at : i32) (t : timers) : timers = { t ?| strike_ready_at = at }
 
@@ -58,7 +71,7 @@
 
 := with_haste (at : i32) (t : timers) : timers = { t ?| haste_ready_at = at }
 
-:= with_own_ready_at (id : spell_id) (at : i32) (t : timers) : timers =
+:= with_own_ready_at \* g. (id : spell_id g) (at : i32) (t : timers) : timers =
     ?= id ?|
     | StrikeSpell => with_strike at t
     | LightHealingSpell => with_light_healing at t
@@ -74,21 +87,21 @@
 := later (a : i32) (b : i32) : i32 =
     ? a < b ?> b |: a
 
-:= ready_at (cast : spell) (held : timers) : i32 =
-    later (group_ready_at cast::group held) (own_ready_at cast::id held)
+:= ready_at \* g. (cast : spell g) (held : timers) : i32 =
+    later (group_ready_at (group_of cast::id) held) (own_ready_at cast::id held)
 
-:= can_cast (now : i32) (cast : spell) (held : timers) : bool =
+:= can_cast \* g. (now : i32) (cast : spell g) (held : timers) : bool =
     ready_at cast held <= now
 
-:= after_cast (now : i32) (cast : spell) (held : timers) : timers =
+:= after_cast \* g. (now : i32) (cast : spell g) (held : timers) : timers =
     := own_until = later (own_ready_at cast::id held) (now + cast::own_ms)
-    with_own_ready_at cast::id own_until held |> with_group_ready_at cast::group (now + cast::group_ms)
+    with_own_ready_at cast::id own_until held |> with_group_ready_at (group_of cast::id) (now + cast::group_ms)
 
-:= strike_spell () : spell = { id = StrikeSpell; group = AttackGroup; own_ms = 2000; group_ms = 2000 }
+:= strike_spell () : spell attack = { id = StrikeSpell; own_ms = 2000; group_ms = 2000 }
 
-:= light_healing () : spell = { id = LightHealingSpell; group = HealingGroup; own_ms = 1000; group_ms = 1000 }
+:= light_healing () : spell healing = { id = LightHealingSpell; own_ms = 1000; group_ms = 1000 }
 
-:= haste () : spell = { id = HasteSpell; group = SupportGroup; own_ms = 2000; group_ms = 2000 }
+:= haste () : spell support = { id = HasteSpell; own_ms = 2000; group_ms = 2000 }
 
 := after_strike_at (now : i32) : timers = idle_timers () |> after_cast now (strike_spell ())
 
@@ -143,3 +156,8 @@
     := held = after_cast now (strike_spell ()) (idle_timers ())
     can_cast now (light_healing ()) held |> _assert_eq !+
     can_cast now (strike_spell ()) held |> _assert_eq !-
+
+///> c
+:# a_strike_cannot_be_typed_as_a_healing_spell fails "Unification failure" =
+    := s : spell healing = { id = StrikeSpell; own_ms = 2000; group_ms = 2000 }
+    s::own_ms

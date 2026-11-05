@@ -33,9 +33,11 @@
     probe::note (step_head s ++# "; interval after its " ++# measured ++# " step " ++#? interval ++# " ms")
 
 := step_logged (log : step_log) (s : step_seen) (now : i32) : () =
-    := previous_at, measured = samples::last_stamp log::stamps s::id
+    := last = samples::last_stamp log::stamps s::id
     samples::stamp log::stamps s::id now s::kind
-    ? previous_at >= 0 ?> interval_noted log s measured (now - previous_at)
+    ?= last ?|
+    | Some (at, measured) => interval_noted log s measured (now - at)
+    | None => ()
 
 := kind_of (log : step_log) (is_knight : bool) (n : client::spot) (o : client::spot) : string =
     step_kind log::chasing is_knight (diagonal_move n o) (near_player n)

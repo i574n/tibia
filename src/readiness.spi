@@ -2,8 +2,8 @@
 :# readiness static =
     :< testing
 
-:! attack_group = ()
-:! healing_group = ()
+:== attack_group = cooldowns::attack
+:== healing_group = cooldowns::healing
 :! action_slot = ()
 
 :| private ready g =
@@ -28,7 +28,7 @@
 
 :== instant = units::amount quantity::milliseconds
 
-:= closed_by \* group. (spell : cooldowns::spell) (timers : cooldowns::timers) : gate group =
+:= closed_by \* group. (spell : cooldowns::spell group) (timers : cooldowns::timers) : gate group =
     ClosedUntil (quantity::ms (cooldowns::ready_at spell timers))
 
 := attack_gate (now : instant) (timers : cooldowns::timers) : gate attack_group =
@@ -103,3 +103,8 @@
 :# an_attack_proof_cannot_pay_for_an_action_slot fails "Unification failure" =
     := drink (slot : ready action_slot) = since slot
     drink (AttackReady (quantity::ms 0))
+
+///> c
+:# an_attack_spell_cannot_close_a_healing_gate fails "Unification failure" =
+    := g : gate healing_group = closed_by (cooldowns::strike_spell ()) (cooldowns::idle_timers ())
+    g

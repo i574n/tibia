@@ -293,11 +293,11 @@
 
 :~ live_monster (c : creature) : bool = creature_is_monster c && creature_dead c = !- && creature_positioned c
 
-:~ ^ remember (t : engaged) (c : creature) : () =
+:~ remember (t : engaged) (c : creature) : () =
     := id = creature_id c
     t <- (id, c) :: listm'::filter (\ (seen, _) => seen <> id) *t
 
-:~ ^ forget_dead (t : engaged) : i32 =
+:~ forget_dead (t : engaged) : i32 =
     := dead = listm'::filter (\ (_, c) => creature_dead c) *t
     t <- listm'::filter (\ (_, c) => creature_dead c = !-) *t
     listm::length dead
@@ -312,7 +312,7 @@
         := c = member seen i
         monster_lines seen (i - 1) (? live_monster c ?> monster_line c :: acc |: acc)
 
-:~ ^ monsters_described (s : spot) : string =
+:~ monsters_described (s : spot) : string =
     := seen = spectators s
     ?= monster_lines seen (crowd_size seen) [] ?| [] => "none" | lines => sm'::concat_list "; " lines
 

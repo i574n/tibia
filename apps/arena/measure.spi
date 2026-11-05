@@ -222,10 +222,10 @@
     |? sm'::contains "You lose" text = !- ?> server_text_noted mode text
 
 := on_text (b : bench) (mode : string) (text : string) : () =
-    := amount, lost = combat_text::hit_amount text, combat_text::damage_taken text
-    ? lost >= 0 ?> samples::sample b::taken lost
-    |? amount >= 0 ?> hit_seen b amount text
-    |: other_text b mode text
+    ?= combat_text::read_line text ?|
+    | combat_text::Took lost => samples::sample b::taken lost
+    | combat_text::Dealt amount => hit_seen b amount text
+    | combat_text::Other => other_text b mode text
 
 := fight_noted () : () =
     client::chasing !-

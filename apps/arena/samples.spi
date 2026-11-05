@@ -107,10 +107,10 @@
 
 := new_stamps () : mut (list stamped) = mut []
 
-:~ ^ stamp_of (key : i32) (stamps : list stamped) : i32 * string =
+:~ ^ stamp_of (key : i32) (stamps : list stamped) : option (i32 * string) =
     ?= stamps ?|
-    | [] => -1i32, ""
-    | (known, at, kind) :: rest => ? known = key ?> at, kind |: stamp_of key rest
+    | [] => None
+    | (known, at, kind) :: rest => ? known = key ?> Some (at, kind) |: stamp_of key rest
 
 :~ ^ restamped (key : i32) (at : i32) (kind : string) (stamps : list stamped) : list stamped =
     ?= stamps ?|
@@ -121,7 +121,7 @@
 := stamp (s : mut (list stamped)) (key : i32) (at : i32) (kind : string) : () =
     s <- restamped key at kind *s
 
-:= last_stamp (s : mut (list stamped)) (key : i32) : i32 * string = stamp_of key *s
+:= last_stamp (s : mut (list stamped)) (key : i32) : option (i32 * string) = stamp_of key *s
 
 := ab_summary_expected () : string = "a n=1 median 2 min 2 max 2; b n=2 median 1 min 1 max 3"
 
@@ -142,10 +142,10 @@
     labeled_sample s "kd" 4i32
     labeled_summary s |> _assert_eq "kd n=1 median 4 min 4 max 4; kd-chasing n=1 median 5 min 5 max 5"
 
-:== stamp_seen = i32 * string
+:== stamp_seen = option (i32 * string)
 
 := stamps_expected () : stamp_seen * stamp_seen * stamp_seen * stamp_seen =
-    (-1, ""), (130, "knight-straight"), (50, "diagonal"), (-1, "")
+    None, Some (130, "knight-straight"), Some (50, "diagonal"), None
 
 := stamp_three_moves (s : mut (list stamped)) : () =
     stamp s 7i32 100i32 "straight"

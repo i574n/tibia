@@ -14,55 +14,55 @@
     cell <- *cell + 1
     f
 
-:~ ^ counting (name : string) (cell : mut i32) : () =
+:~ counting (name : string) (cell : mut i32) : () =
     := native = hooks::field_function (hooks::game ()) name
     hooks::replace_dispatch (hooks::game ()) name \ () => bumped cell native
 
-:~ ^ counting_if_present (name : string) (cell : mut i32) : () =
+:~ counting_if_present (name : string) (cell : mut i32) : () =
     ? hooks::is_function (hooks::field_function (hooks::game ()) name) ?> counting name cell
 
-:~ ^ guarded_pick (cell : mut i32) (native : hooks::host_fn) : hooks::host_fn =
+:~ guarded_pick (cell : mut i32) (native : hooks::host_fn) : hooks::host_fn =
     ? client::following_someone () ?> native |: bumped cell (hooks::ignoring ())
 
-:~ ^ guarding_cancel_follow (cell : mut i32) : () =
+:~ guarding_cancel_follow (cell : mut i32) : () =
     := native = hooks::field_function (hooks::game ()) "cancelFollow"
     hooks::replace_dispatch (hooks::game ()) "cancelFollow" \ () => guarded_pick cell native
 
-:~ ^ fresh_counts () : counts =
+:~ fresh_counts () : counts =
     := other = listm::map (\ (name : string) => name, mut 0i32) (counted_names ())
     { attack = mut 0i32; cancel = mut 0i32; guarded = mut 0i32; other = other }
 
-:~ ^ wrapped_attack_calls (s : counts) : () =
+:~ wrapped_attack_calls (s : counts) : () =
     counting "attack" s::attack
     counting_if_present "cancelAttack" s::cancel
     counting_if_present "cancelAttackAndFollow" s::cancel
     guarding_cancel_follow s::guarded
 
-:~ ^ instrument () : counts =
+:~ instrument () : counts =
     := s = fresh_counts ()
     wrapped_attack_calls s
     listm::iter (\ (name, cell) => counting_if_present name cell) s::other
     s
 
-:~ ^ held_text (slot : i32) : string =
+:~ held_text (slot : i32) : string =
     := i = client::inventory_item (client::local_player ()) slot
     ? client::item_present i ?> "" ++#? client::item_id i |: "-"
 
-:~ ^ target_distance_text () : string =
+:~ target_distance_text () : string =
     := a = client::attacking ()
     ? client::creature_present a ?> "" ++#? probe::chebyshev (client::creature_spot a) (client::player_spot ()) |: "-"
 
-:~ ^ called_text (s : counts) : string =
+:~ called_text (s : counts) : string =
     := parts = listm::fold (\ acc (name, cell) => ? *cell > 0i32 ?> (name ++# "=" ++#? *cell) :: acc |: acc) [] s::other
     sm'::concat_list " " (listm::rev parts)
 
-:~ ^ calls_head (s : counts) : string =
+:~ calls_head (s : counts) : string =
     := hands = held_text (client::left_hand_slot ()) ++# "/" ++# held_text (client::right_hand_slot ())
     "diag attack calls " ++#? *s::attack ++# " cancels " ++#? *s::cancel ++# " hands " ++# hands
 
-:~ ^ modes_text () : string = " chase " ++#? client::chase_mode () ++# " fight " ++# client::fight_mode_text ()
+:~ modes_text () : string = " chase " ++#? client::chase_mode () ++# " fight " ++# client::fight_mode_text ()
 
-:~ ^ report (s : counts) : string =
+:~ report (s : counts) : string =
     := head, modes = calls_head s, modes_text ()
     := calls = " calls " ++# called_text s ++# " guarded cancelFollow " ++#? *s::guarded
     head ++# " target distance " ++# target_distance_text () ++# modes ++# calls

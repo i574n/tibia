@@ -253,8 +253,8 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 
 ## Running
 
-- Set up: `pwsh scripts/init.ps1` clones polyglot (which brings spiral) next to this repo, links both under `deps/`,
-  installs Mesa's software Vulkan on Ubuntu, and builds the WGSL runner into `target/`. `-fast 1` only links and
+- Set up: `pwsh scripts/init.ps1` clones spiral next to this repo, links it as `deps/spiral`, installs Lua 5.1 and
+  Mesa's software Vulkan on Ubuntu if missing, and builds the WGSL runner into `target/`. `-fast 1` only links and
   builds what is missing.
 - Test: `pwsh scripts/build.ps1` runs every file with tests in `src` and in `apps/arena`, `apps/host`, `apps/offscreen`,
   `apps/map`, `apps/predict` and `apps/canary` through `deps/spiral/apps/cells/spi/run_notebook.ps1`

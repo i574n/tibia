@@ -48,8 +48,9 @@ if ($Shield -ne 11) {
     Set-Text (Join-Path $work 'src/combat.spi') 'shielded_defense 11i32 dwarven_shield' "shielded_defense ${Shield}i32 dwarven_shield"
 }
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path (Resolve-Path (Join-Path $repo 'deps/spiral')) 'deps/The-Spiral-Language/VS Code Plugin'
-$dotnet = Join-Path $env:LOCALAPPDATA "spiral-bin/toolchains/dotnet/dotnet$(if ($IsWindows) { '.exe' })"
-$compiler = Join-Path $env:LOCALAPPDATA 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'
+$cache = if ($env:SPIRAL_BIN_CACHE_DIR) { $env:SPIRAL_BIN_CACHE_DIR } elseif ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'spiral-bin' } else { Join-Path $HOME '.cache/spiral-bin' }
+$dotnet = Join-Path $cache "toolchains/dotnet/dotnet$(if ($IsWindows) { '.exe' })"
+$compiler = Join-Path $cache 'bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'
 $source = Join-Path $work "predict.$(if ($Backend -eq 'rust') { 'rs' } else { 'c' })"
 & $dotnet $compiler --backend ($Backend -eq 'rust' ? 'Rust' : 'C') (Join-Path $work "apps/predict/$Module.spi") $source 2>&1 | Select-Object -Last 2 | Write-Host
 if ($LASTEXITCODE -ne 0) { throw "predict / $Label / compile failed" }
