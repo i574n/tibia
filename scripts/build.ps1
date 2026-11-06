@@ -96,6 +96,7 @@ $sources = Get-ChildItem ../src, ../apps/arena, ../apps/host, ../apps/offscreen,
 $labelSuffix = if ($Label -eq 'all') { '' } else { "-$Label" }
 
 $problems = @()
+$executed = 0
 foreach ($source in $sources) {
     $name = $source.BaseName
     $notebook = Join-Path $notebooks "$name.spi.ipynb"
@@ -129,7 +130,12 @@ foreach ($source in $sources) {
     $s = $total.Matches[0].Groups[1].Value | ConvertFrom-Json
     Write-Output ("build.ps1 / {0} / discovered {1} executed {2} passed {3} failed {4} static {5} unsupported {6} skipped {7} not_run {8} memo_hits {9}" -f `
         $name, $s.discovered, $s.executed, $s.passed, $s.failed, $s.static, $s.unsupported, $s.skipped, $s.not_run, $s.memo_hits)
+    $executed += $s.executed
     $missing = $s.discovered - $s.executed - $s.static
+    if (!$s.discovered) {
+        $problems += "${name}: VOID, 0 tests discovered (exit code $exitCode)"
+        continue
+    }
     if ($s.failed -or $s.unsupported -or $s.skipped -or $s.not_run -or $missing -or $s.passed -ne $s.executed) {
         $failedTests = ($lines | Select-String 'spiral-tests file (\{.*\})' | ForEach-Object { ($_.Matches[0].Groups[1].Value | ConvertFrom-Json).failed_tests }) -join ', '
         $problems += "${name}: failed $($s.failed), unsupported $($s.unsupported), skipped $($s.skipped), not run $($s.not_run), not executed $missing ($failedTests)"
@@ -163,5 +169,6 @@ if ($env:GITHUB_STEP_SUMMARY) {
 
 if (!$sources -and $Resume) { Write-Output "build.ps1 / resume / every matched test file already has a total line in target/ci-metrics"; return }
 if (!$sources) { throw "build.ps1 / no test files matched $($Files -join ', ')" }
+if (!$problems -and !$executed) { throw "build.ps1 / VOID: 0 tests executed across $(@($sources).Count) test files" }
 if ($problems) { throw "build.ps1 / $($problems.Count) of $(@($sources).Count) test files are not fully green:`n$($problems -join "`n")" }
 Write-Output "build.ps1 / all $(@($sources).Count) test files green"
