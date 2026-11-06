@@ -234,6 +234,143 @@
 := evolve_by \* f {judge}. (j : f) (s : weight_search) (start : weights) : weights =
     climb_by j { s = s; index = 0; width = s::spread; parent = { w = start; score = judge j start } }
 
+:= scores_by \* f {judge}. (j : f) (r : weight_round) : array i32 =
+    parallel::map_index r::s::offspring \ child => judge j (mutate r child)
+
+:= fitter_scored (r : weight_round) (scores : array i32) (child : i32) (best : scored) : scored =
+    := score = index scores child
+    ? score > best::score ?> { w = mutate r child; score = score } |: best
+
+:~ ^ best_scored (r : weight_round) (scores : array i32) (child : i32) (best : scored) : scored =
+    ? child >= r::s::offspring ?> best |: best_scored r scores (child + 1) (fitter_scored r scores child best)
+
+:~ ^ climb_par_by \* f {judge}. (j : f) (r : weight_round) : weights =
+    ? r::index >= r::s::generations ?> r::parent::w
+    |: climb_par_by j (next_weight_round r (best_scored r (scores_by j r) 0 r::parent))
+
+:= evolve_par_by \* f {judge}. (j : f) (s : weight_search) (start : weights) : weights =
+    climb_par_by j { s = s; index = 0; width = s::spread; parent = { w = start; score = judge j start } }
+
+:| elites =
+    | TopK : i32
+    | AboveMean
+
+:~ ^ score_total (scores : array i32) (n : i32) (i : i32) (total : i64) : i64 =
+    ? i >= n ?> total |: score_total scores n (i + 1) (total + conv (index scores i))
+
+:= ranks_above (scores : array i32) (child : i32) (i : i32) : bool =
+    index scores i > index scores child || (index scores i = index scores child && i < child)
+
+:~ ^ rank_of (scores : array i32) (child : i32) (i : i32) (rank : i32) : i32 =
+    ? i >= length scores ?> rank
+    |: rank_of scores child (i + 1) (? ranks_above scores child i ?> rank + 1 |: rank)
+
+:= is_elite (e : elites) (scores : array i32) (child : i32) : bool =
+    ?= e ?|
+    | AboveMean => conv (index scores child) * conv (length scores) >= score_total scores (length scores) 0 0i64
+    | TopK k => rank_of scores child 0 0 < k
+
+:~ ^ add_weights (sums : array i32) (w : weights) (i : i32) : () =
+    ? i < weight_count () ?>
+        set sums i (index sums i + weight w i)
+        add_weights sums w (i + 1)
+
+:= take_elite (sums : array i32) (w : weights) (count : i32) : i32 =
+    add_weights sums w 0
+    count + 1
+
+:== elite_pass = { e : elites; r : weight_round; scores : array i32; sums : array i32 }
+
+:= take_if_elite (p : elite_pass) (child : i32) (count : i32) : i32 =
+    ? is_elite p::e p::scores child ?> take_elite p::sums (mutate p::r child) count |: count
+
+:~ ^ sum_elites (p : elite_pass) (child : i32) (count : i32) : i32 =
+    ? child >= p::r::s::offspring ?> count |: sum_elites p (child + 1) (take_if_elite p child count)
+
+:~ ^ copy_mean (sums : array i32) (count : i32) (next : array i32) (i : i32) : () =
+    ? i < weight_count () ?>
+        set next i (clamp_weight (index sums i / count))
+        copy_mean sums count next (i + 1)
+
+:= mean_weights (sums : array i32) (count : i32) : weights =
+    := next = filled (weight_count ()) 0
+    copy_mean sums count next 0
+    weights next
+
+:| spread =
+    | Shrink
+    | EliteSpread
+
+:== cem_rule = { pick : elites; spread : spread }
+
+:= elite_pass_of (e : elites) (r : weight_round) (scores : array i32) : elite_pass =
+    { e = e; r = r; scores = scores; sums = filled (weight_count ()) 0 }
+
+:= elite_mean (p : elite_pass) (count : i32) : weights = ? count = 0 ?> p::r::parent::w |: mean_weights p::sums count
+
+:= distance (a : i32) (b : i32) : i32 = ? a > b ?> a - b |: b - a
+
+:~ ^ abs_dev (w : weights) (mean : weights) (i : i32) (total : i32) : i32 =
+    ? i >= weight_count () ?> total |: abs_dev w mean (i + 1) (total + distance (weight w i) (weight mean i))
+
+:= dev_if_elite (p : elite_pass) (mean : weights) (child : i32) (total : i32) : i32 =
+    ? is_elite p::e p::scores child ?> abs_dev (mutate p::r child) mean 0 total |: total
+
+:~ ^ sum_devs (p : elite_pass) (mean : weights) (child : i32) (total : i32) : i32 =
+    ? child >= p::r::s::offspring ?> total |: sum_devs p mean (child + 1) (dev_if_elite p mean child total)
+
+:= elite_width (p : elite_pass) (mean : weights) (count : i32) : i32 =
+    := spread = sum_devs p mean 0 0 / max 1 (count * weight_count ())
+    max 4 ((p::r::width + spread) / 2)
+
+:= next_width (c : cem_rule) (p : elite_pass) (mean : weights) (count : i32) : i32 =
+    ?= c::spread ?|
+    | Shrink => (next_weight_round p::r p::r::parent)::width
+    | EliteSpread => elite_width p mean count
+
+:== cem_step = { mean : scored; width : i32 }
+
+:= cem_step_of \* f {judge}. (j : f) (c : cem_rule) (p : elite_pass) (count : i32) : cem_step =
+    := mean = elite_mean p count
+    { mean = { w = mean; score = judge j mean }; width = next_width c p mean count }
+
+:= cem_step_by \* f {judge}. (j : f) (c : cem_rule) (r : weight_round) : cem_step =
+    := p = elite_pass_of c::pick r (scores_by j r)
+    cem_step_of j c p (sum_elites p 0 0)
+
+:= cem_round (r : weight_round) (step : cem_step) : weight_round =
+    { r ?| index = r::index + 1; width = step::width; parent = step::mean }
+
+:= kept_best (next : scored) (best : scored) : scored = ? next::score > best::score ?> next |: best
+
+:~ ^ climb_cem_by \* f {judge}. (j : f) (c : cem_rule) (r : weight_round) (best : scored) : weights =
+    ? r::index >= r::s::generations ?> best::w
+    |:
+        := step = cem_step_by j c r
+        climb_cem_by j c (cem_round r step) (kept_best step::mean best)
+
+:= evolve_cem_by \* f {judge}. (j : f) (c : cem_rule) (s : weight_search) (start : weights) : weights =
+    := first = { w = start; score = judge j start }
+    climb_cem_by j c { s = s; index = 0; width = s::spread; parent = first } first
+
+:= vetted (v : weights -> i32) (s : scored) : scored = { w = s::w; score = v s::w }
+
+:= selected_step \* f {judge}. (j : f) (v : weights -> i32) (r : weight_round) (b : scored) : weight_round * scored =
+    := next = best_scored r (scores_by j r) 0 r::parent
+    next_weight_round r next, kept_best (vetted v next) b
+
+:~ ^ climb_selected_by \* f {judge}. (j : f) (v : weights -> i32) (r : weight_round) (b : scored) : weights =
+    ? r::index >= r::s::generations ?> b::w
+    |:
+        := r2, b2 = selected_step j v r b
+        climb_selected_by j v r2 b2
+
+:= first_round \* f {judge}. (j : f) (s : weight_search) (start : weights) : weight_round =
+    { s = s; index = 0; width = s::spread; parent = { w = start; score = judge j start } }
+
+:= evolve_selected_by \* f {judge}. (j : f) (v : weights -> i32) (s : weight_search) (start : weights) : weights =
+    climb_selected_by j v (first_round j s start) (vetted v { w = start; score = 0 })
+
 ///> c
 :# a_zero_network_holds =
     := ~health = 128i32
@@ -300,3 +437,75 @@
     := ~health = 64i32
     := w = hand_wired_healer ()
     ? heals_at w health && heals_at w (health + 100) = !- ?> 0i32 |: 1i32
+
+:! heal_judge = i32
+
+:+ judge heal_judge = \ (heal_judge _) w => heal_score w 0 0
+
+:~ ^ weight_checksum (w : weights) (i : i32) (total : i32) : i32 =
+    ? i >= weight_count () ?> total |: weight_checksum w (i + 1) (total + weight w i * (i + 1))
+
+:= checksum_of (w : weights) : i32 = weight_checksum w 0 0
+
+///> c
+///> rust
+:# parallel_climb_keeps_the_sequential_winner =
+    := ~seed = 5u32
+    := s = quarter_healer_search seed
+    checksum_of (evolve_par_by (heal_judge 0) s (zero_weights ()))
+    |> _assert_eq (checksum_of (evolve_by (heal_judge 0) s (zero_weights ())))
+
+:= four_scores (a : i32) (b : i32) (c : i32) (d : i32) : array i32 =
+    := x : array i32 = create 4
+    set x 0 a
+    set x 1 b
+    set x 2 c
+    set x 3 d
+    x
+
+:= elite_mask (e : elites) (scores : array i32) : bool * bool * bool * bool =
+    is_elite e scores 0, is_elite e scores 1, is_elite e scores 2, is_elite e scores 3
+
+:= three_masks (s : array i32) = elite_mask (TopK 1) s, elite_mask (TopK 2) s, elite_mask AboveMean s
+
+///> c
+///> rust
+:# tied_elites_go_to_the_earlier_child =
+    := ~top = 5i32
+    three_masks (four_scores top top 3 1)
+    |> _assert_eq ((!+, !-, !-, !-), (!+, !+, !-, !-), (!+, !+, !-, !-))
+
+///> c
+///> rust
+:# the_mean_rule_does_not_overflow_on_large_scores =
+    := ~low = -1000000000i32
+    elite_mask AboveMean (four_scores low low (low + 1) low) |> _assert_eq (!-, !-, !+, !-)
+
+:= cem_heal (c : cem_rule) (seed : u32) : i32 =
+    heal_score (evolve_cem_by (heal_judge 0) c (quarter_healer_search seed) (zero_weights ())) 0 0
+
+:= cem_never_below (spread : spread) (seed : u32) : bool =
+    cem_heal { pick = AboveMean; spread = spread } seed >= heal_score (zero_weights ()) 0 0
+
+///> c
+:# cem_never_ends_below_its_start =
+    := ~seed = 5u32
+    (cem_never_below Shrink seed, cem_never_below EliteSpread seed) |> _assert_eq (!+, !+)
+
+:= selected_heal (v : weights -> i32) (seed : u32) : weights =
+    evolve_selected_by (heal_judge 0) v (quarter_healer_search seed) (zero_weights ())
+
+:= climbed_heal (seed : u32) : i32 =
+    heal_score (evolve_by (heal_judge 0) (quarter_healer_search seed) (zero_weights ())) 0 0
+
+///> c
+///> rust
+:# training_selection_keeps_the_climbs_score =
+    := ~seed = 5u32
+    heal_score (selected_heal (\ w => heal_score w 0 0) seed) 0 0 |> _assert_eq (climbed_heal seed)
+
+///> c
+///> rust
+:# a_flat_validator_keeps_the_start =
+    := ~seed = 5u32
+    checksum_of (selected_heal (\ _ => 0) seed) |> _assert_eq (checksum_of (zero_weights ()))

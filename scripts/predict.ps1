@@ -4,10 +4,16 @@ param(
     [int] $Shield = 11,
     [string] $Out = '',
     [string] $Module = 'predict',
-    [ValidateSet('c', 'rust')] [string] $Backend = 'c'
+    [ValidateSet('c', 'rust')] [string] $Backend = 'c',
+    [switch] $SkipChecks
 )
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+if (!$SkipChecks) {
+    Push-Location
+    try { & (Join-Path $PSScriptRoot 'build.ps1') -ChecksOnly | ForEach-Object { Write-Host "predict / $_" } }
+    finally { Pop-Location }
+}
 $work = Join-Path $repo "target/predict/$Label"
 Remove-Item $work -Recurse -Force -ErrorAction Ignore
 New-Item -ItemType Directory -Force (Join-Path $work 'src'), (Join-Path $work 'apps/predict') | Out-Null
@@ -20,20 +26,12 @@ function Set-Text([string] $path, [string] $old, [string] $new) {
 }
 $lib = (Resolve-Path (Join-Path $repo 'deps/spiral/lib')).Path -replace '\\', '/'
 function Set-Manifests([string] $dir, [string] $relative) {
-    $toml = Join-Path $work "$dir/spiral.toml"; $proj = Join-Path $work "$dir/package.spiproj"
-    if (!(Test-Path $toml) -and !(Test-Path $proj)) { throw "predict / $dir has neither spiral.toml nor package.spiproj" }
-    if (Test-Path $toml) {
-        Set-Text $toml "packageDir = '$relative'" "packageDir = '$lib'"
-        $text = [IO.File]::ReadAllText($toml)
-        if ($Module -ne 'predict' -and $dir -eq 'apps/predict' -and $text -match "(?m)^modules" -and $text -notmatch "(?m)^$Module\s*$") {
-            Set-Text $toml "`npredict`n" "`npredict`n$Module`n"
-        }
-    }
-    if (Test-Path $proj) {
-        Set-Text $proj "packageDir: $relative" "packageDir: $lib"
-        if ($Module -ne 'predict' -and $dir -eq 'apps/predict' -and [IO.File]::ReadAllText($proj) -notmatch "(?m)^\s+$Module\s*$") {
-            Set-Text $proj '    predict' "    predict`n    $Module"
-        }
+    $toml = Join-Path $work "$dir/spiral.toml"
+    if (!(Test-Path $toml)) { throw "predict / $dir has no spiral.toml" }
+    Set-Text $toml "packageDir = '$relative'" "packageDir = '$lib'"
+    $text = [IO.File]::ReadAllText($toml)
+    if ($Module -ne 'predict' -and $dir -eq 'apps/predict' -and $text -match "(?m)^modules" -and $text -notmatch "(?m)^$Module\s*$") {
+        Set-Text $toml "`npredict`n" "`npredict`n$Module`n"
     }
 }
 Set-Manifests 'apps/predict' '../../deps/spiral/lib'

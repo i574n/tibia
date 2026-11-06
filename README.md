@@ -22,8 +22,8 @@ simulators), `apps/host` (the arena host: world port and executor), `apps/offscr
   post (2026-10-30). The 17 remaining findings are `@` words inside log strings, which the poster defuses. The generated
   terrain tables are a fan-4 tree of small inline parts, checked equal to the old tables over every word, row and zone
   offset.
-- **Manifests:** each package has a `spiral.toml` (edition 3) beside its `package.spiproj`; the compiler reads the toml
-  first and Cells reads the spiproj, so `scripts/predict.ps1` patches both.
+- **Manifests:** each package has one `spiral.toml` (edition 3, its module list); the compiler and Cells both read it,
+  and `scripts/predict.ps1` patches its `packageDir`.
 - **Host:** the arena host's block plan runs on Gleam (BEAM) and drives the live world through real programs (Canary,
   MariaDB, the client harness `live/run-hunt.ps1`). Its first live block (2026-10-28) counted 4 of 4 hunts with the
   exact expected trace, released the world and left no server behind.
@@ -240,7 +240,7 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 
 | Path | Contents |
 | --- | --- |
-| `src/` | The Spiral package (`package.spiproj` and its modules): rules, typed domain, simulators and their test blocks |
+| `src/` | The Spiral package (`spiral.toml` and its modules): rules, typed domain, simulators and their test blocks |
 | `docs/` | The plan, the benchmark with every pre-registration and its result (the one record of each experiment), the modeling notes and prior art |
 | `apps/arena/` | Every OTClient probe, compiled with the Lua backend. Layers: generic Lua-side state (`lua.spi`), typed client bindings (`client.spi`), the shared probe lifecycle (`probe.spi`), shared run modules (`scoreboard`, `observer`, `adjacency`), and one entry per probe: competitor, random, vbot, nexbot, summon, scan, path, measure, steps. `build.ps1` writes `target/arena/<probe>.lua`; `-ProbeBody <probe>` picks one and rebuilds stale outputs |
 | `apps/map/` | The server-map tool (Rust backend): reads Canary's map, writes the generated terrain definitions and the region dump in `results/` |

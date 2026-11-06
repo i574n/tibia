@@ -32,7 +32,7 @@ function Add-ResultRow([string] $Table, [string] $Row) {
 $TibiaArenaTarget = Join-Path $TibiaRepo 'target\arena'
 
 function Update-ArenaProbes {
-    $sources = @(Get-ChildItem $TibiaArena, $TibiaSource -File | Where-Object { $_.Extension -in '.spi', '.spiproj', '.toml' })
+    $sources = @(Get-ChildItem $TibiaArena, $TibiaSource -File | Where-Object { $_.Extension -in '.spi', '.toml' })
     $newest = ($sources | Measure-Object LastWriteTimeUtc -Maximum).Maximum
     $outputs = @(Get-ChildItem $TibiaArenaTarget -File -Filter '*.lua' -ErrorAction Ignore)
     $oldest = if ($outputs) { ($outputs | Measure-Object LastWriteTimeUtc -Minimum).Minimum } else { [datetime]::MinValue }

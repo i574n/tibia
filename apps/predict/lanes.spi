@@ -14,6 +14,8 @@
 
 := full_plan () : lane_plan = { generations = 8; offspring = 64; seeds = training_count () }
 
+:= robust_plan () : lane_plan = { generations = 8; offspring = 64; seeds = 4 * training_count () }
+
 := tiny_plan () : lane_plan = { generations = 1; offspring = 2; seeds = 2 }
 
 := lane_fitness (p : lane_plan) (w : network::weights) : i32 =

@@ -3,6 +3,7 @@ param(
     [string[]] $Exclude = @(),
     [string] $Label = 'all',
     [switch] $Resume,
+    [switch] $ChecksOnly,
     $ScriptDir = $PSScriptRoot
 )
 Set-Location $ScriptDir
@@ -12,15 +13,18 @@ $ErrorActionPreference = "Stop"
 $Files = @($Files | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $Exclude = @($Exclude | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 
-
-& ../apps/arena/build.ps1
-
 . ../deps/spiral/lib/spiral/lib.ps1
 $spiral = Ensure-SpiralCompiler | Select-Object -Last 1
-$layout = @(& $spiral.Dotnet $spiral.Compiler format ../src ../apps/arena ../apps/map ../apps/host ../apps/offscreen ../apps/canary --check 2>&1)
+$layout = @(& $spiral.Dotnet $spiral.Compiler format ../src ../apps/arena ../apps/map ../apps/host ../apps/offscreen ../apps/canary ../apps/predict ../apps/suite --check 2>&1)
 if ($LASTEXITCODE -ne 0) {
     $layout | Select-Object -Last 10 | ForEach-Object { Write-Output "build.ps1 / layout / $_" }
-    throw "build.ps1 / layout: run SpiralCompiler format on src, apps/arena, apps/map, apps/host, apps/offscreen and apps/canary"
+    foreach ($file in @($layout | Select-String '^would change: (.+)$' | ForEach-Object { $_.Matches[0].Groups[1].Value })) {
+        $before = @((Get-Content -Raw $file) -replace "`r`n", "`n" -split "`n")
+        $after = @(Get-Content -Raw $file | & $spiral.Dotnet $spiral.Compiler format --stdin --path $file)
+        $line = @(0..($before.Count - 1) | Where-Object { $_ -ge $after.Count -or $before[$_] -cne $after[$_] } | Select-Object -First 1)[0]
+        if ($null -ne $line) { Write-Output "build.ps1 / layout / ${file}:$($line + 1): $($before[$line].Substring(0, [math]::Min(100, $before[$line].Length)))" }
+    }
+    throw "build.ps1 / layout: run SpiralCompiler format on src, apps/arena, apps/map, apps/host, apps/offscreen, apps/canary, apps/predict and apps/suite"
 }
 Write-Output "build.ps1 / layout / formatter check clean"
 
@@ -50,6 +54,9 @@ $over = @($budget | Where-Object { $_ -match ': over_budget:' } | Select-Object 
 $over | ForEach-Object { Write-Output "build.ps1 / cell budget / $_" }
 if ($budgetExit -ne 0) { $budget | Select-Object -Last 5 | ForEach-Object { Write-Output "build.ps1 / cell budget / $_" }; throw "build.ps1 / cell budget: mix spiral.cell_budget exited $budgetExit ($($over.Count) definitions over the cell budget; split them by hand)" }
 Write-Output "build.ps1 / cell budget / $(@($budget | Where-Object { $_ -match '^cell-budget report:' } | Select-Object -Last 1))"
+if ($ChecksOnly) { return }
+
+& ../apps/arena/build.ps1
 
 $runNotebook = (Resolve-Path "../deps/spiral/apps/cells/spi/run_notebook.ps1").Path
 $wgslRun = @($env:SPIRAL_WGSL_RUN, "../target/wgsl-run/release/spiral-wgsl$(_exe)") |

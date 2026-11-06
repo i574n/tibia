@@ -11,6 +11,7 @@ $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $kitPaths = 'C:\home\git\kit\kit.exe', 'C:\home\git\eoie\kit.exe', 'C:\home\git\eoie\eoie.exe'
 $kit = (Get-Command kit -ErrorAction Ignore).Source ?? @($kitPaths | Where-Object { Test-Path -LiteralPath $_ })[0]
 $scratch = (New-Item -ItemType Directory -Force (Join-Path $repo 'target/score')).FullName
+$checked = $false
 
 function Get-Moments([object[]] $rows, [string] $group, [string] $column) {
     $table = Join-Path $scratch "$column.tsv"
@@ -28,7 +29,8 @@ function Get-RetreatLogs([string] $results) {
     }
 }
 function Get-Tables([string] $label, [string[]] $builders, [int] $shield) {
-    $rows = @(& (Join-Path $PSScriptRoot 'predict.ps1') -Label $label -Candidate $builders -Shield $shield)
+    $rows = @(& (Join-Path $PSScriptRoot 'predict.ps1') -Label $label -Candidate $builders -Shield $shield -SkipChecks:$script:checked)
+    $script:checked = $true
     [pscustomobject]@{
         clear = @($rows | Where-Object { $_ -match '^1\t' } | ConvertFrom-Csv -Delimiter "`t" -Header table, arm, clear, steps, taken, damage, potions, cleared_ms)
         hunter = @($rows | Where-Object { $_ -match '^2\t' } | ConvertFrom-Csv -Delimiter "`t" -Header table, run, kills, cleared, elapsed, potions, taken, damage)
