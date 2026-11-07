@@ -21,5 +21,10 @@ views
 search
 network
 typed_network
+hashed
+regret
+arena_cfr
+logprob
+soft_policy
 hunting_pack
 '''

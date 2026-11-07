@@ -49,7 +49,7 @@
 
 ///> lua
 ///> gleam
-:# a_single_monster_gives_the_harness_order =
+:# a_single_monster_gives_the_live_arena_order =
     := ~radius = 2i32
     camp_orders (mix_of "troll" 3) radius |> _assert_eq ("troll,3,,2", 3i32)
 

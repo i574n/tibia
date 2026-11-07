@@ -132,13 +132,16 @@ foreach ($source in $sources) {
         $name, $s.discovered, $s.executed, $s.passed, $s.failed, $s.static, $s.unsupported, $s.skipped, $s.not_run, $s.memo_hits)
     $executed += $s.executed
     $missing = $s.discovered - $s.executed - $s.static
-    if (!$s.discovered) {
-        $problems += "${name}: VOID, 0 tests discovered (exit code $exitCode)"
+    $voidCause = if ($lines -match '`spiral-wgsl` failed \(exit -1073741819\)') { 'spiral-wgsl runner crash 0xC0000005' } elseif ($lines -match 'Spiral cell timed out after') { 'cell timeout' } else { '' }
+    $tag = if ($voidCause) { "VOID ($voidCause) " } else { '' }
+    if ($exitCode -and !$s.failed) {
+        $problems += "${name}: ${tag}exit code $exitCode with no failed test counted (discovered $($s.discovered))"
+        $lines | Where-Object { $_ -notmatch '^spiral-tests ' } | Select-Object -Last 12 | ForEach-Object { Write-Output "build.ps1 / $name / detail / $_" }
         continue
     }
     if ($s.failed -or $s.unsupported -or $s.skipped -or $s.not_run -or $missing -or $s.passed -ne $s.executed) {
         $failedTests = ($lines | Select-String 'spiral-tests file (\{.*\})' | ForEach-Object { ($_.Matches[0].Groups[1].Value | ConvertFrom-Json).failed_tests }) -join ', '
-        $problems += "${name}: failed $($s.failed), unsupported $($s.unsupported), skipped $($s.skipped), not run $($s.not_run), not executed $missing ($failedTests)"
+        $problems += "${name}: ${tag}failed $($s.failed), unsupported $($s.unsupported), skipped $($s.skipped), not run $($s.not_run), not executed $missing ($failedTests)"
         $lines | Select-String -Pattern 'wgsl error|error|failed|assert|panic|timeout|timed out|exit code' |
             Where-Object { $_.Line -notmatch '^spiral-tests ' } | Select-Object -First 40 |
             ForEach-Object { Write-Output "build.ps1 / $name / detail / $($_.Line)" }
@@ -170,5 +173,6 @@ if ($env:GITHUB_STEP_SUMMARY) {
 if (!$sources -and $Resume) { Write-Output "build.ps1 / resume / every matched test file already has a total line in target/ci-metrics"; return }
 if (!$sources) { throw "build.ps1 / no test files matched $($Files -join ', ')" }
 if (!$problems -and !$executed) { throw "build.ps1 / VOID: 0 tests executed across $(@($sources).Count) test files" }
-if ($problems) { throw "build.ps1 / $($problems.Count) of $(@($sources).Count) test files are not fully green:`n$($problems -join "`n")" }
+$voided = @($problems | Where-Object { $_ -match ': VOID \(' }).Count
+if ($problems) { throw "build.ps1 / $($problems.Count) of $(@($sources).Count) test files are not fully green ($voided VOID, $($problems.Count - $voided) red):`n$($problems -join "`n")" }
 Write-Output "build.ps1 / all $(@($sources).Count) test files green"

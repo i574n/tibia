@@ -210,6 +210,22 @@
 
 := sums_over (camp : camp) (t : tactic) (r : seeds) : tally5 = clear_sums camp t r 0 (0, 0, 0, 0, 0)
 
+:= hunt_log_path (camp : camp) (t : tactic) (seed : u32) : i32 =
+    := _, p = hunting_pack::clear_run camp t seed 6000
+    p::hunter::tally::log_path
+
+
+:= clear_ms (elapsed : i32) (finished : pack) : i32 = elapsed
+
+:= log_paths (camp : camp) (t : tactic) (r : seeds) : array i32 =
+    := out : array i32 = create r::count
+    :~ ^ fill (i : i32) : () =
+        ? i < r::count ?>
+            set out i (hunt_log_path camp t (r::first + conv i))
+            fill (i + 1)
+    fill 0
+    out
+
 := twenty_from (first : u32) : seeds = { first = first; count = 20 }
 
 := clear_averages (camp : camp) (t : tactic) (first : u32) : tally3 =
@@ -879,3 +895,35 @@
     :< hunting_pack
     { brain = RandomControl; order = :< policy ;; CurrentFirst; footing = StepAway; patrol = one_point_route () }
     |> \ (t : tactic) => t
+
+:= troll_core () : hunting_pack::learned_core =
+    hunting_pack::CoreNetwork (hunting_pack::cavebot_network (troll_camp ()) 160)
+
+:= soft_troll (epsilon : i32) : tactic = hunting_pack::softened_tactic (troll_core ()) epsilon
+
+:= scored_troll (epsilon : i32) (target : i32) : tactic =
+    soft_troll epsilon |> hunting_pack::scored_by { core = troll_core (); epsilon = target }
+
+:= troll_pair () : seeds = { first = 1u32; count = 2 }
+
+:= plain_mean_ms () : i64 =
+    := ms, _, _, _, _ = sums_over (troll_camp ()) (soft_troll 100) (troll_pair ())
+    (conv ms : i64) / 2i64
+
+:= scored_run () : hunting_pack::seed_run = hunting_pack::seed_run_of (troll_camp ()) (scored_troll 100 100) 1u32 2
+
+:= self_scored () : i64 * i64 =
+    := hunts = hunting_pack::logged_hunts clear_ms (scored_run ())
+    logprob::mean_and_ess (logprob::is_estimate hunts)
+
+:= two_log_paths (epsilon : i32) : array i32 =
+    log_paths (troll_camp ()) (soft_troll epsilon) { first = 1u32; count = 2 }
+
+///> c
+:# softened_hunts_log_one_path_weight_per_hunt =
+    := g, e = two_log_paths 0, two_log_paths 100
+    (index g 0, index g 1, index e 0 < 0, index e 1 < 0) |> _assert_eq (0i32, 0i32, !+, !+)
+
+///> c
+:# a_target_equal_to_the_behavior_reweights_nothing =
+    self_scored () |> _assert_eq (plain_mean_ms (), 131072i64)

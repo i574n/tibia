@@ -30,7 +30,7 @@
 ///> c
 ///> lua
 ///> gleam
-:# experience_matches_the_arena_harness =
+:# experience_matches_the_live_arena =
     := ~level = 30i32
     experience_for level |> _assert_eq 368300i64
     experience_for 8 |> _assert_eq 4200i64
@@ -39,7 +39,7 @@
 ///> c
 ///> lua
 ///> gleam
-:# health_and_mana_maxima_match_the_arena_harness =
+:# health_and_mana_maxima_match_the_live_arena =
     := ~level = 30i32
     (health_max_for level, mana_max_for level) |> _assert_eq (515i32, 200i32)
 

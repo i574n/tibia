@@ -11,7 +11,7 @@ $ErrorActionPreference = 'Stop'
 $Ledger = @($Ledger | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $SecondaryLedger = @($SecondaryLedger | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 . (Join-Path $PSScriptRoot 'paths.ps1')
-$kitPaths = 'C:\home\git\kit\kit.exe', 'C:\home\git\eoie\kit.exe', 'C:\home\git\eoie\eoie.exe'
+$kitPaths = (Join-Path $env:LOCALAPPDATA 'kit\bin\kit.exe'), 'C:\home\git\kit\kit.exe'
 $kit = (Get-Command kit -ErrorAction Ignore).Source ?? @($kitPaths | Where-Object { Test-Path -LiteralPath $_ })[0]
 $table = Join-Path $TibiaResults $Results
 $ledgerDir = Join-Path $TibiaRepo 'target\ledger'

@@ -1,0 +1,50 @@
+///- --package .
+:# cfr_trace static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:= spot () : camp =
+    uniform_camp (:< creatures ;; Cyclops) |> on_layout (:< terrain ;; ArenaSpot) |> mirroring_the_current_arena
+
+:= trace_seed () : u32 = 1001u32
+
+:= action_name (a : arena_cfr::arena_action) : string =
+    :< arena_cfr
+    ?= a ?|
+    | Potion => "potion"
+    | Melee => "melee"
+    | Retreat => "retreat"
+
+:= state_text (st : arena_cfr::arena_state) : string =
+    := ready : i32 = ? st::ready ?> 1 |: 0
+    "\thp\t" ++#? st::hp ++# "\tattackers\t" ++#? st::attackers ++# "\tready\t" ++#? ready
+
+:= action_text (c : cfr_brain) (b : beat) (p : pack) : string =
+    "\t" ++# action_name (arena_act b c (attackers_of p) p) ++# "\tkills\t" ++#? p::score::kills
+
+:= trace_line (c : cfr_brain) (b : beat) (p : pack) : string =
+    "tick\t" ++#? b::tick ++# state_text (arena_state_of b (attackers_of p) p) ++# action_text c b p
+
+:= beat_at (camp : camp) (tick : i32) : beat =
+    { camp = camp; seed = trace_seed (); tick = tick; now = tick * tick_ms () }
+
+:= print_every (c : cfr_brain) (camp : camp) (tick : i32) (p : pack) : () =
+    ? tick % 20 = 0 ?> console::write_line (trace_line c (beat_at camp tick) p)
+
+:~ ^ trace_from (camp : camp) (t : tactic) (c : cfr_brain) (tick : i32) (p : pack) : () =
+    ? tick < 3000 && not (all_killed camp p) ?>
+        print_every c camp tick p
+        trace_from camp t c (tick + 1) (advance camp t (trace_seed ()) tick p)
+
+:= trace (t : tactic) : i32 =
+    ?= t::brain ?|
+    | Cfr c =>
+        := camp = clearing (spot ())
+        trace_from camp t c 0 (start camp)
+        0
+    | _ => 1
+
+///> _
+:= main () : i32 = trace (cfr_tactic 3)

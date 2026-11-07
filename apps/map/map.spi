@@ -105,22 +105,22 @@
 
 :== item_kinds =
     {
-        unpassable : array bool
-        sight_blocking : array bool
-        ground : array bool
+        unpassable : bitset::bitset
+        sight_blocking : bitset::bitset
+        ground : bitset::bitset
         speed : array i32
-        height : array bool
+        height : bitset::bitset
     }
 
-:= none_marked () : array bool = filled (item_id_limit ()) !-
+:= no_items () : bitset::bitset = bitset::empty (item_id_limit ())
 
 := no_kinds () : item_kinds =
     {
-        unpassable = none_marked ()
-        sight_blocking = none_marked ()
-        ground = none_marked ()
+        unpassable = no_items ()
+        sight_blocking = no_items ()
+        ground = no_items ()
         speed = filled (item_id_limit ()) 0
-        height = none_marked ()
+        height = no_items ()
     }
 
 := varint_ignored () (field : i32) (value : u64) : () = ()
@@ -134,19 +134,19 @@
     fold_fields b from stop () { on_varint = waypoint_speed speeds identity; on_bytes = bytes_ignored }
 
 := blocking_flag (kinds : item_kinds) (identity : i32) (flag : i32) : () =
-    ? flag = unpassable_flag () ?> set kinds::unpassable identity !+
-    ? flag = sight_blocking_flag () ?> set kinds::sight_blocking identity !+
+    ? flag = unpassable_flag () ?> bitset::put kinds::unpassable identity
+    ? flag = sight_blocking_flag () ?> bitset::put kinds::sight_blocking identity
 
 := flag_seen (kinds : item_kinds) (identity : i32) () (flag : i32) (value : u64) : () =
-    ? flag = height_flag () ?> set kinds::height identity !+
+    ? flag = height_flag () ?> bitset::put kinds::height identity
     ? value <> 0u64 ?> blocking_flag kinds identity flag
 
 := bank_seen (b : bytes) (kinds : item_kinds) (identity : i32) (from : i32) (stop : i32) : () =
-    set kinds::ground identity !+
+    bitset::put kinds::ground identity
     bank_speed b kinds::speed identity from stop
 
 := flag_bytes (b : bytes) (kinds : item_kinds) (identity : i32) () (flag : i32) (from : i32) (stop : i32) : () =
-    ? flag = height_flag () ?> set kinds::height identity !+
+    ? flag = height_flag () ?> bitset::put kinds::height identity
     ? flag = bank_flag () ?> bank_seen b kinds identity from stop
 
 := flags_of (b : bytes) (kinds : item_kinds) (identity : i32) (from : i32) (stop : i32) : () =
@@ -372,10 +372,13 @@
 := copy_mark (from : array bool) (identity : i32) (into : array bool) (tile : i32) : () =
     ? index from identity ?> set into tile !+
 
+:= copy_bit (from : bitset::bitset) (identity : i32) (into : array bool) (tile : i32) : () =
+    ? bitset::has from identity ?> set into tile !+
+
 := note_blocking (k : item_kinds) (s : tile_mark_stack) (tile : i32) (identity : i32) : () =
-    copy_mark k::ground identity s::ground tile
-    copy_mark k::unpassable identity s::unpassable tile
-    copy_mark k::sight_blocking identity s::sight_blocking tile
+    copy_bit k::ground identity s::ground tile
+    copy_bit k::unpassable identity s::unpassable tile
+    copy_bit k::sight_blocking identity s::sight_blocking tile
 
 := note_passage (m : map_inputs) (s : tile_mark_stack) (tile : i32) (identity : i32) : () =
     copy_mark m::exits identity s::exit tile
@@ -386,7 +389,7 @@
 := note_kind (m : map_inputs) (t : stacks) (tile : i32) (identity : i32) : () =
     note_blocking m::kinds t::marks tile identity
     note_passage m t::marks tile identity
-    ? index m::kinds::height identity ?> count_height t::counts::height_items tile
+    ? bitset::has m::kinds::height identity ?> count_height t::counts::height_items tile
 
 := note_attribute_item (m : map_inputs) (t : stacks) (tile : i32) (identity : i32) : () =
     ? known_item identity ?>
@@ -850,9 +853,9 @@
 := read_input (variable : string) : bytes =
     am'::from_vec (file_system::read_all_bytes (env::get_environment_variable variable))
 
-:~ ^ merge_from (marks : array bool) (overrides : array bool) (identity : i32) : () =
+:~ ^ merge_from (marks : bitset::bitset) (overrides : array bool) (identity : i32) : () =
     ? identity < item_id_limit () ?>
-        ? index overrides identity ?> set marks identity !+
+        ? index overrides identity ?> bitset::put marks identity
         merge_from marks overrides (identity + 1)
 
 := sight_merged (kinds : item_kinds) (items : bytes) : () =

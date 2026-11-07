@@ -1,0 +1,312 @@
+///- --package .
+:# arena_cfr static =
+    :< testing
+
+:| target_health =
+    | Fresh
+    | Wounded
+    | Low
+
+:== arena_state = { hp : i32; attackers : i32; ready : bool; target : target_health }
+
+:== payoff = i32 -> i32 -> i32
+
+:= max_hp () : i32 = 515
+
+:= state_count () : i32 = (max_hp () + 1) * 24
+
+:= target_code (t : target_health) : i32 =
+    ?= t ?|
+    | Fresh => 0
+    | Wounded => 1
+    | Low => 2
+
+:= target_of (code : i32) : target_health = ? code = 0 ?> Fresh |? code = 1 ?> Wounded |: Low
+
+:= state_of (s : i32) : arena_state =
+    { hp = s / 24; attackers = s / 6 % 4; ready = s / 3 % 2 = 1; target = target_of (s % 3) }
+
+:= index_of (a : arena_state) : i32 =
+    a::hp * 24 + a::attackers * 6 + (? a::ready ?> 3 |: 0) + target_code a::target
+
+
+:= pressed (st : arena_state) (camp : i32) : i32 = ? camp = 0 ?> st::attackers |: min 1 st::attackers
+
+:= hitters (st : arena_state) (knight : i32) (camp : i32) : i32 =
+    ? knight = 2 ?> max 0 (pressed st camp - 1) |: pressed st camp
+
+:= damage (st : arena_state) (knight : i32) (camp : i32) : i32 = 52 * hitters st knight camp
+
+:= drinks (st : arena_state) (knight : i32) : bool = knight = 0 && st::ready
+
+:= death_cost (st : arena_state) (knight : i32) (camp : i32) : i32 =
+    := after = st::hp + (? drinks st knight ?> 150 |: 0) - damage st knight camp
+    ? after < 0 ?> 14000 |: 0
+
+:= kills (st : arena_state) (knight : i32) : bool = knight = 1 && st::attackers > 0 && st::target = Low
+
+:= cost (st : arena_state) (knight : i32) (camp : i32) : i32 =
+    := potion, loot = (? drinks st knight ?> 50 |: 0), (? kills st knight ?> 20 |: 0)
+    := tempo = ? knight = 1 ?> 0 |: 40
+    death_cost st knight camp + potion + tempo + damage st knight camp - loot
+
+:~ ^ positive_sum (r : array i32) (i : i32) (acc : i64) : i64 =
+    ? i >= length r ?> acc |: positive_sum r (i + 1) (acc + conv (max 0 (index r i)))
+
+:= share (r : array i32) (total : i64) (i : i32) : i32 =
+    ? total > 0i64 ?> conv ((conv (max 0 (index r i)) : i64) * 1000i64 / total) |: 1000 / length r
+
+:= strategy (r : array i32) : array i32 =
+    := total = positive_sum r 0 0i64
+    := s = regret::zeros (length r)
+    :~ ^ fill (i : i32) : () =
+        ? i < length r ?>
+            set s i (share r total i)
+            fill (i + 1)
+    fill 0
+    s
+
+:~ ^ knight_value_from (pay : payoff) (k : i32) (camp : array i32) (c : i32) (acc : i32) : i32 =
+    ? c >= length camp ?> 0 - acc / 1000 |: knight_value_from pay k camp (c + 1) (acc + index camp c * pay k c)
+
+:~ ^ camp_value_from (pay : payoff) (c : i32) (knight : array i32) (k : i32) (acc : i32) : i32 =
+    ? k >= length knight ?> acc / 1000 |: camp_value_from pay c knight (k + 1) (acc + index knight k * pay k c)
+
+:~ ^ expected_from (value : i32 -> i32) (mine : array i32) (a : i32) (acc : i32) : i32 =
+    ? a >= length mine ?> acc / 1000 |: expected_from value mine (a + 1) (acc + index mine a * value a)
+
+:= step_one (value : i32 -> i32) (me : regret::learner) (mine : array i32) ((t, ev) : i32 * i32) (a : i32) : () =
+    set me::regrets a (max 0 (index me::regrets a + value a - ev))
+    set me::sums a (index me::sums a + t * index mine a)
+
+:= learn_with (value : i32 -> i32) (me : regret::learner) (mine : array i32) (t : i32) : () =
+    := ev = expected_from value mine 0 0
+    :~ ^ go (a : i32) : () =
+        ? a < length mine ?>
+            step_one value me mine (t, ev) a
+            go (a + 1)
+    go 0
+
+:= play_state (pay : payoff) (kl : regret::learner) (cl : regret::learner) (t : i32) : () =
+    := a, b = strategy kl::regrets, strategy cl::regrets
+    learn_with (\ k => knight_value_from pay k b 0 0) kl a t
+    learn_with (\ c => camp_value_from pay c a 0 0) cl b t
+
+:== solved = { knight : regret::learner; camp : regret::learner }
+
+:= solve_game (pay : payoff) (rounds : i32) : solved =
+    := kl, cl = regret::fresh 3, regret::fresh 2
+    :~ ^ go (t : i32) : () =
+        ? t <= rounds ?>
+            play_state pay kl cl t
+            go (t + 1)
+    go 1
+    { knight = kl; camp = cl }
+
+:= solve (st : arena_state) (rounds : i32) : solved = solve_game (cost st) rounds
+
+:~ ^ averages_from (me : regret::learner) (a : i32) (out : array i32) : array i32 =
+    ? a >= length out ?> out
+    |:
+        set out a (regret::average me a)
+        averages_from me (a + 1) out
+
+:= averages (me : regret::learner) : array i32 = averages_from me 0 (regret::zeros (length me::sums))
+
+:~ ^ best_camp (st : arena_state) (knight : array i32) (c : i32) (best : i32) : i32 =
+    ? c >= 2 ?> best |: best_camp st knight (c + 1) (max best (camp_value_from (cost st) c knight 0 0))
+
+:~ ^ best_knight (st : arena_state) (camp : array i32) (k : i32) (best : i32) : i32 =
+    ? k >= 3 ?> best |: best_knight st camp (k + 1) (min best (0 - knight_value_from (cost st) k camp 0 0))
+
+:= exploitability (st : arena_state) (s : solved) : i32 =
+    := knight, camp = averages s::knight, averages s::camp
+    best_camp st knight 0 (0 - 1000000) - best_knight st camp 0 1000000
+
+:~ ^ total_from (rounds : i32) (s : i32) (acc : i32) : i32 =
+    ? s >= state_count ()
+    ?> acc
+    |: total_from rounds (s + 1) (acc + exploitability (state_of s) (solve (state_of s) rounds))
+
+:= total_exploitability (rounds : i32) : i32 = total_from rounds 0 0
+
+:= step_away_share (attackers : i32) : i32 =
+    := s = solve { hp = 390; attackers = attackers; ready = !-; target = Fresh } 200
+    index (averages s::knight) 2
+
+:= clamped_hp (hp : i32) : i32 = max 0 (min (max_hp ()) hp)
+
+:= after_hp (st : arena_state) (k : i32) (c : i32) : i32 =
+    st::hp + (? drinks st k ?> 150 |: 0) - damage st k c
+
+:= worn (st : arena_state) (k : i32) : target_health =
+    ? k <> 1 || st::attackers = 0 ?> st::target |? st::target = Fresh ?> Wounded |? st::target = Wounded ?> Low |: Fresh
+
+:= next_state (st : arena_state) (k : i32) (c : i32) : arena_state =
+    := attackers = ? k = 2 || kills st k ?> max 0 (st::attackers - 1) |: st::attackers
+    { hp = clamped_hp (after_hp st k c); attackers = attackers; ready = drinks st k = !-; target = worn st k }
+
+:= early_death (steps_left : i32) : i32 = 500 * steps_left
+
+:| arena_node =
+    | Survives : arena_state
+    | Dies
+
+:= next_node (st : arena_state) (k : i32) (c : i32) : arena_node =
+    ? death_cost st k c = 0 ?> Survives (next_state st k c) |: Dies
+
+:= tree_cost (later : array i32) (left : i32) (st : arena_state) (k : i32) (c : i32) : i32 =
+    ?= next_node st k c ?|
+    | Survives next => cost st k c + index later (index_of next)
+    | Dies => cost st k c + early_death left
+
+:~ ^ pair_sum (pay : payoff) (ak : array i32) (ac : array i32) (i : i32) (acc : i64) : i64 =
+    ? i >= 6 ?> acc
+    |:
+        := k, c = i / 2, i % 2
+        pair_sum pay ak ac (i + 1) (acc + (conv (index ak k * index ac c) : i64) * conv (pay k c))
+
+:= game_value (pay : payoff) (rounds : i32) : i32 =
+    := s = solve_game pay rounds
+    conv (pair_sum pay (averages s::knight) (averages s::camp) 0 0i64 / 1000000i64)
+
+:= state_value (later : array i32) (left : i32) (rounds : i32) (s : i32) : i32 =
+    game_value (tree_cost later left (state_of s)) rounds
+
+:= values_after (value_of : i32 -> i32) : array i32 =
+    := now = regret::zeros (state_count ())
+    :~ ^ fill (s : i32) : () =
+        ? s < state_count () ?>
+            set now s (value_of s)
+            fill (s + 1)
+    fill 0
+    now
+
+:~ ^ values_at (depth : i32) (rounds : i32) : array i32 =
+    ? depth <= 0 ?> regret::zeros (state_count ())
+    |: values_after (state_value (values_at (depth - 1) rounds) (depth - 1) rounds)
+
+:= tree_knight (depth : i32) (st : arena_state) : array i32 =
+    := s = solve_game (tree_cost (values_at (depth - 1) 200) (depth - 1) st) 200
+    averages s::knight
+
+:| arena_action =
+    | Potion
+    | Melee
+    | Retreat
+
+:= action_index (a : arena_action) : i32 =
+    ?= a ?|
+    | Potion => 0
+    | Melee => 1
+    | Retreat => 2
+
+:= state_strategy (later : array i32) (left : i32) (s : i32) : array i32 =
+    := solved = solve_game (tree_cost later left (state_of s)) 200
+    averages solved::knight
+
+:= copy_shares (table : array i32) (s : i32) (shares : array i32) : () =
+    set table (s * 3) (index shares 0)
+    set table (s * 3 + 1) (index shares 1)
+    set table (s * 3 + 2) (index shares 2)
+
+:~ ^ fill_table (later : array i32) (left : i32) (table : array i32) (s : i32) : () =
+    ? s < state_count () ?>
+        copy_shares table s (state_strategy later left s)
+        fill_table later left table (s + 1)
+
+:= strategy_table (depth : i32) : array i32 =
+    := table = regret::zeros (state_count () * 3)
+    fill_table (values_at (depth - 1) 200) (depth - 1) table 0
+    table
+
+:= share_of (table : array i32) (st : arena_state) (a : arena_action) : i32 =
+    index table (index_of st * 3 + action_index a)
+
+:= state_for (hp : i32) (attackers : i32) (ready : bool) : arena_state =
+    { hp = clamped_hp hp; attackers = max 0 (min 3 attackers); ready = ready; target = Fresh }
+
+:= with_target (t : target_health) (st : arena_state) : arena_state = { st ?| target = t }
+
+:= crowded_fresh () : arena_state = { hp = 390; attackers = 3; ready = !-; target = Fresh }
+
+:= low_hp_pressed () : arena_state = { hp = 50; attackers = 2; ready = !+; target = Fresh }
+
+:= calm_fresh () : arena_state = { hp = 390; attackers = 0; ready = !-; target = Fresh }
+
+///> c
+///> rust
+:# states_round_trip_through_their_index =
+    (index_of (state_of 0), index_of (state_of 63), index_of (state_of 12383), (state_of 63)::attackers)
+    |> _assert_eq (0i32, 63i32, 12383i32, 2i32)
+
+///> c
+///> rust
+:# exploitability_shrinks_with_more_rounds =
+    (total_exploitability 200 <= total_exploitability 50) |> _assert_eq !+
+
+///> c
+///> rust
+:# a_low_hp_knight_under_pressure_drinks =
+    := s = solve (low_hp_pressed ()) 200
+    := k = averages s::knight
+    (index k 0 >= 900) |> _assert_eq !+
+
+///> c
+///> rust
+:# pressure_raises_the_step_away_share =
+    (step_away_share 3 > step_away_share 0) |> _assert_eq !+
+
+///> c
+///> rust
+:# one_step_of_the_tree_is_the_matrix_game =
+    := v = index (values_at 1 200) (index_of (crowded_fresh ()))
+    (v >= 140 && v <= 148) |> _assert_eq !+
+
+///> c
+///> rust
+:# two_steps_match_the_hand_enumeration =
+    := v = index (values_at 2 200) (index_of (crowded_fresh ()))
+    (v >= 230 && v <= 242) |> _assert_eq !+
+
+///> c
+///> rust
+:# with_exact_hp_a_low_hp_knight_who_drinks_survives_two_steps =
+    := v = index (values_at 2 200) (index_of (low_hp_pressed ()))
+    (v >= 280 && v <= 292) |> _assert_eq !+
+
+///> c
+:# the_tree_steps_away_more_under_pressure =
+    := calm, pressed = tree_knight 3 (calm_fresh ()), tree_knight 3 (crowded_fresh ())
+    (index pressed 2 > index calm 2) |> _assert_eq !+
+
+///> c
+:# with_a_price_on_early_death_the_low_hp_knight_drinks_in_the_tree =
+    (index (tree_knight 3 (low_hp_pressed ())) 0 >= 900) |> _assert_eq !+
+
+///> c
+///> rust
+:# state_for_clamps_the_observable_into_the_abstraction =
+    (index_of (state_for 9000 7 !+), index_of (state_for (0 - 5) (0 - 1) !-), index_of (state_for 50 2 !+))
+    |> _assert_eq (12381i32, 0i32, 1215i32)
+
+///> c
+:# a_table_row_is_the_tree_strategy_of_its_state =
+    (share_of (strategy_table 2) (crowded_fresh ()) Retreat = index (tree_knight 2 (crowded_fresh ())) 2)
+    |> _assert_eq !+
+
+///> c
+///> rust
+:# the_low_hp_knight_drinks_in_the_table =
+    (share_of (strategy_table 2) (low_hp_pressed ()) Potion >= 900) |> _assert_eq !+
+
+///> c
+///> rust
+:# a_calm_knight_rarely_retreats_in_the_table =
+    (share_of (strategy_table 2) (state_for 390 0 !-) Retreat < 100) |> _assert_eq !+
+
+///> c
+///> rust
+:# a_knight_facing_one_attacker_finishes_a_low_target_rather_than_stepping_away =
+    := k = averages (solve { hp = 390; attackers = 1; ready = !-; target = Low } 200)::knight
+    (index k 1 > index k 2) |> _assert_eq !+

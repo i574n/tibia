@@ -88,6 +88,14 @@
     =
     inputs (sensed_of health attackers target distance (flags_of heal strike flees))
 
+:= sensed_dot (coef : i32 -> i32) ((inputs s) : inputs) : i32 =
+    coef 0 * s::health + coef 1 * s::attackers + coef 2 * s::target + coef 3 * s::distance
+
+:= flag_dot (coef : i32 -> i32) ((inputs s) : inputs) : i32 =
+    coef 4 * s::heal + coef 5 * s::strike + coef 6 * s::flees + coef 7 * one ()
+
+:= dot_with (coef : i32 -> i32) (x : inputs) : i32 = sensed_dot coef x + flag_dot coef x
+
 := term (w : weights) (j : i32) (i : i32) (value : i32) : i32 = weight w (j * input_count () + i) * value
 
 := sensed_terms (w : weights) ((inputs s) : inputs) (j : i32) : i32 =

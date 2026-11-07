@@ -186,6 +186,7 @@
     think_interval poll 50
     register_global_event poll
 
+///> _
 := main () : () =
     := g = new_lead ()
     watch_thinks g

@@ -54,6 +54,7 @@
     | PackEntry
     | PackSearchTarget
     | PackChangeTarget
+    | PackPolicyDraw
 
 := target_code (r : pack_roll) : u32 =
     ?= r ?|
@@ -62,6 +63,7 @@
     | PackPoll => 19u32
     | PackEntry => 20u32
     | PackSearchTarget => 40u32
+    | PackPolicyDraw => 21u32
     | _ => 41u32
 
 := hunt_code (r : pack_roll) : u32 =
@@ -90,7 +92,7 @@
 
 ///> c
 :# every_pack_roll_has_its_own_purpose_code =
-    (roll_count (), codes_distinct ()) |> _assert_eq (12i32, !+)
+    (roll_count (), codes_distinct ()) |> _assert_eq (13i32, !+)
 
 := client_lag_ms () : i32 = 8
 
@@ -176,6 +178,9 @@
         damage_taken : hit_points
         retreats : i32
         cornered : i32
+        log_path : i32
+        target_log : logprob::target_path
+        pd_potions : i64
     }
 
 :== hunter =
@@ -219,9 +224,22 @@
 
 := party_potions (p : pack) : i32 = p::hunter::tally::potions + p::ally::tally::potions
 
+:| learned_core =
+    | CoreNetwork : network::weights
+    | CoreHashed : network::weights
+
+:== soft_target = { core : learned_core; epsilon : i32 }
+
+:== soft_brain = { core : learned_core; epsilon : i32; scored_as : option soft_target }
+
+:== cfr_brain = { table : array i32; depth : i32 }
+
 :| brain =
     | Rules : policy::adaptive
     | Network : network::weights
+    | Hashed : network::weights
+    | Softened : soft_brain
+    | Cfr : cfr_brain
     | Temperate : policy::temperate
     | RandomControl
 
@@ -711,7 +729,16 @@
     }
 
 := zero_tally () : hunter_tally =
-    { potions = 0; hits_taken = 0; damage_taken = quantity::hp 0; retreats = 0; cornered = 0 }
+    {
+        potions = 0
+        hits_taken = 0
+        damage_taken = quantity::hp 0
+        retreats = 0
+        cornered = 0
+        log_path = 0
+        target_log = logprob::OnPath 0
+        pd_potions = 0i64
+    }
 
 := idle_knight (s : party_slot) : hunter =
     {
@@ -1376,11 +1403,15 @@
 := healed_health (camp : camp) (amount : i32) (h : hunter) : hit_points =
     units::capped (player_max_health camp) (units::plus h::health (quantity::hp amount))
 
+:= potion_tally (t : hunter_tally) : hunter_tally =
+    := w = logprob::pd_weight t::target_log t::log_path
+    { t ?| potions = t::potions + 1; pd_potions = t::pd_potions + w * 1000i64 }
+
 := healed_hunter (camp : camp) (slot : action_proof) (amount : i32) (h : hunter) : hunter =
     { h ?|
         health = healed_health camp amount h
         clock = healed_clock slot h
-        tally = { (h::tally) ?| potions = h::tally::potions + 1 }
+        tally = potion_tally h::tally
     }
 
 := player_heals (camp : camp) (seed : u32) (tick : i32) (slot : action_proof) (p : pack) : pack =
@@ -1638,15 +1669,92 @@
 := network_heals (b : beat) (w : network::weights) (attackers : i32) (p : pack) : bool =
     (observe b::now p)::heal_ready && (network::decide w (features b::camp attackers b::now p))::heal
 
+:= hashed_heals (b : beat) (w : network::weights) (attackers : i32) (p : pack) : bool =
+    (observe b::now p)::heal_ready && (hashed::decide w (features b::camp attackers b::now p))::heal
+
 := temperate_heals (b : beat) (r : policy::temperate) (p : pack) : bool =
     policy::heals (policy::temperate_thresholds r (crowd_of b::camp p)) (observe b::now p)
+
+:= core_decision (c : learned_core) (x : network::inputs) : network::decision =
+    ?= c ?|
+    | CoreNetwork w => network::decide w x
+    | CoreHashed w => hashed::decide w x
+
+:= soft_roll (b : beat) (p : pack) (k : i32) : i32 =
+    := e = 300 + 100 * slot_number p::hunter::call_sign + k
+    conv (keyed_rng::roll_between 0 999 (key b::seed b::tick e PackPolicyDraw))
+
+:= softened (b : beat) (s : soft_brain) (attackers : i32) (p : pack) : soft_policy::soft_decision =
+    := d = core_decision s::core (features b::camp attackers b::now p)
+    soft_policy::sampled d s::epsilon (soft_roll b p 0, soft_roll b p 1, soft_roll b p 2)
+
+:= soft_heals (b : beat) (s : soft_brain) (attackers : i32) (p : pack) : bool =
+    (observe b::now p)::heal_ready && (softened b s attackers p)::decision::heal
+
+:= bucket_of_percent (percent : i32) : arena_cfr::target_health =
+    :< arena_cfr
+    ? percent > 67 ?> Fresh |? percent > 33 ?> Wounded |: Low
+
+:= target_bucket (camp : camp) (p : pack) : arena_cfr::target_health =
+    ?= p::hunter::target ?|
+    | Some i => bucket_of_percent (health_percent_of camp i (slot i p))
+    | None => :< arena_cfr ;; Fresh
+
+:= scaled_hp (camp : camp) (health : i32) : i32 =
+    health * arena_cfr::max_hp () / units::value_of (player_max_health camp)
+
+:= arena_state_of (b : beat) (attackers : i32) (p : pack) : arena_cfr::arena_state =
+    := o = observe b::now p
+    := st = arena_cfr::state_for (scaled_hp b::camp o::health) attackers o::heal_ready
+    arena_cfr::with_target (target_bucket b::camp p) st
+
+:= arena_roll (b : beat) (p : pack) : i32 =
+    := e = 900 + slot_number p::hunter::call_sign
+    conv (keyed_rng::roll_between 0 999 (key b::seed b::tick e PackPolicyDraw))
+
+:= row_total (table : array i32) (st : arena_cfr::arena_state) : i32 =
+    :< arena_cfr
+    share_of table st Potion + share_of table st Melee + share_of table st Retreat
+
+:= cuts (table : array i32) (st : arena_cfr::arena_state) : i32 * i32 =
+    :< arena_cfr
+    := potion = share_of table st Potion
+    potion, potion + share_of table st Melee
+
+:= drawn_action (table : array i32) (st : arena_cfr::arena_state) (roll : i32) : arena_cfr::arena_action =
+    :< arena_cfr
+    := first, second = cuts table st
+    := r = roll * row_total table st / 1000
+    ? r < first ?> Potion |? r < second ?> Melee |: Retreat
+
+:= arena_act (b : beat) (c : cfr_brain) (attackers : i32) (p : pack) : arena_cfr::arena_action =
+    drawn_action c::table (arena_state_of b attackers p) (arena_roll b p)
+
+:= arena_share (b : beat) (c : cfr_brain) (attackers : i32) (p : pack) : i32 =
+    := st = arena_state_of b attackers p
+    arena_cfr::share_of c::table st (drawn_action c::table st (arena_roll b p))
+
+:= cfr_heals (b : beat) (c : cfr_brain) (attackers : i32) (p : pack) : bool =
+    (observe b::now p)::heal_ready && arena_act b c attackers p = arena_cfr::Potion
+
+:= weights_heals (b : beat) (d : brain) (attackers : i32) (p : pack) : bool =
+    ?= d ?|
+    | Network w => network_heals b w attackers p
+    | Hashed w => hashed_heals b w attackers p
+    | _ => !-
+
+:= learned_heals (b : beat) (d : brain) (attackers : i32) (p : pack) : bool =
+    ?= d ?|
+    | Softened s => soft_heals b s attackers p
+    | Cfr c => cfr_heals b c attackers p
+    | other => weights_heals b other attackers p
 
 := wants_heal (b : beat) (d : brain) (attackers : i32) (p : pack) : bool =
     ?= d ?|
     | Rules a => rules_heals a attackers b::now p
-    | Network w => network_heals b w attackers p
     | Temperate r => temperate_heals b r p
     | RandomControl => !-
+    | other => learned_heals b other attackers p
 
 :== stance = policy::engagement
 
@@ -1670,6 +1778,11 @@
     := d = network::decide w (features b::camp attackers b::now p)
     d::retreat, network_engagement o d::engage
 
+:= hashed_plan (b : beat) (w : network::weights) (attackers : i32) (p : pack) : plan =
+    := o = observe b::now p
+    := d = hashed::decide w (features b::camp attackers b::now p)
+    d::retreat, network_engagement o d::engage
+
 := temperate_plan (b : beat) (r : policy::temperate) (p : pack) : plan =
     :< policy
     := crowd = crowd_of b::camp p
@@ -1679,12 +1792,32 @@
     :< policy
     !-, Hold
 
+:= soft_plan (b : beat) (s : soft_brain) (attackers : i32) (p : pack) : plan =
+    := d = (softened b s attackers p)::decision
+    d::retreat, network_engagement (observe b::now p) d::engage
+
+:= cfr_plan (b : beat) (c : cfr_brain) (attackers : i32) (p : pack) : plan =
+    := a = arena_act b c attackers p
+    a = arena_cfr::Retreat, network_engagement (observe b::now p) (a = arena_cfr::Melee)
+
+:= weights_plan (b : beat) (d : brain) (attackers : i32) (p : pack) : plan =
+    ?= d ?|
+    | Network w => network_plan b w attackers p
+    | Hashed w => hashed_plan b w attackers p
+    | _ => random_plan ()
+
+:= learned_plan (b : beat) (d : brain) (attackers : i32) (p : pack) : plan =
+    ?= d ?|
+    | Softened s => soft_plan b s attackers p
+    | Cfr c => cfr_plan b c attackers p
+    | other => weights_plan b other attackers p
+
 := after_heal_plan (b : beat) (d : brain) (attackers : i32) (p : pack) : plan =
     ?= d ?|
     | Rules a => rules_plan a attackers b::now p
-    | Network w => network_plan b w attackers p
     | Temperate r => temperate_plan b r p
     | RandomControl => random_plan ()
+    | other => learned_plan b other attackers p
 
 := next_waypoint (route : patrol_route) (p : pack) : pack =
     := h = p::hunter
@@ -1877,9 +2010,41 @@
     | None => patrol_turn b t q
     | Some aim => target_turn b t attackers aim q
 
+:= with_log_path (add : i32) (p : pack) : pack =
+    := h = p::hunter
+    p |> with_hunter { h ?| tally = { (h::tally) ?| log_path = h::tally::log_path + add } }
+
+:= target_probs_of (b : beat) (t : soft_target) (attackers : i32) (taken : network::decision) (p : pack) : array i32 =
+    soft_policy::target_probs (core_decision t::core (features b::camp attackers b::now p)) t::epsilon taken
+
+:= with_target_path (next : logprob::target_path) (p : pack) : pack =
+    := h = p::hunter
+    p |> with_hunter { h ?| tally = { (h::tally) ?| target_log = next } }
+
+:= scored_step (b : beat) (t : soft_target) (attackers : i32) (taken : network::decision) (p : pack) : pack =
+    with_target_path (logprob::along p::hunter::tally::target_log (target_probs_of b t attackers taken p)) p
+
+:= with_target_log (b : beat) (s : soft_brain) (attackers : i32) (taken : network::decision) (p : pack) : pack =
+    ?= s::scored_as ?|
+    | Some t => scored_step b t attackers taken p
+    | None => p
+
+:= soft_logged (b : beat) (s : soft_brain) (attackers : i32) (p : pack) : pack =
+    := d = softened b s attackers p
+    with_log_path (logprob::path_log2 d::probs) p |> with_target_log b s attackers d::decision
+
+:= cfr_logged (b : beat) (c : cfr_brain) (attackers : i32) (p : pack) : pack =
+    with_log_path (logprob::per_mille_log2 (arena_share b c attackers p)) p
+
+:= logged (b : beat) (t : tactic) (attackers : i32) (p : pack) : pack =
+    ?= t::brain ?|
+    | Softened s => soft_logged b s attackers p
+    | Cfr c => cfr_logged b c attackers p
+    | _ => p
+
 := acts_after_aim (b : beat) (t : tactic) (aimed : pack) : pack =
     := attackers = attackers_of aimed
-    acts_on_target b t attackers (heal_gate b (heals_now b t attackers aimed) aimed)
+    acts_on_target b t attackers (heal_gate b (heals_now b t attackers aimed) (logged b t attackers aimed))
 
 := ruled_acts (camp : camp) (t : tactic) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
     acts_after_aim { camp = camp; seed = seed; tick = tick; now = now } t (aimed_by camp t::order p)
@@ -2016,6 +2181,48 @@
 
 := seed_run_of (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : seed_run =
     { camp = camp; tactic = t; first = first_seed; count = count }
+
+:== reward_of = i32 -> pack -> i32
+
+:= logged_hunt_of (reward : reward_of) (camp : camp) (t : tactic) (seed : u32) : logprob::logged_hunt =
+    := elapsed, p = clear_run camp t seed 6000
+    := k = p::hunter::tally
+    { target = k::target_log; behavior_log = k::log_path; reward = reward elapsed p }
+
+:~ ^ fill_hunts (reward : reward_of) (run : seed_run) (out : array logprob::logged_hunt) (i : i32) : () =
+    ? i < run::count ?>
+        set out i (logged_hunt_of reward run::camp run::tactic (run::first + conv i))
+        fill_hunts reward run out (i + 1)
+
+:= logged_hunts (reward : reward_of) (run : seed_run) : array logprob::logged_hunt =
+    := out : array logprob::logged_hunt = create run::count
+    fill_hunts reward run out 0
+    out
+
+:= bucket_ticks (buckets : i32) : i32 = (6000 + buckets - 1) / buckets
+
+:= snapshot (run : seed_run) (seed : u32) (ticks : i32) : i32 * pack = clear_run run::camp run::tactic seed ticks
+
+:= logged_of (t : hunter_tally) (reward : i32) : logprob::logged_hunt =
+    { target = t::target_log; behavior_log = t::log_path; reward = reward }
+
+:= bucket_row_of (reward : reward_of) (run : seed_run) (seed : u32) (b : i32) (k : i32) =
+    := e0, p0 = snapshot run seed (b * k)
+    := e1, p1 = snapshot run seed ((b + 1) * k)
+    logprob::row b (logged_of p1::hunter::tally (reward e1 p1 - reward e0 p0))
+
+:= row_at (reward : reward_of) (run : seed_run) (buckets : i32) (i : i32) : logprob::bucket_row =
+    bucket_row_of reward run (run::first + conv (i / buckets)) (i % buckets) (bucket_ticks buckets)
+
+:~ ^ fill_rows (reward : reward_of) (run : seed_run) (buckets : i32) (out : array logprob::bucket_row) (i : i32) : () =
+    ? i < run::count * buckets ?>
+        set out i (row_at reward run buckets i)
+        fill_rows reward run buckets out (i + 1)
+
+:= bucket_rows (reward : reward_of) (run : seed_run) (buckets : i32) : array logprob::bucket_row =
+    := out : array logprob::bucket_row = create (run::count * buckets)
+    fill_rows reward run buckets out 0
+    out
 
 := score (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : i32 =
     score_from (seed_run_of camp t first_seed count) 0 0
@@ -2196,6 +2403,24 @@
 := network_tactic (w : network::weights) : tactic =
     { brain = Network w; order = :< policy ;; CurrentFirst; footing = StepAway; patrol = Stays }
 
+:= hashed_tactic (w : network::weights) : tactic =
+    { brain = Hashed w; order = :< policy ;; CurrentFirst; footing = StepAway; patrol = Stays }
+
+:= softened_tactic (core : learned_core) (epsilon : i32) : tactic =
+    {
+        brain = Softened { core = core; epsilon = epsilon; scored_as = None }
+        order =
+            :< policy
+            CurrentFirst
+        footing = StepAway
+        patrol = Stays
+    }
+
+:= scored_by (target : soft_target) (t : tactic) : tactic =
+    ?= t::brain ?|
+    | Softened s => { t ?| brain = Softened { s ?| scored_as = Some target } }
+    | _ => t
+
 := cavebot_network (camp : camp) (heal : i32) : network::weights =
     network::threshold_healer (heal_fraction_below camp heal)
 
@@ -2209,6 +2434,24 @@
     := evolved_shape : tactic =
         tactic_with_order (:< policy ;; ReachFirst) { first = heal; second = 0; third = retreat_at }
     { evolved_shape ?| footing = StepAwayLikeTheLiveProbe }
+
+:= cfr_tactic (depth : i32) : tactic =
+    := shape = live_retreat_tactic 160 2
+    { shape ?| brain = Cfr { table = arena_cfr::strategy_table depth; depth = depth } }
+
+:= hand_row (potion : i32) (melee : i32) (retreat : i32) : array i32 =
+    := table = regret::zeros (arena_cfr::state_count () * 3)
+    arena_cfr::copy_shares table 0 ;[ potion; melee; retreat ]
+    table
+
+:= drawn_index (table : array i32) (roll : i32) : i32 =
+    arena_cfr::action_index (drawn_action table (arena_cfr::state_of 0) roll)
+
+///> c
+:# cfr_draws_follow_cumulative_shares =
+    := t, odd = hand_row 600 300 100, hand_row 999 0 0
+    (drawn_index t 599, drawn_index t 600, drawn_index t 899, drawn_index t 900, drawn_index odd 999)
+    |> _assert_eq (0i32, 1i32, 1i32, 2i32, 0i32)
 
 :== three = i32 * i32 * i32
 
@@ -2444,3 +2687,55 @@
 :# the_soonest_spawn_fold_covers_a_band_of_six =
     := ~size = band_size ()
     size |> _assert_eq 6
+
+:= soft_test_camp () : camp = uniform_camp (:< creatures ;; Troll)
+
+:= soft_test_hunt (t : tactic) : pack = simulate (soft_test_camp ()) t 7u32 400
+
+:= soft_test_healer () : network::weights = cavebot_network (soft_test_camp ()) 160
+
+:= greedy_test_hunt () : pack = soft_test_hunt (network_tactic (soft_test_healer ()))
+
+:= soft_test_run (epsilon : i32) : pack = soft_test_hunt (softened_tactic (CoreNetwork (soft_test_healer ())) epsilon)
+
+:= kills_and_potions (p : pack) : i32 * i32 = p::score::kills, p::hunter::tally::potions
+
+///> c
+:# a_softened_brain_without_exploration_hunts_like_its_core =
+    := greedy = soft_test_run 0
+    (kills_and_potions greedy, greedy::hunter::tally::log_path)
+    |> _assert_eq (kills_and_potions (greedy_test_hunt ()), 0i32)
+
+///> c
+:# exploration_logs_a_negative_path_weight =
+    ((soft_test_run 100)::hunter::tally::log_path < 0) |> _assert_eq !+
+
+:= scored_test_run (epsilon : i32) (target : i32) : pack =
+    := core = CoreNetwork (soft_test_healer ())
+    soft_test_hunt (softened_tactic core epsilon |> scored_by { core = core; epsilon = target })
+
+///> c
+:# a_target_equal_to_the_behavior_logs_its_path =
+    := same = scored_test_run 100 100
+    logprob::path_pair same::hunter::tally::target_log |> _assert_eq (!+, same::hunter::tally::log_path)
+
+///> c
+:# a_greedy_target_leaves_the_path_of_an_exploring_hunt =
+    logprob::path_pair (scored_test_run 100 0)::hunter::tally::target_log |> _assert_eq (!-, 0i32)
+
+///> c
+:# a_target_equal_to_the_behavior_weighs_every_potion_one =
+    := t = (scored_test_run 100 100)::hunter::tally
+    t::pd_potions |> _assert_eq ((conv t::potions : i64) * 65536000i64)
+
+:= potion_milli (elapsed : i32) (finished : pack) : i32 = finished::hunter::tally::potions * 1000
+
+:= bucket_test_run () : seed_run =
+    := core = CoreNetwork (soft_test_healer ())
+    seed_run_of (soft_test_camp ()) (softened_tactic core 100 |> scored_by { core = core; epsilon = 100 }) 7u32 1
+
+///> c
+:# bucket_rewards_add_up_to_the_cleared_hunt =
+    := run = bucket_test_run ()
+    := _, p = clear_run run::camp run::tactic 7u32 6000
+    logprob::wpdis (bucket_rows potion_milli run 4) 4 |> _assert_eq (conv (p::hunter::tally::potions * 1000) : i64)

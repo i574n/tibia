@@ -7,14 +7,20 @@ are measured against the best open-source Tibia bots on a public, reproducible b
 
 ## Status 2026-10-30
 
-26 `.spi` modules in `src` (plus `src/standards.spi`, the package's standards checked by `kit standards`), and six apps:
+30 `.spi` modules in `src` (plus `src/standards.spi`, the package's standards checked by `kit standards`), and six apps:
 `apps/arena` (24 files: 13 Lua programs for the live client and their shared modules), `apps/map` (the server-map tool
-that generates terrain's walk, road, sight and protection-zone tables), `apps/predict` (C predictions over the
-simulators), `apps/host` (the arena host: world port and executor), `apps/offscreen` and `apps/canary`.
+that generates terrain's walk, road, sight and protection-zone tables; item kinds are lib bitsets),
+`apps/predict` (C predictions over the simulators), `apps/host` (the arena host: world port and executor),
+`apps/offscreen` and `apps/canary`.
 - **Rules:** geometry, vitality, coins, rng, cooldowns, damage, combat, creatures, experience, skills, blessings, wire.
 - **Typed domain:** quantity (phantom units), readiness (GADT witnesses), vocations (vocation-indexed
   spells), catalog (existential spawns), views (HKT `mapped` and `counted`), terrain (layouts, incl. the scanned arena spot).
-- **Decisions:** policy, network (integer neural policy), search (evolution).
+- **Decisions:** policy, network (integer neural policy), hashed (sign-bit LSH policy table), search (evolution).
+- **Learning machinery:** regret (regret-matching+ self-play), arena_cfr (CFR+ on an arena game with exact hp,
+  4128 states, solved backward over a few steps into a per-state strategy table that hunting_pack's `Cfr` brain
+  draws from), logprob (fixed-point log2/exp2, importance weights, a self-normalized importance-sampling estimate
+  with its effective sample size, and target paths that drop a hunt once the target could not have acted as it did),
+  soft_policy (epsilon-soft sampling that logs each decision's probability under the behavior and under a target).
 - **Simulators and entries:** hunt with its hunt_sim tests, hunting_pack (the multi-creature simulator) with its pack_sim
   and gpu_sim tests. Its GPU shader inlines to 252k lines (probe run 281 s); `knight_turn` is shared on C only.
 - **Postable:** measured with the poster's own check (`SpiralCompiler --x-compat` and the x profile: 280 weighted
@@ -25,7 +31,7 @@ simulators), `apps/host` (the arena host: world port and executor), `apps/offscr
 - **Manifests:** each package has one `spiral.toml` (edition 3, its module list); the compiler and Cells both read it,
   and `scripts/predict.ps1` patches its `packageDir`.
 - **Host:** the arena host's block plan runs on Gleam (BEAM) and drives the live world through real programs (Canary,
-  MariaDB, the client harness `live/run-hunt.ps1`). Its first live block (2026-10-28) counted 4 of 4 hunts with the
+  MariaDB, the client runner `live/run-hunt.ps1`). Its first live block (2026-10-28) counted 4 of 4 hunts with the
   exact expected trace, released the world and left no server behind.
 - **Lib:** every app references `lib/spiral` (`spiral-`); host macros are one-call primitives, and casts and parsing go
   through typed Spiral (lib `env`, `convert`, `csv`).
@@ -244,9 +250,9 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 | `docs/` | The plan, the benchmark with every pre-registration and its result (the one record of each experiment), the modeling notes and prior art |
 | `apps/arena/` | Every OTClient probe, compiled with the Lua backend. Layers: generic Lua-side state (`lua.spi`), typed client bindings (`client.spi`), the shared probe lifecycle (`probe.spi`), shared run modules (`scoreboard`, `observer`, `adjacency`), and one entry per probe: competitor, random, vbot, nexbot, summon, scan, path, measure, steps. `build.ps1` writes `target/arena/<probe>.lua`; `-ProbeBody <probe>` picks one and rebuilds stale outputs |
 | `apps/map/` | The server-map tool (Rust backend): reads Canary's map, writes the generated terrain definitions and the region dump in `results/` |
-| `apps/predict/` | One C entry that prints the model's prediction tables for the current bundle (cyclops clears per policy, hunter clears, hunting-ground hunts) |
-| `live/` | The live arena harness: the parity layer, bot shims and configs, the run and check scripts, scenario assets, and the block runner |
-| `analysis/` | Log analyses of concluded pre-registrations that eoie can't express yet; each is deleted when its eoie verb installs. A new pre-registration's method is the eoie command in its BENCHMARK test row, never a new script |
+| `apps/predict/` | C entries over the simulators: `predict` prints the model's prediction tables for the current bundle (cyclops clears per policy, hunter clears, hunting-ground hunts); `lanes`, `lanes_gpu` and `gpu_plan` run evolution lanes; `sweep` is the saturation sweep; `cfr_arena` measures PR-30 (the CFR brain against retreat-at-2) and `is_softened` measures PR-31 (importance sampling against fresh sims). Only `predict` and the lane entries are in `spiral.toml`; `scripts/predict.ps1 -Module <name>` adds any other entry to its scratch copy of the manifest |
+| `live/` | The live arena layer: the parity layer, bot shims and configs, the run and check scripts, scenario assets, and the block runner |
+| `analysis/` | Log analyses of concluded pre-registrations that kit can't express yet; each is deleted when its kit verb installs. A new pre-registration's method is the kit command in its BENCHMARK test row, never a new script |
 | `results/` | Live run tables that BENCHMARK.md cites, the live map scan and the map tool's region dump |
 | `scripts/` | `init.ps1`, `build.ps1`, `publish.ps1`, `workflow.ps1` as in the sibling repos, plus `predict.ps1` (builds and runs `apps/predict` with optional candidate builders) and `score.ps1` (scores candidates under rule D16) |
 | `.github/workflows/gh-pages.yml` | CI on Ubuntu and Windows: every test file through Spiral's cells runner, then the published tree |
@@ -261,7 +267,7 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
   and fails unless every test executed and passed (no failed, unsupported, skipped or missing rows); `-Files geometry,views`
   runs a subset. Notebook outputs go to `notebooks/` (ignored by git, published by `scripts/publish.ps1`).
 - Standards: `scripts/build.ps1` first runs `SpiralCompiler format --check` over src and those apps (predict aside) and stops on any layout
-  change; locally, `eoie standards src apps/arena apps/map` also checks the rules `src/standards.spi` declares (no
+  change; locally, `kit standards src apps/arena apps/map` also checks the rules `src/standards.spi` declares (no
   comment lines, LF only, a target above every test, 120 columns, no floating point in 26 integer-only modules).
 - Live arena: the arena needs a local world outside the repo: Canary, MariaDB, OTClient, logs (default
   `~/tibia-local`, or `TIBIA_WORLD`; MariaDB binaries from `TIBIA_MARIADB_BIN`, default scoop's). `pwsh live/setup.ps1`
@@ -274,8 +280,8 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
   live/hunting-ground-spawns.xml -KnightAt 1936,1336 -RunMs 300000 -MonsterCount 0 -FullExperience 1000000`. nExBot is not
   part of the repo (no license); `-Competitors nexbot` expects it under the world's `bots/`.
 - Pre-registered blocks: `pwsh live/block.ps1 -Ledger <ids>` runs the block, then computes each test with
-  `eoie experiment analyze` against `target/ledger`, eoie's working copy (git-ignored). The record is the BENCHMARK
-  section: register its test there with `eoie experiment register target/ledger ...` right after writing it.
+  `kit experiment analyze` against `target/ledger`, kit's working copy (git-ignored). The record is the BENCHMARK
+  section: register its test there with `kit experiment register target/ledger ...` right after writing it.
 
 ## Documents
 
@@ -290,6 +296,6 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 - Each test target has a reason: `///> c` is the semantic oracle on every rules test, `///> wgsl` the GPU simulator,
   `///> lua` the live client, and `///> rust` only the simulators' golden seeds, because a Rust compile costs about 10 s
   per test (662 s of a 1,164 s suite, 2026-10-13). A module's `static` test only type-checks.
-- Tibia dogfoods the tooling: a missing workflow feature goes into Cells, the compiler or eoie as a backlog item before
+- Tibia dogfoods the tooling: a missing workflow feature goes into Cells, the compiler or kit as a backlog item before
   anything works around it, never imitated in Tibia code.
 - Every backlog item names the claim or milestone it serves; one that serves none is dropped, not done.

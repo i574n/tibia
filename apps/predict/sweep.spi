@@ -32,6 +32,12 @@
     ledger_row 0 (ledger_on camp (validated_arm ()) (held_out_block ()))
     ledger_row 1 (ledger_on camp (tactic_of genes) (held_out_block ()))
 
+///> c
+:# a_sweep_counts_every_hunt_it_runs =
+    := ~generations = 6
+    sweep_hunts { seed = 91u32; generations = generations; offspring = 6 } |> _assert_eq 4000i32
+
+///> _
 := main () =
     := camp = duo_ground ()
     := genes = evolved_rules camp
@@ -39,8 +45,3 @@
     held_out_rows camp genes
     console::write_line ("hunts\t" ++#? sweep_hunts (sweep_plan ()))
     0i32
-
-///> c
-:# a_sweep_counts_every_hunt_it_runs =
-    := ~generations = 6
-    sweep_hunts { seed = 91u32; generations = generations; offspring = 6 } |> _assert_eq 4000i32

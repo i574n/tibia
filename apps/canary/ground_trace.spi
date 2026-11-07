@@ -151,6 +151,7 @@
     think_interval poll 250
     register_global_event poll
 
+///> _
 := main () : () =
     := g : ground = { knight_since = mut None; knight_away = mut !-; watched = mut [] }
     watch_deaths g
