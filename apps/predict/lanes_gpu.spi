@@ -1,0 +1,13 @@
+///- --package .
+:# lanes_gpu static =
+    :< testing
+
+:< lanes
+
+:= gpu_lane () : u32 =
+    run_target \|
+        | Wgsl => \ () => $'spiral_lane' : u32
+        | _ => \ () => 0u32
+
+///> _
+:= main () : i32 = lane_score (tiny_plan ()) (gpu_lane ())

@@ -1,0 +1,30 @@
+packageDir = '../deps/spiral/lib'
+packages = ['|core-', 'spiral-']
+modules = '''
+geometry
+terrain
+vitality
+experience
+skills
+blessings
+coins
+quantity
+cooldowns
+vocations
+readiness
+damage
+combat
+creatures
+catalog
+policy
+views
+search
+network
+typed_network
+hashed
+regret
+arena_cfr
+logprob
+soft_policy
+hunting_pack
+'''

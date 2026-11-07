@@ -1,0 +1,304 @@
+///- --package .
+:# suite static =
+    :< testing
+
+:< sm'_operators
+
+:== ran = { discovered : i32; executed : i32; passed : i32; failed : i32 }
+
+:== held = { statics : i32; unsupported : i32; skipped : i32; not_run : i32 }
+
+:== totals = { ran : ran; held : held }
+
+:= total_count (json : string) (key : string) : i32 = json_scan::parse_i32 json (json_scan::value_at json key)
+
+:= ran_of (json : string) : ran =
+    {
+        discovered = total_count json "discovered"
+        executed = total_count json "executed"
+        passed = total_count json "passed"
+        failed = total_count json "failed"
+    }
+
+:= held_of (json : string) : held =
+    {
+        statics = total_count json "static"
+        unsupported = total_count json "unsupported"
+        skipped = total_count json "skipped"
+        not_run = total_count json "not_run"
+    }
+
+:= totals_of (json : string) : totals = { ran = ran_of json; held = held_of json }
+
+:= not_executed (t : totals) : i32 = t::ran::discovered - t::ran::executed - t::held::statics
+
+:= all_passed (t : totals) : bool = t::ran::passed = t::ran::executed && not_executed t = 0
+
+:= none_held (h : held) : bool = h::unsupported = 0 && h::skipped = 0 && h::not_run = 0
+
+:= green (t : totals) : bool = t::ran::failed = 0 && none_held t::held && all_passed t
+
+:= held_text (h : held) : string =
+    ", unsupported " ++#? h::unsupported ++# ", skipped " ++#? h::skipped ++# ", not run " ++#? h::not_run
+
+:= problem_of (name : string) (failed_tests : string) (t : totals) : string =
+    := counts = "failed " ++#? t::ran::failed ++# held_text t::held ++# ", not executed " ++#? not_executed t
+    name ++# ": " ++# counts ++# " (" ++# failed_tests ++# ")"
+
+:= missing_total (name : string) (exit_code : i32) : string =
+    name ++# ": no spiral-tests total line (exit code " ++#? exit_code ++# ")"
+
+:| file_verdict =
+    | Green : totals
+    | NotGreen : totals * string
+    | NoTotal : i32
+
+:= verdict_of (failed_tests : string) (t : totals) : file_verdict = ? green t ?> Green t |: NotGreen (t, failed_tests)
+
+:= verdict_line (name : string) (v : file_verdict) : option string =
+    ?= v ?|
+    | Green _ => None
+    | NotGreen (t, failed_tests) => Some (problem_of name failed_tests t)
+    | NoTotal exit_code => Some (missing_total name exit_code)
+
+:= prom_label (key : string) (value : string) : string = key ++# "=\"" ++# value ++# "\""
+
+:= prom_line (name : string) (labels : string) (value : string) : string = name ++# "{" ++# labels ++# "} " ++# value
+
+:| backend =
+    | OnC
+    | OnRust
+    | OnLua
+    | OnGleam
+    | OnWgsl
+    | OnZig
+
+:= backend_name (b : backend) : string = case_labels::case_label "On" "_" b
+
+:| test_status =
+    | TestPassed
+    | TestFailed
+    | TestUnsupported
+    | TestSkipped
+    | TestNotRun
+
+:= status_name (s : test_status) : string = case_labels::case_label "Test" "_" s
+
+:| memo_state =
+    | MemoHit
+    | MemoMiss
+
+:= memo_name (m : memo_state) : string = case_labels::case_label "Memo" "_" m
+
+:| budget_kind =
+    | OverBudget
+    | Autolink
+    | Mention
+    | Hashtag
+    | Cashtag
+
+:= budget_kind_name (k : budget_kind) : string = case_labels::case_label "" "_" k
+
+:= budget_kind_of (name : string) : option budget_kind = case_labels::case_of_label "" "_" name
+
+:== file_row = { source : string; tenths : i32; exit_code : i32 }
+
+:== test_place = { source : string; case_name : string }
+
+:== test_outcome = { target : backend; status : test_status; ms : i32; memo : memo_state }
+
+:== test_row = { place : test_place; outcome : test_outcome }
+
+:= tenths_text (t : i32) : string = "" ++#? t / 10 ++# "." ++#? t % 10
+
+:= file_seconds_line (r : file_row) : string =
+    prom_line "tibia_file_seconds" (prom_label "file" r::source) (tenths_text r::tenths)
+
+:= file_exit_line (r : file_row) : string =
+    prom_line "tibia_file_exit_code" (prom_label "file" r::source) ("" ++#? r::exit_code)
+
+:= outcome_labels (o : test_outcome) : string =
+    := target = prom_label "target" (backend_name o::target)
+    target ++# "," ++# prom_label "status" (status_name o::status) ++# "," ++# prom_label "memo" (memo_name o::memo)
+
+:= place_labels (p : test_place) : string = prom_label "file" p::source ++# "," ++# prom_label "test" p::case_name
+
+:= test_labels (r : test_row) : string = place_labels r::place ++# "," ++# outcome_labels r::outcome
+
+:= test_ms_line (r : test_row) : string = prom_line "tibia_test_ms" (test_labels r) ("" ++#? r::outcome::ms)
+
+:= budget_line (k : budget_kind) (count : i32) : string =
+    prom_line "tibia_cell_budget_findings" (prom_label "kind" (budget_kind_name k)) ("" ++#? count)
+
+:== sim_run = { target : backend; hunts : i32; ms : i32 }
+
+:= hunts_per_second (r : sim_run) : i32 = ? r::ms <= 0 ?> 0 |: r::hunts * 1000 / r::ms
+
+:= sim_rate_line (r : sim_run) : string =
+    prom_line "tibia_sim_hunts_per_second" (prom_label "backend" (backend_name r::target)) ("" ++#? hunts_per_second r)
+
+:| sample =
+    | BudgetFindings : budget_kind * i32
+    | FileSeconds : file_row
+    | FileExitCode : file_row
+    | TestMs : test_row
+    | SimHuntsPerSecond : sim_run
+
+:= sample_line (s : sample) : string =
+    ?= s ?|
+    | BudgetFindings (k, count) => budget_line k count
+    | FileSeconds r => file_seconds_line r
+    | FileExitCode r => file_exit_line r
+    | TestMs r => test_ms_line r
+    | SimHuntsPerSecond r => sim_rate_line r
+
+:| budget_report =
+    | BudgetSamples : list sample
+    | BadFinding : string
+    | NoReport
+
+:= counted_kind (name : string) (count : string) : option sample =
+    ?= budget_kind_of name, convert::try_convert count ?|
+    | Some k, Some n => Some (BudgetFindings (k, n))
+    | _ => None
+
+:= finding_of (part : string) : option sample =
+    := fields = part |> sm'::split " " |> array
+    ? am'::length fields <> 2 ?> None |: counted_kind (am'::index 0 fields) (am'::index 1 fields)
+
+:~ ^ listed (parts : array string) (i : i32) (found : list string) : list string =
+    ? i < 0 ?> found |: listed parts (i - 1) (sm'::trim (am'::index i parts) :: found)
+
+:= added (r : budget_report) (part : string) : budget_report =
+    ?= r, finding_of part ?|
+    | BudgetSamples found, Some s => BudgetSamples (s :: found)
+    | BudgetSamples _, None => BadFinding part
+    | _ => r
+
+:= in_order (r : budget_report) : budget_report =
+    ?= r ?|
+    | BudgetSamples found => BudgetSamples (listm::rev found)
+    | _ => r
+
+:= by_kind_text (report : string) : string =
+    := at : i32 = sm'::index_of "file(s) (" report
+    := start = at + 9i32
+    ? at < 0i32 ?> "" |: sm'::substring start (sm'::length report - start - 1i32) report
+
+:= kind_findings (text : string) : budget_report =
+    := parts = text |> sm'::split "," |> array
+    := kinds = listed parts (am'::length parts - 1) []
+    ? text = "" ?> BudgetSamples [] |: in_order (listm::fold added (BudgetSamples []) kinds)
+
+:= budget_report_of (report : string) : budget_report =
+    ? sm'::starts_with "cell-budget report: " report ?> kind_findings (by_kind_text report) |: NoReport
+
+:= budget_text (r : budget_report) : string =
+    ?= r ?|
+    | BudgetSamples samples => samples |> listm::map sample_line |> sm'::concat_list "\n"
+    | BadFinding part => "bad cell-budget finding: " ++# part
+    | NoReport => "no cell-budget report line"
+
+:= offscreen_head () : string =
+    "{\"accepted\":0,\"built\":0,\"discovered\":7,\"executed\":7,\"failed\":0,\"files\":1,\"filtered\":0,"
+
+:= offscreen_tail () : string =
+    "\"memo_hits\":7,\"no_agree_reasons\":{},\"not_run\":0,\"passed\":7,\"preludes\":1,\"skipped\":0,"
+
+:= offscreen_total () : string = offscreen_head () ++# offscreen_tail () ++# "\"static\":0,\"unsupported\":0}"
+
+///> lua
+///> rust
+:# a_green_total_reads_back_as_green =
+    := t = totals_of (offscreen_total ())
+    (t::ran::discovered, t::ran::passed, verdict_line "offscreen" (verdict_of "" t)) |> _assert_eq (7, 7, None)
+
+:= failed_problem () : string = "offscreen: failed 2, unsupported 0, skipped 0, not run 0, not executed 0 (a, b)"
+
+:= two_failed_totals () : totals =
+    := base = totals_of (offscreen_total ())
+    := r = base::ran
+    { base ?| ran = { r ?| passed = 5; failed = 2 } }
+
+///> lua
+///> rust
+:# a_failed_test_names_every_count =
+    verdict_line "offscreen" (verdict_of "a, b" (two_failed_totals ())) |> _assert_eq (Some (failed_problem ()))
+
+///> lua
+///> rust
+:# a_test_neither_run_nor_static_is_not_executed =
+    := base = totals_of (offscreen_total ())
+    := r = base::ran
+    := t = { base ?| ran = { r ?| discovered = 8 } }
+    (not_executed t, green t) |> _assert_eq (1, !-)
+
+///> lua
+///> rust
+:# a_missing_total_line_names_the_exit_code =
+    verdict_line "map" (NoTotal 3) |> _assert_eq (Some "map: no spiral-tests total line (exit code 3)")
+
+:= autolink_line () : string = "tibia_cell_budget_findings{kind=\"autolink\"} 9"
+
+///> lua
+///> rust
+:# a_budget_kind_becomes_one_prom_line =
+    sample_line (BudgetFindings (Autolink, 9)) |> _assert_eq (autolink_line ())
+
+:= two_kind_report () : string = "cell-budget report: 11 finding(s) in 40 file(s) (autolink 9, over_budget 2)"
+
+:= two_kind_lines () : string = autolink_line () ++# "\ntibia_cell_budget_findings{kind=\"over_budget\"} 2"
+
+///> lua
+///> rust
+:# a_budget_report_becomes_one_line_per_kind =
+    budget_text (budget_report_of (two_kind_report ())) |> _assert_eq (two_kind_lines ())
+
+:= clean_report () : string = "cell-budget report: 0 finding(s) in 40 file(s)"
+
+:= unknown_kind_report () : string = "cell-budget report: 3 finding(s) in 40 file(s) (emoji 3)"
+
+:= odd_report_texts () : string * string * string = "", "bad cell-budget finding: emoji 3", "no cell-budget report line"
+
+:= odd_report_lines () : string * string * string =
+    := text report = budget_text (budget_report_of report)
+    text (clean_report ()), text (unknown_kind_report ()), text ""
+
+///> lua
+///> rust
+:# a_report_without_kinds_is_empty_and_an_unknown_kind_is_named =
+    odd_report_lines () |> _assert_eq (odd_report_texts ())
+
+:= offscreen_seconds_line () : string = "tibia_file_seconds{file=\"offscreen\"} 129.9"
+
+:= offscreen_exit_line () : string = "tibia_file_exit_code{file=\"offscreen\"} 0"
+
+:= offscreen_file_lines () : string * string = offscreen_seconds_line (), offscreen_exit_line ()
+
+:= offscreen_file_row () : file_row = { source = "offscreen"; tenths = 1299; exit_code = 0 }
+
+///> lua
+///> rust
+:# a_file_row_becomes_its_seconds_and_exit_lines =
+    := r = offscreen_file_row ()
+    (sample_line (FileSeconds r), sample_line (FileExitCode r)) |> _assert_eq (offscreen_file_lines ())
+
+:= memo_hit_row () : test_row =
+    := outcome = { target = OnLua; status = TestPassed; ms = 34097; memo = MemoHit }
+    { place = { source = "offscreen"; case_name = "t" }; outcome = outcome }
+
+:= memo_hit_line () : string =
+    "tibia_test_ms{file=\"offscreen\",test=\"t\",target=\"lua\",status=\"passed\",memo=\"hit\"} 34097"
+
+///> lua
+///> rust
+:# a_test_row_becomes_one_ms_line_with_its_memo_label =
+    sample_line (TestMs (memo_hit_row ())) |> _assert_eq (memo_hit_line ())
+
+:= sweep_rate_line () : string = "tibia_sim_hunts_per_second{backend=\"c\"} 2000"
+
+///> lua
+///> rust
+:# a_sweep_run_becomes_its_hunts_per_second_line =
+    := ~ms = 2000
+    sample_line (SimHuntsPerSecond { target = OnC; hunts = 4000; ms = ms }) |> _assert_eq (sweep_rate_line ())

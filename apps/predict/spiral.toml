@@ -1,0 +1,9 @@
+edition = 3
+packageDir = '../../deps/spiral/lib'
+packages = ['|core-', 'spiral-', '../../src-']
+modules = '''
+predict
+lanes
+lanes_gpu
+gpu_plan
+'''
