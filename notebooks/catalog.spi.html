@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>catalog.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>catalog (test)</h4>
+
+<span class="badge other">test catalog: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:!</span> <span class="tok-variable">troll_kind</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">goblin_kind</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">cyclops_kind</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">kind</span> <span class="tok-variable">k</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">TrollKind</span> <span class="tok-operator">::</span> <span class="tok-variable">kind</span> <span class="tok-variable">troll_kind</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">GoblinKind</span> <span class="tok-operator">::</span> <span class="tok-variable">kind</span> <span class="tok-variable">goblin_kind</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">CyclopsKind</span> <span class="tok-operator">::</span> <span class="tok-variable">kind</span> <span class="tok-variable">cyclops_kind</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">spawn</span> <span class="tok-variable">k</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">kind</span> <span class="tok-operator">:</span> <span class="tok-variable">kind</span> <span class="tok-variable">k</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">radius</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">entry</span> <span class="tok-operator">=</span> <span class="tok-keyword">\?</span> <span class="tok-variable">k</span><span class="tok-operator">.</span> <span class="tok-variable">spawn</span> <span class="tok-variable">k</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_creature_of</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">which</span> <span class="tok-operator">:</span> <span class="tok-variable">kind</span> <span class="tok-variable">k</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">creatures</span><span class="tok-symbol">::arena_creature</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:&lt;</span> <span class="tok-variable">creatures</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">which</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">TrollKind</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Troll</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">GoblinKind</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Goblin</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">CyclopsKind</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Cyclops</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">stats_of</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">which</span> <span class="tok-operator">:</span> <span class="tok-variable">kind</span> <span class="tok-variable">k</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">creatures</span><span class="tok-symbol">::creature_stats</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">creatures</span><span class="tok-symbol">::stats_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arena_creature_of</span> <span class="tok-variable">which</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">spawn_of</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">which</span> <span class="tok-operator">:</span> <span class="tok-variable">kind</span> <span class="tok-variable">k</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">count</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">radius</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">spawn</span> <span class="tok-variable">k</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span> <span class="tok-variable">kind</span> <span class="tok-operator">=</span> <span class="tok-variable">which</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">=</span> <span class="tok-variable">count</span><span class="tok-operator">;</span> <span class="tok-variable">radius</span> <span class="tok-operator">=</span> <span class="tok-variable">radius</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">pack_entry</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">spawn</span> <span class="tok-variable">k</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">entry</span> <span class="tok-operator">=</span> <span class="tok-variable">entry</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\?</span> <span class="tok-variable">s</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">entry_experience</span> <span class="tok-parenthesis">(</span><span class="tok-variable">entry</span> <span class="tok-variable">e</span> <span class="tok-operator">:</span> <span class="tok-variable">entry</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-keyword">\?</span> <span class="tok-variable">k</span><span class="tok-operator">.</span> <span class="tok-variable">s</span> <span class="tok-operator">=</span> <span class="tok-variable">e</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">s</span><span class="tok-symbol">::kind</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::experience</span> <span class="tok-operator">*</span> <span class="tok-variable">s</span><span class="tok-symbol">::count</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">entry_health</span> <span class="tok-parenthesis">(</span><span class="tok-variable">entry</span> <span class="tok-variable">e</span> <span class="tok-operator">:</span> <span class="tok-variable">entry</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-keyword">\?</span> <span class="tok-variable">k</span><span class="tok-operator">.</span> <span class="tok-variable">s</span> <span class="tok-operator">=</span> <span class="tok-variable">e</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">s</span><span class="tok-symbol">::kind</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::max_health</span> <span class="tok-operator">*</span> <span class="tok-variable">s</span><span class="tok-symbol">::count</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">entry_creature</span> <span class="tok-parenthesis">(</span><span class="tok-variable">entry</span> <span class="tok-variable">e</span> <span class="tok-operator">:</span> <span class="tok-variable">entry</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">creatures</span><span class="tok-symbol">::arena_creature</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-keyword">\?</span> <span class="tok-variable">k</span><span class="tok-operator">.</span> <span class="tok-variable">s</span> <span class="tok-operator">=</span> <span class="tok-variable">e</span>
+    <span class="tok-variable">arena_creature_of</span> <span class="tok-variable">s</span><span class="tok-symbol">::kind</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">troll_camp</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">entry</span> <span class="tok-operator">*</span> <span class="tok-variable">entry</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">pack_entry</span> <span class="tok-parenthesis">(</span><span class="tok-variable">spawn_of</span> <span class="tok-variable">TrollKind</span> <span class="tok-number">3</span> <span class="tok-number">2</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">pack_entry</span> <span class="tok-parenthesis">(</span><span class="tok-variable">spawn_of</span> <span class="tok-variable">GoblinKind</span> <span class="tok-number">2</span> <span class="tok-number">3</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">cyclops_cave</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">entry</span> <span class="tok-operator">*</span> <span class="tok-variable">entry</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">pack_entry</span> <span class="tok-parenthesis">(</span><span class="tok-variable">spawn_of</span> <span class="tok-variable">CyclopsKind</span> <span class="tok-number">1</span> <span class="tok-number">2</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">pack_entry</span> <span class="tok-parenthesis">(</span><span class="tok-variable">spawn_of</span> <span class="tok-variable">TrollKind</span> <span class="tok-number">2</span> <span class="tok-number">4</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">camp_experience</span> <span class="tok-parenthesis">(</span><span class="tok-variable">camp</span> <span class="tok-operator">:</span> <span class="tok-variable">entry</span> <span class="tok-operator">*</span> <span class="tok-variable">entry</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">a</span><span class="tok-operator">,</span> <span class="tok-variable">b</span> <span class="tok-operator">=</span> <span class="tok-variable">camp</span>
+    <span class="tok-variable">entry_experience</span> <span class="tok-variable">a</span> <span class="tok-operator">+</span> <span class="tok-variable">entry_experience</span> <span class="tok-variable">b</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">camp_health</span> <span class="tok-parenthesis">(</span><span class="tok-variable">camp</span> <span class="tok-operator">:</span> <span class="tok-variable">entry</span> <span class="tok-operator">*</span> <span class="tok-variable">entry</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">a</span><span class="tok-operator">,</span> <span class="tok-variable">b</span> <span class="tok-operator">=</span> <span class="tok-variable">camp</span>
+    <span class="tok-variable">entry_health</span> <span class="tok-variable">a</span> <span class="tok-operator">+</span> <span class="tok-variable">entry_health</span> <span class="tok-variable">b</span></code></pre>
+
+<h4>mixed_camps_sum_their_kinds (test)</h4>
+
+<span class="badge passed">test mixed_camps_sum_their_kinds: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">scale</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">camp_experience</span> <span class="tok-parenthesis">(</span><span class="tok-variable">troll_camp</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">*</span> <span class="tok-variable">scale</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">110</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">camp_health</span> <span class="tok-parenthesis">(</span><span class="tok-variable">troll_camp</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">*</span> <span class="tok-variable">scale</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">250</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">camp_experience</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cyclops_cave</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">*</span> <span class="tok-variable">scale</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">190</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 110 }
+__assert_eq { expected = 250 }
+__assert_eq { expected = 190 }</pre>
+
+<h4>a_troll_spawn_cannot_hold_a_cyclops (test)</h4>
+
+<span class="badge passed">test a_troll_spawn_cannot_hold_a_cyclops: passed</span>
+<pre class="code"><code>///- --test --symbol --fails &quot;Unification failure&quot;
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">spawn</span> <span class="tok-variable">troll_kind</span> <span class="tok-operator">=</span> <span class="tok-variable">spawn_of</span> <span class="tok-variable">CyclopsKind</span> <span class="tok-number">1</span> <span class="tok-number">2</span>
+<span class="tok-variable">s</span><span class="tok-symbol">::count</span></code></pre>
+<pre class="output">failed to compile as expected (&quot;Unification failure&quot;): FatalError: File main has a type error somewhere in its path. /home/runner/work/tibia/tibia/src/catalog.spi:67:31 (main.spi:57:31): ETY-TermError: Unification failure. Got:      {kind : kind cyclops_kind; count : i32; radius : i32} Expected: {kind : kind troll_kind; count : i32; radius : i32} In the definition: spiral_cells_test.
+</pre>
+
+<h4>camps_on_gpu (test)</h4>
+
+<span class="badge passed">test camps_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">scale</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?</span> <span class="tok-variable">camp_experience</span> <span class="tok-parenthesis">(</span><span class="tok-variable">troll_camp</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">*</span> <span class="tok-variable">scale</span> <span class="tok-operator">=</span> <span class="tok-number">110</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">camp_health</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cyclops_cave</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">*</span> <span class="tok-variable">scale</span> <span class="tok-operator">=</span> <span class="tok-number">360</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+</main>
+</body>
+</html>

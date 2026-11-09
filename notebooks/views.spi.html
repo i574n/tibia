@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>views.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>views (test)</h4>
+
+<span class="badge other">test views: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">fixed_views</span>
+
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">decide_all</span> <span class="tok-keyword">\*</span> <span class="tok-parenthesis">(</span><span class="tok-variable">f</span> <span class="tok-operator">:</span> <span class="tok-operator">*</span> <span class="tok-operator">-&gt;</span> <span class="tok-operator">*</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">{</span><span class="tok-variable">mapped</span><span class="tok-parenthesis">}</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">policy</span><span class="tok-symbol">::thresholds</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">observations</span> <span class="tok-operator">:</span> <span class="tok-variable">f</span> <span class="tok-variable">policy</span><span class="tok-symbol">::observation</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">f</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">mapped</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-variable">o</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">policy</span><span class="tok-symbol">::engagement_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">policy</span><span class="tok-symbol">::engages</span> <span class="tok-variable">t</span> <span class="tok-variable">o</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">observations</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">observed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">health</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">target</span> <span class="tok-operator">:</span> <span class="tok-variable">policy</span><span class="tok-symbol">::reach</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">policy</span><span class="tok-symbol">::observation</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span> <span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-variable">health</span><span class="tok-operator">;</span> <span class="tok-variable">heal_ready</span> <span class="tok-operator">=</span> <span class="tok-number">!+</span><span class="tok-operator">;</span> <span class="tok-variable">strike_ready</span> <span class="tok-operator">=</span> <span class="tok-number">!+</span><span class="tok-operator">;</span> <span class="tok-variable">target</span> <span class="tok-operator">=</span> <span class="tok-variable">target</span> <span class="tok-parenthesis">}</span></code></pre>
+
+<h4>one_decision_is_the_live_client_view (test)</h4>
+
+<span class="badge passed">test one_decision_is_the_live_client_view: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">policy</span>
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">80</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?=</span> <span class="tok-variable">decide_all</span> <span class="tok-parenthesis">(</span><span class="tok-variable">evolved_against_cyclops</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">one</span> <span class="tok-parenthesis">(</span><span class="tok-variable">observed</span> <span class="tok-variable">health</span> <span class="tok-variable">InReach</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">?|</span>
+<span class="tok-operator">|</span> <span class="tok-variable">one</span> <span class="tok-variable">code</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">code</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 1 }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">four_reaches</span> <span class="tok-parenthesis">(</span><span class="tok-variable">health</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">lanes</span> <span class="tok-variable">policy</span><span class="tok-symbol">::observation</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:&lt;</span> <span class="tok-variable">policy</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">wounded</span> <span class="tok-operator">=</span> <span class="tok-variable">observed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">health</span> <span class="tok-operator">-</span> <span class="tok-number">70</span><span class="tok-parenthesis">)</span> <span class="tok-variable">InReach</span>
+    <span class="tok-variable">lanes</span> <span class="tok-parenthesis">(</span><span class="tok-variable">observed</span> <span class="tok-variable">health</span> <span class="tok-variable">InReach</span><span class="tok-operator">,</span> <span class="tok-variable">observed</span> <span class="tok-variable">health</span> <span class="tok-variable">OutOfReach</span><span class="tok-operator">,</span> <span class="tok-variable">wounded</span><span class="tok-operator">,</span> <span class="tok-variable">observed</span> <span class="tok-variable">health</span> <span class="tok-variable">NoTarget</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h4>four_lanes_decide_like_four_single_calls (test)</h4>
+
+<span class="badge passed">test four_lanes_decide_like_four_single_calls: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">80</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?=</span> <span class="tok-variable">decide_all</span> <span class="tok-parenthesis">(</span><span class="tok-variable">policy</span><span class="tok-symbol">::evolved_against_cyclops</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">four_reaches</span> <span class="tok-variable">health</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">?|</span>
+<span class="tok-operator">|</span> <span class="tok-variable">lanes</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span><span class="tok-operator">,</span> <span class="tok-variable">b</span><span class="tok-operator">,</span> <span class="tok-variable">c</span><span class="tok-operator">,</span> <span class="tok-variable">d</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span><span class="tok-operator">,</span> <span class="tok-variable">b</span><span class="tok-operator">,</span> <span class="tok-variable">c</span><span class="tok-operator">,</span> <span class="tok-variable">d</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (1, 2, 0, 0) }</pre>
+
+<h4>a_view_without_mapped_is_rejected (test)</h4>
+
+<span class="badge passed">test a_view_without_mapped_is_rejected: passed</span>
+<pre class="code"><code>///- --test --symbol --fails &quot;mapped&quot;
+///&gt; c
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">policy</span>
+<span class="tok-variable">decide_all</span> <span class="tok-parenthesis">(</span><span class="tok-variable">evolved_against_cyclops</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">unmapped</span> <span class="tok-parenthesis">(</span><span class="tok-variable">observed</span> <span class="tok-number">80</span> <span class="tok-variable">InReach</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">failed to compile as expected (&quot;mapped&quot;): FatalError: File main has a type error somewhere in its path. /home/runner/work/tibia/tibia/src/views.spi:35:46 (main.spi:17:46): ETY-InstanceNotFound: The higher order type instance unmapped does not have the prototype mapped. In the definition: spiral_cells_test. main.spi:19:13: ETY-ValueRestriction: Metavars that are not part of the enclosing function's signature are not allowed. They need to be values. Got: () -&gt; _ i32 In the definition: main.
+</pre>
+
+<h4>lanes_on_gpu (test)</h4>
+
+<span class="badge passed">test lanes_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">80</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?=</span> <span class="tok-variable">decide_all</span> <span class="tok-parenthesis">(</span><span class="tok-variable">policy</span><span class="tok-symbol">::evolved_against_cyclops</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">four_reaches</span> <span class="tok-variable">health</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">?|</span>
+<span class="tok-operator">|</span> <span class="tok-variable">lanes</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span><span class="tok-operator">,</span> <span class="tok-variable">b</span><span class="tok-operator">,</span> <span class="tok-variable">c</span><span class="tok-operator">,</span> <span class="tok-variable">d</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?</span> <span class="tok-variable">a</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">b</span> <span class="tok-operator">=</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">c</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">d</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vitality.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>vitality (test)</h4>
+
+<span class="badge other">test vitality: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:!</span> <span class="tok-variable">alive</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">dead</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">vitality</span> <span class="tok-variable">phase</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Living</span> <span class="tok-operator">::</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">vitality</span> <span class="tok-variable">alive</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Fallen</span> <span class="tok-operator">::</span> <span class="tok-variable">i32</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">vitality</span> <span class="tok-variable">dead</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">struck</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Survived</span> <span class="tok-operator">:</span> <span class="tok-variable">vitality</span> <span class="tok-variable">alive</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Slain</span> <span class="tok-operator">:</span> <span class="tok-variable">vitality</span> <span class="tok-variable">dead</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">spawn</span> <span class="tok-parenthesis">(</span><span class="tok-variable">maximum</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">vitality</span> <span class="tok-variable">alive</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">Living</span> <span class="tok-parenthesis">(</span><span class="tok-variable">maximum</span><span class="tok-operator">,</span> <span class="tok-variable">maximum</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">health</span> <span class="tok-parenthesis">(</span><span class="tok-variable">target</span> <span class="tok-operator">:</span> <span class="tok-variable">vitality</span> <span class="tok-variable">alive</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">target</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Living</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span><span class="tok-operator">,</span> <span class="tok-keyword">_</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">current</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">maximum_health</span> <span class="tok-parenthesis">(</span><span class="tok-variable">target</span> <span class="tok-operator">:</span> <span class="tok-variable">vitality</span> <span class="tok-variable">alive</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">target</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Living</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">_</span><span class="tok-operator">,</span> <span class="tok-variable">maximum</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">maximum</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">strike</span> <span class="tok-parenthesis">(</span><span class="tok-variable">damage</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">target</span> <span class="tok-operator">:</span> <span class="tok-variable">vitality</span> <span class="tok-variable">alive</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">struck</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">target</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Living</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span><span class="tok-operator">,</span> <span class="tok-variable">maximum</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">remaining</span> <span class="tok-operator">=</span> <span class="tok-variable">current</span> <span class="tok-operator">-</span> <span class="tok-variable">damage</span>
+        <span class="tok-keyword">?</span> <span class="tok-variable">remaining</span> <span class="tok-operator">&gt;</span> <span class="tok-number">0</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Survived</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Living</span> <span class="tok-parenthesis">(</span><span class="tok-variable">remaining</span><span class="tok-operator">,</span> <span class="tok-variable">maximum</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">|:</span> <span class="tok-variable">Slain</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Fallen</span> <span class="tok-variable">maximum</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">heal</span> <span class="tok-parenthesis">(</span><span class="tok-variable">amount</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">target</span> <span class="tok-operator">:</span> <span class="tok-variable">vitality</span> <span class="tok-variable">alive</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">vitality</span> <span class="tok-variable">alive</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">target</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Living</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span><span class="tok-operator">,</span> <span class="tok-variable">maximum</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">restored</span> <span class="tok-operator">=</span> <span class="tok-variable">current</span> <span class="tok-operator">+</span> <span class="tok-variable">amount</span>
+        <span class="tok-variable">Living</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-keyword">?</span> <span class="tok-variable">restored</span> <span class="tok-operator">&gt;</span> <span class="tok-variable">maximum</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">maximum</span> <span class="tok-keyword">|:</span> <span class="tok-variable">restored</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">maximum</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">survivor_health</span> <span class="tok-parenthesis">(</span><span class="tok-variable">outcome</span> <span class="tok-operator">:</span> <span class="tok-variable">struck</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">outcome</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Survived</span> <span class="tok-variable">target</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">health</span> <span class="tok-variable">target</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Slain</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span></code></pre>
+
+<h4>strike_reduces_health (test)</h4>
+
+<span class="badge passed">test strike_reduces_health: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">damage</span> <span class="tok-operator">=</span> <span class="tok-number">30</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">spawn</span> <span class="tok-number">100</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">strike</span> <span class="tok-variable">damage</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">survivor_health</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">70</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 70 }</pre>
+
+<h4>lethal_strike_slays (test)</h4>
+
+<span class="badge passed">test lethal_strike_slays: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">damage</span> <span class="tok-operator">=</span> <span class="tok-number">100</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">spawn</span> <span class="tok-number">100</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">strike</span> <span class="tok-variable">damage</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">survivor_health</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 0 }</pre>
+
+<h4>heal_caps_at_maximum (test)</h4>
+
+<span class="badge passed">test heal_caps_at_maximum: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">amount</span> <span class="tok-operator">=</span> <span class="tok-number">500</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">healed</span> <span class="tok-operator">=</span> <span class="tok-variable">spawn</span> <span class="tok-number">100</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">heal</span> <span class="tok-variable">amount</span>
+<span class="tok-variable">health</span> <span class="tok-variable">healed</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">maximum_health</span> <span class="tok-variable">healed</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = 100 }</pre>
+
+<h4>strike_then_heal (test)</h4>
+
+<span class="badge passed">test strike_then_heal: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">damage</span> <span class="tok-operator">=</span> <span class="tok-number">60</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?=</span> <span class="tok-variable">spawn</span> <span class="tok-number">100</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">strike</span> <span class="tok-variable">damage</span> <span class="tok-keyword">?|</span>
+<span class="tok-operator">|</span> <span class="tok-variable">Survived</span> <span class="tok-variable">wounded</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">wounded</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">heal</span> <span class="tok-number">25</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">health</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">65</span><span class="tok-number_suffix">i32</span>
+<span class="tok-operator">|</span> <span class="tok-variable">Slain</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 65 }</pre>
+
+<h4>healing_the_fallen_does_not_compile (test)</h4>
+
+<span class="badge passed">test healing_the_fallen_does_not_compile: passed</span>
+<pre class="code"><code>///- --test --symbol --fails &quot;Unification failure&quot;
+///&gt; c
+
+<span class="tok-variable">heal</span> <span class="tok-number">10</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Fallen</span> <span class="tok-number">100</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">failed to compile as expected (&quot;Unification failure&quot;): FatalError: File main has a type error somewhere in its path. /home/runner/work/tibia/tibia/src/vitality.spi:69:14 (main.spi:43:14): ETY-TermError: Unification failure. Got:      vitality dead Expected: vitality alive In the definition: spiral_cells_test.
+</pre>
+
+<h4>strike_then_heal_on_gpu (test)</h4>
+
+<span class="badge passed">test strike_then_heal_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">damage</span> <span class="tok-operator">=</span> <span class="tok-number">60</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?=</span> <span class="tok-variable">spawn</span> <span class="tok-number">100</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">strike</span> <span class="tok-variable">damage</span> <span class="tok-keyword">?|</span>
+<span class="tok-operator">|</span> <span class="tok-variable">Survived</span> <span class="tok-variable">wounded</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?</span> <span class="tok-parenthesis">(</span><span class="tok-variable">wounded</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">heal</span> <span class="tok-number">25</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">health</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span> <span class="tok-number">65</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-operator">|</span> <span class="tok-variable">Slain</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span></code></pre>
+
+</main>
+</body>
+</html>

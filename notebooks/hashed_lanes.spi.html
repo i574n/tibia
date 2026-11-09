@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hashed_lanes.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>hashed_lanes (test)</h4>
+
+<span class="badge other">test hashed_lanes: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">sm'_operators</span>
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">hunting_pack</span>
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">lanes</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_fitness</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arm</span> <span class="tok-operator">:</span> <span class="tok-variable">network</span><span class="tok-symbol">::weights</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">tactic</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">first</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">lane_plan</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">network</span><span class="tok-symbol">::weights</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">worth</span> <span class="tok-parenthesis">(</span><span class="tok-variable">CheapClearWithin</span> <span class="tok-parenthesis">(</span><span class="tok-variable">clear_limit_ms</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">spot</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arm</span> <span class="tok-variable">w</span><span class="tok-parenthesis">)</span> <span class="tok-variable">first</span> <span class="tok-variable">p</span><span class="tok-symbol">::seeds</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">report_plan</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">lane_plan</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">generations</span> <span class="tok-operator">=</span> <span class="tok-number">8</span><span class="tok-operator">;</span> <span class="tok-variable">offspring</span> <span class="tok-operator">=</span> <span class="tok-number">64</span><span class="tok-operator">;</span> <span class="tok-variable">seeds</span> <span class="tok-operator">=</span> <span class="tok-variable">training_count</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_weights</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arm</span> <span class="tok-operator">:</span> <span class="tok-variable">network</span><span class="tok-symbol">::weights</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">tactic</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">lane_plan</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lane</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">network</span><span class="tok-symbol">::weights</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">network</span><span class="tok-symbol">::evolve</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arm_fitness</span> <span class="tok-variable">arm</span> <span class="tok-parenthesis">(</span><span class="tok-variable">training_first</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">p</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lane_search</span> <span class="tok-variable">p</span> <span class="tok-variable">lane</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">network</span><span class="tok-symbol">::zero_weights</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_scores</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arm</span> <span class="tok-operator">:</span> <span class="tok-variable">network</span><span class="tok-symbol">::weights</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">tactic</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">network</span><span class="tok-symbol">::weights</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">train</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-escaped_char">\t</span><span class="tok-string">train100</span><span class="tok-escaped_char">\t</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">arm_fitness</span> <span class="tok-variable">arm</span> <span class="tok-parenthesis">(</span><span class="tok-variable">training_first</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">report_plan</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">w</span>
+    <span class="tok-variable">train</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-escaped_char">\t</span><span class="tok-string">held</span><span class="tok-escaped_char">\t</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">arm_fitness</span> <span class="tok-variable">arm</span> <span class="tok-parenthesis">(</span><span class="tok-variable">held_out_first</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">report_plan</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">w</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_row</span> <span class="tok-parenthesis">(</span><span class="tok-variable">name</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arm</span> <span class="tok-operator">:</span> <span class="tok-variable">network</span><span class="tok-symbol">::weights</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">tactic</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">lane_plan</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lane</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">head</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">lane</span><span class="tok-escaped_char">\t</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">lane</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-escaped_char">\t</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">name</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-escaped_char">\t</span><span class="tok-string">seeds</span><span class="tok-escaped_char">\t</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">p</span><span class="tok-symbol">::seeds</span>
+    <span class="tok-variable">head</span> <span class="tok-operator">++#</span> <span class="tok-variable">arm_scores</span> <span class="tok-variable">arm</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arm_weights</span> <span class="tok-variable">arm</span> <span class="tok-variable">p</span> <span class="tok-variable">lane</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_hunts</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">lane_plan</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">g</span> <span class="tok-operator">=</span> <span class="tok-variable">p</span><span class="tok-symbol">::generations</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">o</span> <span class="tok-operator">=</span> <span class="tok-variable">p</span><span class="tok-symbol">::offspring</span>
+    <span class="tok-variable">g</span> <span class="tok-operator">*</span> <span class="tok-variable">o</span> <span class="tok-operator">*</span> <span class="tok-variable">p</span><span class="tok-symbol">::seeds</span> <span class="tok-operator">+</span> <span class="tok-number">2</span> <span class="tok-operator">*</span> <span class="tok-variable">training_count</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">hunts_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">lane_plan</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">hunts</span><span class="tok-escaped_char">\t</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-number">8</span> <span class="tok-operator">*</span> <span class="tok-variable">arm_hunts</span> <span class="tok-variable">p</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">small_plan</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">lane_plan</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">generations</span> <span class="tok-operator">=</span> <span class="tok-number">4</span><span class="tok-operator">;</span> <span class="tok-variable">offspring</span> <span class="tok-operator">=</span> <span class="tok-number">16</span><span class="tok-operator">;</span> <span class="tok-variable">seeds</span> <span class="tok-operator">=</span> <span class="tok-variable">training_count</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">hashed_arm</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">network</span><span class="tok-symbol">::weights</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">tactic</span> <span class="tok-operator">=</span> <span class="tok-variable">hashed_tactic</span> <span class="tok-variable">w</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">network_arm</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">network</span><span class="tok-symbol">::weights</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">tactic</span> <span class="tok-operator">=</span> <span class="tok-variable">network_tactic</span> <span class="tok-variable">w</span>
+
+<span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">print_rows</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">lane_plan</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lane</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">lane</span> <span class="tok-operator">&lt;</span> <span class="tok-number">4</span><span class="tok-number_suffix">u32</span> <span class="tok-keyword">?&gt;</span>
+        <span class="tok-variable">console</span><span class="tok-symbol">::write_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arm_row</span> <span class="tok-string">&quot;</span><span class="tok-string">hashed</span><span class="tok-string">&quot;</span> <span class="tok-variable">hashed_arm</span> <span class="tok-variable">p</span> <span class="tok-variable">lane</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">console</span><span class="tok-symbol">::write_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arm_row</span> <span class="tok-string">&quot;</span><span class="tok-string">network</span><span class="tok-string">&quot;</span> <span class="tok-variable">network_arm</span> <span class="tok-variable">p</span> <span class="tok-variable">lane</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">print_rows</span> <span class="tok-variable">p</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lane</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-number_suffix">u32</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">main</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">p</span> <span class="tok-operator">=</span> <span class="tok-variable">small_plan</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">print_rows</span> <span class="tok-variable">p</span> <span class="tok-number">0</span><span class="tok-number_suffix">u32</span>
+    <span class="tok-variable">console</span><span class="tok-symbol">::write_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">hunts_line</span> <span class="tok-variable">p</span><span class="tok-parenthesis">)</span>
+    <span class="tok-number">0</span></code></pre>
+
+</main>
+</body>
+</html>

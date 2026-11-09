@@ -1,0 +1,12 @@
+///- --package .
+:# nexbot static =
+    :< testing
+
+:= main () =
+    := calls = game_calls::instrument ()
+    observer::run {
+        config = "nExBot"
+        banner = "(nExBot 4.0.4 at 19632d4, TargetBot arena config)"
+        diagnostics = \ () => game_calls::report calls
+    }
+    0i32

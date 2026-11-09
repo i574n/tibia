@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>policy.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>policy (test)</h4>
+
+<span class="badge other">test policy: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:==</span> <span class="tok-variable">thresholds</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">heal_below</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">strike_above</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">reach</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">InReach</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">OutOfReach</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">NoTarget</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">observation</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">health</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">heal_ready</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-operator">;</span> <span class="tok-variable">strike_ready</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-operator">;</span> <span class="tok-variable">target</span> <span class="tok-operator">:</span> <span class="tok-variable">reach</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">engagement</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Strike</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Approach</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Hold</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">candidate</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">is_current</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-operator">;</span> <span class="tok-variable">distance</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">health_percent</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">evolved_against_cyclops</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">thresholds</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">heal_below</span> <span class="tok-operator">=</span> <span class="tok-number">124</span><span class="tok-operator">;</span> <span class="tok-variable">strike_above</span> <span class="tok-operator">=</span> <span class="tok-number">23</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">adaptive</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">heal_base</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">heal_per_attacker</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">strike_above</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">retreat_at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">thresholds_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">adaptive</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">attackers</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">thresholds</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span> <span class="tok-variable">heal_below</span> <span class="tok-operator">=</span> <span class="tok-variable">a</span><span class="tok-symbol">::heal_base</span> <span class="tok-operator">+</span> <span class="tok-variable">a</span><span class="tok-symbol">::heal_per_attacker</span> <span class="tok-operator">*</span> <span class="tok-variable">attackers</span><span class="tok-operator">;</span> <span class="tok-variable">strike_above</span> <span class="tok-operator">=</span> <span class="tok-variable">a</span><span class="tok-symbol">::strike_above</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">never_retreat</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-number">99</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">fixed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">thresholds</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">adaptive</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span> <span class="tok-variable">heal_base</span> <span class="tok-operator">=</span> <span class="tok-variable">t</span><span class="tok-symbol">::heal_below</span><span class="tok-operator">;</span> <span class="tok-variable">heal_per_attacker</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">strike_above</span> <span class="tok-operator">=</span> <span class="tok-variable">t</span><span class="tok-symbol">::strike_above</span><span class="tok-operator">;</span> <span class="tok-variable">retreat_at</span> <span class="tok-operator">=</span> <span class="tok-variable">never_retreat</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">retreats</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">adaptive</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">attackers</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-variable">attackers</span> <span class="tok-operator">&gt;=</span> <span class="tok-variable">a</span><span class="tok-symbol">::retreat_at</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">temperament</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Stands</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Flees</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">by_temperament</span> <span class="tok-variable">a</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">standing</span> <span class="tok-operator">:</span> <span class="tok-variable">a</span><span class="tok-operator">;</span> <span class="tok-variable">fleeing</span> <span class="tok-operator">:</span> <span class="tok-variable">a</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">temperate</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">heal_base</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">heal_per</span> <span class="tok-operator">:</span> <span class="tok-variable">by_temperament</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">strike_above</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">retreat_at</span> <span class="tok-operator">:</span> <span class="tok-variable">by_temperament</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">temperate_thresholds</span> <span class="tok-parenthesis">(</span><span class="tok-variable">r</span> <span class="tok-operator">:</span> <span class="tok-variable">temperate</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">crowd</span> <span class="tok-operator">:</span> <span class="tok-variable">by_temperament</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">thresholds</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">heal_below</span> <span class="tok-operator">=</span> <span class="tok-variable">r</span><span class="tok-symbol">::heal_base</span> <span class="tok-operator">+</span> <span class="tok-variable">r</span><span class="tok-symbol">::heal_per</span><span class="tok-symbol">::standing</span> <span class="tok-operator">*</span> <span class="tok-variable">crowd</span><span class="tok-symbol">::standing</span> <span class="tok-operator">+</span> <span class="tok-variable">r</span><span class="tok-symbol">::heal_per</span><span class="tok-symbol">::fleeing</span> <span class="tok-operator">*</span> <span class="tok-variable">crowd</span><span class="tok-symbol">::fleeing</span>
+        <span class="tok-variable">strike_above</span> <span class="tok-operator">=</span> <span class="tok-variable">r</span><span class="tok-symbol">::strike_above</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">temperate_retreats</span> <span class="tok-parenthesis">(</span><span class="tok-variable">r</span> <span class="tok-operator">:</span> <span class="tok-variable">temperate</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">crowd</span> <span class="tok-operator">:</span> <span class="tok-variable">by_temperament</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">crowd</span><span class="tok-symbol">::standing</span> <span class="tok-operator">&gt;=</span> <span class="tok-variable">r</span><span class="tok-symbol">::retreat_at</span><span class="tok-symbol">::standing</span> <span class="tok-operator">||</span> <span class="tok-variable">crowd</span><span class="tok-symbol">::fleeing</span> <span class="tok-operator">&gt;=</span> <span class="tok-variable">r</span><span class="tok-symbol">::retreat_at</span><span class="tok-symbol">::fleeing</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">heals</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">thresholds</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">o</span> <span class="tok-operator">:</span> <span class="tok-variable">observation</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">o</span><span class="tok-symbol">::heal_ready</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">o</span><span class="tok-symbol">::health</span> <span class="tok-operator">&lt;</span> <span class="tok-variable">t</span><span class="tok-symbol">::heal_below</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">engages</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">thresholds</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">o</span> <span class="tok-operator">:</span> <span class="tok-variable">observation</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">engagement</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">o</span><span class="tok-symbol">::target</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">InReach</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?</span> <span class="tok-variable">o</span><span class="tok-symbol">::strike_ready</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">o</span><span class="tok-symbol">::health</span> <span class="tok-operator">&gt;=</span> <span class="tok-variable">t</span><span class="tok-symbol">::strike_above</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Strike</span> <span class="tok-keyword">|:</span> <span class="tok-variable">Hold</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">OutOfReach</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?</span> <span class="tok-variable">o</span><span class="tok-symbol">::health</span> <span class="tok-operator">&gt;=</span> <span class="tok-variable">t</span><span class="tok-symbol">::strike_above</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Approach</span> <span class="tok-keyword">|:</span> <span class="tok-variable">Hold</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">NoTarget</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Hold</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">in_reach</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-variable">c</span><span class="tok-symbol">::distance</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">1</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">aim</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">current</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">reach</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">health</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">distance</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">targeting</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">ReachFirst</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">CurrentFirst</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Scored</span> <span class="tok-operator">:</span> <span class="tok-variable">aim</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">weaker_or_nearer</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">b</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">a</span><span class="tok-symbol">::health_percent</span> <span class="tok-operator">&lt;&gt;</span> <span class="tok-variable">b</span><span class="tok-symbol">::health_percent</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">a</span><span class="tok-symbol">::health_percent</span> <span class="tok-operator">&lt;</span> <span class="tok-variable">b</span><span class="tok-symbol">::health_percent</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">a</span><span class="tok-symbol">::distance</span> <span class="tok-operator">&lt;</span> <span class="tok-variable">b</span><span class="tok-symbol">::distance</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">aim_score</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">aim</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">c</span><span class="tok-symbol">::is_current</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">w</span><span class="tok-symbol">::current</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">0</span>
+    <span class="tok-operator">+</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">?</span> <span class="tok-variable">in_reach</span> <span class="tok-variable">c</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">w</span><span class="tok-symbol">::reach</span> <span class="tok-keyword">|:</span> <span class="tok-number">0</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">+</span> <span class="tok-variable">w</span><span class="tok-symbol">::health</span> <span class="tok-operator">*</span> <span class="tok-variable">c</span><span class="tok-symbol">::health_percent</span> <span class="tok-operator">/</span> <span class="tok-number">100</span>
+    <span class="tok-operator">+</span> <span class="tok-variable">w</span><span class="tok-symbol">::distance</span> <span class="tok-operator">*</span> <span class="tok-variable">c</span><span class="tok-symbol">::distance</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">reach_first</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">b</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">in_reach</span> <span class="tok-variable">a</span> <span class="tok-operator">&lt;&gt;</span> <span class="tok-variable">in_reach</span> <span class="tok-variable">b</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">in_reach</span> <span class="tok-variable">a</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">a</span><span class="tok-symbol">::is_current</span> <span class="tok-operator">&lt;&gt;</span> <span class="tok-variable">b</span><span class="tok-symbol">::is_current</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">a</span><span class="tok-symbol">::is_current</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">weaker_or_nearer</span> <span class="tok-variable">a</span> <span class="tok-variable">b</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">current_first</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">b</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">a</span><span class="tok-symbol">::is_current</span> <span class="tok-operator">&lt;&gt;</span> <span class="tok-variable">b</span><span class="tok-symbol">::is_current</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">a</span><span class="tok-symbol">::is_current</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">in_reach</span> <span class="tok-variable">a</span> <span class="tok-operator">&lt;&gt;</span> <span class="tok-variable">in_reach</span> <span class="tok-variable">b</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">in_reach</span> <span class="tok-variable">a</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">weaker_or_nearer</span> <span class="tok-variable">a</span> <span class="tok-variable">b</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">scored_first</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">aim</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">b</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">sa</span><span class="tok-operator">,</span> <span class="tok-variable">sb</span> <span class="tok-operator">=</span> <span class="tok-variable">aim_score</span> <span class="tok-variable">w</span> <span class="tok-variable">a</span><span class="tok-operator">,</span> <span class="tok-variable">aim_score</span> <span class="tok-variable">w</span> <span class="tok-variable">b</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">sa</span> <span class="tok-operator">&lt;&gt;</span> <span class="tok-variable">sb</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">sa</span> <span class="tok-operator">&gt;</span> <span class="tok-variable">sb</span> <span class="tok-keyword">|:</span> <span class="tok-variable">weaker_or_nearer</span> <span class="tok-variable">a</span> <span class="tok-variable">b</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">prefers_by</span> <span class="tok-parenthesis">(</span><span class="tok-variable">order</span> <span class="tok-operator">:</span> <span class="tok-variable">targeting</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">b</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">order</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">ReachFirst</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">reach_first</span> <span class="tok-variable">a</span> <span class="tok-variable">b</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">CurrentFirst</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">current_first</span> <span class="tok-variable">a</span> <span class="tok-variable">b</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Scored</span> <span class="tok-variable">w</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">scored_first</span> <span class="tok-variable">w</span> <span class="tok-variable">a</span> <span class="tok-variable">b</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">prefers</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">b</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-variable">prefers_by</span> <span class="tok-variable">ReachFirst</span> <span class="tok-variable">a</span> <span class="tok-variable">b</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">engagement_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">e</span> <span class="tok-operator">:</span> <span class="tok-variable">engagement</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">e</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Strike</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">1</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Approach</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">2</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Hold</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">sighting</span> <span class="tok-parenthesis">(</span><span class="tok-variable">health</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">heal_ready</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">strike_ready</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">target</span> <span class="tok-operator">:</span> <span class="tok-variable">reach</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">observation</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span> <span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-variable">health</span><span class="tok-operator">;</span> <span class="tok-variable">heal_ready</span> <span class="tok-operator">=</span> <span class="tok-variable">heal_ready</span><span class="tok-operator">;</span> <span class="tok-variable">strike_ready</span> <span class="tok-operator">=</span> <span class="tok-variable">strike_ready</span><span class="tok-operator">;</span> <span class="tok-variable">target</span> <span class="tok-operator">=</span> <span class="tok-variable">target</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">aimed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">distance</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">health</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">candidate</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span> <span class="tok-variable">is_current</span> <span class="tok-operator">=</span> <span class="tok-variable">current</span><span class="tok-operator">;</span> <span class="tok-variable">distance</span> <span class="tok-operator">=</span> <span class="tok-variable">distance</span><span class="tok-operator">;</span> <span class="tok-variable">health_percent</span> <span class="tok-operator">=</span> <span class="tok-variable">health</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">heals_now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">o</span> <span class="tok-operator">:</span> <span class="tok-variable">observation</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-variable">heals</span> <span class="tok-parenthesis">(</span><span class="tok-variable">evolved_against_cyclops</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">o</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">engaged_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">o</span> <span class="tok-operator">:</span> <span class="tok-variable">observation</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-variable">engagement_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">engages</span> <span class="tok-parenthesis">(</span><span class="tok-variable">evolved_against_cyclops</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">o</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h4>heals_only_below_threshold_when_ready (test)</h4>
+
+<span class="badge passed">test heals_only_below_threshold_when_ready: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">100</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">heals_now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-variable">health</span> <span class="tok-number">!+</span> <span class="tok-number">!+</span> <span class="tok-variable">InReach</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span>
+<span class="tok-variable">heals_now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-variable">health</span> <span class="tok-number">!-</span> <span class="tok-number">!+</span> <span class="tok-variable">InReach</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = true }
+__assert_eq { expected = false }
+.lua (lua)
+__assert_eq { expected = true }
+__assert_eq { expected = false }</pre>
+
+<h4>no_heal_at_the_threshold (test)</h4>
+
+<span class="badge passed">test no_heal_at_the_threshold: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">100</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">heals_now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-parenthesis">(</span><span class="tok-variable">health</span> <span class="tok-operator">+</span> <span class="tok-number">24</span><span class="tok-parenthesis">)</span> <span class="tok-number">!+</span> <span class="tok-number">!+</span> <span class="tok-variable">InReach</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = false }
+.lua (lua)
+__assert_eq { expected = false }</pre>
+
+<h4>strikes_only_in_reach_ready_and_healthy_enough (test)</h4>
+
+<span class="badge passed">test strikes_only_in_reach_ready_and_healthy_enough: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">23</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">engaged_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-variable">health</span> <span class="tok-number">!+</span> <span class="tok-number">!+</span> <span class="tok-variable">InReach</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">engaged_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-parenthesis">(</span><span class="tok-variable">health</span> <span class="tok-operator">-</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-number">!+</span> <span class="tok-number">!+</span> <span class="tok-variable">InReach</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = 1 }
+__assert_eq { expected = 0 }
+.lua (lua)
+__assert_eq { expected = 1 }
+__assert_eq { expected = 0 }</pre>
+
+<h4>no_strike_while_the_strike_cools_down (test)</h4>
+
+<span class="badge passed">test no_strike_while_the_strike_cools_down: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">23</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">engaged_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-variable">health</span> <span class="tok-number">!+</span> <span class="tok-number">!-</span> <span class="tok-variable">InReach</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">engaged_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-variable">health</span> <span class="tok-number">!+</span> <span class="tok-number">!+</span> <span class="tok-variable">NoTarget</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = 0 }
+__assert_eq { expected = 0 }
+.lua (lua)
+__assert_eq { expected = 0 }
+__assert_eq { expected = 0 }</pre>
+
+<h4>approaches_out_of_reach_only_when_healthy_enough (test)</h4>
+
+<span class="badge passed">test approaches_out_of_reach_only_when_healthy_enough: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">23</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">engaged_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-variable">health</span> <span class="tok-number">!+</span> <span class="tok-number">!+</span> <span class="tok-variable">OutOfReach</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">engaged_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-parenthesis">(</span><span class="tok-variable">health</span> <span class="tok-operator">-</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-number">!+</span> <span class="tok-number">!+</span> <span class="tok-variable">OutOfReach</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = 2 }
+__assert_eq { expected = 0 }
+.lua (lua)
+__assert_eq { expected = 2 }
+__assert_eq { expected = 0 }</pre>
+
+<h4>strike_is_not_a_bool (test)</h4>
+
+<span class="badge passed">test strike_is_not_a_bool: passed</span>
+<pre class="code"><code>///- --test --symbol --fails &quot;Unification failure&quot;
+///&gt; c
+
+<span class="tok-variable">engages</span> <span class="tok-parenthesis">(</span><span class="tok-variable">evolved_against_cyclops</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">50</span><span class="tok-operator">;</span> <span class="tok-variable">heal_ready</span> <span class="tok-operator">=</span> <span class="tok-number">!+</span><span class="tok-operator">;</span> <span class="tok-variable">strike_ready</span> <span class="tok-operator">=</span> <span class="tok-number">!+</span><span class="tok-operator">;</span> <span class="tok-variable">target</span> <span class="tok-operator">=</span> <span class="tok-variable">InReach</span> <span class="tok-parenthesis">}</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span></code></pre>
+<pre class="output">failed to compile as expected (&quot;Unification failure&quot;): FatalError: File main has a type error somewhere in its path. /home/runner/work/tibia/tibia/src/policy.spi:162:19 (main.spi:125:19): ETY-TermError: Unification failure. Got:      (engagement : *) Expected: bool In the definition: spiral_cells_test.
+</pre>
+
+<h4>prefers_reach_then_current (test)</h4>
+
+<span class="badge passed">test prefers_reach_then_current: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">far</span> <span class="tok-operator">=</span> <span class="tok-number">3</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">prefers</span> <span class="tok-parenthesis">(</span><span class="tok-variable">aimed</span> <span class="tok-number">!-</span> <span class="tok-number">1</span> <span class="tok-number">90</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">aimed</span> <span class="tok-number">!+</span> <span class="tok-variable">far</span> <span class="tok-number">10</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span>
+<span class="tok-variable">prefers</span> <span class="tok-parenthesis">(</span><span class="tok-variable">aimed</span> <span class="tok-number">!+</span> <span class="tok-number">1</span> <span class="tok-number">90</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">aimed</span> <span class="tok-number">!-</span> <span class="tok-number">1</span> <span class="tok-number">10</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = true }
+__assert_eq { expected = true }
+.lua (lua)
+__assert_eq { expected = true }
+__assert_eq { expected = true }</pre>
+
+<h4>prefers_the_weakest_then_the_nearest (test)</h4>
+
+<span class="badge passed">test prefers_the_weakest_then_the_nearest: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">far</span> <span class="tok-operator">=</span> <span class="tok-number">3</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">prefers</span> <span class="tok-parenthesis">(</span><span class="tok-variable">aimed</span> <span class="tok-number">!-</span> <span class="tok-number">1</span> <span class="tok-number">40</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">aimed</span> <span class="tok-number">!-</span> <span class="tok-number">1</span> <span class="tok-number">60</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span>
+<span class="tok-variable">prefers</span> <span class="tok-parenthesis">(</span><span class="tok-variable">aimed</span> <span class="tok-number">!-</span> <span class="tok-variable">far</span> <span class="tok-number">50</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">aimed</span> <span class="tok-number">!-</span> <span class="tok-parenthesis">(</span><span class="tok-variable">far</span> <span class="tok-operator">-</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-number">50</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = true }
+__assert_eq { expected = false }
+.lua (lua)
+__assert_eq { expected = true }
+__assert_eq { expected = false }</pre>
+
+<h4>decisions_on_gpu (test)</h4>
+
+<span class="badge passed">test decisions_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">23</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">s</span><span class="tok-operator">,</span> <span class="tok-variable">a</span> <span class="tok-operator">=</span> <span class="tok-variable">engaged_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-variable">health</span> <span class="tok-number">!+</span> <span class="tok-number">!+</span> <span class="tok-variable">InReach</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">engaged_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-variable">health</span> <span class="tok-number">!+</span> <span class="tok-number">!+</span> <span class="tok-variable">OutOfReach</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">?</span> <span class="tok-variable">s</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">a</span> <span class="tok-operator">=</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">heals_now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sighting</span> <span class="tok-variable">health</span> <span class="tok-number">!+</span> <span class="tok-number">!+</span> <span class="tok-variable">InReach</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+<h4>current_first_keeps_a_fleeing_target (test)</h4>
+
+<span class="badge passed">test current_first_keeps_a_fleeing_target: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">far</span> <span class="tok-operator">=</span> <span class="tok-number">4</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">fleeing</span><span class="tok-operator">,</span> <span class="tok-variable">fresh</span> <span class="tok-operator">=</span> <span class="tok-variable">aimed</span> <span class="tok-number">!+</span> <span class="tok-variable">far</span> <span class="tok-number">20</span><span class="tok-operator">,</span> <span class="tok-variable">aimed</span> <span class="tok-number">!-</span> <span class="tok-number">1</span> <span class="tok-number">100</span>
+<span class="tok-variable">prefers_by</span> <span class="tok-variable">CurrentFirst</span> <span class="tok-variable">fleeing</span> <span class="tok-variable">fresh</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span>
+<span class="tok-variable">prefers_by</span> <span class="tok-variable">ReachFirst</span> <span class="tok-variable">fleeing</span> <span class="tok-variable">fresh</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = true }
+__assert_eq { expected = false }
+.lua (lua)
+__assert_eq { expected = true }
+__assert_eq { expected = false }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">sample_adaptive</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">adaptive</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">heal_base</span> <span class="tok-operator">=</span> <span class="tok-number">60</span><span class="tok-operator">;</span> <span class="tok-variable">heal_per_attacker</span> <span class="tok-operator">=</span> <span class="tok-number">25</span><span class="tok-operator">;</span> <span class="tok-variable">strike_above</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span> <span class="tok-variable">retreat_at</span> <span class="tok-operator">=</span> <span class="tok-number">2</span> <span class="tok-parenthesis">}</span></code></pre>
+
+<h4>adaptive_rules_retreat_from_a_crowd (test)</h4>
+
+<span class="badge passed">test adaptive_rules_retreat_from_a_crowd: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">attackers</span> <span class="tok-operator">=</span> <span class="tok-number">3</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">retreats</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sample_adaptive</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">attackers</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span>
+<span class="tok-variable">retreats</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fixed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">evolved_against_cyclops</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">attackers</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span></code></pre>
+<pre class="output">__assert_eq { expected = true }
+__assert_eq { expected = false }</pre>
+
+<h4>adaptive_healing_rises_with_attackers (test)</h4>
+
+<span class="badge passed">test adaptive_healing_rises_with_attackers: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">attackers</span> <span class="tok-operator">=</span> <span class="tok-number">3</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">thresholds_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sample_adaptive</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">attackers</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::heal_below</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">135</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">thresholds_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sample_adaptive</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-number">0</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::heal_below</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">60</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 135 }
+__assert_eq { expected = 60 }</pre>
+
+<h4>fixed_rules_keep_their_heal_threshold (test)</h4>
+
+<span class="badge passed">test fixed_rules_keep_their_heal_threshold: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">attackers</span> <span class="tok-operator">=</span> <span class="tok-number">3</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">thresholds_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fixed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">evolved_against_cyclops</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">attackers</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::heal_below</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">124</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 124 }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">sample_temperate</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">temperate</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">heal_base</span> <span class="tok-operator">=</span> <span class="tok-number">40</span>
+        <span class="tok-variable">heal_per</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">standing</span> <span class="tok-operator">=</span> <span class="tok-number">100</span><span class="tok-operator">;</span> <span class="tok-variable">fleeing</span> <span class="tok-operator">=</span> <span class="tok-number">5</span> <span class="tok-parenthesis">}</span>
+        <span class="tok-variable">strike_above</span> <span class="tok-operator">=</span> <span class="tok-number">0</span>
+        <span class="tok-variable">retreat_at</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">standing</span> <span class="tok-operator">=</span> <span class="tok-number">2</span><span class="tok-operator">;</span> <span class="tok-variable">fleeing</span> <span class="tok-operator">=</span> <span class="tok-variable">never_retreat</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">heal_below_with</span> <span class="tok-parenthesis">(</span><span class="tok-variable">standing</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fleeing</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">temperate_thresholds</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sample_temperate</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">standing</span> <span class="tok-operator">=</span> <span class="tok-variable">standing</span><span class="tok-operator">;</span> <span class="tok-variable">fleeing</span> <span class="tok-operator">=</span> <span class="tok-variable">fleeing</span> <span class="tok-parenthesis">}</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::heal_below</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">retreats_with</span> <span class="tok-parenthesis">(</span><span class="tok-variable">standing</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fleeing</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">temperate_retreats</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sample_temperate</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">standing</span> <span class="tok-operator">=</span> <span class="tok-variable">standing</span><span class="tok-operator">;</span> <span class="tok-variable">fleeing</span> <span class="tok-operator">=</span> <span class="tok-variable">fleeing</span> <span class="tok-parenthesis">}</span></code></pre>
+
+<h4>temperate_rules_count_standing_and_fleeing_attackers_apart (test)</h4>
+
+<span class="badge passed">test temperate_rules_count_standing_and_fleeing_attackers_apart: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">standing</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">heal_below_with</span> <span class="tok-variable">standing</span> <span class="tok-number">2</span><span class="tok-operator">,</span> <span class="tok-variable">heal_below_with</span> <span class="tok-parenthesis">(</span><span class="tok-variable">standing</span> <span class="tok-operator">-</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-number">3</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">150</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">55</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (150, 55) }</pre>
+
+<h4>temperate_rules_retreat_only_from_standing_attackers (test)</h4>
+
+<span class="badge passed">test temperate_rules_retreat_only_from_standing_attackers: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">standing</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">retreats_with</span> <span class="tok-variable">standing</span> <span class="tok-number">2</span><span class="tok-operator">,</span> <span class="tok-variable">retreats_with</span> <span class="tok-parenthesis">(</span><span class="tok-variable">standing</span> <span class="tok-operator">-</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-number">3</span><span class="tok-operator">,</span> <span class="tok-variable">retreats_with</span> <span class="tok-parenthesis">(</span><span class="tok-variable">standing</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-number">0</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">!-</span><span class="tok-operator">,</span> <span class="tok-number">!-</span><span class="tok-operator">,</span> <span class="tok-number">!+</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (false, false, true) }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">reachlike</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">targeting</span> <span class="tok-operator">=</span> <span class="tok-variable">Scored</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">current</span> <span class="tok-operator">=</span> <span class="tok-number">50</span><span class="tok-operator">;</span> <span class="tok-variable">reach</span> <span class="tok-operator">=</span> <span class="tok-number">100</span><span class="tok-operator">;</span> <span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">distance</span> <span class="tok-operator">=</span> <span class="tok-number">0</span> <span class="tok-parenthesis">}</span></code></pre>
+
+<h4>a_scored_aim_can_express_reach_first (test)</h4>
+
+<span class="badge passed">test a_scored_aim_can_express_reach_first: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">d</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">near</span><span class="tok-operator">,</span> <span class="tok-variable">far_current</span> <span class="tok-operator">=</span> <span class="tok-variable">aimed</span> <span class="tok-number">!-</span> <span class="tok-variable">d</span> <span class="tok-number">90</span><span class="tok-operator">,</span> <span class="tok-variable">aimed</span> <span class="tok-number">!+</span> <span class="tok-parenthesis">(</span><span class="tok-variable">d</span> <span class="tok-operator">+</span> <span class="tok-number">2</span><span class="tok-parenthesis">)</span> <span class="tok-number">40</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">prefers_by</span> <span class="tok-parenthesis">(</span><span class="tok-variable">reachlike</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">near</span> <span class="tok-variable">far_current</span><span class="tok-operator">,</span> <span class="tok-variable">prefers_by</span> <span class="tok-variable">ReachFirst</span> <span class="tok-variable">near</span> <span class="tok-variable">far_current</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">!+</span><span class="tok-operator">,</span> <span class="tok-number">!+</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (true, true) }</pre>
+
+<h4>current_first_disagrees_with_the_reachlike_aim (test)</h4>
+
+<span class="badge passed">test current_first_disagrees_with_the_reachlike_aim: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">d</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">near</span><span class="tok-operator">,</span> <span class="tok-variable">far_current</span> <span class="tok-operator">=</span> <span class="tok-variable">aimed</span> <span class="tok-number">!-</span> <span class="tok-variable">d</span> <span class="tok-number">90</span><span class="tok-operator">,</span> <span class="tok-variable">aimed</span> <span class="tok-number">!+</span> <span class="tok-parenthesis">(</span><span class="tok-variable">d</span> <span class="tok-operator">+</span> <span class="tok-number">2</span><span class="tok-parenthesis">)</span> <span class="tok-number">40</span>
+<span class="tok-variable">prefers_by</span> <span class="tok-variable">CurrentFirst</span> <span class="tok-variable">near</span> <span class="tok-variable">far_current</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span></code></pre>
+<pre class="output">__assert_eq { expected = false }</pre>
+
+</main>
+</body>
+</html>

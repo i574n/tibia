@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>skills.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>skills (test)</h4>
+
+<span class="badge other">test skills: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:==</span> <span class="tok-variable">skill</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">tries</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_11_to_18</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">11</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">50</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">12</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">55</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">13</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">60</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">14</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">66</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">15</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">73</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">16</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">80</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">17</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">88</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">97</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_19_to_26</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">19</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">107</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">20</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">117</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">21</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">129</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">22</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">142</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">23</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">156</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">24</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">172</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">25</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">189</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">208</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_27_to_34</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">27</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">229</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">28</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">252</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">29</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">277</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">30</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">305</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">31</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">336</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">32</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">370</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">33</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">407</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">447</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_35_to_42</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">35</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">492</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">36</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">541</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">37</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">595</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">38</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">655</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">39</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">721</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">40</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">793</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">41</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">872</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">959</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_43_to_50</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">43</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1055</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">44</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1161</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">45</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1277</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">46</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1405</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">47</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1545</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">48</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1700</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">49</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1870</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">2057</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_11_to_50</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">18</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_11_to_18</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">26</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_19_to_26</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">34</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_27_to_34</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">42</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_35_to_42</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_43_to_50</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_51_to_58</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">51</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">2262</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">52</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">2489</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">53</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">2738</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">54</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">3012</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">55</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">3313</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">56</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">3644</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">57</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">4008</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">4409</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_59_to_66</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">59</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">4850</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">60</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">5335</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">61</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">5869</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">62</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">6456</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">63</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">7102</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">64</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">7812</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">65</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">8593</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">9452</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_67_to_70</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">67</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">10398</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">68</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">11438</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">69</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">12581</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">13840</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_71_to_74</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">71</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">15224</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">72</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">16746</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">73</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">18421</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">20263</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_67_to_74</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">70</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_67_to_70</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_71_to_74</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_75_to_78</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">75</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">22289</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">76</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">24518</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">77</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">26970</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">29667</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_79_to_82</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">79</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">32634</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">80</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">35897</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">81</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">39487</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">43436</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_75_to_82</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">78</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_75_to_78</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_79_to_82</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_83_to_86</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">83</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">47779</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">84</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">52557</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">85</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">57813</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">63594</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_87_to_90</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">87</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">69954</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">88</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">76949</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">89</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">84644</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">93109</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_83_to_90</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">86</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_83_to_86</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_87_to_90</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_51_to_90</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">58</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_51_to_58</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">66</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_59_to_66</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">74</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_67_to_74</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">82</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_75_to_82</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_83_to_90</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_91_to_94</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">91</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">102420</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">92</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">112662</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">93</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">123928</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">136321</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_95_to_98</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">95</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">149953</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">96</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">164948</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">97</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">181443</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">199588</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_91_to_98</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">94</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_91_to_94</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_95_to_98</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_99_to_102</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">99</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">219546</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">100</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">241501</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">101</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">265651</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">292216</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_103_to_106</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">103</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">321438</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">104</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">353582</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">105</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">388940</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">427834</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_99_to_106</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">102</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_99_to_102</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_103_to_106</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_107_to_110</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">107</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">470618</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">108</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">517679</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">109</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">569448</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">626392</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_111_to_114</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">111</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">689032</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">112</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">757935</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">113</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">833728</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">917101</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_107_to_114</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">110</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_107_to_110</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_111_to_114</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_115_to_118</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">115</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1008812</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">116</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1109693</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">117</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1220662</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">1342728</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_119_to_122</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">119</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1477001</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">120</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1624701</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">121</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1787172</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">1965889</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_115_to_122</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">118</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_115_to_118</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_119_to_122</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_123_to_126</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">123</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">2162478</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">124</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">2378726</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">125</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">2616599</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">2878259</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_127_to_130</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">127</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">3166085</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">128</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">3482693</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">129</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">3830963</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">4214059</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_123_to_130</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">126</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_123_to_126</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_127_to_130</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_91_to_130</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">98</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_91_to_98</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">106</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_99_to_106</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">114</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_107_to_114</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">122</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_115_to_122</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_123_to_130</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:~</span> <span class="tok-variable">knight_skill_tries_up_to_130</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">10</span> <span class="tok-operator">||</span> <span class="tok-variable">level</span> <span class="tok-operator">&gt;</span> <span class="tok-number">130</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">50</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_11_to_50</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">90</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries_51_to_90</span> <span class="tok-variable">level</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">tries_91_to_130</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">total_tries_to</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">sum</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">total</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+        <span class="tok-keyword">?</span> <span class="tok-variable">c</span> <span class="tok-operator">&gt;</span> <span class="tok-variable">level</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">total</span> <span class="tok-keyword">|:</span> <span class="tok-variable">sum</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">total</span> <span class="tok-operator">+</span> <span class="tok-variable">knight_skill_tries_up_to_130</span> <span class="tok-variable">c</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">sum</span> <span class="tok-number">11</span> <span class="tok-number">0</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">kept_skill</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tries</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lost</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">skill</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span> <span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-variable">level</span><span class="tok-operator">;</span> <span class="tok-variable">tries</span> <span class="tok-operator">=</span> <span class="tok-keyword">?</span> <span class="tok-variable">tries</span> <span class="tok-operator">&gt;</span> <span class="tok-variable">lost</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">tries</span> <span class="tok-operator">-</span> <span class="tok-variable">lost</span> <span class="tok-keyword">|:</span> <span class="tok-number">0</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">skill_drop</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tries</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lost</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">skill</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">lost</span> <span class="tok-operator">&lt;=</span> <span class="tok-variable">tries</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">kept_skill</span> <span class="tok-variable">level</span> <span class="tok-variable">tries</span> <span class="tok-variable">lost</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">level</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">10</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span> <span class="tok-variable">tries</span> <span class="tok-operator">=</span> <span class="tok-number">0</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">skill_drop</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">-</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">knight_skill_tries_up_to_130</span> <span class="tok-variable">level</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lost</span> <span class="tok-operator">-</span> <span class="tok-variable">tries</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">after_unblessed_death</span> <span class="tok-parenthesis">(</span><span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">skill</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">skill</span> <span class="tok-operator">=</span> <span class="tok-variable">skill_drop</span> <span class="tok-variable">s</span><span class="tok-symbol">::level</span> <span class="tok-variable">s</span><span class="tok-symbol">::tries</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">total_tries_to</span> <span class="tok-variable">s</span><span class="tok-symbol">::level</span> <span class="tok-operator">+</span> <span class="tok-variable">s</span><span class="tok-symbol">::tries</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">10</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tries_pins</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">at</span> <span class="tok-operator">=</span> <span class="tok-variable">knight_skill_tries_up_to_130</span>
+    <span class="tok-variable">at</span> <span class="tok-number">10</span><span class="tok-operator">,</span> <span class="tok-variable">at</span> <span class="tok-number">11</span><span class="tok-operator">,</span> <span class="tok-variable">at</span> <span class="tok-number">12</span><span class="tok-operator">,</span> <span class="tok-variable">at</span> <span class="tok-variable">level</span><span class="tok-operator">,</span> <span class="tok-variable">at</span> <span class="tok-number">60</span><span class="tok-operator">,</span> <span class="tok-variable">at</span> <span class="tok-number">100</span><span class="tok-operator">,</span> <span class="tok-variable">at</span> <span class="tok-number">130</span><span class="tok-operator">,</span> <span class="tok-variable">total_tries_to</span> <span class="tok-variable">level</span></code></pre>
+
+<h4>knight_skill_tries_match_canary_pow_of_the_float_multiplier (test)</h4>
+
+<span class="badge passed">test knight_skill_tries_match_canary_pow_of_the_float_multiplier: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">30</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">tries_pins</span> <span class="tok-variable">level</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">50</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">55</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">305</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">5335</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">241501</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">4214059</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">2852</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (0, 50, 55, 305, 5335, 241501, 4214059, 2852) }</pre>
+
+<h4>an_axe_30_knight_loses_a_skill_level_on_death_like_live (test)</h4>
+
+<span class="badge passed">test an_axe_30_knight_loses_a_skill_level_on_death_like_live: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">30</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">after</span> <span class="tok-operator">=</span> <span class="tok-variable">after_unblessed_death</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-variable">level</span><span class="tok-operator">;</span> <span class="tok-variable">tries</span> <span class="tok-operator">=</span> <span class="tok-number">0</span> <span class="tok-parenthesis">}</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">after</span><span class="tok-symbol">::level</span><span class="tok-operator">,</span> <span class="tok-variable">after</span><span class="tok-symbol">::tries</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">29</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">20</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (29, 20) }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:==</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">=</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">skill_after_death</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tries</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">after</span> <span class="tok-operator">=</span> <span class="tok-variable">after_unblessed_death</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-variable">level</span><span class="tok-operator">;</span> <span class="tok-variable">tries</span> <span class="tok-operator">=</span> <span class="tok-variable">tries</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-variable">after</span><span class="tok-symbol">::level</span><span class="tok-operator">,</span> <span class="tok-variable">after</span><span class="tok-symbol">::tries</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">loss_rows</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tries</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">*</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">*</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">*</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">*</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">*</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">at</span> <span class="tok-operator">=</span> <span class="tok-variable">skill_after_death</span>
+    <span class="tok-variable">at</span> <span class="tok-number">60</span> <span class="tok-variable">tries</span><span class="tok-operator">,</span> <span class="tok-variable">at</span> <span class="tok-number">12</span> <span class="tok-number">3</span><span class="tok-operator">,</span> <span class="tok-variable">at</span> <span class="tok-number">11</span> <span class="tok-number">0</span><span class="tok-operator">,</span> <span class="tok-variable">at</span> <span class="tok-number">100</span> <span class="tok-number">50000</span><span class="tok-operator">,</span> <span class="tok-variable">at</span> <span class="tok-number">10</span> <span class="tok-number">0</span><span class="tok-operator">,</span> <span class="tok-variable">at</span> <span class="tok-number">130</span> <span class="tok-number">0</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">loss_expected</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">*</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">*</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">*</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">*</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">*</span> <span class="tok-variable">level_tries</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-number">59</span><span class="tok-operator">,</span> <span class="tok-number">629</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-number">11</span><span class="tok-operator">,</span> <span class="tok-number">48</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-number">10</span><span class="tok-operator">,</span> <span class="tok-number">45</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-number">99</span><span class="tok-operator">,</span> <span class="tok-number">20904</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-number">10</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-number">128</span><span class="tok-operator">,</span> <span class="tok-number">3409614</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h4>skill_loss_matches_canary_death_loop_across_levels (test)</h4>
+
+<span class="badge passed">test skill_loss_matches_canary_death_loop_across_levels: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">tries</span> <span class="tok-operator">=</span> <span class="tok-number">1234</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">loss_rows</span> <span class="tok-variable">tries</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">loss_expected</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = ((59, 629), (11, 48), (10, 45), (99, 20904), (10, 0), 128, 3409614) }</pre>
+
+<h4>skill_loss_on_gpu (test)</h4>
+
+<span class="badge passed">test skill_loss_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">30</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">after</span> <span class="tok-operator">=</span> <span class="tok-variable">after_unblessed_death</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-variable">level</span><span class="tok-operator">;</span> <span class="tok-variable">tries</span> <span class="tok-operator">=</span> <span class="tok-number">0</span> <span class="tok-parenthesis">}</span>
+<span class="tok-keyword">?</span> <span class="tok-variable">after</span><span class="tok-symbol">::level</span> <span class="tok-operator">=</span> <span class="tok-number">29</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">after</span><span class="tok-symbol">::tries</span> <span class="tok-operator">=</span> <span class="tok-number">20</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">knight_skill_tries_up_to_130</span> <span class="tok-number">100</span> <span class="tok-operator">=</span> <span class="tok-number">241501</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+</main>
+</body>
+</html>

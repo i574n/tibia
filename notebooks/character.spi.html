@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>character.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>character (test)</h4>
+
+<span class="badge other">test character: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">sm'_operators</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">character</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">name</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-operator">;</span> <span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">axe_skill</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">y</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">experience_for</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span> <span class="tok-operator">=</span> <span class="tok-variable">conv</span> <span class="tok-variable">level</span>
+    <span class="tok-number">50</span> <span class="tok-operator">*</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">*</span> <span class="tok-variable">l</span> <span class="tok-operator">*</span> <span class="tok-variable">l</span> <span class="tok-operator">-</span> <span class="tok-number">6</span> <span class="tok-operator">*</span> <span class="tok-variable">l</span> <span class="tok-operator">*</span> <span class="tok-variable">l</span> <span class="tok-operator">+</span> <span class="tok-number">17</span> <span class="tok-operator">*</span> <span class="tok-variable">l</span> <span class="tok-operator">-</span> <span class="tok-number">12</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">3</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">health_max_for</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-number">185</span> <span class="tok-operator">+</span> <span class="tok-number">15</span> <span class="tok-operator">*</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">-</span> <span class="tok-number">8</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">mana_max_for</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-number">90</span> <span class="tok-operator">+</span> <span class="tok-number">5</span> <span class="tok-operator">*</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">-</span> <span class="tok-number">8</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">vitals_sql</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">:</span> <span class="tok-variable">character</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">health</span><span class="tok-operator">,</span> <span class="tok-variable">mana</span> <span class="tok-operator">=</span> <span class="tok-variable">health_max_for</span> <span class="tok-variable">c</span><span class="tok-symbol">::level</span><span class="tok-operator">,</span> <span class="tok-variable">mana_max_for</span> <span class="tok-variable">c</span><span class="tok-symbol">::level</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">, healthmax = </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">health</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">, health = </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">health</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">, manamax = </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">mana</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">, mana = </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">mana</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">skills_sql</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">:</span> <span class="tok-variable">character</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">, skill_axe = </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">c</span><span class="tok-symbol">::axe_skill</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">, skill_shielding = 11, skill_shielding_tries = 0</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">position_sql</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">:</span> <span class="tok-variable">character</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">, posx = </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">c</span><span class="tok-symbol">::x</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">, posy = </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">c</span><span class="tok-symbol">::y</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">, posz = 7</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">reset_sql</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">:</span> <span class="tok-variable">character</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">update players set level = </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">c</span><span class="tok-symbol">::level</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">, experience = </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">experience_for</span> <span class="tok-variable">c</span><span class="tok-symbol">::level</span>
+    <span class="tok-variable">level</span> <span class="tok-operator">++#</span> <span class="tok-variable">vitals_sql</span> <span class="tok-variable">c</span> <span class="tok-operator">++#</span> <span class="tok-variable">skills_sql</span> <span class="tok-variable">c</span> <span class="tok-operator">++#</span> <span class="tok-variable">position_sql</span> <span class="tok-variable">c</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string"> where name = '</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">c</span><span class="tok-symbol">::name</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">'</span><span class="tok-string">&quot;</span></code></pre>
+
+<h4>experience_matches_the_live_arena (test)</h4>
+
+<span class="badge passed">test experience_matches_the_live_arena: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">30</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">experience_for</span> <span class="tok-variable">level</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">368300</span><span class="tok-number_suffix">i64</span>
+<span class="tok-variable">experience_for</span> <span class="tok-number">8</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">4200</span><span class="tok-number_suffix">i64</span>
+<span class="tok-variable">experience_for</span> <span class="tok-number">200</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">129389800</span><span class="tok-number_suffix">i64</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = 368300 }
+__assert_eq { expected = 4200 }
+__assert_eq { expected = 129389800 }
+.lua (lua)
+__assert_eq { expected = 368300 }
+__assert_eq { expected = 4200 }
+__assert_eq { expected = 129389800 }
+.gleam (gleam)
+__assert_eq { expected = 368300 }
+__assert_eq { expected = 4200 }
+__assert_eq { expected = 129389800 }</pre>
+
+<h4>health_and_mana_maxima_match_the_live_arena (test)</h4>
+
+<span class="badge passed">test health_and_mana_maxima_match_the_live_arena: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">30</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">health_max_for</span> <span class="tok-variable">level</span><span class="tok-operator">,</span> <span class="tok-variable">mana_max_for</span> <span class="tok-variable">level</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">515</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">200</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = (515, 200) }
+.lua (lua)
+__assert_eq { expected = (515, 200) }
+.gleam (gleam)
+__assert_eq { expected = (515, 200) }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">expected_reset_head</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">update players set level = 30, experience = 368300, healthmax = 515, health = 515, manamax = 200, mana = 200</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">expected_reset_tail</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">, skill_axe = 60, skill_shielding = 11, skill_shielding_tries = 0, posx = 1932, posy = 1349, posz = 7 where </span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">name = 'Knight Sample'</span><span class="tok-string">&quot;</span></code></pre>
+
+<h4>the_reset_statement_matches_the_powershell_text (test)</h4>
+
+<span class="badge passed">test the_reset_statement_matches_the_powershell_text: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">30</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">reset_sql</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">name</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">Knight Sample</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-variable">level</span><span class="tok-operator">;</span> <span class="tok-variable">axe_skill</span> <span class="tok-operator">=</span> <span class="tok-number">60</span><span class="tok-operator">;</span> <span class="tok-variable">x</span> <span class="tok-operator">=</span> <span class="tok-number">1932</span><span class="tok-operator">;</span> <span class="tok-variable">y</span> <span class="tok-operator">=</span> <span class="tok-number">1349</span> <span class="tok-parenthesis">}</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">expected_reset_head</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">++#</span> <span class="tok-variable">expected_reset_tail</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = update players set level = 30, experience = 368300, healthmax = 515, health = 515, manamax = 200, mana = 200, skill_axe = 60, skill_shielding = 11, skill_shielding_tries = 0, posx = 1932, posy = 1349, posz = 7 where name = 'Knight Sample' }
+.lua (lua)
+__assert_eq { expected = update players set level = 30, experience = 368300, healthmax = 515, health = 515, manamax = 200, mana = 200, skill_axe = 60, skill_shielding = 11, skill_shielding_tries = 0, posx = 1932, posy = 1349, posz = 7 where name = 'Knight Sample' }
+.gleam (gleam)
+__assert_eq { expected = update players set level = 30, experience = 368300, healthmax = 515, health = 515, manamax = 200, mana = 200, skill_axe = 60, skill_shielding = 11, skill_shielding_tries = 0, posx = 1932, posy = 1349, posz = 7 where name = 'Knight Sample' }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:==</span> <span class="tok-variable">item</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">pid</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">sid</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">itemtype</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">kit_slots_1_to_4</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">item</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-parenthesis">{</span> <span class="tok-variable">pid</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-operator">;</span> <span class="tok-variable">sid</span> <span class="tok-operator">=</span> <span class="tok-number">101</span><span class="tok-operator">;</span> <span class="tok-variable">itemtype</span> <span class="tok-operator">=</span> <span class="tok-number">3354</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">=</span> <span class="tok-number">1</span> <span class="tok-parenthesis">}</span><span class="tok-operator">;</span>
+        <span class="tok-parenthesis">{</span> <span class="tok-variable">pid</span> <span class="tok-operator">=</span> <span class="tok-number">3</span><span class="tok-operator">;</span> <span class="tok-variable">sid</span> <span class="tok-operator">=</span> <span class="tok-number">102</span><span class="tok-operator">;</span> <span class="tok-variable">itemtype</span> <span class="tok-operator">=</span> <span class="tok-number">2853</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">=</span> <span class="tok-number">1</span> <span class="tok-parenthesis">}</span><span class="tok-operator">;</span>
+        <span class="tok-parenthesis">{</span> <span class="tok-variable">pid</span> <span class="tok-operator">=</span> <span class="tok-number">4</span><span class="tok-operator">;</span> <span class="tok-variable">sid</span> <span class="tok-operator">=</span> <span class="tok-number">103</span><span class="tok-operator">;</span> <span class="tok-variable">itemtype</span> <span class="tok-operator">=</span> <span class="tok-number">3359</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">=</span> <span class="tok-number">1</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">kit_slots_5_to_7</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">item</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-parenthesis">{</span> <span class="tok-variable">pid</span> <span class="tok-operator">=</span> <span class="tok-number">5</span><span class="tok-operator">;</span> <span class="tok-variable">sid</span> <span class="tok-operator">=</span> <span class="tok-number">104</span><span class="tok-operator">;</span> <span class="tok-variable">itemtype</span> <span class="tok-operator">=</span> <span class="tok-number">3425</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">=</span> <span class="tok-number">1</span> <span class="tok-parenthesis">}</span><span class="tok-operator">;</span>
+        <span class="tok-parenthesis">{</span> <span class="tok-variable">pid</span> <span class="tok-operator">=</span> <span class="tok-number">6</span><span class="tok-operator">;</span> <span class="tok-variable">sid</span> <span class="tok-operator">=</span> <span class="tok-number">105</span><span class="tok-operator">;</span> <span class="tok-variable">itemtype</span> <span class="tok-operator">=</span> <span class="tok-number">7773</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">=</span> <span class="tok-number">1</span> <span class="tok-parenthesis">}</span><span class="tok-operator">;</span>
+        <span class="tok-parenthesis">{</span> <span class="tok-variable">pid</span> <span class="tok-operator">=</span> <span class="tok-number">7</span><span class="tok-operator">;</span> <span class="tok-variable">sid</span> <span class="tok-operator">=</span> <span class="tok-number">106</span><span class="tok-operator">;</span> <span class="tok-variable">itemtype</span> <span class="tok-operator">=</span> <span class="tok-number">3372</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">=</span> <span class="tok-number">1</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">kit_slots_8_and_up</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">item</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-parenthesis">{</span> <span class="tok-variable">pid</span> <span class="tok-operator">=</span> <span class="tok-number">8</span><span class="tok-operator">;</span> <span class="tok-variable">sid</span> <span class="tok-operator">=</span> <span class="tok-number">107</span><span class="tok-operator">;</span> <span class="tok-variable">itemtype</span> <span class="tok-operator">=</span> <span class="tok-number">3552</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">=</span> <span class="tok-number">1</span> <span class="tok-parenthesis">}</span><span class="tok-operator">;</span>
+        <span class="tok-parenthesis">{</span> <span class="tok-variable">pid</span> <span class="tok-operator">=</span> <span class="tok-number">11</span><span class="tok-operator">;</span> <span class="tok-variable">sid</span> <span class="tok-operator">=</span> <span class="tok-number">108</span><span class="tok-operator">;</span> <span class="tok-variable">itemtype</span> <span class="tok-operator">=</span> <span class="tok-number">23396</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">=</span> <span class="tok-number">1</span> <span class="tok-parenthesis">}</span><span class="tok-operator">;</span>
+        <span class="tok-parenthesis">{</span> <span class="tok-variable">pid</span> <span class="tok-operator">=</span> <span class="tok-number">102</span><span class="tok-operator">;</span> <span class="tok-variable">sid</span> <span class="tok-operator">=</span> <span class="tok-number">109</span><span class="tok-operator">;</span> <span class="tok-variable">itemtype</span> <span class="tok-operator">=</span> <span class="tok-number">266</span><span class="tok-operator">;</span> <span class="tok-variable">count</span> <span class="tok-operator">=</span> <span class="tok-number">100</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">canonical_kit</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">item</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">listm</span><span class="tok-symbol">::append</span> <span class="tok-parenthesis">(</span><span class="tok-variable">kit_slots_1_to_4</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">listm</span><span class="tok-symbol">::append</span> <span class="tok-parenthesis">(</span><span class="tok-variable">kit_slots_5_to_7</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">kit_slots_8_and_up</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">first_kit_row</span> <span class="tok-parenthesis">(</span><span class="tok-variable">i</span> <span class="tok-operator">:</span> <span class="tok-variable">item</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">select </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">i</span><span class="tok-symbol">::pid</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string"> as pid, </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">i</span><span class="tok-symbol">::sid</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string"> as sid, </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">i</span><span class="tok-symbol">::itemtype</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string"> as itemtype, </span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">++#?</span> <span class="tok-variable">i</span><span class="tok-symbol">::count</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string"> as count</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">later_kit_row</span> <span class="tok-parenthesis">(</span><span class="tok-variable">i</span> <span class="tok-operator">:</span> <span class="tok-variable">item</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string"> union all select </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">i</span><span class="tok-symbol">::pid</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">, </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">i</span><span class="tok-symbol">::sid</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">, </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">i</span><span class="tok-symbol">::itemtype</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">, </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">i</span><span class="tok-symbol">::count</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">kit_rows</span> <span class="tok-parenthesis">(</span><span class="tok-variable">items</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">item</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">items</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">head</span> <span class="tok-operator">::</span> <span class="tok-variable">tail</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">listm</span><span class="tok-symbol">::fold</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-variable">text</span> <span class="tok-variable">i</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">text</span> <span class="tok-operator">++#</span> <span class="tok-variable">later_kit_row</span> <span class="tok-variable">i</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">first_kit_row</span> <span class="tok-variable">head</span><span class="tok-parenthesis">)</span> <span class="tok-variable">tail</span>
+    <span class="tok-operator">|</span> <span class="tok-parenthesis">[</span><span class="tok-parenthesis">]</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">kit_delete_sql</span> <span class="tok-parenthesis">(</span><span class="tok-variable">name</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">delete pi from player_items pi join players p on p.id = pi.player_id where p.name = '</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">name</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">'; </span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">kit_insert_head</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">insert into player_items (player_id, pid, sid, itemtype, count, attributes) select p.id, v.pid, v.sid, </span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">v.itemtype, v.count, '' from players p join (</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">kit_sql</span> <span class="tok-parenthesis">(</span><span class="tok-variable">name</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">items</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">item</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">kit_delete_sql</span> <span class="tok-variable">name</span> <span class="tok-operator">++#</span> <span class="tok-variable">kit_insert_head</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">++#</span> <span class="tok-variable">kit_rows</span> <span class="tok-variable">items</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">) v where p.name = '</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">name</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">'</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">expected_kit_delete</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">delete pi from player_items pi join players p on p.id = pi.player_id where p.name = 'Knight Sample'; </span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">expected_kit_first_rows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">select 1 as pid, 101 as sid, 3354 as itemtype, 1 as count union all select 3, 102, 2853, 1 union all select 4, </span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">103, 3359, 1 union all select 5, 104, 3425, 1 </span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">expected_kit_where</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string"> v where p.name = 'Knight Sample'</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">expected_kit_tail_rows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">union all select 6, 105, 7773, 1 union all select 7, 106, 3372, 1 union all select 8, 107, 3552, 1 union all </span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">select 11, 108, 23396, 1 union all select 102, 109, 266, 100)</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">expected_kit_last_rows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-variable">expected_kit_tail_rows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">++#</span> <span class="tok-variable">expected_kit_where</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">expected_kit_statement</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">expected_kit_delete</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">++#</span> <span class="tok-variable">kit_insert_head</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">++#</span> <span class="tok-variable">expected_kit_first_rows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">++#</span> <span class="tok-variable">expected_kit_last_rows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h4>the_kit_statement_matches_the_powershell_text (test)</h4>
+
+<span class="badge passed">test the_kit_statement_matches_the_powershell_text: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">name</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">Knight Sample</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">kit_sql</span> <span class="tok-variable">name</span> <span class="tok-parenthesis">(</span><span class="tok-variable">canonical_kit</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">expected_kit_statement</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = delete pi from player_items pi join players p on p.id = pi.player_id where p.name = 'Knight Sample'; insert into player_items (player_id, pid, sid, itemtype, count, attributes) select p.id, v.pid, v.sid, v.itemtype, v.count, '' from players p join (select 1 as pid, 101 as sid, 3354 as itemtype, 1 as count union all select 3, 102, 2853, 1 union all select 4, 103, 3359, 1 union all select 5, 104, 3425, 1 union all select 6, 105, 7773, 1 union all select 7, 106, 3372, 1 union all select 8, 107, 3552, 1 union all select 11, 108, 23396, 1 union all select 102, 109, 266, 100) v where p.name = 'Knight Sample' }
+.lua (lua)
+__assert_eq { expected = delete pi from player_items pi join players p on p.id = pi.player_id where p.name = 'Knight Sample'; insert into player_items (player_id, pid, sid, itemtype, count, attributes) select p.id, v.pid, v.sid, v.itemtype, v.count, '' from players p join (select 1 as pid, 101 as sid, 3354 as itemtype, 1 as count union all select 3, 102, 2853, 1 union all select 4, 103, 3359, 1 union all select 5, 104, 3425, 1 union all select 6, 105, 7773, 1 union all select 7, 106, 3372, 1 union all select 8, 107, 3552, 1 union all select 11, 108, 23396, 1 union all select 102, 109, 266, 100) v where p.name = 'Knight Sample' }
+.gleam (gleam)
+__assert_eq { expected = delete pi from player_items pi join players p on p.id = pi.player_id where p.name = 'Knight Sample'; insert into player_items (player_id, pid, sid, itemtype, count, attributes) select p.id, v.pid, v.sid, v.itemtype, v.count, '' from players p join (select 1 as pid, 101 as sid, 3354 as itemtype, 1 as count union all select 3, 102, 2853, 1 union all select 4, 103, 3359, 1 union all select 5, 104, 3425, 1 union all select 6, 105, 7773, 1 union all select 7, 106, 3372, 1 union all select 8, 107, 3552, 1 union all select 11, 108, 23396, 1 union all select 102, 109, 266, 100) v where p.name = 'Knight Sample' }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:|</span> <span class="tok-variable">config_edit</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Raised</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">LimitsMissing</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">online_limit</span> <span class="tok-parenthesis">(</span><span class="tok-variable">n</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">maxPlayersOnlinePerAccount = </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">n</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">outside_limit</span> <span class="tok-parenthesis">(</span><span class="tok-variable">n</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">maxPlayersOutsidePZPerAccount = </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">n</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">raised_limits</span> <span class="tok-parenthesis">(</span><span class="tok-variable">config</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">config</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::replace</span> <span class="tok-parenthesis">(</span><span class="tok-variable">online_limit</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">online_limit</span> <span class="tok-number">2</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::replace</span> <span class="tok-parenthesis">(</span><span class="tok-variable">outside_limit</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">outside_limit</span> <span class="tok-number">2</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">with_duo_limits</span> <span class="tok-parenthesis">(</span><span class="tok-variable">config</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">config_edit</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::contains</span> <span class="tok-parenthesis">(</span><span class="tok-variable">online_limit</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-variable">config</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::contains</span> <span class="tok-parenthesis">(</span><span class="tok-variable">outside_limit</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-variable">config</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Raised</span> <span class="tok-parenthesis">(</span><span class="tok-variable">raised_limits</span> <span class="tok-variable">config</span><span class="tok-parenthesis">)</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">LimitsMissing</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">single_limits_config</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">serverName = x</span><span class="tok-escaped_char">\n</span><span class="tok-string">maxPlayersOnlinePerAccount = 1</span><span class="tok-escaped_char">\n</span><span class="tok-string">maxPlayersOutsidePZPerAccount = 1</span><span class="tok-escaped_char">\n</span><span class="tok-string">&quot;</span></code></pre>
+
+<h4>the_duo_raises_both_per_account_limits (test)</h4>
+
+<span class="badge passed">test the_duo_raises_both_per_account_limits: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">config</span> <span class="tok-operator">=</span> <span class="tok-variable">single_limits_config</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">with_duo_limits</span> <span class="tok-variable">config</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Raised</span> <span class="tok-string">&quot;</span><span class="tok-string">serverName = x</span><span class="tok-escaped_char">\n</span><span class="tok-string">maxPlayersOnlinePerAccount = 2</span><span class="tok-escaped_char">\n</span><span class="tok-string">maxPlayersOutsidePZPerAccount = 2</span><span class="tok-escaped_char">\n</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.lua (lua)
+__assert_eq { expected = Raised(serverName = x
+maxPlayersOnlinePerAccount = 2
+maxPlayersOutsidePZPerAccount = 2
+) }
+.gleam (gleam)
+__assert_eq { expected = Raised(serverName = x
+maxPlayersOnlinePerAccount = 2
+maxPlayersOutsidePZPerAccount = 2
+) }</pre>
+
+<h4>the_duo_refuses_a_config_without_both_limits (test)</h4>
+
+<span class="badge passed">test the_duo_refuses_a_config_without_both_limits: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">prefix</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">serverName = x</span><span class="tok-escaped_char">\n</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">with_duo_limits</span> <span class="tok-parenthesis">(</span><span class="tok-variable">prefix</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">maxPlayersOnlinePerAccount = 1</span><span class="tok-escaped_char">\n</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">LimitsMissing</span></code></pre>
+<pre class="output">.lua (lua)
+__assert_eq { expected = LimitsMissing }
+.gleam (gleam)
+__assert_eq { expected = LimitsMissing }</pre>
+
+</main>
+</body>
+</html>

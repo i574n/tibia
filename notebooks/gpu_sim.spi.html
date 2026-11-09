@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gpu_sim.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package . --timeout 900000</code></pre>
+
+<h4>gpu_sim (test)</h4>
+
+<span class="badge other">test gpu_sim: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">troll_camp</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">hunting_pack</span><span class="tok-symbol">::camp</span> <span class="tok-operator">=</span> <span class="tok-variable">hunting_pack</span><span class="tok-symbol">::uniform_camp</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">:&lt;</span> <span class="tok-variable">creatures</span> <span class="tok-keyword">;;</span> <span class="tok-variable">Troll</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">reach_first</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">hunting_pack</span><span class="tok-symbol">::tactic</span> <span class="tok-operator">=</span> <span class="tok-variable">hunting_pack</span><span class="tok-symbol">::cavebot</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">:&lt;</span> <span class="tok-variable">policy</span> <span class="tok-keyword">;;</span> <span class="tok-variable">ReachFirst</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">troll_ticks</span> <span class="tok-parenthesis">(</span><span class="tok-variable">seed</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tick</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">hunting_pack</span><span class="tok-symbol">::pack</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">hunting_pack</span><span class="tok-symbol">::pack</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">tick</span> <span class="tok-operator">&gt;=</span> <span class="tok-number">10</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">p</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">troll_ticks</span> <span class="tok-variable">seed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tick</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">hunting_pack</span><span class="tok-symbol">::advance</span> <span class="tok-parenthesis">(</span><span class="tok-variable">troll_camp</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">reach_first</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">seed</span> <span class="tok-variable">tick</span> <span class="tok-variable">p</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ten_tick_facts</span> <span class="tok-parenthesis">(</span><span class="tok-variable">seed</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">p</span> <span class="tok-operator">=</span> <span class="tok-variable">troll_ticks</span> <span class="tok-variable">seed</span> <span class="tok-number">0</span> <span class="tok-parenthesis">(</span><span class="tok-variable">hunting_pack</span><span class="tok-symbol">::start</span> <span class="tok-parenthesis">(</span><span class="tok-variable">troll_camp</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">units</span><span class="tok-symbol">::value_of</span> <span class="tok-variable">p</span><span class="tok-symbol">::hunter</span><span class="tok-symbol">::health</span><span class="tok-operator">,</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">hunting_pack</span><span class="tok-symbol">::slot</span> <span class="tok-number">0</span> <span class="tok-variable">p</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::at</span><span class="tok-symbol">::x</span><span class="tok-operator">,</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">hunting_pack</span><span class="tok-symbol">::slot</span> <span class="tok-number">0</span> <span class="tok-variable">p</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::at</span><span class="tok-symbol">::y</span><span class="tok-operator">,</span>
+    <span class="tok-variable">p</span><span class="tok-symbol">::score</span><span class="tok-symbol">::kills</span></code></pre>
+
+<h4>ten_ticks_of_a_troll_pack_on_the_oracle (test)</h4>
+
+<span class="badge passed">test ten_ticks_of_a_troll_pack_on_the_oracle: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">seed</span> <span class="tok-operator">=</span> <span class="tok-number">7</span><span class="tok-number_suffix">u32</span>
+<span class="tok-variable">ten_tick_facts</span> <span class="tok-variable">seed</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">185</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">105</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">102</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (185, 105, 102, 0) }</pre>
+
+<h4>ten_ticks_of_a_troll_pack_on_gpu (test)</h4>
+
+<span class="badge passed">test ten_ticks_of_a_troll_pack_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">seed</span> <span class="tok-operator">=</span> <span class="tok-number">7</span><span class="tok-number_suffix">u32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">health</span><span class="tok-operator">,</span> <span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-variable">y</span><span class="tok-operator">,</span> <span class="tok-variable">kills</span> <span class="tok-operator">=</span> <span class="tok-variable">ten_tick_facts</span> <span class="tok-variable">seed</span>
+<span class="tok-keyword">?</span> <span class="tok-variable">health</span> <span class="tok-operator">=</span> <span class="tok-number">185</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">x</span> <span class="tok-operator">=</span> <span class="tok-number">105</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">y</span> <span class="tok-operator">=</span> <span class="tok-number">102</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">kills</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">spot_clears</span> <span class="tok-parenthesis">(</span><span class="tok-variable">seed</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:&lt;</span> <span class="tok-variable">hunting_pack</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">spot</span> <span class="tok-operator">=</span> <span class="tok-variable">uniform_camp</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">:&lt;</span> <span class="tok-variable">creatures</span> <span class="tok-keyword">;;</span> <span class="tok-variable">Cyclops</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">on_layout</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">:&lt;</span> <span class="tok-variable">terrain</span> <span class="tok-keyword">;;</span> <span class="tok-variable">ArenaSpot</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">clear_ledger_of</span> <span class="tok-variable">spot</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cavebot_with_heal</span> <span class="tok-number">160</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">seed</span> <span class="tok-operator">+</span> <span class="tok-number">994</span><span class="tok-number_suffix">u32</span><span class="tok-parenthesis">)</span> <span class="tok-number">5</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">troll_hunt</span> <span class="tok-parenthesis">(</span><span class="tok-variable">seed</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">hunting_pack</span><span class="tok-symbol">::pack</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">hunting_pack</span><span class="tok-symbol">::simulate</span> <span class="tok-parenthesis">(</span><span class="tok-variable">troll_camp</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">reach_first</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">seed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">hunting_pack</span><span class="tok-symbol">::scenario_ticks</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">hunt_and_clear_facts</span> <span class="tok-parenthesis">(</span><span class="tok-variable">seed</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">hunt</span><span class="tok-operator">,</span> <span class="tok-variable">c</span> <span class="tok-operator">=</span> <span class="tok-variable">troll_hunt</span> <span class="tok-variable">seed</span><span class="tok-operator">,</span> <span class="tok-variable">spot_clears</span> <span class="tok-variable">seed</span>
+    <span class="tok-variable">hunt</span><span class="tok-symbol">::score</span><span class="tok-symbol">::kills</span><span class="tok-operator">,</span>
+    <span class="tok-variable">hunt</span><span class="tok-symbol">::score</span><span class="tok-symbol">::escapes</span><span class="tok-operator">,</span>
+    <span class="tok-variable">hunt</span><span class="tok-symbol">::score</span><span class="tok-symbol">::deaths</span><span class="tok-operator">,</span>
+    <span class="tok-variable">c</span><span class="tok-symbol">::clear_potions</span><span class="tok-operator">,</span>
+    <span class="tok-variable">c</span><span class="tok-symbol">::clear_deaths</span><span class="tok-operator">,</span>
+    <span class="tok-variable">c</span><span class="tok-symbol">::clear_ms</span></code></pre>
+
+<h4>troll_hunt_and_cyclops_clears_on_the_oracle (test)</h4>
+
+<span class="badge passed">test troll_hunt_and_cyclops_clears_on_the_oracle: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">seed</span> <span class="tok-operator">=</span> <span class="tok-number">7</span><span class="tok-number_suffix">u32</span>
+<span class="tok-variable">hunt_and_clear_facts</span> <span class="tok-variable">seed</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">6</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">18</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">84</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">453000</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (6, 18, 0, 84, 0, 453000) }</pre>
+
+<h4>troll_hunt_and_cyclops_clears_on_gpu (test)</h4>
+
+<span class="badge passed">test troll_hunt_and_cyclops_clears_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">seed</span> <span class="tok-operator">=</span> <span class="tok-number">7</span><span class="tok-number_suffix">u32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">kills</span><span class="tok-operator">,</span> <span class="tok-variable">fled</span><span class="tok-operator">,</span> <span class="tok-variable">deaths</span><span class="tok-operator">,</span> <span class="tok-variable">potions</span><span class="tok-operator">,</span> <span class="tok-variable">lost</span><span class="tok-operator">,</span> <span class="tok-variable">ms</span> <span class="tok-operator">=</span> <span class="tok-variable">hunt_and_clear_facts</span> <span class="tok-variable">seed</span>
+<span class="tok-keyword">?</span> <span class="tok-variable">kills</span> <span class="tok-operator">=</span> <span class="tok-number">6</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">fled</span> <span class="tok-operator">=</span> <span class="tok-number">18</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">deaths</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">potions</span> <span class="tok-operator">=</span> <span class="tok-number">84</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">lost</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">ms</span> <span class="tok-operator">=</span> <span class="tok-number">453000</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">routed_hunt</span> <span class="tok-parenthesis">(</span><span class="tok-variable">seed</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:&lt;</span> <span class="tok-variable">hunting_pack</span>
+    <span class="tok-variable">simulate</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arena_hunt</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cavebot_with_heal</span> <span class="tok-number">110</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sweeping_spawns</span><span class="tok-parenthesis">)</span> <span class="tok-variable">seed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">scenario_ticks</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h4>a_hunting_ground_hunt_with_routing_on_the_oracle (test)</h4>
+
+<span class="badge passed">test a_hunting_ground_hunt_with_routing_on_the_oracle: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">seed</span> <span class="tok-operator">=</span> <span class="tok-number">1001</span><span class="tok-number_suffix">u32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">p</span> <span class="tok-operator">=</span> <span class="tok-variable">routed_hunt</span> <span class="tok-variable">seed</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">p</span><span class="tok-symbol">::score</span><span class="tok-symbol">::kills</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::score</span><span class="tok-symbol">::experience</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::hunter</span><span class="tok-symbol">::tally</span><span class="tok-symbol">::potions</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::score</span><span class="tok-symbol">::deaths</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">23</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">1370</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">24</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (23, 1370, 24, 0) }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">routed_hunt_matches</span> <span class="tok-parenthesis">(</span><span class="tok-variable">seed</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">p</span> <span class="tok-operator">=</span> <span class="tok-variable">routed_hunt</span> <span class="tok-variable">seed</span>
+    <span class="tok-variable">p</span><span class="tok-symbol">::score</span><span class="tok-symbol">::kills</span> <span class="tok-operator">=</span> <span class="tok-number">23</span><span class="tok-number_suffix">i32</span>
+    <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">p</span><span class="tok-symbol">::score</span><span class="tok-symbol">::experience</span> <span class="tok-operator">=</span> <span class="tok-number">1370</span><span class="tok-number_suffix">i32</span>
+    <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">p</span><span class="tok-symbol">::hunter</span><span class="tok-symbol">::tally</span><span class="tok-symbol">::potions</span> <span class="tok-operator">=</span> <span class="tok-number">24</span><span class="tok-number_suffix">i32</span>
+    <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">p</span><span class="tok-symbol">::score</span><span class="tok-symbol">::deaths</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span></code></pre>
+
+<h4>a_hunting_ground_hunt_with_routing_on_gpu (test)</h4>
+
+<span class="badge passed">test a_hunting_ground_hunt_with_routing_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">seed</span> <span class="tok-operator">=</span> <span class="tok-number">1001</span><span class="tok-number_suffix">u32</span>
+<span class="tok-keyword">?</span> <span class="tok-variable">routed_hunt_matches</span> <span class="tok-variable">seed</span> <span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+</main>
+</body>
+</html>

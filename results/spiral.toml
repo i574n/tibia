@@ -1,0 +1,75 @@
+packageDir = '../deps/spiral/lib'
+packages = ['|core-', 'spiral-']
+modules = '''
+table_rows
+rows/
+    arena_results
+    arena_results_cyclops
+    arena_results_cyclops_leadtrace
+    arena_results_cyclops_nexbot_check
+    arena_results_cyclops_nexbot_diagnostic
+    arena_results_cyclops_pc10
+    arena_results_cyclops_pc10_secondary
+    arena_results_cyclops_pr1
+    arena_results_cyclops_pr10
+    arena_results_cyclops_pr11
+    arena_results_cyclops_pr11_check
+    arena_results_cyclops_pr12
+    arena_results_cyclops_pr16
+    arena_results_cyclops_pr17
+    arena_results_cyclops_pr17_secondary
+    arena_results_cyclops_pr20
+    arena_results_cyclops_pr20_secondary
+    arena_results_cyclops_pr3a
+    arena_results_cyclops_pr4
+    arena_results_cyclops_pr5
+    arena_results_cyclops_pr8
+    arena_results_cyclops_pr9
+    arena_results_cyclops_pz_check
+    arena_results_cyclops_startsync_1018
+    arena_results_cyclops_w_calibration
+    arena_results_cyclops2_pr6
+    arena_results_cyclops2_pr7
+    arena_results_hunter_diag_1019
+    arena_results_hunter_leadtrace
+    arena_results_hunter_pc10
+    arena_results_hunter_pc10_secondary
+    arena_results_hunter_pc11
+    arena_results_hunter_pc11_secondary
+    arena_results_hunter_pc9
+    arena_results_hunter_pc9_secondary
+    arena_results_hunter_pr13
+    arena_results_hunter_pr14
+    arena_results_hunter_pr18
+    arena_results_hunter_pr18_secondary
+    arena_results_hunter_pr19
+    arena_results_hunter_pr19_secondary
+    arena_results_hunter_pr21
+    arena_results_hunter_pr21_secondary
+    arena_results_hunter_pr22
+    arena_results_hunter_pr22_secondary
+    arena_results_hunting_ground_pr23
+    arena_results_hunting_ground_pr23_secondary
+    arena_results_hunting_ground_pr23b
+    arena_results_hunting_ground_pr24
+    arena_results_hunting_ground_pr24_secondary
+    arena_results_hunting_ground_pr25
+    arena_results_hunting_ground_pr25_secondary
+    arena_results_hunting_ground_pr26
+    arena_results_hunting_ground_pr26_secondary
+    arena_results_hunting_ground_pr27
+    arena_results_hunting_ground_pr27_secondary
+    arena_results_hunting_ground_pr28
+    arena_results_hunting_ground_pr28_secondary
+    arena_results_mixed_pr2
+    arena_results_pc3
+    arena_results_pc3_smoke
+    arena_region_r45
+    arena_spot_scan_r12
+arena_rows
+hit_grid
+walk_pace
+secondary_hits
+row_census
+map_grids
+'''

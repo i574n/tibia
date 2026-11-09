@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>damage.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>damage (test)</h4>
+
+<span class="badge other">test damage: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">level_bonus</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">level</span> <span class="tok-operator">/</span> <span class="tok-number">5</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">fight_mode</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Offensive</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Balanced</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Defensive</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">attack_factor_percent</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mode</span> <span class="tok-operator">:</span> <span class="tok-variable">fight_mode</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">mode</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Offensive</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">100</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Balanced</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">75</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Defensive</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">50</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">max_melee_damage</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mode</span> <span class="tok-operator">:</span> <span class="tok-variable">fight_mode</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">attack_value</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">attack_skill</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-number">85</span> <span class="tok-operator">*</span> <span class="tok-variable">attack_factor_percent</span> <span class="tok-variable">mode</span> <span class="tok-operator">*</span> <span class="tok-variable">attack_value</span> <span class="tok-operator">*</span> <span class="tok-variable">attack_skill</span> <span class="tok-operator">*</span> <span class="tok-number">2</span> <span class="tok-operator">+</span> <span class="tok-number">100000</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">200000</span> <span class="tok-operator">+</span> <span class="tok-variable">level_bonus</span> <span class="tok-variable">level</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">max_melee_damage_offensive</span> <span class="tok-parenthesis">(</span><span class="tok-variable">attack_value</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">attack_skill</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">max_melee_damage</span> <span class="tok-variable">Offensive</span> <span class="tok-variable">attack_value</span> <span class="tok-variable">attack_skill</span> <span class="tok-variable">level</span></code></pre>
+
+<h4>max_melee_matches_canary_double_formula (test)</h4>
+
+<span class="badge passed">test max_melee_matches_canary_double_formula: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">value</span> <span class="tok-operator">=</span> <span class="tok-number">50</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage_offensive</span> <span class="tok-variable">value</span> <span class="tok-number">80</span> <span class="tok-number">100</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">360</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage_offensive</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">-</span> <span class="tok-number">8</span><span class="tok-parenthesis">)</span> <span class="tok-number">65</span> <span class="tok-number">8</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">233</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 360 }
+__assert_eq { expected = 233 }</pre>
+
+<h4>max_melee_matches_canary_at_the_extremes (test)</h4>
+
+<span class="badge passed">test max_melee_matches_canary_at_the_extremes: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">value</span> <span class="tok-operator">=</span> <span class="tok-number">50</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage_offensive</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">-</span> <span class="tok-number">49</span><span class="tok-parenthesis">)</span> <span class="tok-number">1</span> <span class="tok-number">1</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage_offensive</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">+</span> <span class="tok-number">50</span><span class="tok-parenthesis">)</span> <span class="tok-number">120</span> <span class="tok-number">500</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">1120</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 0 }
+__assert_eq { expected = 1120 }</pre>
+
+<h4>max_melee_matches_canary_for_weak_attacks (test)</h4>
+
+<span class="badge passed">test max_melee_matches_canary_for_weak_attacks: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">value</span> <span class="tok-operator">=</span> <span class="tok-number">50</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage_offensive</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">-</span> <span class="tok-number">15</span><span class="tok-parenthesis">)</span> <span class="tok-number">50</span> <span class="tok-number">30</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">155</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage_offensive</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">-</span> <span class="tok-number">30</span><span class="tok-parenthesis">)</span> <span class="tok-number">10</span> <span class="tok-number">9</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">18</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 155 }
+__assert_eq { expected = 18 }</pre>
+
+<h4>max_melee_matches_canary_for_high_levels (test)</h4>
+
+<span class="badge passed">test max_melee_matches_canary_for_high_levels: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">value</span> <span class="tok-operator">=</span> <span class="tok-number">50</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage_offensive</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">-</span> <span class="tok-number">2</span><span class="tok-parenthesis">)</span> <span class="tok-number">99</span> <span class="tok-number">250</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">454</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage_offensive</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">+</span> <span class="tok-number">150</span><span class="tok-parenthesis">)</span> <span class="tok-number">130</span> <span class="tok-number">1000</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">2410</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 454 }
+__assert_eq { expected = 2410 }</pre>
+
+<h4>fight_mode_scales_max_melee_like_canary (test)</h4>
+
+<span class="badge passed">test fight_mode_scales_max_melee_like_canary: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">skill</span> <span class="tok-operator">=</span> <span class="tok-number">30</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage</span> <span class="tok-variable">Offensive</span> <span class="tok-number">21</span> <span class="tok-variable">skill</span> <span class="tok-number">8</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">55</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage</span> <span class="tok-variable">Balanced</span> <span class="tok-number">21</span> <span class="tok-variable">skill</span> <span class="tok-number">8</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">41</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage</span> <span class="tok-variable">Defensive</span> <span class="tok-number">21</span> <span class="tok-variable">skill</span> <span class="tok-number">8</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">28</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 55 }
+__assert_eq { expected = 41 }
+__assert_eq { expected = 28 }</pre>
+
+<h4>a_low_skill_balanced_hit_matches_canary (test)</h4>
+
+<span class="badge passed">test a_low_skill_balanced_hit_matches_canary: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">skill</span> <span class="tok-operator">=</span> <span class="tok-number">30</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">max_melee_damage</span> <span class="tok-variable">Balanced</span> <span class="tok-number">21</span> <span class="tok-parenthesis">(</span><span class="tok-variable">skill</span> <span class="tok-operator">-</span> <span class="tok-number">19</span><span class="tok-parenthesis">)</span> <span class="tok-number">8</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">16</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 16 }</pre>
+
+<h4>level_bonus_truncates (test)</h4>
+
+<span class="badge passed">test level_bonus_truncates: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">9</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">level_bonus</span> <span class="tok-variable">level</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">level_bonus</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 1 }
+__assert_eq { expected = 2 }</pre>
+
+<h4>max_melee_matches_canary_on_gpu (test)</h4>
+
+<span class="badge passed">test max_melee_matches_canary_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">value</span> <span class="tok-operator">=</span> <span class="tok-number">50</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?</span> <span class="tok-variable">max_melee_damage_offensive</span> <span class="tok-variable">value</span> <span class="tok-number">80</span> <span class="tok-number">100</span> <span class="tok-operator">=</span> <span class="tok-number">360</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">max_melee_damage_offensive</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">+</span> <span class="tok-number">150</span><span class="tok-parenthesis">)</span> <span class="tok-number">130</span> <span class="tok-number">1000</span> <span class="tok-operator">=</span> <span class="tok-number">2410</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+</main>
+</body>
+</html>

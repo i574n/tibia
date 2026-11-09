@@ -1,0 +1,78 @@
+///- --package .
+:# bc_onpolicy static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== split = { tr : i32; te : i32; tn : i32; ur : i32; ue : i32; un : i32 }
+
+:= zero_split () : split = { tr = 0; te = 0; tn = 0; ur = 0; ue = 0; un = 0 }
+
+:= miss (same : bool) : i32 =
+    ? same
+    ?> 0
+    |: 1
+
+:= targeted_add (c : split) (rd : i32) (ed : i32) : split =
+    { tr = c::tr + rd; te = c::te + ed; tn = c::tn + 1; ur = c::ur; ue = c::ue; un = c::un }
+
+:= untargeted_add (c : split) (rd : i32) (ed : i32) : split =
+    { tr = c::tr; te = c::te; tn = c::tn; ur = c::ur + rd; ue = c::ue + ed; un = c::un + 1 }
+
+:= missed ((tr, ts) : plan) ((sr, ss) : plan) : i32 * i32 =
+    miss (tr = sr), miss (bc_dataset::engages ts = bc_dataset::engages ss)
+
+:= plans_of (b : beat) (student : brain) (attackers : i32) (aimed : pack) : plan * plan =
+    after_heal_plan b (bc_run::teacher ())::brain attackers aimed, after_heal_plan b student attackers aimed
+
+:= split_add (aimed : pack) (c : split) ((rd, ed) : i32 * i32) : split =
+    ? bc_dataset::targeted aimed
+    ?> targeted_add c rd ed
+    |: untargeted_add c rd ed
+
+:= tallied_at (b : beat) (d : tactic) (student : brain) (p : pack) (c : split) : split =
+    := aimed = aimed_by b::camp d::order p
+    := t, s = plans_of b student (attackers_of aimed) aimed
+    split_add aimed c (missed t s)
+
+:= beat_at (camp : camp) (seed : u32) (tick : i32) : beat =
+    { camp = camp; seed = seed; tick = tick; now = tick * tick_ms () }
+
+:= logged (b : beat) (d : tactic) (student : brain) (p : pack) (c : split) : split =
+    ? bc_dataset::decides b::now p
+    ?> tallied_at b d student p c
+    |: c
+
+:== run = { camp : camp; d : tactic; sb : brain; seed : u32 }
+
+:~ ^ rolled (r : run) (tick : i32) (p : pack) (c : split) : split =
+    ? tick >= scenario_ticks ()
+    ?> c
+    |: rolled r (tick + 1) (advance r::camp r::d r::seed tick p) (logged (beat_at r::camp r::seed tick) r::d r::sb p c)
+
+:= run_of (camp : camp) (d : tactic) (student : brain) (i : i32) : run =
+    { camp = camp; d = d; sb = student; seed = held_out_first () + conv i }
+
+:~ ^ seeds_split (camp : camp) (d : tactic) (student : brain) (i : i32) (c : split) : split =
+    ? i >= bc_run::seed_count ()
+    ?> c
+    |: seeds_split camp d student (i + 1) (rolled (run_of camp d student i) 0 (start camp) c)
+
+:= rate_row (driver : string) (name : string) (miss : i32) (n : i32) : () =
+    console::write_line (driver ++# "\t" ++# name ++# "\tdisagree\t" ++#? miss ++# "\tof\t" ++#? n)
+
+:= report (driver : string) (c : split) : () =
+    rate_row driver "targeted\tretreat" c::tr c::tn
+    rate_row driver "targeted\tstance" c::te c::tn
+    rate_row driver "untargeted\tretreat" c::ur c::un
+    rate_row driver "untargeted\tstance" c::ue c::un
+
+:= diagnose (camp : camp) (student : tactic) : () =
+    report "student_drives" (seeds_split camp student student::brain 0 (zero_split ()))
+    report "teacher_drives" (seeds_split camp (bc_run::teacher ()) student::brain 0 (zero_split ()))
+
+:= main () =
+    := w = bc_train::quantized (bc_run::trained (bc_run::pairs_from (training_first ())))
+    diagnose (bc_run::bc_camp ()) (bc_eval::student_tactic w)
+    0i32

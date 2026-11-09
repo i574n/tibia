@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>combat_text.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>combat_text (test)</h4>
+
+<span class="badge other">test combat_text: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">sm'_operators</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">digit_at</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">at</span> <span class="tok-operator">&gt;=</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::length</span> <span class="tok-variable">text</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">None</span> <span class="tok-keyword">|:</span> <span class="tok-variable">convert</span><span class="tok-symbol">::try_convert</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sm'</span><span class="tok-symbol">::substring</span> <span class="tok-variable">at</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span> <span class="tok-variable">text</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">digits_from</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">digit_at</span> <span class="tok-variable">text</span> <span class="tok-variable">at</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-variable">d</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">digits_from</span> <span class="tok-variable">text</span> <span class="tok-parenthesis">(</span><span class="tok-variable">at</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">*</span> <span class="tok-number">10</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">+</span> <span class="tok-variable">d</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">value</span><span class="tok-operator">,</span> <span class="tok-variable">at</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">rest_from</span> <span class="tok-parenthesis">(</span><span class="tok-variable">at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::substring</span> <span class="tok-variable">at</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sm'</span><span class="tok-symbol">::length</span> <span class="tok-variable">text</span> <span class="tok-operator">-</span> <span class="tok-variable">at</span><span class="tok-parenthesis">)</span> <span class="tok-variable">text</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">starts_with_any</span> <span class="tok-parenthesis">(</span><span class="tok-variable">prefixes</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">listm</span><span class="tok-symbol">::fold</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-variable">found</span> <span class="tok-variable">prefix</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">found</span> <span class="tok-operator">||</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::starts_with</span> <span class="tok-variable">prefix</span> <span class="tok-variable">text</span><span class="tok-parenthesis">)</span> <span class="tok-number">!-</span> <span class="tok-variable">prefixes</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">number_pattern</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">before</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-operator">;</span> <span class="tok-variable">ends</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">string</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">number_at</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">number_pattern</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">found</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">start</span> <span class="tok-operator">=</span> <span class="tok-variable">found</span> <span class="tok-operator">+</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::length</span> <span class="tok-variable">p</span><span class="tok-symbol">::before</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">value</span><span class="tok-operator">,</span> <span class="tok-variable">stop</span> <span class="tok-operator">=</span> <span class="tok-variable">digits_from</span> <span class="tok-variable">text</span> <span class="tok-variable">start</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">stop</span> <span class="tok-operator">&gt;</span> <span class="tok-variable">start</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">starts_with_any</span> <span class="tok-variable">p</span><span class="tok-symbol">::ends</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rest_from</span> <span class="tok-variable">stop</span> <span class="tok-variable">text</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Some</span> <span class="tok-variable">value</span> <span class="tok-keyword">|:</span> <span class="tok-variable">None</span>
+
+<span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">number_between</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">number_pattern</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">at</span> <span class="tok-operator">=</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::index_of</span> <span class="tok-variable">p</span><span class="tok-symbol">::before</span> <span class="tok-variable">text</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">at</span> <span class="tok-operator">&lt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">None</span>
+    <span class="tok-keyword">|:</span>
+        <span class="tok-keyword">?=</span> <span class="tok-variable">number_at</span> <span class="tok-variable">p</span> <span class="tok-variable">at</span> <span class="tok-variable">text</span> <span class="tok-keyword">?|</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-variable">n</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Some</span> <span class="tok-variable">n</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">number_between</span> <span class="tok-variable">p</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rest_from</span> <span class="tok-parenthesis">(</span><span class="tok-variable">at</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span> <span class="tok-variable">text</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">hit_amount</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">number_between</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">before</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">loses </span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">ends</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string"> hitpoints due to your</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string"> hitpoint due to your</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span> <span class="tok-parenthesis">}</span> <span class="tok-variable">text</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">damage_taken</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">number_between</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">before</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">You lose </span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">ends</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string"> hitpoints due to an attack</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string"> hitpoint due to an attack</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span> <span class="tok-parenthesis">}</span> <span class="tok-variable">text</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">combat_line</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Took</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Dealt</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Other</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">read_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">combat_line</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">damage_taken</span> <span class="tok-variable">text</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-variable">lost</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Took</span> <span class="tok-variable">lost</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-keyword">?=</span> <span class="tok-variable">hit_amount</span> <span class="tok-variable">text</span> <span class="tok-keyword">?|</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-variable">amount</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Dealt</span> <span class="tok-variable">amount</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Other</span></code></pre>
+
+<h4>hits_read_the_amount_the_monster_loses (test)</h4>
+
+<span class="badge passed">test hits_read_the_amount_the_monster_loses: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">crit</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">A rat loses 1 hitpoint due to your critical attack.</span><span class="tok-string">&quot;</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">hit_amount</span> <span class="tok-string">&quot;</span><span class="tok-string">A troll loses 12 hitpoints due to your attack.</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">hit_amount</span> <span class="tok-variable">crit</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-number">12</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-variable">Some</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (Some(12), Some(1)) }</pre>
+
+<h4>hits_skip_other_attackers_and_own_losses (test)</h4>
+
+<span class="badge passed">test hits_skip_other_attackers_and_own_losses: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">theirs</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">A troll loses 12 hitpoints due to an attack by a cyclops.</span><span class="tok-string">&quot;</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">mine</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">You lose 30 hitpoints due to an attack by a troll.</span><span class="tok-string">&quot;</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">hit_amount</span> <span class="tok-variable">theirs</span><span class="tok-operator">,</span> <span class="tok-variable">hit_amount</span> <span class="tok-variable">mine</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">None</span><span class="tok-operator">,</span> <span class="tok-variable">None</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (None, None) }</pre>
+
+<h4>damage_reads_the_amount_the_knight_loses (test)</h4>
+
+<span class="badge passed">test damage_reads_the_amount_the_knight_loses: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">rat</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">You lose 1 hitpoint due to an attack by a rat.</span><span class="tok-string">&quot;</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">damage_taken</span> <span class="tok-string">&quot;</span><span class="tok-string">You lose 30 hitpoints due to an attack by a troll.</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">damage_taken</span> <span class="tok-variable">rat</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-number">30</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-variable">Some</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (Some(30), Some(1)) }</pre>
+
+<h4>damage_skips_monster_losses_and_mana (test)</h4>
+
+<span class="badge passed">test damage_skips_monster_losses_and_mana: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+
+<span class="tok-parenthesis">(</span><span class="tok-variable">damage_taken</span> <span class="tok-string">&quot;</span><span class="tok-string">A troll loses 12 hitpoints due to your attack.</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">damage_taken</span> <span class="tok-string">&quot;</span><span class="tok-string">You lose 5 mana.</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">None</span><span class="tok-operator">,</span> <span class="tok-variable">None</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (None, None) }</pre>
+
+<h4>a_later_match_counts_when_an_earlier_one_does_not_fit (test)</h4>
+
+<span class="badge passed">test a_later_match_counts_when_an_earlier_one_does_not_fit: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">p</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">before</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">loses </span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">ends</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string"> hitpoints</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span> <span class="tok-parenthesis">}</span>
+<span class="tok-variable">number_between</span> <span class="tok-variable">p</span> <span class="tok-string">&quot;</span><span class="tok-string">it loses its way and loses 7 hitpoints</span><span class="tok-string">&quot;</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-number">7</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = Some(7) }</pre>
+
+<h4>a_line_with_both_reads_as_damage_taken (test)</h4>
+
+<span class="badge passed">test a_line_with_both_reads_as_damage_taken: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+
+<span class="tok-variable">read_line</span> <span class="tok-string">&quot;</span><span class="tok-string">You lose 3 hitpoints due to an attack; a rat loses 4 hitpoints due to your hit</span><span class="tok-string">&quot;</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Took</span> <span class="tok-number">3</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = Took(3) }</pre>
+
+<h4>hits_and_other_lines_read_apart (test)</h4>
+
+<span class="badge passed">test hits_and_other_lines_read_apart: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+
+<span class="tok-parenthesis">(</span><span class="tok-variable">read_line</span> <span class="tok-string">&quot;</span><span class="tok-string">a rat loses 4 hitpoints due to your hit</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">read_line</span> <span class="tok-string">&quot;</span><span class="tok-string">You lose 5 mana.</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Dealt</span> <span class="tok-number">4</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-variable">Other</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (Dealt(4), Other) }</pre>
+
+</main>
+</body>
+</html>

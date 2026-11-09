@@ -1,0 +1,180 @@
+///- --package .
+:# is_softened static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== reading = { name : string; reward : reward_of }
+
+:== hunts = array logprob::logged_hunt
+
+:= troll_spot () : camp = uniform_camp (:< creatures ;; Troll)
+
+:= troll_core () : learned_core = CoreNetwork (cavebot_network (troll_spot ()) 160)
+
+:= behavior (epsilon : i32) : tactic = softened_tactic (troll_core ()) epsilon
+
+:= scored_from (b : i32) (epsilon : i32) : tactic = behavior b |> scored_by { core = troll_core (); epsilon = epsilon }
+
+:= scored (epsilon : i32) : tactic = scored_from 100 epsilon
+
+:= clear_ms (elapsed : i32) (finished : pack) : i32 = elapsed
+
+:= potions_milli (elapsed : i32) (finished : pack) : i32 = finished::hunter::tally::potions * 1000
+
+:= logged_for (r : reading) (t : tactic) : hunts =
+    logged_hunts r::reward (seed_run_of (troll_spot ()) t (held_out_first ()) (held_out_count ()))
+
+:~ ^ reward_sum (h : hunts) (i : i32) (acc : i64) : i64 =
+    ? i >= length h ?> acc |: reward_sum h (i + 1) (acc + conv (index h i)::reward)
+
+:~ ^ off_from (h : hunts) (i : i32) (acc : i32) : i32 =
+    ? i >= length h
+    ?> acc
+    |:
+        := on, _ = logprob::path_pair (index h i)::target
+        off_from h (i + 1) (acc + (? on ?> 0 |: 1))
+
+:= fresh_mean (r : reading) (epsilon : i32) : i64 =
+    := h = logged_for r (behavior epsilon)
+    reward_sum h 0 0i64 / conv (length h)
+
+:= error_per_mille (estimate : i64) (fresh : i64) : i64 = ? fresh = 0i64 ?> 0i64 |: (estimate - fresh) * 1000i64 / fresh
+
+:= estimate_text (mean : i64) (ess : i64) (fresh : i64) : string =
+    "\t" ++#? mean ++# "\t" ++#? error_per_mille mean fresh ++# "\t" ++#? ess
+
+:= scored_text (h : hunts) (fresh : i64) : string =
+    := e = logprob::is_estimate h
+    := mean, ess = logprob::mean_and_ess e
+    ? logprob::has_estimate e ?> estimate_text mean ess fresh |: "\tnone\t-\t-"
+
+:= head_text (r : reading) (epsilon : i32) (fresh : i64) : string =
+    "target\t" ++#? epsilon ++# "\t" ++# r::name ++# "\t" ++#? fresh
+
+:= target_line (r : reading) (epsilon : i32) : string =
+    := h, fresh = logged_for r (scored epsilon), fresh_mean r epsilon
+    head_text r epsilon fresh ++# scored_text h fresh ++# "\t" ++#? off_from h 0 0
+
+:~ ^ pd_sum (t : tactic) (i : i32) (acc : i64) : i64 =
+    ? i >= held_out_count ()
+    ?> acc
+    |:
+        := _, p = clear_run (troll_spot ()) t (held_out_first () + conv i) 6000
+        pd_sum t (i + 1) (acc + p::hunter::tally::pd_potions)
+
+:= pd_mean (epsilon : i32) : i64 = pd_sum (scored epsilon) 0 0i64 / 65536i64 / conv (held_out_count ())
+
+:= pd_line (r : reading) (epsilon : i32) : string =
+    := fresh, pd = fresh_mean r epsilon, pd_mean epsilon
+    "pd\t" ++#? epsilon ++# "\t" ++# r::name ++# "\t" ++#? fresh ++# "\t" ++#? pd ++# "\t" ++#? error_per_mille pd fresh
+
+:= print_pd (r : reading) : () =
+    console::write_line (pd_line r 90)
+    console::write_line (pd_line r 50)
+    console::write_line (pd_line r 0)
+
+:= print_targets (r : reading) : () =
+    console::write_line (target_line r 90)
+    console::write_line (target_line r 50)
+    console::write_line (target_line r 0)
+
+:= wpdis_mean (epsilon : i32) : i64 =
+    := run = seed_run_of (troll_spot ()) (scored epsilon) (held_out_first ()) (held_out_count ())
+    logprob::wpdis (bucket_rows potions_milli run 10) 10
+
+:= wpdis_line (r : reading) (epsilon : i32) : string =
+    := fresh, w = fresh_mean r epsilon, wpdis_mean epsilon
+    := head = "wpdis\t" ++#? epsilon ++# "\t" ++# r::name ++# "\t" ++#? fresh
+    head ++# "\t" ++#? w ++# "\t" ++#? error_per_mille w fresh
+
+:= print_wpdis (r : reading) : () =
+    console::write_line (wpdis_line r 90)
+    console::write_line (wpdis_line r 50)
+    console::write_line (wpdis_line r 0)
+
+:~ ^ capped_sum (t : tactic) (i : i32) (acc : i64) : i64 =
+    ? i >= held_out_count ()
+    ?> acc
+    |:
+        := _, p = clear_run (troll_spot ()) t (held_out_first () + conv i) 1800
+        capped_sum t (i + 1) (acc + conv (p::hunter::tally::potions * 1000))
+
+:= horizon_rows (epsilon : i32) : array logprob::bucket_row =
+    bucket_rows potions_milli (seed_run_of (troll_spot ()) (scored epsilon) (held_out_first ()) (held_out_count ())) 10
+
+:= ess_text (rows : array logprob::bucket_row) : string =
+    := e0, e1 = logprob::bucket_ess rows 0, logprob::bucket_ess rows 1
+    "\t" ++#? e0 ++# "\t" ++#? e1 ++# "\t" ++#? logprob::bucket_ess rows 2
+
+:= horizon_head (epsilon : i32) (fresh : i64) (w : i64) : string =
+    "horizon\t" ++#? epsilon ++# "\t" ++#? fresh ++# "\t" ++#? w ++# "\t" ++#? error_per_mille w fresh
+
+:= horizon_line (epsilon : i32) : string =
+    := rows, fresh = horizon_rows epsilon, capped_sum (behavior epsilon) 0 0i64 / conv (held_out_count ())
+    horizon_head epsilon fresh (logprob::wpdis_upto rows 3) ++# ess_text rows
+
+:= print_horizon () : () =
+    console::write_line "kind\tepsilon\tfresh_1800\twpdis_3\terror_per_mille\tess0_q16\tess1_q16\tess2_q16"
+    console::write_line (horizon_line 90)
+    console::write_line (horizon_line 50)
+    console::write_line (horizon_line 0)
+
+:= potions_reading () : reading = { name = "potions_milli"; reward = potions_milli }
+
+:= near_rows (b : i32) (epsilon : i32) : array logprob::bucket_row =
+    bucket_rows potions_milli
+        (seed_run_of (troll_spot ()) (scored_from b epsilon) (held_out_first ()) (held_out_count ()))
+        10
+
+:= near_head (kind : string) (b : i32) (epsilon : i32) (fresh : i64) (w : i64) : string =
+    kind ++# "\t" ++#? b ++# "\t" ++#? epsilon ++# "\t" ++#? fresh ++# "\t" ++#? w ++# "\t" ++#? error_per_mille w fresh
+
+:= near_line (b : i32) (epsilon : i32) : string =
+    := rows, fresh = near_rows b epsilon, fresh_mean (potions_reading ()) epsilon
+    near_head "near" b epsilon fresh (logprob::wpdis rows 10) ++# ess_text rows
+
+:= print_near () : () =
+    console::write_line "kind\tbehavior\tepsilon\tfresh\twpdis\terror_per_mille\tess0_q16\tess1_q16\tess2_q16"
+    console::write_line (near_line 75 90)
+    console::write_line (near_line 75 50)
+    console::write_line (near_line 75 0)
+
+:= replica_first () : u32 = held_out_first () + 100u32
+
+:= replica_fresh (epsilon : i32) : i64 =
+    := h =
+        logged_hunts potions_milli (
+            seed_run_of (troll_spot ()) (behavior epsilon) (replica_first ()) (held_out_count ())
+        )
+    reward_sum h 0 0i64 / conv (length h)
+
+:= replica_rows (epsilon : i32) : array logprob::bucket_row =
+    bucket_rows potions_milli
+        (seed_run_of (troll_spot ()) (scored_from 75 epsilon) (replica_first ()) (held_out_count ()))
+        10
+
+:= replica_line (epsilon : i32) : string =
+    := rows, fresh = replica_rows epsilon, replica_fresh epsilon
+    near_head "replica" 75 epsilon fresh (logprob::wpdis rows 10) ++# ess_text rows
+
+:= print_replica () : () =
+    console::write_line (replica_line 90)
+    console::write_line (replica_line 50)
+    console::write_line (replica_line 0)
+
+:= print_potions () : () =
+    := potions = potions_reading ()
+    print_targets potions
+    print_pd potions
+    print_wpdis potions
+    print_horizon ()
+    print_near ()
+    print_replica ()
+
+:= main () : i32 =
+    console::write_line "kind\tepsilon\treward\tfresh\tis\terror_per_mille\tess_q16\toff_path"
+    print_targets { name = "clear_ms"; reward = clear_ms }
+    print_potions ()
+    0

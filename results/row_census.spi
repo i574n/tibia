@@ -1,0 +1,194 @@
+///- --package .
+:# row_census static =
+    :< testing
+
+:== tally = i32 * i32
+
+:~ counted \* t. ((ok, bad) : tally) (d : arena_rows::decoded t) : tally =
+    :< arena_rows
+    ?= d ?|
+    | Decoded _ => ok + 1i32, bad
+    | Rejected _ => ok, bad + 1i32
+
+:~ arena_line (t : tally) (line : string) : tally = counted t (arena_rows::row_of_line line)
+
+:~ arm_line (t : tally) (line : string) : tally = counted t (arena_rows::arm_step_of_line line)
+
+:= tally_of (f : tally -> string -> tally) (tables : list table_rows::table_row) : tally =
+    := ~runtime = tables
+    listm::fold (\ t table => table_rows::fold_data f t table) (0i32, 0i32) runtime
+
+:= arena_a () : list table_rows::table_row =
+    [
+        rows::arena_results::table ()
+        rows::arena_results_cyclops::table ()
+        rows::arena_results_cyclops_leadtrace::table ()
+    ]
+
+:= arena_b () : list table_rows::table_row =
+    [
+        rows::arena_results_cyclops_nexbot_check::table ()
+        rows::arena_results_cyclops_nexbot_diagnostic::table ()
+        rows::arena_results_cyclops_pc10::table ()
+    ]
+
+:= arena_c () : list table_rows::table_row =
+    [
+        rows::arena_results_cyclops_pr1::table ()
+        rows::arena_results_cyclops_pr10::table ()
+        rows::arena_results_cyclops_pr11::table ()
+    ]
+
+:= arena_d () : list table_rows::table_row =
+    [
+        rows::arena_results_cyclops_pr11_check::table ()
+        rows::arena_results_cyclops_pr12::table ()
+        rows::arena_results_cyclops_pr16::table ()
+    ]
+
+:= arena_e () : list table_rows::table_row =
+    [
+        rows::arena_results_cyclops_pr17::table ()
+        rows::arena_results_cyclops_pr20::table ()
+        rows::arena_results_cyclops_pr3a::table ()
+    ]
+
+:= arena_f () : list table_rows::table_row =
+    [
+        rows::arena_results_cyclops_pr4::table ()
+        rows::arena_results_cyclops_pr5::table ()
+        rows::arena_results_cyclops_pr8::table ()
+    ]
+
+:= arena_g () : list table_rows::table_row =
+    [
+        rows::arena_results_cyclops_pr9::table ()
+        rows::arena_results_cyclops_pz_check::table ()
+        rows::arena_results_cyclops_startsync_1018::table ()
+    ]
+
+:= arena_h () : list table_rows::table_row =
+    [
+        rows::arena_results_cyclops_w_calibration::table ()
+        rows::arena_results_cyclops2_pr6::table ()
+        rows::arena_results_cyclops2_pr7::table ()
+    ]
+
+:= arena_i () : list table_rows::table_row =
+    [
+        rows::arena_results_hunter_diag_1019::table ()
+        rows::arena_results_hunter_leadtrace::table ()
+        rows::arena_results_hunter_pc10::table ()
+    ]
+
+:= arena_j () : list table_rows::table_row =
+    [
+        rows::arena_results_hunter_pc11::table ()
+        rows::arena_results_hunter_pc9::table ()
+        rows::arena_results_hunter_pr13::table ()
+    ]
+
+:= arena_k () : list table_rows::table_row =
+    [
+        rows::arena_results_hunter_pr14::table ()
+        rows::arena_results_hunter_pr18::table ()
+        rows::arena_results_hunter_pr19::table ()
+    ]
+
+:= arena_l () : list table_rows::table_row =
+    [
+        rows::arena_results_hunter_pr21::table ()
+        rows::arena_results_hunter_pr22::table ()
+        rows::arena_results_hunting_ground_pr23::table ()
+    ]
+
+:= arena_m () : list table_rows::table_row =
+    [
+        rows::arena_results_hunting_ground_pr23b::table ()
+        rows::arena_results_hunting_ground_pr24::table ()
+        rows::arena_results_hunting_ground_pr25::table ()
+    ]
+
+:= arena_n () : list table_rows::table_row =
+    [
+        rows::arena_results_hunting_ground_pr26::table ()
+        rows::arena_results_hunting_ground_pr27::table ()
+        rows::arena_results_hunting_ground_pr28::table ()
+    ]
+
+:= arena_o () : list table_rows::table_row =
+    [
+        rows::arena_results_mixed_pr2::table ()
+        rows::arena_results_pc3::table ()
+        rows::arena_results_pc3_smoke::table ()
+    ]
+
+:= arm_a () : list table_rows::table_row =
+    [
+        rows::arena_results_cyclops_pc10_secondary::table ()
+        rows::arena_results_cyclops_pr17_secondary::table ()
+    ]
+
+:= arm_b () : list table_rows::table_row =
+    [
+        rows::arena_results_cyclops_pr20_secondary::table ()
+        rows::arena_results_hunter_pc10_secondary::table ()
+    ]
+
+:= arm_c () : list table_rows::table_row =
+    [
+        rows::arena_results_hunter_pc11_secondary::table ()
+        rows::arena_results_hunter_pc9_secondary::table ()
+    ]
+
+:= arm_d () : list table_rows::table_row =
+    [
+        rows::arena_results_hunter_pr18_secondary::table ()
+        rows::arena_results_hunter_pr19_secondary::table ()
+    ]
+
+:= arm_e () : list table_rows::table_row =
+    [
+        rows::arena_results_hunter_pr21_secondary::table ()
+        rows::arena_results_hunter_pr22_secondary::table ()
+    ]
+
+:= arm_f () : list table_rows::table_row =
+    [
+        rows::arena_results_hunting_ground_pr23_secondary::table ()
+        rows::arena_results_hunting_ground_pr24_secondary::table ()
+    ]
+
+:= arm_g () : list table_rows::table_row =
+    [
+        rows::arena_results_hunting_ground_pr25_secondary::table ()
+        rows::arena_results_hunting_ground_pr26_secondary::table ()
+    ]
+
+:= arm_h () : list table_rows::table_row =
+    [
+        rows::arena_results_hunting_ground_pr27_secondary::table ()
+        rows::arena_results_hunting_ground_pr28_secondary::table ()
+    ]
+
+:= arena_tables () : list table_rows::table_row =
+    listm::concat [
+        arena_a (); arena_b (); arena_c (); arena_d (); arena_e (); arena_f (); arena_g ()
+        arena_h (); arena_i (); arena_j (); arena_k (); arena_l (); arena_m (); arena_n ()
+        arena_o ()
+    ]
+
+:= arm_tables () : list table_rows::table_row =
+    listm::concat [
+        arm_a (); arm_b (); arm_c (); arm_d (); arm_e (); arm_f (); arm_g (); arm_h ()
+    ]
+
+///> rust
+:# every_arena_row_decodes =
+    := ~expected = 1075i32
+    tally_of arena_line (arena_tables ()) |> _assert_eq (expected, 0i32)
+
+///> rust
+:# every_arm_step_row_decodes =
+    := ~expected = 284i32
+    tally_of arm_line (arm_tables ()) |> _assert_eq (expected, 0i32)

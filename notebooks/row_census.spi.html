@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>row_census.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>row_census (test)</h4>
+
+<span class="badge other">test row_census: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:==</span> <span class="tok-variable">tally</span> <span class="tok-operator">=</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span>
+
+<span class="tok-keyword">:~</span> <span class="tok-variable">counted</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">ok</span><span class="tok-operator">,</span> <span class="tok-variable">bad</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">tally</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">d</span> <span class="tok-operator">:</span> <span class="tok-variable">arena_rows</span><span class="tok-symbol">::decoded</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">tally</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:&lt;</span> <span class="tok-variable">arena_rows</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">d</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Decoded</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">ok</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-variable">bad</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Rejected</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">ok</span><span class="tok-operator">,</span> <span class="tok-variable">bad</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+
+<span class="tok-keyword">:~</span> <span class="tok-variable">arena_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">tally</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">line</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">tally</span> <span class="tok-operator">=</span> <span class="tok-variable">counted</span> <span class="tok-variable">t</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arena_rows</span><span class="tok-symbol">::row_of_line</span> <span class="tok-variable">line</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:~</span> <span class="tok-variable">arm_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">tally</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">line</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">tally</span> <span class="tok-operator">=</span> <span class="tok-variable">counted</span> <span class="tok-variable">t</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arena_rows</span><span class="tok-symbol">::arm_step_of_line</span> <span class="tok-variable">line</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tally_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">f</span> <span class="tok-operator">:</span> <span class="tok-variable">tally</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">string</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">tally</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tables</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">tally</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">runtime</span> <span class="tok-operator">=</span> <span class="tok-variable">tables</span>
+    <span class="tok-variable">listm</span><span class="tok-symbol">::fold</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-variable">t</span> <span class="tok-variable">table</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::fold_data</span> <span class="tok-variable">f</span> <span class="tok-variable">t</span> <span class="tok-variable">table</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span> <span class="tok-variable">runtime</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_a</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_leadtrace</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_b</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_nexbot_check</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_nexbot_diagnostic</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pc10</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_c</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr1</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr10</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr11</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_d</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr11_check</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr12</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr16</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_e</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr17</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr20</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr3a</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_f</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr4</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr5</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr8</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_g</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr9</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pz_check</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_startsync_1018</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_h</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_w_calibration</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops2_pr6</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops2_pr7</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_i</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_diag_1019</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_leadtrace</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pc10</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_j</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pc11</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pc9</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pr13</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_k</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pr14</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pr18</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pr19</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_l</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pr21</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pr22</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr23</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_m</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr23b</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr24</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr25</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_n</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr26</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr27</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr28</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_o</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_mixed_pr2</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_pc3</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_pc3_smoke</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_a</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pc10_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr17_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_b</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_cyclops_pr20_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pc10_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_c</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pc11_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pc9_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_d</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pr18_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pr19_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_e</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pr21_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunter_pr22_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_f</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr23_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr24_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_g</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr25_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr26_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_h</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr27_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">rows</span><span class="tok-symbol">::arena_results_hunting_ground_pr28_secondary</span><span class="tok-symbol">::table</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arena_tables</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">listm</span><span class="tok-symbol">::concat</span> <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">arena_a</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_b</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_c</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_d</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_e</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_f</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_g</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">arena_h</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_i</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_j</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_k</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_l</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_m</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arena_n</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">arena_o</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">arm_tables</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">table_rows</span><span class="tok-symbol">::table_row</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">listm</span><span class="tok-symbol">::concat</span> <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">arm_a</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arm_b</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arm_c</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arm_d</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arm_e</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arm_f</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arm_g</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-variable">arm_h</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">]</span></code></pre>
+
+<h4>every_arena_row_decodes (test)</h4>
+
+<span class="badge passed">test every_arena_row_decodes: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">expected</span> <span class="tok-operator">=</span> <span class="tok-number">1075</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">tally_of</span> <span class="tok-variable">arena_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arena_tables</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">expected</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (1075, 0) }</pre>
+<pre class="output">0</pre>
+
+<h4>every_arm_step_row_decodes (test)</h4>
+
+<span class="badge passed">test every_arm_step_row_decodes: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">expected</span> <span class="tok-operator">=</span> <span class="tok-number">284</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">tally_of</span> <span class="tok-variable">arm_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">arm_tables</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">expected</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (284, 0) }</pre>
+<pre class="output">0</pre>
+
+</main>
+</body>
+</html>

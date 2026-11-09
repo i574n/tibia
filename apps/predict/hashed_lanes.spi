@@ -1,0 +1,48 @@
+///- --package .
+:# hashed_lanes static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+:< lanes
+
+:= arm_fitness (arm : network::weights -> tactic) (first : u32) (p : lane_plan) (w : network::weights) : i32 =
+    worth (CheapClearWithin (clear_limit_ms ())) (spot ()) (arm w) first p::seeds
+
+:= report_plan () : lane_plan = { generations = 8; offspring = 64; seeds = training_count () }
+
+:= arm_weights (arm : network::weights -> tactic) (p : lane_plan) (lane : u32) : network::weights =
+    network::evolve (arm_fitness arm (training_first ()) p) (lane_search p lane) (network::zero_weights ())
+
+:= arm_scores (arm : network::weights -> tactic) (w : network::weights) : string =
+    := train = "\ttrain100\t" ++#? arm_fitness arm (training_first ()) (report_plan ()) w
+    train ++# "\theld\t" ++#? arm_fitness arm (held_out_first ()) (report_plan ()) w
+
+:= arm_row (name : string) (arm : network::weights -> tactic) (p : lane_plan) (lane : u32) : string =
+    := head = "lane\t" ++#? lane ++# "\t" ++# name ++# "\tseeds\t" ++#? p::seeds
+    head ++# arm_scores arm (arm_weights arm p lane)
+
+:= arm_hunts (p : lane_plan) : i32 =
+    := g = p::generations
+    := o = p::offspring
+    g * o * p::seeds + 2 * training_count ()
+
+:= hunts_line (p : lane_plan) : string = "hunts\t" ++#? 8 * arm_hunts p
+
+:= small_plan () : lane_plan = { generations = 4; offspring = 16; seeds = training_count () }
+
+:= hashed_arm (w : network::weights) : tactic = hashed_tactic w
+
+:= network_arm (w : network::weights) : tactic = network_tactic w
+
+:~ ^ print_rows (p : lane_plan) (lane : u32) : () =
+    ? lane < 4u32 ?>
+        console::write_line (arm_row "hashed" hashed_arm p lane)
+        console::write_line (arm_row "network" network_arm p lane)
+        print_rows p (lane + 1u32)
+
+:= main () : i32 =
+    := p = small_plan ()
+    print_rows p 0u32
+    console::write_line (hunts_line p)
+    0

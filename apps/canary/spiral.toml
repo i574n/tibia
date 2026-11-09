@@ -1,0 +1,7 @@
+packageDir = '../../deps/spiral/lib'
+packages = ['|core-', 'spiral-']
+modules = '''
+canary
+ground_trace
+lead_trace
+'''

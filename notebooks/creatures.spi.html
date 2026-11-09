@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>creatures.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>creatures (test)</h4>
+
+<span class="badge other">test creatures: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:|</span> <span class="tok-variable">arena_creature</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">CaveRat</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Troll</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Wolf</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Skeleton</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Goblin</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Cyclops</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Hunter</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">creature_stats</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">experience</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">max_health</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">target_distance</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">melee_max</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">combat_spells</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">armor</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">defense</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">run_health</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">step_ms</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">gold_drop</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">chance_per_100000</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">max_count</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">drop</span> <span class="tok-parenthesis">(</span><span class="tok-variable">chance</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">most</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">gold_drop</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">chance_per_100000</span> <span class="tok-operator">=</span> <span class="tok-variable">chance</span><span class="tok-operator">;</span> <span class="tok-variable">max_count</span> <span class="tok-operator">=</span> <span class="tok-variable">most</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">gold_drop_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">kind</span> <span class="tok-operator">:</span> <span class="tok-variable">arena_creature</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">gold_drop</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">kind</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Troll</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">drop</span> <span class="tok-number">65300</span> <span class="tok-number">12</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Goblin</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">drop</span> <span class="tok-number">50320</span> <span class="tok-number">9</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Skeleton</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">drop</span> <span class="tok-number">43900</span> <span class="tok-number">10</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Cyclops</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">drop</span> <span class="tok-number">82000</span> <span class="tok-number">47</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">drop</span> <span class="tok-number">0</span> <span class="tok-number">0</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">rat_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">creature_stats</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">experience</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span> <span class="tok-variable">max_health</span> <span class="tok-operator">=</span> <span class="tok-number">30</span><span class="tok-operator">;</span> <span class="tok-variable">speed</span> <span class="tok-operator">=</span> <span class="tok-number">75</span><span class="tok-operator">;</span> <span class="tok-variable">target_distance</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-operator">;</span> <span class="tok-variable">melee_max</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span>
+        <span class="tok-variable">combat_spells</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">armor</span> <span class="tok-operator">=</span> <span class="tok-number">5</span><span class="tok-operator">;</span> <span class="tok-variable">defense</span> <span class="tok-operator">=</span> <span class="tok-number">5</span><span class="tok-operator">;</span> <span class="tok-variable">run_health</span> <span class="tok-operator">=</span> <span class="tok-number">3</span><span class="tok-operator">;</span> <span class="tok-variable">step_ms</span> <span class="tok-operator">=</span> <span class="tok-number">800</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">troll_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">creature_stats</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">experience</span> <span class="tok-operator">=</span> <span class="tok-number">20</span><span class="tok-operator">;</span> <span class="tok-variable">max_health</span> <span class="tok-operator">=</span> <span class="tok-number">50</span><span class="tok-operator">;</span> <span class="tok-variable">speed</span> <span class="tok-operator">=</span> <span class="tok-number">63</span><span class="tok-operator">;</span> <span class="tok-variable">target_distance</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-operator">;</span> <span class="tok-variable">melee_max</span> <span class="tok-operator">=</span> <span class="tok-number">15</span><span class="tok-operator">;</span>
+        <span class="tok-variable">combat_spells</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">armor</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span> <span class="tok-variable">defense</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span> <span class="tok-variable">run_health</span> <span class="tok-operator">=</span> <span class="tok-number">15</span><span class="tok-operator">;</span> <span class="tok-variable">step_ms</span> <span class="tok-operator">=</span> <span class="tok-number">950</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">wolf_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">creature_stats</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">experience</span> <span class="tok-operator">=</span> <span class="tok-number">18</span><span class="tok-operator">;</span> <span class="tok-variable">max_health</span> <span class="tok-operator">=</span> <span class="tok-number">25</span><span class="tok-operator">;</span> <span class="tok-variable">speed</span> <span class="tok-operator">=</span> <span class="tok-number">82</span><span class="tok-operator">;</span> <span class="tok-variable">target_distance</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-operator">;</span> <span class="tok-variable">melee_max</span> <span class="tok-operator">=</span> <span class="tok-number">20</span><span class="tok-operator">;</span>
+        <span class="tok-variable">combat_spells</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">armor</span> <span class="tok-operator">=</span> <span class="tok-number">5</span><span class="tok-operator">;</span> <span class="tok-variable">defense</span> <span class="tok-operator">=</span> <span class="tok-number">5</span><span class="tok-operator">;</span> <span class="tok-variable">run_health</span> <span class="tok-operator">=</span> <span class="tok-number">8</span><span class="tok-operator">;</span> <span class="tok-variable">step_ms</span> <span class="tok-operator">=</span> <span class="tok-number">750</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">skeleton_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">creature_stats</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">experience</span> <span class="tok-operator">=</span> <span class="tok-number">35</span><span class="tok-operator">;</span> <span class="tok-variable">max_health</span> <span class="tok-operator">=</span> <span class="tok-number">50</span><span class="tok-operator">;</span> <span class="tok-variable">speed</span> <span class="tok-operator">=</span> <span class="tok-number">77</span><span class="tok-operator">;</span> <span class="tok-variable">target_distance</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-operator">;</span> <span class="tok-variable">melee_max</span> <span class="tok-operator">=</span> <span class="tok-number">20</span><span class="tok-operator">;</span>
+        <span class="tok-variable">combat_spells</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-operator">;</span> <span class="tok-variable">armor</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span> <span class="tok-variable">defense</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span> <span class="tok-variable">run_health</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">step_ms</span> <span class="tok-operator">=</span> <span class="tok-number">800</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">goblin_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">creature_stats</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">experience</span> <span class="tok-operator">=</span> <span class="tok-number">25</span><span class="tok-operator">;</span> <span class="tok-variable">max_health</span> <span class="tok-operator">=</span> <span class="tok-number">50</span><span class="tok-operator">;</span> <span class="tok-variable">speed</span> <span class="tok-operator">=</span> <span class="tok-number">60</span><span class="tok-operator">;</span> <span class="tok-variable">target_distance</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-operator">;</span> <span class="tok-variable">melee_max</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span>
+        <span class="tok-variable">combat_spells</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-operator">;</span> <span class="tok-variable">armor</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span> <span class="tok-variable">defense</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span> <span class="tok-variable">run_health</span> <span class="tok-operator">=</span> <span class="tok-number">15</span><span class="tok-operator">;</span> <span class="tok-variable">step_ms</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">cyclops_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">creature_stats</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">experience</span> <span class="tok-operator">=</span> <span class="tok-number">150</span><span class="tok-operator">;</span> <span class="tok-variable">max_health</span> <span class="tok-operator">=</span> <span class="tok-number">260</span><span class="tok-operator">;</span> <span class="tok-variable">speed</span> <span class="tok-operator">=</span> <span class="tok-number">95</span><span class="tok-operator">;</span> <span class="tok-variable">target_distance</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-operator">;</span> <span class="tok-variable">melee_max</span> <span class="tok-operator">=</span> <span class="tok-number">105</span><span class="tok-operator">;</span>
+        <span class="tok-variable">combat_spells</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">armor</span> <span class="tok-operator">=</span> <span class="tok-number">20</span><span class="tok-operator">;</span> <span class="tok-variable">defense</span> <span class="tok-operator">=</span> <span class="tok-number">20</span><span class="tok-operator">;</span> <span class="tok-variable">run_health</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">step_ms</span> <span class="tok-operator">=</span> <span class="tok-number">650</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">hunter_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">creature_stats</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">experience</span> <span class="tok-operator">=</span> <span class="tok-number">150</span><span class="tok-operator">;</span> <span class="tok-variable">max_health</span> <span class="tok-operator">=</span> <span class="tok-number">150</span><span class="tok-operator">;</span> <span class="tok-variable">speed</span> <span class="tok-operator">=</span> <span class="tok-number">105</span><span class="tok-operator">;</span> <span class="tok-variable">target_distance</span> <span class="tok-operator">=</span> <span class="tok-number">4</span><span class="tok-operator">;</span> <span class="tok-variable">melee_max</span> <span class="tok-operator">=</span> <span class="tok-number">20</span><span class="tok-operator">;</span>
+        <span class="tok-variable">combat_spells</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-operator">;</span> <span class="tok-variable">armor</span> <span class="tok-operator">=</span> <span class="tok-number">15</span><span class="tok-operator">;</span> <span class="tok-variable">defense</span> <span class="tok-operator">=</span> <span class="tok-number">15</span><span class="tok-operator">;</span> <span class="tok-variable">run_health</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-operator">;</span> <span class="tok-variable">step_ms</span> <span class="tok-operator">=</span> <span class="tok-number">600</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">stats_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">k</span> <span class="tok-operator">:</span> <span class="tok-variable">arena_creature</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">k</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">CaveRat</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">rat_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Troll</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">troll_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Wolf</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">wolf_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Skeleton</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">skeleton_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Goblin</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">goblin_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Cyclops</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">cyclops_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Hunter</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">hunter_stats</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">is_ranged</span> <span class="tok-parenthesis">(</span><span class="tok-variable">kind</span> <span class="tok-operator">:</span> <span class="tok-variable">arena_creature</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">kind</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Hunter</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!+</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ranged_attack_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">kind</span> <span class="tok-operator">:</span> <span class="tok-variable">arena_creature</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">combat</span><span class="tok-symbol">::ranged_attack</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">kind</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Hunter</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">combat</span><span class="tok-symbol">::hunter_arrow</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">chance_percent</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">max_damage</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">range</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">every_ms</span> <span class="tok-operator">=</span> <span class="tok-number">2000</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">server_beat_ms</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-number">50</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">grass_ground_speed</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-variable">terrain</span><span class="tok-symbol">::grass_ground_speed</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">canary_step_speed_exact_up_to</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-number">408</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">step_speed_above_362</span> <span class="tok-parenthesis">(</span><span class="tok-variable">speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">388</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">5559</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">947585</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|:</span> <span class="tok-parenthesis">(</span><span class="tok-number">5325</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">1037437</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">step_speed_above_281</span> <span class="tok-parenthesis">(</span><span class="tok-variable">speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">301</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">6372</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">680716</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">337</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">6063</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">774007</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">362</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">5735</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">883711</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">step_speed_above_362</span> <span class="tok-variable">speed</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">step_speed_above_214</span> <span class="tok-parenthesis">(</span><span class="tok-variable">speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">232</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">7282</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">449600</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">255</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">6964</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">523272</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">281</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">6617</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">612091</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">step_speed_above_281</span> <span class="tok-variable">speed</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">step_speed_above_137</span> <span class="tok-parenthesis">(</span><span class="tok-variable">speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">156</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">8648</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">202848</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">196</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">8056</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">295768</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">214</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">7510</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">400590</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">step_speed_above_214</span> <span class="tok-variable">speed</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">step_speed_above_96</span> <span class="tok-parenthesis">(</span><span class="tok-variable">speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">114</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">9558</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">88680</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">122</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">9217</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">127881</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">137</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">9012</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">153088</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">step_speed_above_137</span> <span class="tok-variable">speed</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">step_speed_above_47</span> <span class="tok-parenthesis">(</span><span class="tok-variable">speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">61</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">11118</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">-</span> <span class="tok-number">33954</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">80</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">10582</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">-</span> <span class="tok-number">732</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">96</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">10013</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">45006</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">step_speed_above_96</span> <span class="tok-variable">speed</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">canary_step_speed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;</span> <span class="tok-number">8</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">1</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">35</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">12289</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">-</span> <span class="tok-number">81935</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">47</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">11606</span> <span class="tok-operator">*</span> <span class="tok-variable">speed</span> <span class="tok-operator">-</span> <span class="tok-number">57372</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">4096</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">step_speed_above_47</span> <span class="tok-variable">speed</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">canary_step_speed_in_double</span> <span class="tok-parenthesis">(</span><span class="tok-variable">speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">rounded</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-variable">conv</span> <span class="tok-parenthesis">(</span><span class="tok-number">857.36</span> <span class="tok-operator">*</span> <span class="tok-variable">log</span> <span class="tok-parenthesis">(</span><span class="tok-variable">conv</span> <span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">261.29</span> <span class="tok-operator">:</span> <span class="tok-variable">f64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-</span> <span class="tok-number">4795.01</span> <span class="tok-operator">+</span> <span class="tok-number">0.5</span><span class="tok-parenthesis">)</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">rounded</span> <span class="tok-operator">&lt;</span> <span class="tok-number">1</span> <span class="tok-keyword">?&gt;</span> <span class="tok-number">1</span> <span class="tok-keyword">|:</span> <span class="tok-variable">rounded</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">step_ms_from_canary_formula</span> <span class="tok-parenthesis">(</span><span class="tok-variable">speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ground_speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">duration</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span> <span class="tok-operator">*</span> <span class="tok-variable">ground_speed</span> <span class="tok-operator">/</span> <span class="tok-variable">canary_step_speed</span> <span class="tok-variable">speed</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">duration</span> <span class="tok-operator">+</span> <span class="tok-variable">server_beat_ms</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-variable">server_beat_ms</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">*</span> <span class="tok-variable">server_beat_ms</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">knight_speed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-number">110</span> <span class="tok-operator">+</span> <span class="tok-variable">level</span> <span class="tok-operator">-</span> <span class="tok-number">1</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">player_step_ms</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-variable">step_ms_from_canary_formula</span> <span class="tok-parenthesis">(</span><span class="tok-variable">knight_speed</span> <span class="tok-variable">level</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">grass_ground_speed</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">experience_per_health</span> <span class="tok-parenthesis">(</span><span class="tok-variable">kind</span> <span class="tok-operator">:</span> <span class="tok-variable">arena_creature</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">s</span> <span class="tok-operator">=</span> <span class="tok-variable">stats_of</span> <span class="tok-variable">kind</span>
+    <span class="tok-variable">s</span><span class="tok-symbol">::experience</span> <span class="tok-operator">*</span> <span class="tok-number">1000</span> <span class="tok-operator">/</span> <span class="tok-variable">s</span><span class="tok-symbol">::max_health</span></code></pre>
+
+<h4>stats_match_canary_data_canary_lua_2026_10_12 (test)</h4>
+
+<span class="badge passed">test stats_match_canary_data_canary_lua_2026_10_12: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Troll</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::max_health</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">50</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Troll</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::melee_max</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">15</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">CaveRat</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::experience</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">10</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 50 }
+__assert_eq { expected = 15 }
+__assert_eq { expected = 10 }</pre>
+
+<h4>cyclops_health_and_wolf_speed_match_canary_data (test)</h4>
+
+<span class="badge passed">test cyclops_health_and_wolf_speed_match_canary_data: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Cyclops</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::max_health</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">260</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Wolf</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::speed</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">82</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 260 }
+__assert_eq { expected = 82 }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">adjacent_melee_count</span> <span class="tok-parenthesis">(</span><span class="tok-variable">marker</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">melee</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">CaveRat</span><span class="tok-operator">;</span> <span class="tok-variable">Troll</span><span class="tok-operator">;</span> <span class="tok-variable">Wolf</span><span class="tok-operator">;</span> <span class="tok-variable">Skeleton</span><span class="tok-operator">;</span> <span class="tok-variable">Goblin</span><span class="tok-operator">;</span> <span class="tok-variable">Cyclops</span> <span class="tok-parenthesis">]</span>
+    <span class="tok-variable">listm</span><span class="tok-symbol">::fold</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-variable">n</span> <span class="tok-variable">k</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?</span> <span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">k</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::target_distance</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">n</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">|:</span> <span class="tok-variable">n</span><span class="tok-parenthesis">)</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-variable">melee</span></code></pre>
+
+<h4>every_melee_arena_creature_fights_adjacent (test)</h4>
+
+<span class="badge passed">test every_melee_arena_creature_fights_adjacent: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">adjacent_melee_count</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">6</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 6 }</pre>
+
+<h4>the_hunter_keeps_four_tiles_away_and_is_the_ranged_one (test)</h4>
+
+<span class="badge passed">test the_hunter_keeps_four_tiles_away_and_is_the_ranged_one: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Hunter</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::target_distance</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span><span class="tok-operator">,</span> <span class="tok-variable">is_ranged</span> <span class="tok-variable">Hunter</span><span class="tok-operator">,</span> <span class="tok-variable">is_ranged</span> <span class="tok-variable">Cyclops</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">4</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">!+</span><span class="tok-operator">,</span> <span class="tok-number">!-</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (4, true, false) }</pre>
+
+<h4>the_hunter_shoots_seven_tiles_with_150_health (test)</h4>
+
+<span class="badge passed">test the_hunter_shoots_seven_tiles_with_150_health: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">ranged_attack_of</span> <span class="tok-variable">Hunter</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::range</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Hunter</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::max_health</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">7</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">150</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (7, 150) }</pre>
+
+<h4>experience_per_health_ranks_skeleton_above_troll (test)</h4>
+
+<span class="badge passed">test experience_per_health_ranks_skeleton_above_troll: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">experience_per_health</span> <span class="tok-variable">Skeleton</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">700</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">experience_per_health</span> <span class="tok-variable">Troll</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">400</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 700 }
+__assert_eq { expected = 400 }</pre>
+
+<h4>armor_defense_and_flee_match_data_canary_2026_10_13 (test)</h4>
+
+<span class="badge passed">test armor_defense_and_flee_match_data_canary_2026_10_13: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Troll</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::armor</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">10</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Cyclops</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::defense</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">20</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Wolf</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::armor</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">5</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 10 }
+__assert_eq { expected = 20 }
+__assert_eq { expected = 5 }</pre>
+
+<h4>flee_health_matches_data_canary_2026_10_13 (test)</h4>
+
+<span class="badge passed">test flee_health_matches_data_canary_2026_10_13: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Troll</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::run_health</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">15</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Skeleton</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::run_health</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 15 }
+__assert_eq { expected = 0 }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">step_matches_formula</span> <span class="tok-parenthesis">(</span><span class="tok-variable">kind</span> <span class="tok-operator">:</span> <span class="tok-variable">arena_creature</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">kind</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::step_ms</span> <span class="tok-operator">=</span> <span class="tok-variable">step_ms_from_canary_formula</span> <span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">kind</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::speed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">grass_ground_speed</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">all_steps_match</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">m</span> <span class="tok-operator">=</span> <span class="tok-variable">step_matches_formula</span>
+    <span class="tok-variable">m</span> <span class="tok-variable">CaveRat</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">m</span> <span class="tok-variable">Troll</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">m</span> <span class="tok-variable">Wolf</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">m</span> <span class="tok-variable">Skeleton</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">m</span> <span class="tok-variable">Goblin</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">m</span> <span class="tok-variable">Cyclops</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">m</span> <span class="tok-variable">Hunter</span></code></pre>
+
+<h4>step_ms_matches_canary_step_formula_on_grass (test)</h4>
+
+<span class="badge passed">test step_ms_matches_canary_step_formula_on_grass: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">all_steps_match</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">marker</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">!+</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (true, 0) }</pre>
+
+<h4>the_knight_steps_faster_with_levels (test)</h4>
+
+<span class="badge passed">test the_knight_steps_faster_with_levels: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">8</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">player_step_ms</span> <span class="tok-variable">level</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">550</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">player_step_ms</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">+</span> <span class="tok-number">22</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">450</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 550 }
+__assert_eq { expected = 450 }</pre>
+
+<h4>stats_on_gpu (test)</h4>
+
+<span class="badge passed">test stats_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?</span> <span class="tok-parenthesis">(</span><span class="tok-variable">stats_of</span> <span class="tok-variable">Troll</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::max_health</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">50</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">experience_per_health</span> <span class="tok-variable">Skeleton</span> <span class="tok-operator">+</span> <span class="tok-variable">marker</span> <span class="tok-operator">=</span> <span class="tok-number">700</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">step_speed_mismatches</span> <span class="tok-parenthesis">(</span><span class="tok-variable">speed</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">count</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">agrees</span> <span class="tok-operator">=</span> <span class="tok-variable">canary_step_speed</span> <span class="tok-variable">speed</span> <span class="tok-operator">=</span> <span class="tok-variable">canary_step_speed_in_double</span> <span class="tok-variable">speed</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">speed</span> <span class="tok-operator">&gt;</span> <span class="tok-variable">canary_step_speed_exact_up_to</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">count</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">step_speed_mismatches</span> <span class="tok-parenthesis">(</span><span class="tok-variable">speed</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">?</span> <span class="tok-variable">agrees</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">count</span> <span class="tok-keyword">|:</span> <span class="tok-variable">count</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h4>integer_step_speed_equals_canary_double_formula_for_every_speed_up_to_its_exact_limit (test)</h4>
+
+<span class="badge passed">test integer_step_speed_equals_canary_double_formula_for_every_speed_up_to_its_exact_limit: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">first</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">step_speed_mismatches</span> <span class="tok-variable">first</span> <span class="tok-number">0</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 0 }</pre>
+
+<h4>integer_step_speed_on_gpu (test)</h4>
+
+<span class="badge passed">test integer_step_speed_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">cyclops</span> <span class="tok-operator">=</span> <span class="tok-number">95</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?</span> <span class="tok-variable">canary_step_speed</span> <span class="tok-variable">cyclops</span> <span class="tok-operator">=</span> <span class="tok-number">243</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">step_ms_from_canary_formula</span> <span class="tok-variable">cyclops</span> <span class="tok-parenthesis">(</span><span class="tok-variable">grass_ground_speed</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span> <span class="tok-number">650</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,51 @@
+///- --package .
+:# bc_dagger static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== drive = { camp : camp; s : tactic; seed : u32 }
+
+:= logged (d : drive) (tick : i32) (p : pack) (acc : list bc_dataset::pair) : list bc_dataset::pair =
+    := b = bc_onpolicy::beat_at d::camp d::seed tick
+    ? bc_dataset::decides b::now p
+    ?> bc_dataset::pair_at b (bc_run::teacher ()) p :: acc
+    |: acc
+
+:~ ^ relabelled (d : drive) (tick : i32) (p : pack) (acc : list bc_dataset::pair) : list bc_dataset::pair =
+    ? tick >= scenario_ticks ()
+    ?> acc
+    |: relabelled d (tick + 1) (advance d::camp d::s d::seed tick p) (logged d tick p acc)
+
+:= drive_at (camp : camp) (s : tactic) (i : i32) : drive = { camp = camp; s = s; seed = training_first () + conv i }
+
+:~ ^ seeds_relabelled (camp : camp) (s : tactic) (i : i32) (acc : list bc_dataset::pair) : list bc_dataset::pair =
+    ? i >= bc_run::seed_count ()
+    ?> acc
+    |: seeds_relabelled camp s (i + 1) (relabelled (drive_at camp s i) 0 (start camp) acc)
+
+:= paired (w : network::weights) : () =
+    bc_eval::report (
+        bc_eval::paired_from w 0 { n = 0.0f32; t = bc_eval::empty (); s = bc_eval::empty (); d = bc_eval::empty () }
+    )
+
+:= directions (w : network::weights) : () =
+    := s = bc_eval::student_tactic w
+    bc_direction::report
+        "dagger_student_drives"
+        (bc_direction::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_direction::zero_tally ()))
+
+:= student_of (train : list bc_dataset::pair) : tactic =
+    bc_eval::student_tactic (bc_train::quantized (bc_run::trained train))
+
+:= aggregated (train : list bc_dataset::pair) : list bc_dataset::pair =
+    := all = seeds_relabelled (bc_run::bc_camp ()) (student_of train) 0 train
+    console::write_line ("dagger_pairs\t" ++#? bc_run::pair_count all)
+    all
+
+:= main () =
+    := w1 = bc_train::quantized (bc_run::trained (aggregated (bc_run::pairs_from (training_first ()))))
+    paired w1
+    directions w1
+    0i32

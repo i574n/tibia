@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cooldowns.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>cooldowns (test)</h4>
+
+<span class="badge other">test cooldowns: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:|</span> <span class="tok-variable">spell_group</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">AttackGroup</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">HealingGroup</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">SupportGroup</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">attack</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">healing</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">support</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">spell_id</span> <span class="tok-variable">g</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">StrikeSpell</span> <span class="tok-operator">::</span> <span class="tok-variable">spell_id</span> <span class="tok-variable">attack</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">LightHealingSpell</span> <span class="tok-operator">::</span> <span class="tok-variable">spell_id</span> <span class="tok-variable">healing</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">WoundCleansingSpell</span> <span class="tok-operator">::</span> <span class="tok-variable">spell_id</span> <span class="tok-variable">healing</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">HasteSpell</span> <span class="tok-operator">::</span> <span class="tok-variable">spell_id</span> <span class="tok-variable">support</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">group_of</span> <span class="tok-keyword">\*</span> <span class="tok-variable">g</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">id</span> <span class="tok-operator">:</span> <span class="tok-variable">spell_id</span> <span class="tok-variable">g</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">spell_group</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">id</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">StrikeSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">AttackGroup</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">LightHealingSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">HealingGroup</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">WoundCleansingSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">HealingGroup</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">HasteSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">SupportGroup</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">spell</span> <span class="tok-variable">g</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">id</span> <span class="tok-operator">:</span> <span class="tok-variable">spell_id</span> <span class="tok-variable">g</span><span class="tok-operator">;</span> <span class="tok-variable">own_ms</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">group_ms</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">timers</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">attack_ready_at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">healing_ready_at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">support_ready_at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">strike_ready_at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">light_healing_ready_at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">wound_cleansing_ready_at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">haste_ready_at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">idle_timers</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">attack_ready_at</span> <span class="tok-operator">=</span> <span class="tok-number">0</span>
+        <span class="tok-variable">healing_ready_at</span> <span class="tok-operator">=</span> <span class="tok-number">0</span>
+        <span class="tok-variable">support_ready_at</span> <span class="tok-operator">=</span> <span class="tok-number">0</span>
+        <span class="tok-variable">strike_ready_at</span> <span class="tok-operator">=</span> <span class="tok-number">0</span>
+        <span class="tok-variable">light_healing_ready_at</span> <span class="tok-operator">=</span> <span class="tok-number">0</span>
+        <span class="tok-variable">wound_cleansing_ready_at</span> <span class="tok-operator">=</span> <span class="tok-number">0</span>
+        <span class="tok-variable">haste_ready_at</span> <span class="tok-operator">=</span> <span class="tok-number">0</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">group_ready_at</span> <span class="tok-parenthesis">(</span><span class="tok-variable">group</span> <span class="tok-operator">:</span> <span class="tok-variable">spell_group</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">held</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">group</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">AttackGroup</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">held</span><span class="tok-symbol">::attack_ready_at</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">HealingGroup</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">held</span><span class="tok-symbol">::healing_ready_at</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">SupportGroup</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">held</span><span class="tok-symbol">::support_ready_at</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">own_ready_at</span> <span class="tok-keyword">\*</span> <span class="tok-variable">g</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">id</span> <span class="tok-operator">:</span> <span class="tok-variable">spell_id</span> <span class="tok-variable">g</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">id</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">StrikeSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">t</span><span class="tok-symbol">::strike_ready_at</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">LightHealingSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">t</span><span class="tok-symbol">::light_healing_ready_at</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">WoundCleansingSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">t</span><span class="tok-symbol">::wound_cleansing_ready_at</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">HasteSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">t</span><span class="tok-symbol">::haste_ready_at</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">with_strike</span> <span class="tok-parenthesis">(</span><span class="tok-variable">at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">t</span> <span class="tok-keyword">?|</span> <span class="tok-variable">strike_ready_at</span> <span class="tok-operator">=</span> <span class="tok-variable">at</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">with_light_healing</span> <span class="tok-parenthesis">(</span><span class="tok-variable">at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">t</span> <span class="tok-keyword">?|</span> <span class="tok-variable">light_healing_ready_at</span> <span class="tok-operator">=</span> <span class="tok-variable">at</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">with_wound_cleansing</span> <span class="tok-parenthesis">(</span><span class="tok-variable">at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">t</span> <span class="tok-keyword">?|</span> <span class="tok-variable">wound_cleansing_ready_at</span> <span class="tok-operator">=</span> <span class="tok-variable">at</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">with_haste</span> <span class="tok-parenthesis">(</span><span class="tok-variable">at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">t</span> <span class="tok-keyword">?|</span> <span class="tok-variable">haste_ready_at</span> <span class="tok-operator">=</span> <span class="tok-variable">at</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">with_own_ready_at</span> <span class="tok-keyword">\*</span> <span class="tok-variable">g</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">id</span> <span class="tok-operator">:</span> <span class="tok-variable">spell_id</span> <span class="tok-variable">g</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">id</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">StrikeSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">with_strike</span> <span class="tok-variable">at</span> <span class="tok-variable">t</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">LightHealingSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">with_light_healing</span> <span class="tok-variable">at</span> <span class="tok-variable">t</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">WoundCleansingSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">with_wound_cleansing</span> <span class="tok-variable">at</span> <span class="tok-variable">t</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">HasteSpell</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">with_haste</span> <span class="tok-variable">at</span> <span class="tok-variable">t</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">with_group_ready_at</span> <span class="tok-parenthesis">(</span><span class="tok-variable">group</span> <span class="tok-operator">:</span> <span class="tok-variable">spell_group</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">at</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">group</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">AttackGroup</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">t</span> <span class="tok-keyword">?|</span> <span class="tok-variable">attack_ready_at</span> <span class="tok-operator">=</span> <span class="tok-variable">at</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">HealingGroup</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">t</span> <span class="tok-keyword">?|</span> <span class="tok-variable">healing_ready_at</span> <span class="tok-operator">=</span> <span class="tok-variable">at</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">SupportGroup</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">t</span> <span class="tok-keyword">?|</span> <span class="tok-variable">support_ready_at</span> <span class="tok-operator">=</span> <span class="tok-variable">at</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">later</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">b</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">a</span> <span class="tok-operator">&lt;</span> <span class="tok-variable">b</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">b</span> <span class="tok-keyword">|:</span> <span class="tok-variable">a</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ready_at</span> <span class="tok-keyword">\*</span> <span class="tok-variable">g</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cast</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">g</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">held</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">later</span> <span class="tok-parenthesis">(</span><span class="tok-variable">group_ready_at</span> <span class="tok-parenthesis">(</span><span class="tok-variable">group_of</span> <span class="tok-variable">cast</span><span class="tok-symbol">::id</span><span class="tok-parenthesis">)</span> <span class="tok-variable">held</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">own_ready_at</span> <span class="tok-variable">cast</span><span class="tok-symbol">::id</span> <span class="tok-variable">held</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">can_cast</span> <span class="tok-keyword">\*</span> <span class="tok-variable">g</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cast</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">g</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">held</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">ready_at</span> <span class="tok-variable">cast</span> <span class="tok-variable">held</span> <span class="tok-operator">&lt;=</span> <span class="tok-variable">now</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">after_cast</span> <span class="tok-keyword">\*</span> <span class="tok-variable">g</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cast</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">g</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">held</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">own_until</span> <span class="tok-operator">=</span> <span class="tok-variable">later</span> <span class="tok-parenthesis">(</span><span class="tok-variable">own_ready_at</span> <span class="tok-variable">cast</span><span class="tok-symbol">::id</span> <span class="tok-variable">held</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">+</span> <span class="tok-variable">cast</span><span class="tok-symbol">::own_ms</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">with_own_ready_at</span> <span class="tok-variable">cast</span><span class="tok-symbol">::id</span> <span class="tok-variable">own_until</span> <span class="tok-variable">held</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">with_group_ready_at</span> <span class="tok-parenthesis">(</span><span class="tok-variable">group_of</span> <span class="tok-variable">cast</span><span class="tok-symbol">::id</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">+</span> <span class="tok-variable">cast</span><span class="tok-symbol">::group_ms</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">attack</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">id</span> <span class="tok-operator">=</span> <span class="tok-variable">StrikeSpell</span><span class="tok-operator">;</span> <span class="tok-variable">own_ms</span> <span class="tok-operator">=</span> <span class="tok-number">2000</span><span class="tok-operator">;</span> <span class="tok-variable">group_ms</span> <span class="tok-operator">=</span> <span class="tok-number">2000</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">light_healing</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">healing</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">id</span> <span class="tok-operator">=</span> <span class="tok-variable">LightHealingSpell</span><span class="tok-operator">;</span> <span class="tok-variable">own_ms</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span><span class="tok-operator">;</span> <span class="tok-variable">group_ms</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">haste</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">support</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">id</span> <span class="tok-operator">=</span> <span class="tok-variable">HasteSpell</span><span class="tok-operator">;</span> <span class="tok-variable">own_ms</span> <span class="tok-operator">=</span> <span class="tok-number">2000</span><span class="tok-operator">;</span> <span class="tok-variable">group_ms</span> <span class="tok-operator">=</span> <span class="tok-number">2000</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">after_strike_at</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">timers</span> <span class="tok-operator">=</span> <span class="tok-variable">idle_timers</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">after_cast</span> <span class="tok-variable">now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h4>fresh_timers_allow_any_spell (test)</h4>
+
+<span class="badge passed">test fresh_timers_allow_any_spell: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">now</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">can_cast</span> <span class="tok-variable">now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">idle_timers</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span></code></pre>
+<pre class="output">__assert_eq { expected = true }</pre>
+
+<h4>attack_blocks_its_group_until_it_expires (test)</h4>
+
+<span class="badge passed">test attack_blocks_its_group_until_it_expires: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">now</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">h</span> <span class="tok-operator">=</span> <span class="tok-variable">idle_timers</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">after_cast</span> <span class="tok-variable">now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">can_cast</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">+</span> <span class="tok-number">1999</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">h</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span>
+<span class="tok-variable">can_cast</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">+</span> <span class="tok-number">2000</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">h</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span></code></pre>
+<pre class="output">__assert_eq { expected = false }
+__assert_eq { expected = true }</pre>
+
+<h4>attack_does_not_block_healing_group (test)</h4>
+
+<span class="badge passed">test attack_does_not_block_healing_group: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">now</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">held</span> <span class="tok-operator">=</span> <span class="tok-variable">idle_timers</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">after_cast</span> <span class="tok-variable">now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">group_ready_at</span> <span class="tok-variable">HealingGroup</span> <span class="tok-variable">held</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 0 }</pre>
+
+<h4>own_cooldown_gates_only_the_same_spell_like_canary (test)</h4>
+
+<span class="badge passed">test own_cooldown_gates_only_the_same_spell_like_canary: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">now</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">held</span> <span class="tok-operator">=</span> <span class="tok-variable">after_strike_at</span> <span class="tok-variable">now</span>
+<span class="tok-variable">can_cast</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">+</span> <span class="tok-number">500</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">light_healing</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">held</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span>
+<span class="tok-variable">can_cast</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">+</span> <span class="tok-number">500</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">held</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span></code></pre>
+<pre class="output">__assert_eq { expected = true }
+__assert_eq { expected = false }</pre>
+
+<h4>the_own_cooldown_ends_with_the_group_cooldown (test)</h4>
+
+<span class="badge passed">test the_own_cooldown_ends_with_the_group_cooldown: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">now</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">can_cast</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">+</span> <span class="tok-number">2000</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">after_strike_at</span> <span class="tok-variable">now</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span></code></pre>
+<pre class="output">__assert_eq { expected = true }</pre>
+
+<h4>support_sets_only_support_group (test)</h4>
+
+<span class="badge passed">test support_sets_only_support_group: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">now</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">held</span> <span class="tok-operator">=</span> <span class="tok-variable">idle_timers</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">after_cast</span> <span class="tok-variable">now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">haste</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">held</span><span class="tok-symbol">::support_ready_at</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">2000</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">held</span><span class="tok-symbol">::attack_ready_at</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 2000 }
+__assert_eq { expected = 0 }</pre>
+
+<h4>attack_cooldown_on_gpu (test)</h4>
+
+<span class="badge passed">test attack_cooldown_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">now</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">held</span><span class="tok-operator">,</span> <span class="tok-variable">strike</span> <span class="tok-operator">=</span> <span class="tok-variable">after_strike_at</span> <span class="tok-variable">now</span><span class="tok-operator">,</span> <span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">?</span> <span class="tok-variable">can_cast</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">+</span> <span class="tok-number">1999</span><span class="tok-parenthesis">)</span> <span class="tok-variable">strike</span> <span class="tok-variable">held</span> <span class="tok-operator">=</span> <span class="tok-number">!-</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">can_cast</span> <span class="tok-parenthesis">(</span><span class="tok-variable">now</span> <span class="tok-operator">+</span> <span class="tok-number">2000</span><span class="tok-parenthesis">)</span> <span class="tok-variable">strike</span> <span class="tok-variable">held</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">held</span><span class="tok-symbol">::healing_ready_at</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+<h4>healing_right_after_a_strike_is_allowed_like_canary (test)</h4>
+
+<span class="badge passed">test healing_right_after_a_strike_is_allowed_like_canary: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">now</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">held</span> <span class="tok-operator">=</span> <span class="tok-variable">after_cast</span> <span class="tok-variable">now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">idle_timers</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">can_cast</span> <span class="tok-variable">now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">light_healing</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">held</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span>
+<span class="tok-variable">can_cast</span> <span class="tok-variable">now</span> <span class="tok-parenthesis">(</span><span class="tok-variable">strike_spell</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">held</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span></code></pre>
+<pre class="output">__assert_eq { expected = true }
+__assert_eq { expected = false }</pre>
+
+<h4>a_strike_cannot_be_typed_as_a_healing_spell (test)</h4>
+
+<span class="badge passed">test a_strike_cannot_be_typed_as_a_healing_spell: passed</span>
+<pre class="code"><code>///- --test --symbol --fails &quot;Unification failure&quot;
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">healing</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">id</span> <span class="tok-operator">=</span> <span class="tok-variable">StrikeSpell</span><span class="tok-operator">;</span> <span class="tok-variable">own_ms</span> <span class="tok-operator">=</span> <span class="tok-number">2000</span><span class="tok-operator">;</span> <span class="tok-variable">group_ms</span> <span class="tok-operator">=</span> <span class="tok-number">2000</span> <span class="tok-parenthesis">}</span>
+<span class="tok-variable">s</span><span class="tok-symbol">::own_ms</span></code></pre>
+<pre class="output">failed to compile as expected (&quot;Unification failure&quot;): FatalError: File main has a type error somewhere in its path. /home/runner/work/tibia/tibia/src/cooldowns.spi:162:35 (main.spi:107:35): ETY-TermError: Unification failure. Got:      spell_id healing Expected: spell_id attack In the definition: spiral_cells_test.
+</pre>
+
+</main>
+</body>
+</html>

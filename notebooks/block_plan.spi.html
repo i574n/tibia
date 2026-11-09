@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>block_plan.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>block_plan (test)</h4>
+
+<span class="badge other">test block_plan: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:|</span> <span class="tok-variable">run_outcome</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Completed</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Crashed</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">run_fate</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Counted</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Rerun</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Missing</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">progress</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">stage</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">run</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">retried</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-operator">;</span> <span class="tok-variable">counted</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">missing</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">outcome_of_experience</span> <span class="tok-parenthesis">(</span><span class="tok-variable">experience</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">run_outcome</span> <span class="tok-operator">=</span> <span class="tok-keyword">?</span> <span class="tok-variable">experience</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Crashed</span> <span class="tok-keyword">|:</span> <span class="tok-variable">Completed</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">fate_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">retried</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">o</span> <span class="tok-operator">:</span> <span class="tok-variable">run_outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">run_fate</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">o</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Completed</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Counted</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Crashed</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?</span> <span class="tok-variable">retried</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Missing</span> <span class="tok-keyword">|:</span> <span class="tok-variable">Rerun</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">starting</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">progress</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">stage</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">run</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">retried</span> <span class="tok-operator">=</span> <span class="tok-number">!-</span><span class="tok-operator">;</span> <span class="tok-variable">counted</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-operator">;</span> <span class="tok-variable">missing</span> <span class="tok-operator">=</span> <span class="tok-number">0</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">finished</span> <span class="tok-parenthesis">(</span><span class="tok-variable">runs</span> <span class="tok-operator">:</span> <span class="tok-variable">array</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">progress</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-variable">p</span><span class="tok-symbol">::stage</span> <span class="tok-operator">&gt;=</span> <span class="tok-variable">length</span> <span class="tok-variable">runs</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">next_slot</span> <span class="tok-parenthesis">(</span><span class="tok-variable">runs</span> <span class="tok-operator">:</span> <span class="tok-variable">array</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">progress</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">*</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">p</span><span class="tok-symbol">::run</span> <span class="tok-operator">+</span> <span class="tok-number">1</span> <span class="tok-operator">&gt;=</span> <span class="tok-variable">index</span> <span class="tok-variable">runs</span> <span class="tok-variable">p</span><span class="tok-symbol">::stage</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">p</span><span class="tok-symbol">::stage</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-operator">,</span> <span class="tok-number">0</span> <span class="tok-keyword">|:</span> <span class="tok-variable">p</span><span class="tok-symbol">::stage</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::run</span> <span class="tok-operator">+</span> <span class="tok-number">1</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">advanced</span> <span class="tok-parenthesis">(</span><span class="tok-variable">runs</span> <span class="tok-operator">:</span> <span class="tok-variable">array</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">progress</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">counted</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">missing</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">progress</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">stage</span><span class="tok-operator">,</span> <span class="tok-variable">run</span> <span class="tok-operator">=</span> <span class="tok-variable">next_slot</span> <span class="tok-variable">runs</span> <span class="tok-variable">p</span>
+    <span class="tok-parenthesis">{</span> <span class="tok-variable">stage</span> <span class="tok-operator">=</span> <span class="tok-variable">stage</span><span class="tok-operator">;</span> <span class="tok-variable">run</span> <span class="tok-operator">=</span> <span class="tok-variable">run</span><span class="tok-operator">;</span> <span class="tok-variable">retried</span> <span class="tok-operator">=</span> <span class="tok-number">!-</span><span class="tok-operator">;</span> <span class="tok-variable">counted</span> <span class="tok-operator">=</span> <span class="tok-variable">counted</span><span class="tok-operator">;</span> <span class="tok-variable">missing</span> <span class="tok-operator">=</span> <span class="tok-variable">missing</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">after</span> <span class="tok-parenthesis">(</span><span class="tok-variable">runs</span> <span class="tok-operator">:</span> <span class="tok-variable">array</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">progress</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">o</span> <span class="tok-operator">:</span> <span class="tok-variable">run_outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">progress</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">fate_of</span> <span class="tok-variable">p</span><span class="tok-symbol">::retried</span> <span class="tok-variable">o</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Rerun</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">p</span> <span class="tok-keyword">?|</span> <span class="tok-variable">retried</span> <span class="tok-operator">=</span> <span class="tok-number">!+</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Counted</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">advanced</span> <span class="tok-variable">runs</span> <span class="tok-variable">p</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span><span class="tok-symbol">::counted</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-variable">p</span><span class="tok-symbol">::missing</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Missing</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">advanced</span> <span class="tok-variable">runs</span> <span class="tok-variable">p</span> <span class="tok-variable">p</span><span class="tok-symbol">::counted</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span><span class="tok-symbol">::missing</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">stage_step</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">InstallProbe</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Runs</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">RemoveProbe</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">KeepTrace</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">probed_stage</span> <span class="tok-parenthesis">(</span><span class="tok-variable">probe</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">runs</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">trace</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">stage_step</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span> <span class="tok-variable">InstallProbe</span> <span class="tok-variable">probe</span><span class="tok-operator">;</span> <span class="tok-variable">Runs</span> <span class="tok-variable">runs</span><span class="tok-operator">;</span> <span class="tok-variable">RemoveProbe</span><span class="tok-operator">;</span> <span class="tok-variable">KeepTrace</span> <span class="tok-variable">trace</span> <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">plain_stage</span> <span class="tok-parenthesis">(</span><span class="tok-variable">runs</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">stage_step</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">Runs</span> <span class="tok-variable">runs</span> <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">runs_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">steps</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">stage_step</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">listm</span><span class="tok-symbol">::fold</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-variable">total</span> <span class="tok-variable">step</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?=</span> <span class="tok-variable">step</span> <span class="tok-keyword">?|</span> <span class="tok-variable">Runs</span> <span class="tok-variable">n</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">total</span> <span class="tok-operator">+</span> <span class="tok-variable">n</span> <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">total</span><span class="tok-parenthesis">)</span> <span class="tok-number">0</span> <span class="tok-variable">steps</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">probe_left_installed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">steps</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">stage_step</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">listm</span><span class="tok-symbol">::fold</span>
+        <span class="tok-keyword">\</span> <span class="tok-variable">installed</span> <span class="tok-variable">step</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-keyword">?=</span> <span class="tok-variable">step</span> <span class="tok-keyword">?|</span>
+            <span class="tok-operator">|</span> <span class="tok-variable">InstallProbe</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!+</span>
+            <span class="tok-operator">|</span> <span class="tok-variable">RemoveProbe</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span>
+            <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">installed</span>
+        <span class="tok-number">!-</span>
+        <span class="tok-variable">steps</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">stages_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">first</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">second</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">array</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">runs</span> <span class="tok-operator">:</span> <span class="tok-variable">array</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-variable">create</span> <span class="tok-number">2</span>
+    <span class="tok-variable">set</span> <span class="tok-variable">runs</span> <span class="tok-number">0</span> <span class="tok-variable">first</span>
+    <span class="tok-variable">set</span> <span class="tok-variable">runs</span> <span class="tok-number">1</span> <span class="tok-variable">second</span>
+    <span class="tok-variable">runs</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">block_progress</span> <span class="tok-parenthesis">(</span><span class="tok-variable">first</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">outcomes</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">run_outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">progress</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">listm</span><span class="tok-symbol">::fold</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-variable">p</span> <span class="tok-variable">o</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">after</span> <span class="tok-parenthesis">(</span><span class="tok-variable">stages_of</span> <span class="tok-variable">first</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-variable">p</span> <span class="tok-variable">o</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">starting</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">outcomes</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">block_finished</span> <span class="tok-parenthesis">(</span><span class="tok-variable">first</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">outcomes</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">run_outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">finished</span> <span class="tok-parenthesis">(</span><span class="tok-variable">stages_of</span> <span class="tok-variable">first</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">block_progress</span> <span class="tok-variable">first</span> <span class="tok-variable">outcomes</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h4>an_empty_experience_reading_means_the_run_crashed (test)</h4>
+
+<span class="badge passed">test an_empty_experience_reading_means_the_run_crashed: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">empty</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">outcome_of_experience</span> <span class="tok-variable">empty</span><span class="tok-operator">,</span> <span class="tok-variable">outcome_of_experience</span> <span class="tok-string">&quot;</span><span class="tok-string">675</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Crashed</span><span class="tok-operator">,</span> <span class="tok-variable">Completed</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = (Crashed, Completed) }
+.lua (lua)
+__assert_eq { expected = (Crashed, Completed) }
+.gleam (gleam)
+__assert_eq { expected = (Crashed, Completed) }</pre>
+
+<h4>a_crash_is_rerun_once_then_counted_missing (test)</h4>
+
+<span class="badge passed">test a_crash_is_rerun_once_then_counted_missing: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">retried</span> <span class="tok-operator">=</span> <span class="tok-number">!+</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">fate_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">not</span> <span class="tok-variable">retried</span><span class="tok-parenthesis">)</span> <span class="tok-variable">Completed</span><span class="tok-operator">,</span> <span class="tok-variable">fate_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">not</span> <span class="tok-variable">retried</span><span class="tok-parenthesis">)</span> <span class="tok-variable">Crashed</span><span class="tok-operator">,</span> <span class="tok-variable">fate_of</span> <span class="tok-variable">retried</span> <span class="tok-variable">Crashed</span><span class="tok-operator">,</span> <span class="tok-variable">fate_of</span> <span class="tok-variable">retried</span> <span class="tok-variable">Completed</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Counted</span><span class="tok-operator">,</span> <span class="tok-variable">Rerun</span><span class="tok-operator">,</span> <span class="tok-variable">Missing</span><span class="tok-operator">,</span> <span class="tok-variable">Counted</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = (Counted, Rerun, Missing, Counted) }
+.lua (lua)
+__assert_eq { expected = (Counted, Rerun, Missing, Counted) }
+.gleam (gleam)
+__assert_eq { expected = (Counted, Rerun, Missing, Counted) }</pre>
+
+<h4>the_first_completed_run_counts_and_moves_on (test)</h4>
+
+<span class="badge passed">test the_first_completed_run_counts_and_moves_on: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">first</span> <span class="tok-operator">=</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">p</span> <span class="tok-operator">=</span> <span class="tok-variable">block_progress</span> <span class="tok-variable">first</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">Completed</span> <span class="tok-parenthesis">]</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">p</span><span class="tok-symbol">::stage</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::run</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::counted</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = (0, 1, 1) }
+.lua (lua)
+__assert_eq { expected = (0, 1, 1) }
+.gleam (gleam)
+__assert_eq { expected = (0, 1, 1) }</pre>
+
+<h4>a_crash_marks_the_run_for_a_rerun (test)</h4>
+
+<span class="badge passed">test a_crash_marks_the_run_for_a_rerun: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">first</span> <span class="tok-operator">=</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">p</span> <span class="tok-operator">=</span> <span class="tok-variable">block_progress</span> <span class="tok-variable">first</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">Completed</span><span class="tok-operator">;</span> <span class="tok-variable">Crashed</span> <span class="tok-parenthesis">]</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">p</span><span class="tok-symbol">::stage</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::run</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::retried</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">!+</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = (0, 1, true) }
+.lua (lua)
+__assert_eq { expected = (0, 1, true) }
+.gleam (gleam)
+__assert_eq { expected = (0, 1, true) }</pre>
+
+<h4>a_completed_rerun_moves_to_the_next_stage (test)</h4>
+
+<span class="badge passed">test a_completed_rerun_moves_to_the_next_stage: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">first</span> <span class="tok-operator">=</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">p</span> <span class="tok-operator">=</span> <span class="tok-variable">block_progress</span> <span class="tok-variable">first</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">Completed</span><span class="tok-operator">;</span> <span class="tok-variable">Crashed</span><span class="tok-operator">;</span> <span class="tok-variable">Completed</span> <span class="tok-parenthesis">]</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">p</span><span class="tok-symbol">::stage</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::run</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::counted</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::retried</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">!-</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = (1, 0, 2, false) }
+.lua (lua)
+__assert_eq { expected = (1, 0, 2, false) }
+.gleam (gleam)
+__assert_eq { expected = (1, 0, 2, false) }</pre>
+
+<h4>a_block_runs_every_stage_in_order (test)</h4>
+
+<span class="badge passed">test a_block_runs_every_stage_in_order: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">first</span> <span class="tok-operator">=</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">p</span> <span class="tok-operator">=</span> <span class="tok-variable">block_progress</span> <span class="tok-variable">first</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">Completed</span><span class="tok-operator">;</span> <span class="tok-variable">Crashed</span><span class="tok-operator">;</span> <span class="tok-variable">Completed</span><span class="tok-operator">;</span> <span class="tok-variable">Completed</span> <span class="tok-parenthesis">]</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">p</span><span class="tok-symbol">::stage</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::counted</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::missing</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">2</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">3</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = (2, 3, 0) }
+.lua (lua)
+__assert_eq { expected = (2, 3, 0) }
+.gleam (gleam)
+__assert_eq { expected = (2, 3, 0) }</pre>
+
+<h4>a_block_ends_after_its_last_stage (test)</h4>
+
+<span class="badge passed">test a_block_ends_after_its_last_stage: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">first</span> <span class="tok-operator">=</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">three</span><span class="tok-operator">,</span> <span class="tok-variable">four</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">Completed</span><span class="tok-operator">;</span> <span class="tok-variable">Crashed</span><span class="tok-operator">;</span> <span class="tok-variable">Completed</span> <span class="tok-parenthesis">]</span><span class="tok-operator">,</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">Completed</span><span class="tok-operator">;</span> <span class="tok-variable">Crashed</span><span class="tok-operator">;</span> <span class="tok-variable">Completed</span><span class="tok-operator">;</span> <span class="tok-variable">Completed</span> <span class="tok-parenthesis">]</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">block_finished</span> <span class="tok-variable">first</span> <span class="tok-variable">three</span><span class="tok-operator">,</span> <span class="tok-variable">block_finished</span> <span class="tok-variable">first</span> <span class="tok-variable">four</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">!-</span><span class="tok-operator">,</span> <span class="tok-number">!+</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = (false, true) }
+.lua (lua)
+__assert_eq { expected = (false, true) }
+.gleam (gleam)
+__assert_eq { expected = (false, true) }</pre>
+
+<h4>two_crashes_count_one_run_missing (test)</h4>
+
+<span class="badge passed">test two_crashes_count_one_run_missing: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">first</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">runs</span> <span class="tok-operator">=</span> <span class="tok-variable">stages_of</span> <span class="tok-variable">first</span> <span class="tok-number">1</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">p</span> <span class="tok-operator">=</span> <span class="tok-variable">after</span> <span class="tok-variable">runs</span> <span class="tok-parenthesis">(</span><span class="tok-variable">after</span> <span class="tok-variable">runs</span> <span class="tok-parenthesis">(</span><span class="tok-variable">starting</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">Crashed</span><span class="tok-parenthesis">)</span> <span class="tok-variable">Crashed</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">p</span><span class="tok-symbol">::stage</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::counted</span><span class="tok-operator">,</span> <span class="tok-variable">p</span><span class="tok-symbol">::missing</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = (1, 0, 1) }
+.lua (lua)
+__assert_eq { expected = (1, 0, 1) }
+.gleam (gleam)
+__assert_eq { expected = (1, 0, 1) }</pre>
+
+<h4>a_probed_stage_keeps_its_run_count (test)</h4>
+
+<span class="badge passed">test a_probed_stage_keeps_its_run_count: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">runs</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">runs_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">probed_stage</span> <span class="tok-string">&quot;</span><span class="tok-string">lead_trace.lua</span><span class="tok-string">&quot;</span> <span class="tok-variable">runs</span> <span class="tok-string">&quot;</span><span class="tok-string">lead-trace.log</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">runs_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">plain_stage</span> <span class="tok-variable">runs</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">10</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">10</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = (10, 10) }
+.lua (lua)
+__assert_eq { expected = (10, 10) }
+.gleam (gleam)
+__assert_eq { expected = (10, 10) }</pre>
+
+<h4>a_probed_stage_removes_its_probe_and_keeps_the_trace (test)</h4>
+
+<span class="badge passed">test a_probed_stage_removes_its_probe_and_keeps_the_trace: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">runs</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">steps</span> <span class="tok-operator">=</span> <span class="tok-variable">probed_stage</span> <span class="tok-string">&quot;</span><span class="tok-string">lead_trace.lua</span><span class="tok-string">&quot;</span> <span class="tok-variable">runs</span> <span class="tok-string">&quot;</span><span class="tok-string">lead-trace.log</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">probe_left_installed</span> <span class="tok-variable">steps</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = false }
+.lua (lua)
+__assert_eq { expected = false }
+.gleam (gleam)
+__assert_eq { expected = false }</pre>
+
+<h4>a_stage_without_removal_leaves_its_probe_installed (test)</h4>
+
+<span class="badge passed">test a_stage_without_removal_leaves_its_probe_installed: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+///&gt; lua
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">runs</span> <span class="tok-operator">=</span> <span class="tok-number">10</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">probe_left_installed</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">InstallProbe</span> <span class="tok-string">&quot;</span><span class="tok-string">lead_trace.lua</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">Runs</span> <span class="tok-variable">runs</span> <span class="tok-parenthesis">]</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span></code></pre>
+<pre class="output">.c (c)
+__assert_eq { expected = true }
+.lua (lua)
+__assert_eq { expected = true }
+.gleam (gleam)
+__assert_eq { expected = true }</pre>
+
+</main>
+</body>
+</html>

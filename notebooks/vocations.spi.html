@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vocations.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>vocations (test)</h4>
+
+<span class="badge other">test vocations: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:!</span> <span class="tok-variable">knight</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">paladin</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">sorcerer</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">druid</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">healer</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">PaladinHeals</span> <span class="tok-operator">::</span> <span class="tok-variable">healer</span> <span class="tok-variable">paladin</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">SorcererHeals</span> <span class="tok-operator">::</span> <span class="tok-variable">healer</span> <span class="tok-variable">sorcerer</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">DruidHeals</span> <span class="tok-operator">::</span> <span class="tok-variable">healer</span> <span class="tok-variable">druid</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">heal</span> <span class="tok-operator">=</span> <span class="tok-variable">cooldowns</span><span class="tok-symbol">::healing</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">strike</span> <span class="tok-operator">=</span> <span class="tok-variable">cooldowns</span><span class="tok-symbol">::attack</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">spell</span> <span class="tok-variable">v</span> <span class="tok-variable">g</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">WoundCleansing</span> <span class="tok-operator">::</span> <span class="tok-variable">spell</span> <span class="tok-variable">knight</span> <span class="tok-variable">heal</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Berserk</span> <span class="tok-operator">::</span> <span class="tok-variable">spell</span> <span class="tok-variable">knight</span> <span class="tok-variable">strike</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">DivineHealing</span> <span class="tok-operator">::</span> <span class="tok-variable">spell</span> <span class="tok-variable">paladin</span> <span class="tok-variable">heal</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">LightHealing</span> <span class="tok-operator">::</span> <span class="tok-keyword">\*</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-variable">healer</span> <span class="tok-variable">v</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">spell</span> <span class="tok-variable">v</span> <span class="tok-variable">heal</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">IntenseHealing</span> <span class="tok-operator">::</span> <span class="tok-keyword">\*</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-variable">healer</span> <span class="tok-variable">v</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">spell</span> <span class="tok-variable">v</span> <span class="tok-variable">heal</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">spell_data</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">words</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+        <span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">mana</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">cooldown_ms</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+        <span class="tok-variable">group_cooldown_ms</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">healing</span> <span class="tok-parenthesis">(</span><span class="tok-variable">words</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mana</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">spell_data</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span> <span class="tok-variable">words</span> <span class="tok-operator">=</span> <span class="tok-variable">words</span><span class="tok-operator">;</span> <span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-variable">level</span><span class="tok-operator">;</span> <span class="tok-variable">mana</span> <span class="tok-operator">=</span> <span class="tok-variable">mana</span><span class="tok-operator">;</span> <span class="tok-variable">cooldown_ms</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span><span class="tok-operator">;</span> <span class="tok-variable">group_cooldown_ms</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">berserk</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">spell_data</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">words</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">exori</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">35</span><span class="tok-operator">;</span> <span class="tok-variable">mana</span> <span class="tok-operator">=</span> <span class="tok-number">115</span><span class="tok-operator">;</span> <span class="tok-variable">cooldown_ms</span> <span class="tok-operator">=</span> <span class="tok-number">4000</span><span class="tok-operator">;</span> <span class="tok-variable">group_cooldown_ms</span> <span class="tok-operator">=</span> <span class="tok-number">2000</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">data</span> <span class="tok-keyword">\*</span> <span class="tok-variable">v</span> <span class="tok-variable">g</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">v</span> <span class="tok-variable">g</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">s</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">WoundCleansing</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">healing</span> <span class="tok-string">&quot;</span><span class="tok-string">exura ico</span><span class="tok-string">&quot;</span> <span class="tok-number">8</span> <span class="tok-number">40</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Berserk</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">berserk</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">DivineHealing</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">healing</span> <span class="tok-string">&quot;</span><span class="tok-string">exura san</span><span class="tok-string">&quot;</span> <span class="tok-number">35</span> <span class="tok-number">160</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">LightHealing</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">healing</span> <span class="tok-string">&quot;</span><span class="tok-string">exura</span><span class="tok-string">&quot;</span> <span class="tok-number">8</span> <span class="tok-number">20</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">IntenseHealing</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">healing</span> <span class="tok-string">&quot;</span><span class="tok-string">exura gran</span><span class="tok-string">&quot;</span> <span class="tok-number">20</span> <span class="tok-number">70</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">cooldown_id_of</span> <span class="tok-keyword">\*</span> <span class="tok-variable">v</span> <span class="tok-variable">g</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">v</span> <span class="tok-variable">g</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">cooldowns</span><span class="tok-symbol">::spell_id</span> <span class="tok-variable">g</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:&lt;</span> <span class="tok-variable">cooldowns</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">s</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">WoundCleansing</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">WoundCleansingSpell</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Berserk</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">StrikeSpell</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">DivineHealing</span> <span class="tok-operator">|</span> <span class="tok-variable">LightHealing</span> <span class="tok-keyword">_</span> <span class="tok-operator">|</span> <span class="tok-variable">IntenseHealing</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">LightHealingSpell</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">as_cooldown</span> <span class="tok-keyword">\*</span> <span class="tok-variable">v</span> <span class="tok-variable">g</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">v</span> <span class="tok-variable">g</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">cooldowns</span><span class="tok-symbol">::spell</span> <span class="tok-variable">g</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">d</span> <span class="tok-operator">=</span> <span class="tok-variable">data</span> <span class="tok-variable">s</span>
+    <span class="tok-parenthesis">{</span> <span class="tok-variable">id</span> <span class="tok-operator">=</span> <span class="tok-variable">cooldown_id_of</span> <span class="tok-variable">s</span><span class="tok-operator">;</span> <span class="tok-variable">own_ms</span> <span class="tok-operator">=</span> <span class="tok-variable">d</span><span class="tok-symbol">::cooldown_ms</span><span class="tok-operator">;</span> <span class="tok-variable">group_ms</span> <span class="tok-operator">=</span> <span class="tok-variable">d</span><span class="tok-symbol">::group_cooldown_ms</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">castable</span> <span class="tok-keyword">\*</span> <span class="tok-variable">v</span> <span class="tok-variable">g</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mana</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">v</span> <span class="tok-variable">g</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">d</span> <span class="tok-operator">=</span> <span class="tok-variable">data</span> <span class="tok-variable">s</span>
+    <span class="tok-variable">level</span> <span class="tok-operator">&gt;=</span> <span class="tok-variable">d</span><span class="tok-symbol">::level</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">mana</span> <span class="tok-operator">&gt;=</span> <span class="tok-variable">d</span><span class="tok-symbol">::mana</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">knight_heal</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">knight</span> <span class="tok-variable">heal</span> <span class="tok-operator">=</span> <span class="tok-variable">WoundCleansing</span></code></pre>
+
+<h4>spell_levels_and_mana_gate_casting_like_canary (test)</h4>
+
+<span class="badge passed">test spell_levels_and_mana_gate_casting_like_canary: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">8</span><span class="tok-number_suffix">i32</span>
+<span class="tok-variable">castable</span> <span class="tok-variable">level</span> <span class="tok-number">90</span> <span class="tok-variable">WoundCleansing</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span>
+<span class="tok-variable">castable</span> <span class="tok-variable">level</span> <span class="tok-number">90</span> <span class="tok-variable">Berserk</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span>
+<span class="tok-variable">castable</span> <span class="tok-parenthesis">(</span><span class="tok-variable">level</span> <span class="tok-operator">+</span> <span class="tok-number">12</span><span class="tok-parenthesis">)</span> <span class="tok-number">70</span> <span class="tok-parenthesis">(</span><span class="tok-variable">IntenseHealing</span> <span class="tok-variable">DruidHeals</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span></code></pre>
+<pre class="output">__assert_eq { expected = true }
+__assert_eq { expected = false }
+__assert_eq { expected = true }</pre>
+
+<h4>spell_data_matches_canary_scripts (test)</h4>
+
+<span class="badge passed">test spell_data_matches_canary_scripts: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">healer</span> <span class="tok-operator">=</span> <span class="tok-variable">PaladinHeals</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">data</span> <span class="tok-parenthesis">(</span><span class="tok-variable">LightHealing</span> <span class="tok-variable">healer</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::mana</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">20</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">data</span> <span class="tok-variable">Berserk</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::cooldown_ms</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">4000</span><span class="tok-number_suffix">i32</span></code></pre>
+<pre class="output">__assert_eq { expected = 20 }
+__assert_eq { expected = 4000 }</pre>
+
+<h4>a_knight_cannot_cast_light_healing (test)</h4>
+
+<span class="badge passed">test a_knight_cannot_cast_light_healing: passed</span>
+<pre class="code"><code>///- --test --symbol --fails &quot;Unification failure&quot;
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">knight</span> <span class="tok-variable">heal</span> <span class="tok-operator">=</span> <span class="tok-variable">LightHealing</span> <span class="tok-variable">PaladinHeals</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">data</span> <span class="tok-variable">s</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::mana</span></code></pre>
+<pre class="output">failed to compile as expected (&quot;Unification failure&quot;): FatalError: File main has a type error somewhere in its path. /home/runner/work/tibia/tibia/src/vocations.spi:80:45 (main.spi:64:45): ETY-TermError: Unification failure. Got:      healer knight Expected: healer paladin In the definition: spiral_cells_test.
+</pre>
+
+<h4>a_paladin_cannot_cast_wound_cleansing (test)</h4>
+
+<span class="badge passed">test a_paladin_cannot_cast_wound_cleansing: passed</span>
+<pre class="code"><code>///- --test --symbol --fails &quot;Unification failure&quot;
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">spell</span> <span class="tok-variable">paladin</span> <span class="tok-variable">heal</span> <span class="tok-operator">=</span> <span class="tok-variable">WoundCleansing</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">data</span> <span class="tok-variable">s</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::mana</span></code></pre>
+<pre class="output">failed to compile as expected (&quot;Unification failure&quot;): FatalError: File main has a type error somewhere in its path. /home/runner/work/tibia/tibia/src/vocations.spi:85:33 (main.spi:64:33): ETY-TermError: Unification failure. Got:      spell paladin healing Expected: spell knight healing In the definition: spiral_cells_test.
+</pre>
+
+<h4>spell_data_on_gpu (test)</h4>
+
+<span class="badge passed">test spell_data_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">level</span> <span class="tok-operator">=</span> <span class="tok-number">8</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?</span> <span class="tok-variable">castable</span> <span class="tok-variable">level</span> <span class="tok-number">90</span> <span class="tok-variable">WoundCleansing</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">castable</span> <span class="tok-variable">level</span> <span class="tok-number">90</span> <span class="tok-variable">Berserk</span> <span class="tok-operator">=</span> <span class="tok-number">!-</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-parenthesis">(</span><span class="tok-variable">data</span> <span class="tok-variable">Berserk</span><span class="tok-parenthesis">)</span><span class="tok-symbol">::cooldown_ms</span> <span class="tok-operator">=</span> <span class="tok-number">4000</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+</main>
+</body>
+</html>

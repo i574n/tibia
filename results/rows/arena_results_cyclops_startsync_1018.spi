@@ -1,0 +1,4 @@
+///- --no-respell
+open table_rows
+inl table () =
+    Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-18T15:39:08\tvbot\t1\tcyclops\t3\t675\t88732\t114\t21\t4\t15\t77\t0\t\t\n2026-10-18T15:41:25\tnexbot\t1\tcyclops\t3\t675\t82448\t100\t20\t2\t16\t44\t0\t\t"

@@ -1,0 +1,5 @@
+///- --package .
+:# lua static =
+    :< testing
+
+:< sm'_operators

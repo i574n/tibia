@@ -1,0 +1,53 @@
+///- --package .
+:# hashed static =
+    :< testing
+
+:= plane_count () : i32 = 4
+
+:= bucket_count () : i32 = 1 <<< plane_count ()
+
+:= mixed (k : i32) : u32 =
+    := a : u32 = (conv (k + 1) : u32) * 2654435761u32
+    := b = (a ^^^ (a >>> 15)) * 2246822519u32
+    b ^^^ (b >>> 13)
+
+:= plane_value (k : i32) : i32 = (conv ((mixed k >>> 16) &&& 511u32) : i32) - 256
+
+:= plane_dot (j : i32) (x : network::inputs) : i32 =
+    network::dot_with (\ i => plane_value (j * network::input_count () + i)) x
+
+:= bucket (x : network::inputs) : i32 =
+    :~ ^ go (j : i32) (b : i32) : i32 =
+        ? j >= plane_count ()
+        ?> b
+        |: go (j + 1) (? plane_dot j x >= 0 ?> b ||| (1 <<< j) |: b)
+    go 0 0
+
+:= cell (table : network::weights) (b : i32) (k : i32) : i32 = network::weight table (b * 3 + k)
+
+:= heal_and_retreat_in (b : i32) : network::weights =
+    network::zero_weights () |> network::with_weight (b * 3) 1 |> network::with_weight (b * 3 + 2) 1
+
+:= decide (table : network::weights) (x : network::inputs) : network::decision =
+    := b = bucket x
+    network::decision_of (cell table b 0) (cell table b 1) (cell table b 2)
+
+///> c
+///> rust
+:# buckets_match_the_golden_planes =
+    := a = network::inputs_of 256 0 0 0 !- !- !-
+    := b = network::inputs_of 40 3 200 1 !+ !+ !-
+    := c = network::inputs_of 128 1 50 5 !- !+ !+
+    (bucket a, bucket b, bucket c) |> _assert_eq (13i32, 7i32, 11i32)
+
+///> c
+///> rust
+:# the_planes_and_a_fourth_bucket_match_the_golden_values =
+    := e = network::inputs_of 200 2 256 1 !+ !- !-
+    (bucket e, plane_value 0, plane_value 3) |> _assert_eq (5i32, 19i32, 228i32)
+
+///> c
+///> rust
+:# the_table_cells_of_the_bucket_decide =
+    := d = decide (heal_and_retreat_in 7) (network::inputs_of 40 3 200 1 !+ !+ !-)
+    (d::heal, d::engage, d::retreat, bucket_count ()) |> _assert_eq (!+, !-, !+, 16i32)

@@ -1,0 +1,14 @@
+packageDir = '../../deps/spiral/lib'
+packages = ['|core-', 'spiral-', '../../src-']
+modules = '''
+predict
+lanes
+lanes_gpu
+gpu_plan
+hashed_lanes
+bc_run
+bc_eval
+bc_onpolicy
+bc_direction
+bc_dagger
+'''

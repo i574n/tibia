@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>offscreen.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>offscreen (test)</h4>
+
+<span class="badge other">test offscreen: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">sm'_operators</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">launch</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">exe</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-operator">;</span> <span class="tok-variable">directory</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-operator">;</span> <span class="tok-variable">arguments</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-operator">;</span> <span class="tok-variable">desktop</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-operator">;</span> <span class="tok-variable">timeout_seconds</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">parsed</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Ready</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">MissingExe</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">MissingValue</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">BadTimeout</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">UnknownFlag</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">outcome</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Exited</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span> <span class="tok-operator">*</span> <span class="tok-variable">u32</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">TimedOut</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span> <span class="tok-operator">*</span> <span class="tok-variable">u32</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">NoDesktop</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">NotStarted</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">defaults</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">exe</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">directory</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">arguments</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">desktop</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">tibia-probe</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">timeout_seconds</span> <span class="tok-operator">=</span> <span class="tok-number">120</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">timeout_set</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">convert</span><span class="tok-symbol">::try_convert</span> <span class="tok-variable">value</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-variable">seconds</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Ready</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">l</span> <span class="tok-keyword">?|</span> <span class="tok-variable">timeout_seconds</span> <span class="tok-operator">=</span> <span class="tok-variable">seconds</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">BadTimeout</span> <span class="tok-variable">value</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">text_flag</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Exe</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Directory</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Arguments</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Desktop</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">number_flag</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">TimeoutSeconds</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">flag</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Text</span> <span class="tok-operator">:</span> <span class="tok-variable">text_flag</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Number</span> <span class="tok-operator">:</span> <span class="tok-variable">number_flag</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">flag_named</span> <span class="tok-parenthesis">(</span><span class="tok-variable">name</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">flag</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">case_labels</span><span class="tok-symbol">::case_of_label</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span> <span class="tok-string">&quot;</span><span class="tok-string">-</span><span class="tok-string">&quot;</span> <span class="tok-variable">name</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-variable">t</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Some</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Text</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?=</span> <span class="tok-variable">case_labels</span><span class="tok-symbol">::case_of_label</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span> <span class="tok-string">&quot;</span><span class="tok-string">-</span><span class="tok-string">&quot;</span> <span class="tok-variable">name</span> <span class="tok-keyword">?|</span> <span class="tok-variable">Some</span> <span class="tok-variable">n</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Some</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Number</span> <span class="tok-variable">n</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">None</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">flag_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">flag</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::starts_with</span> <span class="tok-string">&quot;</span><span class="tok-string">--</span><span class="tok-string">&quot;</span> <span class="tok-variable">text</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">flag_named</span> <span class="tok-parenthesis">(</span><span class="tok-variable">case_labels</span><span class="tok-symbol">::unprefixed</span> <span class="tok-string">&quot;</span><span class="tok-string">--</span><span class="tok-string">&quot;</span> <span class="tok-variable">text</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">|:</span> <span class="tok-variable">None</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">text_set</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">f</span> <span class="tok-operator">:</span> <span class="tok-variable">text_flag</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">v</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">f</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Exe</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">l</span> <span class="tok-keyword">?|</span> <span class="tok-variable">exe</span> <span class="tok-operator">=</span> <span class="tok-variable">v</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Directory</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">l</span> <span class="tok-keyword">?|</span> <span class="tok-variable">directory</span> <span class="tok-operator">=</span> <span class="tok-variable">v</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Arguments</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">l</span> <span class="tok-keyword">?|</span> <span class="tok-variable">arguments</span> <span class="tok-operator">=</span> <span class="tok-variable">v</span> <span class="tok-parenthesis">}</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Desktop</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">l</span> <span class="tok-keyword">?|</span> <span class="tok-variable">desktop</span> <span class="tok-operator">=</span> <span class="tok-variable">v</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">number_set</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">f</span> <span class="tok-operator">:</span> <span class="tok-variable">number_flag</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">v</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">f</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">TimeoutSeconds</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">timeout_set</span> <span class="tok-variable">l</span> <span class="tok-variable">v</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">flag_set</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">f</span> <span class="tok-operator">:</span> <span class="tok-variable">flag</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">v</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">f</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Text</span> <span class="tok-variable">t</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Ready</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text_set</span> <span class="tok-variable">l</span> <span class="tok-variable">t</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Number</span> <span class="tok-variable">n</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">number_set</span> <span class="tok-variable">l</span> <span class="tok-variable">n</span> <span class="tok-variable">v</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">flag_step</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">flag_of</span> <span class="tok-variable">text</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-variable">f</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">flag_set</span> <span class="tok-variable">l</span> <span class="tok-variable">f</span> <span class="tok-variable">value</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">UnknownFlag</span> <span class="tok-variable">text</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">finished_parse</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span> <span class="tok-operator">=</span> <span class="tok-keyword">?</span> <span class="tok-variable">l</span><span class="tok-symbol">::exe</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">MissingExe</span> <span class="tok-keyword">|:</span> <span class="tok-variable">Ready</span> <span class="tok-variable">l</span>
+
+<span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">parse_from</span> <span class="tok-parenthesis">(</span><span class="tok-variable">args</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">args</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-parenthesis">[</span><span class="tok-parenthesis">]</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">finished_parse</span> <span class="tok-variable">l</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">flag</span> <span class="tok-operator">::</span> <span class="tok-parenthesis">[</span><span class="tok-parenthesis">]</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">MissingValue</span> <span class="tok-variable">flag</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">flag</span> <span class="tok-operator">::</span> <span class="tok-variable">value</span> <span class="tok-operator">::</span> <span class="tok-variable">rest</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?=</span> <span class="tok-variable">flag_step</span> <span class="tok-variable">l</span> <span class="tok-variable">flag</span> <span class="tok-variable">value</span> <span class="tok-keyword">?|</span> <span class="tok-variable">Ready</span> <span class="tok-variable">next</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">parse_from</span> <span class="tok-variable">rest</span> <span class="tok-variable">next</span> <span class="tok-operator">|</span> <span class="tok-variable">failed</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">failed</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">parse</span> <span class="tok-parenthesis">(</span><span class="tok-variable">args</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span> <span class="tok-operator">=</span> <span class="tok-variable">parse_from</span> <span class="tok-variable">args</span> <span class="tok-parenthesis">(</span><span class="tok-variable">defaults</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">command_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">quoted</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">l</span><span class="tok-symbol">::exe</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&quot;</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">l</span><span class="tok-symbol">::arguments</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">quoted</span> <span class="tok-keyword">|:</span> <span class="tok-variable">quoted</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string"> </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">l</span><span class="tok-symbol">::arguments</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">station_desktop</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">WinSta0</span><span class="tok-unescaped_char">\\</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">l</span><span class="tok-symbol">::desktop</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">exit_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">pid</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">code</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">offscreen: pid </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">pid</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string"> exit </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">code</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string"> on desktop </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">l</span><span class="tok-symbol">::desktop</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">killed_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">offscreen: killed after </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">l</span><span class="tok-symbol">::timeout_seconds</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string"> s</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">failure_report</span> <span class="tok-parenthesis">(</span><span class="tok-variable">o</span> <span class="tok-operator">:</span> <span class="tok-variable">outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">o</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">NoDesktop</span> <span class="tok-variable">error</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">CreateDesktop failed: </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">error</span> <span class="tok-parenthesis">]</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">NotStarted</span> <span class="tok-variable">error</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">CreateProcess failed: </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#?</span> <span class="tok-variable">error</span> <span class="tok-parenthesis">]</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">[</span><span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">report</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">o</span> <span class="tok-operator">:</span> <span class="tok-variable">outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">o</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Exited</span> <span class="tok-parenthesis">(</span><span class="tok-variable">pid</span><span class="tok-operator">,</span> <span class="tok-variable">code</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">exit_line</span> <span class="tok-variable">l</span> <span class="tok-variable">pid</span> <span class="tok-variable">code</span> <span class="tok-parenthesis">]</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">TimedOut</span> <span class="tok-parenthesis">(</span><span class="tok-variable">pid</span><span class="tok-operator">,</span> <span class="tok-variable">code</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">killed_line</span> <span class="tok-variable">l</span><span class="tok-operator">;</span> <span class="tok-variable">exit_line</span> <span class="tok-variable">l</span> <span class="tok-variable">pid</span> <span class="tok-variable">code</span> <span class="tok-parenthesis">]</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">failure_report</span> <span class="tok-variable">o</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">exit_code_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">o</span> <span class="tok-operator">:</span> <span class="tok-variable">outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">o</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Exited</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">TimedOut</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">NoDesktop</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">1</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">NotStarted</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">1</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">killed_exit_code</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span> <span class="tok-operator">=</span> <span class="tok-number">124</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_pointer_types</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">type Wide = *const u16;</span><span class="tok-string">&quot;</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">type Line = *mut u16;</span><span class="tok-string">&quot;</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">type Bytes = *const u8;</span><span class="tok-string">&quot;</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">type Startup = *const StartupInfo;</span><span class="tok-string">&quot;</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">type Information = *mut ProcessInformation;</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_null_pointers</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">const NONE: Bytes = std::ptr::null();</span><span class="tok-string">&quot;</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">const NO_WIDE: Wide = std::ptr::null();</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_create_desktop</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-parenthesis">(</span>
+        <span class="tok-string">&quot;</span><span class="tok-string">unsafe extern </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">system</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> { safe fn CreateDesktopW(_: Wide, _: Wide, _: Bytes, _: u32, _: u32, _: Bytes) </span><span class="tok-string">&quot;</span>
+        <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">-&gt; i64; }</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_close_desktop</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-parenthesis">(</span>
+        <span class="tok-string">&quot;</span><span class="tok-string">#[cfg_attr(windows, link(name = </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">user32</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">))] unsafe extern </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">system</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> { safe fn CloseDesktop(_: i64) -&gt; </span><span class="tok-string">&quot;</span>
+        <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">i32; }</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_process_queries</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">unsafe extern </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">system</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> { safe fn GetLastError() -&gt; u32; }</span><span class="tok-string">&quot;</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">unsafe extern </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">system</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> { safe fn GetProcessId(process: i64) -&gt; u32; }</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_process_control</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">unsafe extern </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">system</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> { safe fn WaitForSingleObject(handle: i64, milliseconds: u32) -&gt; u32; }</span><span class="tok-string">&quot;</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">unsafe extern </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">system</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> { safe fn TerminateProcess(process: i64, code: u32) -&gt; i32; }</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_handle_declarations</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">unsafe extern </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">system</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> { safe fn GetExitCodeProcess(process: i64, code: *mut u32) -&gt; i32; }</span><span class="tok-string">&quot;</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">unsafe extern </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">system</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> { safe fn CloseHandle(handle: i64) -&gt; i32; }</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_create_process</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-parenthesis">(</span>
+        <span class="tok-string">&quot;</span><span class="tok-string">unsafe extern </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">system</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> { safe fn CreateProcessW(_: Wide, _: Line, _: Bytes, _: Bytes, _: i32, _: u32, </span><span class="tok-string">&quot;</span>
+        <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">_: Bytes, _: Wide, _: Startup, _: Information) -&gt; i32; }</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_startup_declaration</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-parenthesis">(</span>
+        <span class="tok-string">&quot;</span><span class="tok-string">#[repr(C)] #[derive(Default)] struct StartupInfo { cb: u32, pointers: [usize; 3], geometry: [u32; 8], </span><span class="tok-string">&quot;</span>
+        <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">show: [u16; 2], reserved2: usize, handles: [i64; 3] }</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_information_declaration</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-parenthesis">(</span>
+        <span class="tok-string">&quot;</span><span class="tok-string">#[repr(C)] #[derive(Default, Clone, Copy)] struct ProcessInformation { process: i64, thread: i64, </span><span class="tok-string">&quot;</span>
+        <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">process_id: u32, thread_id: u32 }</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_types</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">win32_pointer_types</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">win32_null_pointers</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">win32_startup_declaration</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">win32_information_declaration</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_externs</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">win32_create_desktop</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">win32_close_desktop</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">win32_process_queries</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">win32_process_control</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">win32_handle_declarations</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">win32_create_process</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">win32_declarations</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">win32_types</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">win32_externs</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">wide</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">Vec&lt;u16&gt;</span><span class="tok-string">'</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">wide_pointer</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">*const u16</span><span class="tok-string">'</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">wide_mutable_pointer</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">*mut u16</span><span class="tok-string">'</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">address</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">usize</span><span class="tok-string">'</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">startup_info</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">StartupInfo</span><span class="tok-string">'</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">process_information</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">std::cell::Cell&lt;ProcessInformation&gt;</span><span class="tok-string">'</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">information_pointer</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">*mut ProcessInformation</span><span class="tok-string">'</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">exit_code_cell</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">std::cell::Cell&lt;u32&gt;</span><span class="tok-string">'</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">byte_pointer</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">*const u8</span><span class="tok-string">'</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">wide_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">wide</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">win32_declarations</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-string">$'</span><span class="tok-string">(&amp;*</span><span class="tok-variable">!text</span><span class="tok-string">).encode_utf16().chain(std::iter::once(0)).collect::&lt;Vec&lt;u16&gt;&gt;()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">wide</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">wide_start</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">wide</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">wide_pointer</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-variable">!text</span><span class="tok-string">.as_ptr()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">wide_pointer</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">wide_mutable_start</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">wide</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">wide_mutable_pointer</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-variable">!text</span><span class="tok-string">.as_ptr().cast_mut()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">wide_mutable_pointer</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">wide_address</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">wide</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">address</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-variable">!text</span><span class="tok-string">.as_ptr().addr()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">address</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">create_desktop_at</span> <span class="tok-parenthesis">(</span><span class="tok-variable">name</span> <span class="tok-operator">:</span> <span class="tok-variable">wide_pointer</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">CreateDesktopW(</span><span class="tok-variable">!name</span><span class="tok-string">, NO_WIDE, NONE, 0, 0x01FF, NONE)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">close_desktop</span> <span class="tok-parenthesis">(</span><span class="tok-variable">desktop</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">win32_declarations</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">ignore</span> <span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">CloseDesktop(</span><span class="tok-variable">!desktop</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">last_error</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">win32_declarations</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-string">$'</span><span class="tok-string">GetLastError()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">startup_size</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">u32::try_from(std::mem::size_of::&lt;StartupInfo&gt;()).unwrap()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">startup_on</span> <span class="tok-parenthesis">(</span><span class="tok-variable">size</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">desktop</span> <span class="tok-operator">:</span> <span class="tok-variable">address</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">startup_info</span> <span class="tok-operator">=</span>
+    <span class="tok-string">$'</span><span class="tok-string">StartupInfo { cb: </span><span class="tok-variable">!size</span><span class="tok-string">, pointers: [0, </span><span class="tok-variable">!desktop</span><span class="tok-string">, 0], ..Default::default() }</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">startup_info</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">information_empty</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">process_information</span> <span class="tok-operator">=</span>
+    <span class="tok-string">$'</span><span class="tok-string">std::cell::Cell::new(ProcessInformation::default())</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">process_information</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">information_start</span> <span class="tok-parenthesis">(</span><span class="tok-variable">information</span> <span class="tok-operator">:</span> <span class="tok-variable">process_information</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">information_pointer</span> <span class="tok-operator">=</span>
+    <span class="tok-string">$'</span><span class="tok-variable">!information</span><span class="tok-string">.as_ptr()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">information_pointer</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">create_process_at</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">app</span> <span class="tok-operator">:</span> <span class="tok-variable">wide_pointer</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">line</span> <span class="tok-operator">:</span> <span class="tok-variable">wide_mutable_pointer</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">folder</span> <span class="tok-operator">:</span> <span class="tok-variable">wide_pointer</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">startup</span> <span class="tok-operator">:</span> <span class="tok-variable">startup_info</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">info</span> <span class="tok-operator">:</span> <span class="tok-variable">information_pointer</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-string">$'</span><span class="tok-string">CreateProcessW(</span><span class="tok-variable">!app</span><span class="tok-string">, </span><span class="tok-variable">!line</span><span class="tok-string">, NONE, NONE, 0, 0, NONE, </span><span class="tok-variable">!folder</span><span class="tok-string">, &amp;</span><span class="tok-variable">!startup</span><span class="tok-string">, </span><span class="tok-variable">!info</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">information_process</span> <span class="tok-parenthesis">(</span><span class="tok-variable">information</span> <span class="tok-operator">:</span> <span class="tok-variable">process_information</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-variable">!information</span><span class="tok-string">.get().process</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">information_thread</span> <span class="tok-parenthesis">(</span><span class="tok-variable">information</span> <span class="tok-operator">:</span> <span class="tok-variable">process_information</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-variable">!information</span><span class="tok-string">.get().thread</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">close_handle</span> <span class="tok-parenthesis">(</span><span class="tok-variable">handle</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span> <span class="tok-variable">ignore</span> <span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">CloseHandle(</span><span class="tok-variable">!handle</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">exit_code_empty</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">exit_code_cell</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">std::cell::Cell::new(0u32)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">exit_code_cell</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">exit_code_read</span> <span class="tok-parenthesis">(</span><span class="tok-variable">process</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cell</span> <span class="tok-operator">:</span> <span class="tok-variable">exit_code_cell</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">ignore</span> <span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">GetExitCodeProcess(</span><span class="tok-variable">!process</span><span class="tok-string">, </span><span class="tok-variable">!cell</span><span class="tok-string">.as_ptr())</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">exit_code_value</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cell</span> <span class="tok-operator">:</span> <span class="tok-variable">exit_code_cell</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-variable">!cell</span><span class="tok-string">.get()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">create_desktop</span> <span class="tok-parenthesis">(</span><span class="tok-variable">name</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">wide_name</span> <span class="tok-operator">=</span> <span class="tok-variable">wide_of</span> <span class="tok-variable">name</span>
+    <span class="tok-variable">create_desktop_at</span> <span class="tok-parenthesis">(</span><span class="tok-variable">wide_start</span> <span class="tok-variable">wide_name</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">working_folder</span> <span class="tok-parenthesis">(</span><span class="tok-variable">exe</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">directory</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">directory</span> <span class="tok-operator">&lt;&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">directory</span>
+    <span class="tok-keyword">|:</span>
+        <span class="tok-keyword">?=</span> <span class="tok-variable">file_system</span><span class="tok-symbol">::directory_get_parent</span> <span class="tok-variable">exe</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">optionm'</span><span class="tok-symbol">::unbox</span> <span class="tok-keyword">?|</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-variable">parent</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">parent</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">process_wides</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">application</span> <span class="tok-operator">:</span> <span class="tok-variable">wide</span><span class="tok-operator">;</span> <span class="tok-variable">command</span> <span class="tok-operator">:</span> <span class="tok-variable">wide</span><span class="tok-operator">;</span> <span class="tok-variable">folder</span> <span class="tok-operator">:</span> <span class="tok-variable">wide</span><span class="tok-operator">;</span> <span class="tok-variable">desktop</span> <span class="tok-operator">:</span> <span class="tok-variable">wide</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">wides_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">station</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">exe</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">line</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">directory</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">process_wides</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">application</span> <span class="tok-operator">=</span> <span class="tok-variable">wide_of</span> <span class="tok-variable">exe</span>
+        <span class="tok-variable">command</span> <span class="tok-operator">=</span> <span class="tok-variable">wide_of</span> <span class="tok-variable">line</span>
+        <span class="tok-variable">folder</span> <span class="tok-operator">=</span> <span class="tok-variable">wide_of</span> <span class="tok-parenthesis">(</span><span class="tok-variable">working_folder</span> <span class="tok-variable">exe</span> <span class="tok-variable">directory</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">desktop</span> <span class="tok-operator">=</span> <span class="tok-variable">wide_of</span> <span class="tok-variable">station</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">startup_for</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">process_wides</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">startup_info</span> <span class="tok-operator">=</span> <span class="tok-variable">startup_on</span> <span class="tok-parenthesis">(</span><span class="tok-variable">startup_size</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">wide_address</span> <span class="tok-variable">w</span><span class="tok-symbol">::desktop</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">created_with</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">process_wides</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">information</span> <span class="tok-operator">:</span> <span class="tok-variable">process_information</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">app</span><span class="tok-operator">,</span> <span class="tok-variable">line</span><span class="tok-operator">,</span> <span class="tok-variable">folder</span> <span class="tok-operator">=</span> <span class="tok-variable">wide_start</span> <span class="tok-variable">w</span><span class="tok-symbol">::application</span><span class="tok-operator">,</span> <span class="tok-variable">wide_mutable_start</span> <span class="tok-variable">w</span><span class="tok-symbol">::command</span><span class="tok-operator">,</span> <span class="tok-variable">wide_start</span> <span class="tok-variable">w</span><span class="tok-symbol">::folder</span>
+    <span class="tok-variable">create_process_at</span> <span class="tok-variable">app</span> <span class="tok-variable">line</span> <span class="tok-variable">folder</span> <span class="tok-parenthesis">(</span><span class="tok-variable">startup_for</span> <span class="tok-variable">w</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">information_start</span> <span class="tok-variable">information</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">started_process</span> <span class="tok-parenthesis">(</span><span class="tok-variable">information</span> <span class="tok-operator">:</span> <span class="tok-variable">process_information</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">created</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">created</span> <span class="tok-operator">=</span> <span class="tok-number">0</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span>
+    <span class="tok-keyword">|:</span>
+        <span class="tok-variable">close_handle</span> <span class="tok-parenthesis">(</span><span class="tok-variable">information_thread</span> <span class="tok-variable">information</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">information_process</span> <span class="tok-variable">information</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">start_on</span> <span class="tok-parenthesis">(</span><span class="tok-variable">station</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">exe</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">line</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">directory</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">w</span> <span class="tok-operator">=</span> <span class="tok-variable">wides_of</span> <span class="tok-variable">station</span> <span class="tok-variable">exe</span> <span class="tok-variable">line</span> <span class="tok-variable">directory</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">information</span> <span class="tok-operator">=</span> <span class="tok-variable">information_empty</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">started_process</span> <span class="tok-variable">information</span> <span class="tok-parenthesis">(</span><span class="tok-variable">created_with</span> <span class="tok-variable">w</span> <span class="tok-variable">information</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">process_id</span> <span class="tok-parenthesis">(</span><span class="tok-variable">process</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">win32_declarations</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-string">$'</span><span class="tok-string">GetProcessId(</span><span class="tok-variable">!process</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">wait_for</span> <span class="tok-parenthesis">(</span><span class="tok-variable">process</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">milliseconds</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">win32_declarations</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-string">$'</span><span class="tok-string">WaitForSingleObject(</span><span class="tok-variable">!process</span><span class="tok-string">, </span><span class="tok-variable">!milliseconds</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">terminate</span> <span class="tok-parenthesis">(</span><span class="tok-variable">process</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">code</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">win32_declarations</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">ignore</span> <span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">TerminateProcess(</span><span class="tok-variable">!process</span><span class="tok-string">, </span><span class="tok-variable">!code</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">exit_status</span> <span class="tok-parenthesis">(</span><span class="tok-variable">process</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">win32_declarations</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">cell</span> <span class="tok-operator">=</span> <span class="tok-variable">exit_code_empty</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">exit_code_read</span> <span class="tok-variable">process</span> <span class="tok-variable">cell</span>
+    <span class="tok-variable">exit_code_value</span> <span class="tok-variable">cell</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">close_process</span> <span class="tok-parenthesis">(</span><span class="tok-variable">process</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">win32_declarations</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">close_handle</span> <span class="tok-variable">process</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">finished_outcome</span> <span class="tok-parenthesis">(</span><span class="tok-variable">process</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">pid</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">timed_out</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">outcome</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">code</span> <span class="tok-operator">=</span> <span class="tok-variable">exit_status</span> <span class="tok-variable">process</span>
+    <span class="tok-variable">close_process</span> <span class="tok-variable">process</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">timed_out</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">TimedOut</span> <span class="tok-parenthesis">(</span><span class="tok-variable">pid</span><span class="tok-operator">,</span> <span class="tok-variable">code</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">|:</span> <span class="tok-variable">Exited</span> <span class="tok-parenthesis">(</span><span class="tok-variable">pid</span><span class="tok-operator">,</span> <span class="tok-variable">code</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">waited_out</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">process</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">outcome</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">pid</span> <span class="tok-operator">=</span> <span class="tok-variable">process_id</span> <span class="tok-variable">process</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">timed_out</span> <span class="tok-operator">=</span> <span class="tok-variable">wait_for</span> <span class="tok-variable">process</span> <span class="tok-parenthesis">(</span><span class="tok-variable">conv</span> <span class="tok-variable">l</span><span class="tok-symbol">::timeout_seconds</span> <span class="tok-operator">*</span> <span class="tok-number">1000</span><span class="tok-number_suffix">u32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">&lt;&gt;</span> <span class="tok-number">0</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">timed_out</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">terminate</span> <span class="tok-variable">process</span> <span class="tok-parenthesis">(</span><span class="tok-variable">killed_exit_code</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">finished_outcome</span> <span class="tok-variable">process</span> <span class="tok-variable">pid</span> <span class="tok-variable">timed_out</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">run_started</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">outcome</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">process</span> <span class="tok-operator">=</span> <span class="tok-variable">start_on</span> <span class="tok-parenthesis">(</span><span class="tok-variable">station_desktop</span> <span class="tok-variable">l</span><span class="tok-parenthesis">)</span> <span class="tok-variable">l</span><span class="tok-symbol">::exe</span> <span class="tok-parenthesis">(</span><span class="tok-variable">command_line</span> <span class="tok-variable">l</span><span class="tok-parenthesis">)</span> <span class="tok-variable">l</span><span class="tok-symbol">::directory</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">process</span> <span class="tok-operator">=</span> <span class="tok-number">0</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">NotStarted</span> <span class="tok-parenthesis">(</span><span class="tok-variable">last_error</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">|:</span> <span class="tok-variable">waited_out</span> <span class="tok-variable">l</span> <span class="tok-variable">process</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">run_on_desktop</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">outcome</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">desktop</span> <span class="tok-operator">=</span> <span class="tok-variable">create_desktop</span> <span class="tok-variable">l</span><span class="tok-symbol">::desktop</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">desktop</span> <span class="tok-operator">=</span> <span class="tok-number">0</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">NoDesktop</span> <span class="tok-parenthesis">(</span><span class="tok-variable">last_error</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+    <span class="tok-keyword">|:</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">o</span> <span class="tok-operator">=</span> <span class="tok-variable">run_started</span> <span class="tok-variable">l</span>
+        <span class="tok-variable">close_desktop</span> <span class="tok-variable">desktop</span>
+        <span class="tok-variable">o</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ready_launch</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">p</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Ready</span> <span class="tok-variable">l</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">l</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-parenthesis">(</span><span class="tok-variable">defaults</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">?|</span> <span class="tok-variable">desktop</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">not ready</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">missing_exe</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">p</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">MissingExe</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!+</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">bad_timeout</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">p</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">BadTimeout</span> <span class="tok-variable">value</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">value</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">missing_value</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">p</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">MissingValue</span> <span class="tok-variable">flag</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">flag</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">probe_launch</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span> <span class="tok-operator">=</span> <span class="tok-variable">ready_launch</span> <span class="tok-parenthesis">(</span><span class="tok-variable">parse</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">--exe</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">C:</span><span class="tok-unescaped_char">\\</span><span class="tok-string">otc</span><span class="tok-unescaped_char">\\</span><span class="tok-string">otclient.exe</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">--arguments</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">--mode probe</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h4>flags_fill_the_launch_and_keep_the_script_defaults (test)</h4>
+
+<span class="badge passed">test flags_fill_the_launch_and_keep_the_script_defaults: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+///&gt; rust
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">l</span> <span class="tok-operator">=</span> <span class="tok-variable">probe_launch</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">l</span><span class="tok-symbol">::desktop</span><span class="tok-operator">,</span> <span class="tok-variable">l</span><span class="tok-symbol">::timeout_seconds</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-string">&quot;</span><span class="tok-string">tibia-probe</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-number">120</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.lua (lua)
+__assert_eq { expected = (tibia-probe, 120) }
+.rs (rust)
+__assert_eq { expected = (tibia-probe, 120) }</pre>
+<pre class="output">0</pre>
+
+<h4>flags_build_the_quoted_command_line_on_the_probe_station (test)</h4>
+
+<span class="badge passed">test flags_build_the_quoted_command_line_on_the_probe_station: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+///&gt; rust
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">l</span> <span class="tok-operator">=</span> <span class="tok-variable">probe_launch</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">command_line</span> <span class="tok-variable">l</span><span class="tok-operator">,</span> <span class="tok-variable">station_desktop</span> <span class="tok-variable">l</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-string">&quot;</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">C:</span><span class="tok-unescaped_char">\\</span><span class="tok-string">otc</span><span class="tok-unescaped_char">\\</span><span class="tok-string">otclient.exe</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> --mode probe</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">WinSta0</span><span class="tok-unescaped_char">\\</span><span class="tok-string">tibia-probe</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.lua (lua)
+__assert_eq { expected = (&quot;C:\otc\otclient.exe&quot; --mode probe, WinSta0\tibia-probe) }
+.rs (rust)
+__assert_eq { expected = (&quot;C:\otc\otclient.exe&quot; --mode probe, WinSta0\tibia-probe) }</pre>
+<pre class="output">0</pre>
+
+<h4>bad_input_names_its_cause (test)</h4>
+
+<span class="badge passed">test bad_input_names_its_cause: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+///&gt; rust
+
+<span class="tok-variable">missing_exe</span> <span class="tok-parenthesis">(</span><span class="tok-variable">parse</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">--desktop</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">x</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span>
+<span class="tok-variable">missing_value</span> <span class="tok-parenthesis">(</span><span class="tok-variable">parse</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">--exe</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-string">&quot;</span><span class="tok-string">--exe</span><span class="tok-string">&quot;</span></code></pre>
+<pre class="output">.lua (lua)
+__assert_eq { expected = true }
+__assert_eq { expected = --exe }
+.rs (rust)
+__assert_eq { expected = true }
+__assert_eq { expected = --exe }</pre>
+<pre class="output">0</pre>
+
+<h4>a_bad_timeout_names_its_value (test)</h4>
+
+<span class="badge passed">test a_bad_timeout_names_its_value: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+///&gt; rust
+
+<span class="tok-variable">bad_timeout</span> <span class="tok-parenthesis">(</span><span class="tok-variable">parse</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">--exe</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">a.exe</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">--timeout-seconds</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">soon</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-string">&quot;</span><span class="tok-string">soon</span><span class="tok-string">&quot;</span></code></pre>
+<pre class="output">.lua (lua)
+__assert_eq { expected = soon }
+.rs (rust)
+__assert_eq { expected = soon }</pre>
+<pre class="output">0</pre>
+
+<h4>a_flag_is_its_case_after_two_dashes (test)</h4>
+
+<span class="badge passed">test a_flag_is_its_case_after_two_dashes: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+///&gt; rust
+
+<span class="tok-parenthesis">(</span><span class="tok-variable">flag_of</span> <span class="tok-string">&quot;</span><span class="tok-string">--timeout-seconds</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">flag_of</span> <span class="tok-string">&quot;</span><span class="tok-string">--directory</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">flag_of</span> <span class="tok-string">&quot;</span><span class="tok-string">timeout-seconds</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">flag_of</span> <span class="tok-string">&quot;</span><span class="tok-string">--speed</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Number</span> <span class="tok-variable">TimeoutSeconds</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">Some</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Text</span> <span class="tok-variable">Directory</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">None</span><span class="tok-operator">,</span> <span class="tok-variable">None</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.lua (lua)
+__assert_eq { expected = (Some(Number(TimeoutSeconds)), Some(Text(Directory)), None, None) }
+.rs (rust)
+__assert_eq { expected = (Some(Number(TimeoutSeconds)), Some(Text(Directory)), None, None) }</pre>
+<pre class="output">0</pre>
+
+<h4>every_flag_reaches_its_field (test)</h4>
+
+<span class="badge passed">test every_flag_reaches_its_field: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+///&gt; rust
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">l</span> <span class="tok-operator">=</span> <span class="tok-variable">ready_launch</span> <span class="tok-parenthesis">(</span><span class="tok-variable">parse</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">--exe</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">a.exe</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">--directory</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">C:</span><span class="tok-unescaped_char">\\</span><span class="tok-string">otc</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">--timeout-seconds</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">9</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span><span class="tok-parenthesis">)</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">l</span><span class="tok-symbol">::directory</span><span class="tok-operator">,</span> <span class="tok-variable">l</span><span class="tok-symbol">::timeout_seconds</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-string">&quot;</span><span class="tok-string">C:</span><span class="tok-unescaped_char">\\</span><span class="tok-string">otc</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-number">9</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.lua (lua)
+__assert_eq { expected = (C:\otc, 9) }
+.rs (rust)
+__assert_eq { expected = (C:\otc, 9) }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">thirty_second_launch</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">base</span> <span class="tok-operator">=</span> <span class="tok-variable">defaults</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">{</span> <span class="tok-variable">base</span> <span class="tok-keyword">?|</span> <span class="tok-variable">exe</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">a.exe</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">timeout_seconds</span> <span class="tok-operator">=</span> <span class="tok-number">30</span> <span class="tok-parenthesis">}</span></code></pre>
+
+<h4>reports_match_run_offscreen_ps1 (test)</h4>
+
+<span class="badge passed">test reports_match_run_offscreen_ps1: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+///&gt; rust
+
+<span class="tok-variable">report</span> <span class="tok-parenthesis">(</span><span class="tok-variable">thirty_second_launch</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Exited</span> <span class="tok-parenthesis">(</span><span class="tok-number">77</span><span class="tok-number_suffix">u32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">u32</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">offscreen: pid 77 exit 0 on desktop tibia-probe</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span></code></pre>
+<pre class="output">.lua (lua)
+__assert_eq { expected = Cons(offscreen: pid 77 exit 0 on desktop tibia-probe, Nil) }
+.rs (rust)
+__assert_eq { expected = Cons(offscreen: pid 77 exit 0 on desktop tibia-probe, Nil) }</pre>
+<pre class="output">0</pre>
+
+<h4>a_timeout_report_matches_run_offscreen_ps1 (test)</h4>
+
+<span class="badge passed">test a_timeout_report_matches_run_offscreen_ps1: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; lua
+///&gt; rust
+
+<span class="tok-variable">report</span> <span class="tok-parenthesis">(</span><span class="tok-variable">thirty_second_launch</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">TimedOut</span> <span class="tok-parenthesis">(</span><span class="tok-number">77</span><span class="tok-number_suffix">u32</span><span class="tok-operator">,</span> <span class="tok-number">124</span><span class="tok-number_suffix">u32</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">offscreen: killed after 30 s</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">offscreen: pid 77 exit 124 on desktop tibia-probe</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span></code></pre>
+<pre class="output">.lua (lua)
+__assert_eq { expected = Cons(offscreen: killed after 30 s, Cons(offscreen: pid 77 exit 124 on desktop tibia-probe, Nil)) }
+.rs (rust)
+__assert_eq { expected = Cons(offscreen: killed after 30 s, Cons(offscreen: pid 77 exit 124 on desktop tibia-probe, Nil)) }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">hidden_exit</span> <span class="tok-parenthesis">(</span><span class="tok-variable">windows</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span> <span class="tok-operator">*</span> <span class="tok-variable">i64</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">desktop</span> <span class="tok-operator">=</span> <span class="tok-keyword">?</span> <span class="tok-variable">windows</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">create_desktop</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral-offscreen-test</span><span class="tok-string">&quot;</span> <span class="tok-keyword">|:</span> <span class="tok-number">1</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">cmd</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">C:</span><span class="tok-unescaped_char">\\</span><span class="tok-string">Windows</span><span class="tok-unescaped_char">\\</span><span class="tok-string">System32</span><span class="tok-unescaped_char">\\</span><span class="tok-string">cmd.exe</span><span class="tok-string">&quot;</span>
+    <span class="tok-variable">desktop</span><span class="tok-operator">,</span> <span class="tok-keyword">?</span> <span class="tok-variable">windows</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">start_on</span> <span class="tok-string">&quot;</span><span class="tok-string">WinSta0</span><span class="tok-unescaped_char">\\</span><span class="tok-string">spiral-offscreen-test</span><span class="tok-string">&quot;</span> <span class="tok-variable">cmd</span> <span class="tok-string">&quot;</span><span class="tok-string">cmd.exe /c exit 3</span><span class="tok-string">&quot;</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span> <span class="tok-keyword">|:</span> <span class="tok-number">1</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">hidden_cleanup</span> <span class="tok-parenthesis">(</span><span class="tok-variable">windows</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">desktop</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">process</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">windows</span> <span class="tok-keyword">?&gt;</span>
+        <span class="tok-variable">close_process</span> <span class="tok-variable">process</span>
+        <span class="tok-variable">close_desktop</span> <span class="tok-variable">desktop</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">hidden_result</span> <span class="tok-parenthesis">(</span><span class="tok-variable">windows</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">desktop</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">process</span> <span class="tok-operator">:</span> <span class="tok-variable">i64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span> <span class="tok-operator">*</span> <span class="tok-variable">u32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">waited</span> <span class="tok-operator">=</span> <span class="tok-keyword">?</span> <span class="tok-variable">windows</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">wait_for</span> <span class="tok-variable">process</span> <span class="tok-number">10000</span><span class="tok-number_suffix">u32</span> <span class="tok-keyword">|:</span> <span class="tok-number">0</span><span class="tok-number_suffix">u32</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">code</span> <span class="tok-operator">=</span> <span class="tok-keyword">?</span> <span class="tok-variable">windows</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">exit_status</span> <span class="tok-variable">process</span> <span class="tok-keyword">|:</span> <span class="tok-number">3</span><span class="tok-number_suffix">u32</span>
+    <span class="tok-variable">hidden_cleanup</span> <span class="tok-variable">windows</span> <span class="tok-variable">desktop</span> <span class="tok-variable">process</span>
+    <span class="tok-variable">waited</span><span class="tok-operator">,</span> <span class="tok-variable">code</span></code></pre>
+
+<h4>a_hidden_desktop_runs_a_program_and_reports_its_exit_code (test)</h4>
+
+<span class="badge passed">test a_hidden_desktop_runs_a_program_and_reports_its_exit_code: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">windows</span> <span class="tok-operator">=</span> <span class="tok-variable">platform</span><span class="tok-symbol">::is_windows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">desktop</span><span class="tok-operator">,</span> <span class="tok-variable">process</span> <span class="tok-operator">=</span> <span class="tok-variable">hidden_exit</span> <span class="tok-variable">windows</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">desktop</span> <span class="tok-operator">&lt;&gt;</span> <span class="tok-number">0</span><span class="tok-operator">,</span> <span class="tok-variable">process</span> <span class="tok-operator">&lt;&gt;</span> <span class="tok-number">0</span><span class="tok-operator">,</span> <span class="tok-variable">hidden_result</span> <span class="tok-variable">windows</span> <span class="tok-variable">desktop</span> <span class="tok-variable">process</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">!+</span><span class="tok-operator">,</span> <span class="tok-number">!+</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-number">0</span><span class="tok-number_suffix">u32</span><span class="tok-operator">,</span> <span class="tok-number">3</span><span class="tok-number_suffix">u32</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (true, true, 0, 3) }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">input_refusal</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">p</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">BadTimeout</span> <span class="tok-variable">value</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">offscreen: --timeout-seconds is not a number: </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">value</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">UnknownFlag</span> <span class="tok-variable">flag</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">offscreen: unknown flag </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">flag</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">refusal_text</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">p</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">MissingExe</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">offscreen: --exe is required</span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">MissingValue</span> <span class="tok-variable">flag</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">offscreen: </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">flag</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string"> needs a value</span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">input_refusal</span> <span class="tok-variable">p</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">refusal_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">parsed</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">console</span><span class="tok-symbol">::write_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">refusal_text</span> <span class="tok-variable">p</span><span class="tok-parenthesis">)</span>
+    <span class="tok-number">2</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">launched_code</span> <span class="tok-parenthesis">(</span><span class="tok-variable">l</span> <span class="tok-operator">:</span> <span class="tok-variable">launch</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">o</span> <span class="tok-operator">=</span> <span class="tok-variable">run_on_desktop</span> <span class="tok-variable">l</span>
+    <span class="tok-variable">listm</span><span class="tok-symbol">::iter</span> <span class="tok-variable">console</span><span class="tok-symbol">::write_line</span> <span class="tok-parenthesis">(</span><span class="tok-variable">report</span> <span class="tok-variable">l</span> <span class="tok-variable">o</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">exit_code_of</span> <span class="tok-variable">o</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">main</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">p</span> <span class="tok-operator">=</span> <span class="tok-variable">parse</span> <span class="tok-parenthesis">(</span><span class="tok-variable">env</span><span class="tok-symbol">::command_line_arguments</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">code</span> <span class="tok-operator">=</span> <span class="tok-keyword">?=</span> <span class="tok-variable">p</span> <span class="tok-keyword">?|</span> <span class="tok-variable">Ready</span> <span class="tok-variable">l</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">launched_code</span> <span class="tok-variable">l</span> <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">refusal_code</span> <span class="tok-variable">p</span>
+    <span class="tok-string">$'</span><span class="tok-string">std::process::exit(</span><span class="tok-variable">!code</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span></code></pre>
+
+</main>
+</body>
+</html>

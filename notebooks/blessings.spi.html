@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>blessings.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>blessings (test)</h4>
+
+<span class="badge other">test blessings: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:|</span> <span class="tok-variable">death_cover</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Unprotected</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">AmuletOfLoss</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Skulled</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">carried</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">ContainerItem</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">EquippedItem</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">item_loss_percent</span> <span class="tok-parenthesis">(</span><span class="tok-variable">blessings</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">blessings</span> <span class="tok-operator">&lt;=</span> <span class="tok-number">0</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">100</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">blessings</span> <span class="tok-operator">=</span> <span class="tok-number">1</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">70</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">blessings</span> <span class="tok-operator">=</span> <span class="tok-number">2</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">45</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">blessings</span> <span class="tok-operator">=</span> <span class="tok-number">3</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">25</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">blessings</span> <span class="tok-operator">=</span> <span class="tok-number">4</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">10</span>
+    <span class="tok-keyword">|:</span> <span class="tok-number">0</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">roll_scale</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-number">10000</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">item_chance</span> <span class="tok-parenthesis">(</span><span class="tok-variable">blessings</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">item</span> <span class="tok-operator">:</span> <span class="tok-variable">carried</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">chance</span> <span class="tok-operator">=</span> <span class="tok-variable">item_loss_percent</span> <span class="tok-variable">blessings</span> <span class="tok-operator">*</span> <span class="tok-number">100</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">item</span> <span class="tok-keyword">?|</span> <span class="tok-operator">|</span> <span class="tok-variable">ContainerItem</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">chance</span> <span class="tok-operator">|</span> <span class="tok-variable">EquippedItem</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">chance</span> <span class="tok-operator">/</span> <span class="tok-number">10</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">dropped</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cover</span> <span class="tok-operator">:</span> <span class="tok-variable">death_cover</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">item</span> <span class="tok-operator">:</span> <span class="tok-variable">carried</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">roll</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">cover</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Skulled</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!+</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">AmuletOfLoss</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Unprotected</span> <span class="tok-variable">blessings</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">roll</span> <span class="tok-operator">&lt;=</span> <span class="tok-variable">item_chance</span> <span class="tok-variable">blessings</span> <span class="tok-variable">item</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">drops_over_every_roll</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cover</span> <span class="tok-operator">:</span> <span class="tok-variable">death_cover</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">item</span> <span class="tok-operator">:</span> <span class="tok-variable">carried</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">count</span> <span class="tok-parenthesis">(</span><span class="tok-variable">roll</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">total</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+        <span class="tok-keyword">?</span> <span class="tok-variable">roll</span> <span class="tok-operator">&gt;</span> <span class="tok-variable">roll_scale</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">total</span> <span class="tok-keyword">|:</span> <span class="tok-variable">count</span> <span class="tok-parenthesis">(</span><span class="tok-variable">roll</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">?</span> <span class="tok-variable">dropped</span> <span class="tok-variable">cover</span> <span class="tok-variable">item</span> <span class="tok-variable">roll</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">total</span> <span class="tok-operator">+</span> <span class="tok-number">1</span> <span class="tok-keyword">|:</span> <span class="tok-variable">total</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">count</span> <span class="tok-number">1</span> <span class="tok-number">0</span></code></pre>
+
+<h4>an_unblessed_knight_always_drops_the_backpack_and_each_other_item_one_time_in_ten (test)</h4>
+
+<span class="badge passed">test an_unblessed_knight_always_drops_the_backpack_and_each_other_item_one_time_in_ten: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">bless</span> <span class="tok-operator">=</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">drops_over_every_roll</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Unprotected</span> <span class="tok-variable">bless</span><span class="tok-parenthesis">)</span> <span class="tok-variable">ContainerItem</span><span class="tok-operator">,</span> <span class="tok-variable">drops_over_every_roll</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Unprotected</span> <span class="tok-variable">bless</span><span class="tok-parenthesis">)</span> <span class="tok-variable">EquippedItem</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">10000</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">1000</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (10000, 1000) }</pre>
+
+<h4>one_blessing_cuts_the_drop_chance_like_canary_blessing_lua (test)</h4>
+
+<span class="badge passed">test one_blessing_cuts_the_drop_chance_like_canary_blessing_lua: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">one</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">drops_over_every_roll</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Unprotected</span> <span class="tok-variable">one</span><span class="tok-parenthesis">)</span> <span class="tok-variable">ContainerItem</span><span class="tok-operator">,</span> <span class="tok-variable">drops_over_every_roll</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Unprotected</span> <span class="tok-variable">one</span><span class="tok-parenthesis">)</span> <span class="tok-variable">EquippedItem</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">7000</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">700</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (7000, 700) }</pre>
+
+<h4>four_and_five_blessings_follow_canary_blessing_lua (test)</h4>
+
+<span class="badge passed">test four_and_five_blessings_follow_canary_blessing_lua: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">one</span> <span class="tok-operator">=</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span>
+<span class="tok-parenthesis">(</span>
+    <span class="tok-variable">drops_over_every_roll</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Unprotected</span> <span class="tok-parenthesis">(</span><span class="tok-variable">one</span> <span class="tok-operator">+</span> <span class="tok-number">3</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">EquippedItem</span><span class="tok-operator">,</span>
+    <span class="tok-variable">drops_over_every_roll</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Unprotected</span> <span class="tok-parenthesis">(</span><span class="tok-variable">one</span> <span class="tok-operator">+</span> <span class="tok-number">4</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">ContainerItem</span>
+<span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">100</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (100, 0) }</pre>
+
+<h4>the_amulet_of_loss_keeps_everything_and_a_skull_drops_everything (test)</h4>
+
+<span class="badge passed">test the_amulet_of_loss_keeps_everything_and_a_skull_drops_everything: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; c
+
+<span class="tok-parenthesis">(</span><span class="tok-variable">drops_over_every_roll</span> <span class="tok-variable">AmuletOfLoss</span> <span class="tok-variable">ContainerItem</span><span class="tok-operator">,</span> <span class="tok-variable">drops_over_every_roll</span> <span class="tok-variable">Skulled</span> <span class="tok-variable">EquippedItem</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-operator">,</span> <span class="tok-number">10000</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (0, 10000) }</pre>
+
+<h4>unblessed_drops_on_gpu (test)</h4>
+
+<span class="badge passed">test unblessed_drops_on_gpu: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; wgsl
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">roll</span> <span class="tok-operator">=</span> <span class="tok-number">1000</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">?</span>
+    <span class="tok-variable">dropped</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Unprotected</span> <span class="tok-number">0</span><span class="tok-parenthesis">)</span> <span class="tok-variable">EquippedItem</span> <span class="tok-variable">roll</span>
+    <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">dropped</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Unprotected</span> <span class="tok-number">0</span><span class="tok-parenthesis">)</span> <span class="tok-variable">EquippedItem</span> <span class="tok-parenthesis">(</span><span class="tok-variable">roll</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span> <span class="tok-number">!-</span>
+    <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">dropped</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Unprotected</span> <span class="tok-number">0</span><span class="tok-parenthesis">)</span> <span class="tok-variable">ContainerItem</span> <span class="tok-number">10000</span>
+<span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-keyword">|:</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span></code></pre>
+
+</main>
+</body>
+</html>

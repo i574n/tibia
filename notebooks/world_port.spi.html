@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>world_port.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code>///- --package .</code></pre>
+
+<h4>world_port (test)</h4>
+
+<span class="badge other">test world_port: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">sm'_operators</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">world_programs</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">directory</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+        <span class="tok-variable">server</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+        <span class="tok-variable">server_args</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">string</span>
+        <span class="tok-variable">log</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+        <span class="tok-variable">online_line</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">world</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">running</span> <span class="tok-operator">:</span> <span class="tok-variable">process</span><span class="tok-symbol">::started</span><span class="tok-operator">;</span> <span class="tok-variable">programs</span> <span class="tok-operator">:</span> <span class="tok-variable">world_programs</span> <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">world_started</span> <span class="tok-parenthesis">(</span><span class="tok-variable">programs</span> <span class="tok-operator">:</span> <span class="tok-variable">world_programs</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">world</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">running</span> <span class="tok-operator">=</span> <span class="tok-variable">process</span><span class="tok-symbol">::start_logging</span> <span class="tok-variable">programs</span><span class="tok-symbol">::directory</span> <span class="tok-variable">programs</span><span class="tok-symbol">::server</span> <span class="tok-variable">programs</span><span class="tok-symbol">::server_args</span> <span class="tok-variable">programs</span><span class="tok-symbol">::log</span>
+        <span class="tok-variable">programs</span> <span class="tok-operator">=</span> <span class="tok-variable">programs</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">world_online</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">file_system</span><span class="tok-symbol">::read_all_text</span> <span class="tok-variable">w</span><span class="tok-symbol">::programs</span><span class="tok-symbol">::log</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::contains</span> <span class="tok-variable">w</span><span class="tok-symbol">::programs</span><span class="tok-symbol">::online_line</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">world_event_within</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ms</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::host_event</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">process</span><span class="tok-symbol">::await_exit_within</span> <span class="tok-variable">w</span><span class="tok-symbol">::running</span> <span class="tok-variable">ms</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Some</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::WorldCrashed</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?</span> <span class="tok-variable">world_online</span> <span class="tok-variable">w</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Some</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::WorldReady</span> <span class="tok-keyword">|:</span> <span class="tok-variable">None</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">world_stopped</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span> <span class="tok-variable">process</span><span class="tok-symbol">::kill_tree_of_pid</span> <span class="tok-parenthesis">(</span><span class="tok-variable">process</span><span class="tok-symbol">::started_pid</span> <span class="tok-variable">w</span><span class="tok-symbol">::running</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">stopped_if_running</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">current</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-variable">w</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">world_stopped</span> <span class="tok-variable">w</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">restarted</span> <span class="tok-parenthesis">(</span><span class="tok-variable">programs</span> <span class="tok-operator">:</span> <span class="tok-variable">world_programs</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">stopped_if_running</span> <span class="tok-variable">current</span>
+    <span class="tok-variable">Some</span> <span class="tok-parenthesis">(</span><span class="tok-variable">world_started</span> <span class="tok-variable">programs</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">released</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">stopped_if_running</span> <span class="tok-variable">current</span>
+    <span class="tok-variable">None</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">world_changed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">programs</span> <span class="tok-operator">:</span> <span class="tok-variable">world_programs</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">:</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::host_command</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">c</span> <span class="tok-operator">=</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::RestartWorld</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">restarted</span> <span class="tok-variable">programs</span> <span class="tok-variable">current</span>
+    <span class="tok-keyword">|?</span> <span class="tok-variable">c</span> <span class="tok-operator">=</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::ReleaseWindow</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-variable">released</span> <span class="tok-variable">current</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">current</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">world_obeyed</span> <span class="tok-parenthesis">(</span><span class="tok-variable">programs</span> <span class="tok-operator">:</span> <span class="tok-variable">world_programs</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">:</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::host_command</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">c</span> <span class="tok-operator">=</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::StartWorld</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Some</span> <span class="tok-parenthesis">(</span><span class="tok-variable">world_started</span> <span class="tok-variable">programs</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">|:</span> <span class="tok-variable">world_changed</span> <span class="tok-variable">programs</span> <span class="tok-variable">current</span> <span class="tok-variable">c</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">exited</span> <span class="tok-parenthesis">(</span><span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">process</span><span class="tok-symbol">::started</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ms</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">process</span><span class="tok-symbol">::await_exit_within</span> <span class="tok-variable">s</span> <span class="tok-variable">ms</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!+</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">absent</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">current</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!+</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">fake_server_args</span> <span class="tok-parenthesis">(</span><span class="tok-variable">line</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">-u</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">-c</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">import time; print('</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">line</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">'); time.sleep(30)</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">fake_log</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-variable">file_system</span><span class="tok-symbol">::get_temp_path</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">/tibia-world-port-fake.log</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">fake_server</span> <span class="tok-parenthesis">(</span><span class="tok-variable">line</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">world_programs</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">directory</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">.</span><span class="tok-string">&quot;</span>
+        <span class="tok-variable">server</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">python</span><span class="tok-string">&quot;</span>
+        <span class="tok-variable">server_args</span> <span class="tok-operator">=</span> <span class="tok-variable">fake_server_args</span> <span class="tok-variable">line</span>
+        <span class="tok-variable">log</span> <span class="tok-operator">=</span> <span class="tok-variable">fake_log</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">online_line</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">&gt;&gt; server online!</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">settled</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tries</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::host_event</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">world_event_within</span> <span class="tok-variable">w</span> <span class="tok-number">50</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-variable">e</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Some</span> <span class="tok-variable">e</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?</span> <span class="tok-variable">tries</span> <span class="tok-operator">&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">settled</span> <span class="tok-variable">w</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tries</span> <span class="tok-operator">-</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">|:</span> <span class="tok-variable">None</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ready_within</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tries</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-variable">settled</span> <span class="tok-variable">w</span> <span class="tok-variable">tries</span> <span class="tok-operator">=</span> <span class="tok-variable">Some</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::WorldReady</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">crashed_within</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ms</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-variable">world_event_within</span> <span class="tok-variable">w</span> <span class="tok-variable">ms</span> <span class="tok-operator">=</span> <span class="tok-variable">Some</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::WorldCrashed</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">exits_within</span> <span class="tok-parenthesis">(</span><span class="tok-variable">w</span> <span class="tok-operator">:</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-variable">exited</span> <span class="tok-variable">w</span><span class="tok-symbol">::running</span> <span class="tok-number">10000</span><span class="tok-number_suffix">i32</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">expect_world</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">world</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">current</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Some</span> <span class="tok-variable">w</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">w</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">None</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">failwith</span> <span class="tok-string">&quot;</span><span class="tok-string">world_port: a start command left no world</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">obeyed_world</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">world_programs</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">current</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">:</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::host_command</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">world</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">expect_world</span> <span class="tok-parenthesis">(</span><span class="tok-variable">world_obeyed</span> <span class="tok-variable">p</span> <span class="tok-variable">current</span> <span class="tok-variable">c</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">cycled</span> <span class="tok-parenthesis">(</span><span class="tok-variable">p</span> <span class="tok-operator">:</span> <span class="tok-variable">world_programs</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">world</span> <span class="tok-operator">*</span> <span class="tok-variable">world</span> <span class="tok-operator">*</span> <span class="tok-variable">option</span> <span class="tok-variable">world</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">first</span> <span class="tok-operator">=</span> <span class="tok-variable">obeyed_world</span> <span class="tok-variable">p</span> <span class="tok-variable">None</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::StartWorld</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">second</span> <span class="tok-operator">=</span> <span class="tok-variable">obeyed_world</span> <span class="tok-variable">p</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">first</span><span class="tok-parenthesis">)</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::RestartWorld</span>
+    <span class="tok-variable">first</span><span class="tok-operator">,</span> <span class="tok-variable">second</span><span class="tok-operator">,</span> <span class="tok-variable">world_obeyed</span> <span class="tok-variable">p</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">second</span><span class="tok-parenthesis">)</span> <span class="tok-variable">arena_host</span><span class="tok-symbol">::ReleaseWindow</span></code></pre>
+
+<h4>a_world_reports_online_then_crashed_after_a_kill (test)</h4>
+
+<span class="badge passed">test a_world_reports_online_then_crashed_after_a_kill: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">w</span> <span class="tok-operator">=</span> <span class="tok-variable">world_started</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fake_server</span> <span class="tok-string">&quot;</span><span class="tok-string">&gt;&gt; server online!</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">ready_within</span> <span class="tok-variable">w</span> <span class="tok-number">400</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span>
+<span class="tok-variable">world_stopped</span> <span class="tok-variable">w</span>
+<span class="tok-variable">crashed_within</span> <span class="tok-variable">w</span> <span class="tok-number">10000</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span></code></pre>
+<pre class="output">__assert_eq { expected = true }
+__assert_eq { expected = true }</pre>
+
+<h4>the_world_owner_restarts_and_releases_its_server (test)</h4>
+
+<span class="badge passed">test the_world_owner_restarts_and_releases_its_server: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">first</span><span class="tok-operator">,</span> <span class="tok-variable">second</span><span class="tok-operator">,</span> <span class="tok-variable">released</span> <span class="tok-operator">=</span> <span class="tok-variable">cycled</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fake_server</span> <span class="tok-string">&quot;</span><span class="tok-string">&gt;&gt; server online!</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span>
+<span class="tok-parenthesis">(</span><span class="tok-variable">exits_within</span> <span class="tok-variable">first</span><span class="tok-operator">,</span> <span class="tok-variable">exits_within</span> <span class="tok-variable">second</span><span class="tok-operator">,</span> <span class="tok-variable">absent</span> <span class="tok-variable">released</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-number">!+</span><span class="tok-operator">,</span> <span class="tok-number">!+</span><span class="tok-operator">,</span> <span class="tok-number">!+</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = (true, true, true) }</pre>
+
+</main>
+</body>
+</html>
