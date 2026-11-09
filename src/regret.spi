@@ -48,13 +48,15 @@
     s
 
 :~ ^ value_from (g : toy) (a : i32) (theirs : array i32) (b : i32) (acc : i32) : i32 =
-    ? b >= length theirs ?> acc / 1000
+    ? b >= length theirs
+    ?> acc / 1000
     |: value_from g a theirs (b + 1) (acc + index theirs b * payoff g a b)
 
 := value (g : toy) (a : i32) (theirs : array i32) : i32 = value_from g a theirs 0 0
 
 :~ ^ expected_from (g : toy) (mine : array i32) (theirs : array i32) (a : i32) (acc : i32) : i32 =
-    ? a >= length mine ?> acc / 1000
+    ? a >= length mine
+    ?> acc / 1000
     |: expected_from g mine theirs (a + 1) (acc + index mine a * value g a theirs)
 
 :== regret_round = { mine : array i32; theirs : array i32; ev : i32; t : i32 }

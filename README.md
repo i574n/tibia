@@ -28,8 +28,8 @@ that generates terrain's walk, road, sight and protection-zone tables; item kind
   post (2026-10-30). The 17 remaining findings are `@` words inside log strings, which the poster defuses. The generated
   terrain tables are a fan-4 tree of small inline parts, checked equal to the old tables over every word, row and zone
   offset.
-- **Manifests:** each package has one `spiral.toml` (edition 3, its module list); the compiler and Cells both read it,
-  and `scripts/predict.ps1` patches its `packageDir`.
+- **Manifests:** each package has one `spiral.toml` (i574n dialect, no key needed; its module list); the compiler and
+  Cells both read it, and `scripts/predict.ps1` patches its `packageDir`.
 - **Host:** the arena host's block plan runs on Gleam (BEAM) and drives the live world through real programs (Canary,
   MariaDB, the client runner `live/run-hunt.ps1`). Its first live block (2026-10-28) counted 4 of 4 hunts with the
   exact expected trace, released the world and left no server behind.
@@ -254,7 +254,7 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 | `live/` | The live arena layer: the parity layer, bot shims and configs, the run and check scripts, scenario assets, and the block runner |
 | `analysis/` | Log analyses of concluded pre-registrations that kit can't express yet; each is deleted when its kit verb installs. A new pre-registration's method is the kit command in its BENCHMARK test row, never a new script |
 | `results/` | Live run tables that BENCHMARK.md cites, the live map scan and the map tool's region dump |
-| `scripts/` | `init.ps1`, `build.ps1`, `publish.ps1`, `workflow.ps1` as in the sibling repos, plus `predict.ps1` (builds and runs `apps/predict` with optional candidate builders) and `score.ps1` (scores candidates under rule D16) |
+| `scripts/` | `init.ps1`, `build.ps1`, `publish.ps1`, `workflow.ps1` as in the sibling repos, plus `predict.ps1` (builds and runs `apps/predict` with optional candidate builders; `-CheckOnly` type-checks the module and `src` in about a minute without building or running, the cheap gate before queuing a node run) and `score.ps1` (scores candidates under rule D16) |
 | `.github/workflows/gh-pages.yml` | CI on Ubuntu and Windows: every test file through Spiral's cells runner, then the published tree |
 
 ## Running
@@ -264,7 +264,7 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
   builds what is missing.
 - Test: `pwsh scripts/build.ps1` runs every file with tests in `src` and in `apps/arena`, `apps/host`, `apps/offscreen`,
   `apps/map`, `apps/predict` and `apps/canary` through `deps/spiral/apps/cells/spi/run_notebook.ps1`
-  and fails unless every test executed and passed (no failed, unsupported, skipped or missing rows); `-Files geometry,views`
+  (or `$SPIRAL_CELLS_ROOT/spi/run_notebook.ps1` when that variable is set) and fails unless every test executed and passed (no failed, unsupported, skipped or missing rows); `-Files geometry,views`
   runs a subset. Notebook outputs go to `notebooks/` (ignored by git, published by `scripts/publish.ps1`).
 - Standards: `scripts/build.ps1` first runs `SpiralCompiler format --check` over src and those apps (predict aside) and stops on any layout
   change; locally, `kit standards src apps/arena apps/map` also checks the rules `src/standards.spi` declares (no

@@ -45,8 +45,10 @@
 := truncated_normal_unit \* p {purpose_code}. (key : roll p) : i32 =
     :~ ^ attempt (n : u32) : i32 =
         := v = normal_attempt key n
-        ? in_unit v ?> v
-        |? n >= 7u32 ?> clamped_to_unit v
+        ? in_unit v
+        ?> v
+        |? n >= 7u32
+        ?> clamped_to_unit v
         |: attempt (n + 1u32)
     attempt 0u32
 
@@ -76,8 +78,10 @@
     uniform_between (defense / 2i32) defense key 200u32
 
 := armor_block \* p {purpose_code}. (armor : i32) (key : roll p) : i32 =
-    ? armor > 3i32 ?> uniform_between (armor / 2i32) (armor - (armor % 2i32 + 1i32)) key 201u32
-    |? armor > 0i32 ?> 1i32
+    ? armor > 3i32
+    ?> uniform_between (armor / 2i32) (armor - (armor % 2i32 + 1i32)) key 201u32
+    |? armor > 0i32
+    ?> 1i32
     |: 0i32
 
 := after_armor \* p {purpose_code}. (hit : i32) (armor : i32) (key : roll p) : i32 =
@@ -223,7 +227,8 @@
     differ, spent, arrow_with_no_charge g, total > shots * 30i32
 
 :~ ^ fired (arrow : ranged_attack) (i : i32) (count : i32) : i32 =
-    ? i >= 10000i32 ?> count
+    ? i >= 10000i32
+    ?> count
     |: fired arrow (i + 1i32) (? ranged_fires arrow (combat_key 3u32 (conv i) 4u32 ArrowFire) ?> count + 1i32 |: count)
 
 := reach_of (arrow : ranged_attack) (range : i32) : bool * bool * bool =

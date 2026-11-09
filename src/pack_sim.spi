@@ -202,11 +202,14 @@
 
 :== seeds = hunting_pack::seed_range
 
+:= cleared_at (camp : camp) (t : tactic) (seed : u32) (acc : tally5) : tally5 =
+    := elapsed, p = hunting_pack::clear_run camp t seed 6000
+    clear_tallied acc elapsed p
+
 :~ ^ clear_sums (camp : camp) (t : tactic) (r : seeds) (i : i32) (acc : tally5) : tally5 =
-    ? i >= r::count ?> acc
-    |:
-        := elapsed, p = hunting_pack::clear_run camp t (r::first + conv i) 6000
-        clear_sums camp t r (i + 1) (clear_tallied acc elapsed p)
+    ? i >= r::count
+    ?> acc
+    |: clear_sums camp t r (i + 1) (cleared_at camp t (r::first + conv i) acc)
 
 := sums_over (camp : camp) (t : tactic) (r : seeds) : tally5 = clear_sums camp t r 0 (0, 0, 0, 0, 0)
 
@@ -788,7 +791,8 @@
 := cavebot_run (c : camp) (i : i32) : pack = hunting_pack::simulate c (cavebot_160 ()) (1001u32 + conv i) 1200
 
 :~ ^ hunter_sums (c : camp) (i : i32) (kills : i32) (hits : i32) : kp =
-    ? i >= 5 ?> kills, hits
+    ? i >= 5
+    ?> kills, hits
     |:
         := p = cavebot_run c i
         hunter_sums c (i + 1) (kills + p::score::kills) (hits + p::hunter::tally::hits_taken)
@@ -815,7 +819,8 @@
     hunting_pack::with_slot 0 { (hunting_pack::slot 0 begun) ?| at = { k ?| x = k::x + dx; y = k::y + dy } } begun
 
 :~ ^ foe_turns (camp : camp) (tick : i32) (p : pack) : pack =
-    ? tick >= 10 ?> p
+    ? tick >= 10
+    ?> p
     |: foe_turns camp (tick + 1) (hunting_pack::foe_turn camp 1001u32 tick (tick * hunting_pack::tick_ms ()) 0 p)
 
 := closed_tiles (gap : i32) : i32 =
@@ -846,7 +851,8 @@
     allowed && (went_north || went_west), north || went_north, west || went_west
 
 :~ ^ dance_tries (camp : camp) (placed : pack) (i : i32) (acc : sides) : sides =
-    ? i >= 20 ?> acc
+    ? i >= 20
+    ?> acc
     |: dance_tries camp placed (i + 1) (tallied_side acc (side_of placed::hunter::at (dance_landing camp placed i)))
 
 ///> c
@@ -861,7 +867,8 @@
     geometry::same_tile (hunting_pack::slot 0 after)::at (hunting_pack::slot 0 d::placed)::at = !-
 
 :~ ^ dance_thinks (d : dancer) (now : i32) (k : i32) (danced : i32) : i32 =
-    ? k >= 200 ?> danced
+    ? k >= 200
+    ?> danced
     |:
         := moved = dance_moved d now
         dance_thinks d (now + hunting_pack::player_think_ms ()) (k + 1) (? moved ?> danced + 1 |: danced)

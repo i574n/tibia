@@ -23,7 +23,8 @@
 
 := holder_of (p : position) : string =
     := t = tile_at p
-    ? tile_present t = !- ?> "none"
+    ? tile_present t = !-
+    ?> "none"
     |:
         := top = tile_top_creature t
         ? creature_present top ?> "" ++#? creature_id top |: "free"
@@ -145,7 +146,8 @@
 := saw (g : lead) (present : mut bool) (c : creature) : () =
     := id, at = creature_id c, creature_position c
     := x, y = position_x at, position_y at
-    ? creature_is_player c ?> saw_player g present c x y
+    ? creature_is_player c
+    ?> saw_player g present c x y
     |? creature_is_monster c ?> saw_monster g c id x y
 
 := saw_all (g : lead) (present : mut bool) (crowd : array creature) : () =
@@ -186,7 +188,6 @@
     think_interval poll 50
     register_global_event poll
 
-///> _
 := main () : () =
     := g = new_lead ()
     watch_thinks g

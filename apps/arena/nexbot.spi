@@ -2,7 +2,6 @@
 :# nexbot static =
     :< testing
 
-///> _
 := main () =
     := calls = game_calls::instrument ()
     observer::run {

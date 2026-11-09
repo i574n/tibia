@@ -54,8 +54,10 @@
 := unit (n : i32) : i32 = ? n > 0 ?> 1 |? n < 0 ?> -1 |: 0
 
 := straight_offset (dx : i32) (dy : i32) : i32 * i32 =
-    ? magnitude dx >= magnitude dy && dx <> 0 ?> unit dx, 0
-    |? dy <> 0 ?> 0, unit dy
+    ? magnitude dx >= magnitude dy && dx <> 0
+    ?> unit dx, 0
+    |? dy <> 0
+    ?> 0, unit dy
     |: 1, 0
 
 := straight_step (sign : i32) (target : position) (from : position) : position =
@@ -159,10 +161,15 @@
 
 := x_major (from : position) (to : position) : bool = magnitude (from::x - to::x) >= magnitude (from::y - to::y)
 
-:= sight_line_clear (blocks : blocker) (from : position) (to : position) : bool =
-    ? from::x = to::x && from::y = to::y ?> !+
-    |? from::x = to::x || from::y = to::y ?> straight_clear blocks from to
+:= distinct_line_clear (blocks : blocker) (from : position) (to : position) : bool =
+    ? from::x = to::x || from::y = to::y
+    ?> straight_clear blocks from to
     |: sloped_clear blocks (sloped_start (x_major from to) from to)
+
+:= sight_line_clear (blocks : blocker) (from : position) (to : position) : bool =
+    ? from::x = to::x && from::y = to::y
+    ?> !+
+    |: distinct_line_clear blocks from to
 
 ///> c
 :# step_north_decrements_y =
@@ -253,8 +260,10 @@
 
 :~ ^ grid_scan (s : position) (i : i32) (clear : i32) (hash : i32) : i32 * i32 =
     := p = grid_cell i
-    ? i >= 121 ?> clear, hash
-    |? grid_sees s p ?> grid_scan s (i + 1) (clear + 1) (grid_hash hash p)
+    ? i >= 121
+    ?> clear, hash
+    |? grid_sees s p
+    ?> grid_scan s (i + 1) (clear + 1) (grid_hash hash p)
     |: grid_scan s (i + 1) clear hash
 
 ///> c

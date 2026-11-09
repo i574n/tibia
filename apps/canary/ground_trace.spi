@@ -107,7 +107,8 @@
 := saw (g : ground) (s : sweep) (c : creature) : () =
     := at = creature_position c
     := x, y = position_x at, position_y at
-    ? creature_is_player c ?> saw_player g s c x y
+    ? creature_is_player c
+    ?> saw_player g s c x y
     |? creature_is_monster c ?> saw_monster g s c x y
 
 := saw_all (g : ground) (s : sweep) (crowd : array creature) : () =
@@ -151,7 +152,6 @@
     think_interval poll 250
     register_global_event poll
 
-///> _
 := main () : () =
     := g : ground = { knight_since = mut None; knight_away = mut !-; watched = mut [] }
     watch_deaths g

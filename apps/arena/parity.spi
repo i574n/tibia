@@ -131,7 +131,8 @@
 
 := visible_to_player (found : hooks::host) : hooks::host =
     := player = hooks::local_player ()
-    ? hooks::present player = !- ?> found
+    ? hooks::present player = !-
+    ?> found
     |: visible_or_found found (hooks::position_of player)
 
 := filtered_spectators (native : hooks::host_fn) (center : hooks::host) (multi : bool) : hooks::host =

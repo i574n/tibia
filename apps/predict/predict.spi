@@ -16,8 +16,7 @@
 := each_held_out (row : i32 -> u32 -> string) : () =
     := block = range_of (held_out_block ())
     :~ ^ each (i : i32) : () =
-        ? i < block::count
-        ?>
+        ? i < block::count ?>
             console::write_line (row i (block::first + conv i))
             each (i + 1)
     each 0
@@ -70,7 +69,6 @@
 :# table_kinds_are_distinct_row_tags =
     (table_clear (), table_hunter (), table_hunt ()) |> _assert_eq (1i32, 2i32, 3i32)
 
-///> _
 := main () =
     := cavebot = cavebot_with_heal 160
     clear_tables cavebot

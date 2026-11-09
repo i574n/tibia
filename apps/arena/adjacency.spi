@@ -27,7 +27,8 @@
     client::live_monster c && probe::chebyshev (client::creature_spot c) here <= 1
 
 :~ ^ adjacent_from (here : client::spot) (people : client::crowd) (index : i32) (n : i32) : i32 =
-    ? index > client::crowd_size people ?> n
+    ? index > client::crowd_size people
+    ?> n
     |: adjacent_from here people (index + 1) (? adjacent_live here (client::member people index) ?> n + 1 |: n)
 
 := adjacent_monsters (here : client::spot) (people : client::crowd) : i32 = adjacent_from here people 1 0
@@ -38,7 +39,8 @@
     ? client::positioned_monster c ?> joined text (probe::described (client::creature_spot c)) |: text
 
 :~ ^ positions_from (people : client::crowd) (index : i32) (text : string) : string =
-    ? index > client::crowd_size people ?> text
+    ? index > client::crowd_size people
+    ?> text
     |: positions_from people (index + 1) (with_position text (client::member people index))
 
 := start_positions (here : client::spot) (people : client::crowd) : string =

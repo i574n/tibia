@@ -1,0 +1,50 @@
+///- --package .
+:# bc_eval static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:= student_tactic (w : network::weights) : tactic = { (bc_run::teacher ()) ?| brain = Network w }
+
+:= seed_score (t : tactic) (seed : u32) : i32 = kill_score_of (simulate (bc_run::bc_camp ()) t seed (scenario_ticks ()))
+
+:== moments = { sum : f32; sq : f32 }
+
+:== sums = { n : f32; t : moments; s : moments; d : moments }
+
+:= grown (m : moments) (x : f32) : moments = { sum = m::sum + x; sq = m::sq + x * x }
+
+:= added (a : f32) (b : f32) (u : sums) : sums =
+    { n = u::n + 1.0f32; t = grown u::t a; s = grown u::s b; d = grown u::d (b - a) }
+
+:= paired_at (w : network::weights) (seed : u32) (u : sums) : sums =
+    added (conv (seed_score (bc_run::teacher ()) seed)) (conv (seed_score (student_tactic w) seed)) u
+
+:~ ^ paired_from (w : network::weights) (i : i32) (u : sums) : sums =
+    ? i >= bc_run::seed_count ()
+    ?> u
+    |: paired_from w (i + 1) (paired_at w (held_out_first () + conv i) u)
+
+:= variance (m : moments) (n : f32) : f32 = (m::sq - m::sum * m::sum / n) / (n - 1.0f32)
+
+:= half_width (m : moments) (n : f32) : f32 = 1.96f32 * sqrt (max (variance m n) 0.0f32) / sqrt n
+
+:= mean_row (name : string) (m : moments) (n : f32) : () =
+    console::write_line (name ++# "\tmean\t" ++#? m::sum / n ++# "\tci95_half\t" ++#? half_width m n)
+
+:= verdict (u : sums) : bool = abs ((u::s::sum - u::t::sum) / u::n) <= half_width u::t u::n
+
+:= report (u : sums) : () =
+    mean_row "teacher" u::t u::n
+    mean_row "student" u::s u::n
+    mean_row "paired_diff" u::d u::n
+    console::write_line ("student_within_teacher_ci95\t" ++#? (? verdict u ?> 1 |: 0))
+
+:= empty () : moments = { sum = 0.0f32; sq = 0.0f32 }
+
+:= main () =
+    := train = bc_run::pairs_from (training_first ())
+    := w = bc_train::quantized (bc_run::trained train)
+    report (paired_from w 0 { n = 0.0f32; t = empty (); s = empty (); d = empty () })
+    0i32

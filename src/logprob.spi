@@ -5,10 +5,12 @@
 :~ ^ bit_length (v : u64) (n : i32) : i32 = ? v <= 1u64 ?> n |: bit_length (v >>> 1) (n + 1)
 
 :~ ^ fraction_bits (y : u64) (i : i32) (acc : i32) : i32 =
-    ? i > 16 ?> acc
+    ? i > 16
+    ?> acc
     |:
         := s = (y * y) >>> 16
-        ? s >= 131072u64 ?> fraction_bits (s >>> 1) (i + 1) (acc ||| (1 <<< (16 - i)))
+        ? s >= 131072u64
+        ?> fraction_bits (s >>> 1) (i + 1) (acc ||| (1 <<< (16 - i)))
         |: fraction_bits s (i + 1) acc
 
 := log2_q16 (x : u32) : i32 =
@@ -48,7 +50,8 @@
 := root (i : i32) : u64 = ? i <= 8 ?> root_high i |: root_low i
 
 :~ ^ scale_from (f : i64) (i : i32) (r : u64) : u64 =
-    ? i > 16 ?> r
+    ? i > 16
+    ?> r
     |: scale_from f (i + 1) (? (f &&& (1i64 <<< (16 - i))) <> 0i64 ?> (r * root i) >>> 30 |: r)
 
 := exp2_q16 (x : i64) : i64 =
@@ -167,7 +170,8 @@
     out
 
 :~ ^ wpdis_from (rows : array bucket_row) (buckets : i32) (b : i32) (acc : i64) : i64 =
-    ? b >= buckets ?> acc
+    ? b >= buckets
+    ?> acc
     |:
         := mean, _ = mean_and_ess (is_estimate (bucket_hunts rows b))
         wpdis_from rows buckets (b + 1) (acc + mean)

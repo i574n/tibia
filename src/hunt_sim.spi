@@ -112,7 +112,8 @@
 
 := flee (foe : foe_kind) (now : i32) (s : hunt) : hunt =
     := fled = fled_from foe now s::player::at s::creature
-    ? geometry::chebyshev_distance s::player::at fled::at >= escape_distance () ?> escaped foe fled s
+    ? geometry::chebyshev_distance s::player::at fled::at >= escape_distance ()
+    ?> escaped foe fled s
     |: { s ?| creature = fled }
 
 := creature_step_ms (foe : foe_kind) (met_player : bool) : i32 =
@@ -129,8 +130,10 @@
 
 := creature_moves (foe : foe_kind) (now : i32) (s : hunt) : hunt =
     := c = s::creature
-    ? now < c::next_step_at ?> s
-    |? fleeing foe c ?> flee foe now s
+    ? now < c::next_step_at
+    ?> s
+    |? fleeing foe c
+    ?> flee foe now s
     |: { s ?| creature = (? adjacent s ?> met c |: approached foe now s::player::at c) }
 
 := creature_damage (foe : foe_kind) (m : moment) : i32 =
@@ -196,7 +199,8 @@
     { p ?| at = toward; next_step_at = now + geometry::step_cost step_ms p::at toward }
 
 := player_approaches (foe : foe_kind) (now : i32) (s : hunt) : hunt =
-    ? now < s::player::next_step_at || adjacent s ?> s
+    ? now < s::player::next_step_at || adjacent s
+    ?> s
     |: { s ?| player = stepped_toward s::creature::at (offense_against foe)::step_ms now s::player }
 
 := engaged (foe : foe_kind) (t : policy::thresholds) (m : moment) (s : hunt) : hunt =

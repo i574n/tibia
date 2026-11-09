@@ -26,7 +26,8 @@
 
 :~ ^ number_between (p : number_pattern) (text : string) : option i32 =
     := at = sm'::index_of p::before text
-    ? at < 0i32 ?> None
+    ? at < 0i32
+    ?> None
     |:
         ?= number_at p at text ?|
         | Some n => Some n

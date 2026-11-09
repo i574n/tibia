@@ -134,7 +134,8 @@
 := added (w : weights) (j : i32) (a : i32) (k : i32) (acc : i32) : i32 = acc + output_weight_at w k j * a
 
 :~ ^ outputs_from (w : weights) (x : inputs) (j : i32) (h : i32) (e : i32) (r : i32) : decision =
-    ? j >= hidden_count () ?> scaled h e r
+    ? j >= hidden_count ()
+    ?> scaled h e r
     |:
         := a = hidden_unit w x j
         outputs_from w x (j + 1) (added w j a 0 h) (added w j a 1 e) (added w j a 2 r)
@@ -214,14 +215,16 @@
     ? score > best::score ?> { w = candidate; score = score } |: best
 
 :~ ^ offspring_from (fitness : weights -> i32) (r : weight_round) (child : i32) (best : scored) : scored =
-    ? child >= r::s::offspring ?> best
+    ? child >= r::s::offspring
+    ?> best
     |: offspring_from fitness r (child + 1) (fitter_weights fitness (mutate r child) best)
 
 := next_weight_round (r : weight_round) (best : scored) : weight_round =
     { r ?| index = r::index + 1; width = (? r::width > 4 ?> r::width * 4 / 5 |: 4); parent = best }
 
 :~ ^ weight_climb (fitness : weights -> i32) (r : weight_round) : weights =
-    ? r::index >= r::s::generations ?> r::parent::w
+    ? r::index >= r::s::generations
+    ?> r::parent::w
     |: weight_climb fitness (next_weight_round r (offspring_from fitness r 0 r::parent))
 
 := evolve (fitness : weights -> i32) (s : weight_search) (start : weights) : weights =
@@ -253,7 +256,8 @@
     ? child >= r::s::offspring ?> best |: best_scored r scores (child + 1) (fitter_scored r scores child best)
 
 :~ ^ climb_par_by \* f {judge}. (j : f) (r : weight_round) : weights =
-    ? r::index >= r::s::generations ?> r::parent::w
+    ? r::index >= r::s::generations
+    ?> r::parent::w
     |: climb_par_by j (next_weight_round r (best_scored r (scores_by j r) 0 r::parent))
 
 := evolve_par_by \* f {judge}. (j : f) (s : weight_search) (start : weights) : weights =
@@ -270,7 +274,8 @@
     index scores i > index scores child || (index scores i = index scores child && i < child)
 
 :~ ^ rank_of (scores : array i32) (child : i32) (i : i32) (rank : i32) : i32 =
-    ? i >= length scores ?> rank
+    ? i >= length scores
+    ?> rank
     |: rank_of scores child (i + 1) (? ranks_above scores child i ?> rank + 1 |: rank)
 
 := is_elite (e : elites) (scores : array i32) (child : i32) : bool =
@@ -352,7 +357,8 @@
 := kept_best (next : scored) (best : scored) : scored = ? next::score > best::score ?> next |: best
 
 :~ ^ climb_cem_by \* f {judge}. (j : f) (c : cem_rule) (r : weight_round) (best : scored) : weights =
-    ? r::index >= r::s::generations ?> best::w
+    ? r::index >= r::s::generations
+    ?> best::w
     |:
         := step = cem_step_by j c r
         climb_cem_by j c (cem_round r step) (kept_best step::mean best)
@@ -368,7 +374,8 @@
     next_weight_round r next, kept_best (vetted v next) b
 
 :~ ^ climb_selected_by \* f {judge}. (j : f) (v : weights -> i32) (r : weight_round) (b : scored) : weights =
-    ? r::index >= r::s::generations ?> b::w
+    ? r::index >= r::s::generations
+    ?> b::w
     |:
         := r2, b2 = selected_step j v r b
         climb_selected_by j v r2 b2

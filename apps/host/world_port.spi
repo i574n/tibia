@@ -45,8 +45,10 @@
     None
 
 := world_changed (programs : world_programs) (current : option world) (c : arena_host::host_command) : option world =
-    ? c = arena_host::RestartWorld ?> restarted programs current
-    |? c = arena_host::ReleaseWindow ?> released current
+    ? c = arena_host::RestartWorld
+    ?> restarted programs current
+    |? c = arena_host::ReleaseWindow
+    ?> released current
     |: current
 
 := world_obeyed (programs : world_programs) (current : option world) (c : arena_host::host_command) : option world =

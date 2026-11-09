@@ -51,7 +51,6 @@
 
 := print_arm (name : string) (t : tactic) : () = console::write_line (arm_line { name = name; tactic = t })
 
-///> _
 := main () : i32 =
     console::write_line "kind\tarm\tworth\tdeaths\tclears"
     print_arm "cfr" (cfr_tactic 3)

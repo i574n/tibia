@@ -20,7 +20,8 @@
     ? am'::length fields <> 2 ?> None |: named_count (am'::index 0 fields) (am'::index 1 fields)
 
 :~ ^ collected (parts : array string) (i : i32) (orders : list order) : mix =
-    ? i < 0 ?> Mix orders
+    ? i < 0
+    ?> Mix orders
     |:
         := part = am'::index i parts
         ?= order_of part ?|

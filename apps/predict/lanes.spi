@@ -38,7 +38,6 @@
         console::write_line ("lane\t" ++#? lane ++# "\t" ++#? lane_score p lane)
         print_lanes p (lane + 1u32) count
 
-///> _
 := main () : i32 =
     print_lanes (tiny_plan ()) 0u32 4u32
     0

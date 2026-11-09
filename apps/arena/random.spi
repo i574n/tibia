@@ -25,16 +25,29 @@
 :== heading = { dx : i32; dy : i32; diagonal : bool }
 
 := diagonal_heading (k : i32) : heading =
-    ? k = 5 ?> { dx = 1; dy = -1; diagonal = !+ }
-    |? k = 6 ?> { dx = 1; dy = 1; diagonal = !+ }
-    |? k = 7 ?> { dx = -1; dy = 1; diagonal = !+ }
+    ? k = 5
+    ?> { dx = 1; dy = -1; diagonal = !+ }
+    |? k = 6
+    ?> { dx = 1; dy = 1; diagonal = !+ }
+    |? k = 7
+    ?> { dx = -1; dy = 1; diagonal = !+ }
     |: { dx = -1; dy = -1; diagonal = !+ }
 
+:= north_east (k : i32) : heading =
+    ? k = 1
+    ?> { dx = 0; dy = -1; diagonal = !- }
+    |: { dx = 1; dy = 0; diagonal = !- }
+
+:= south_west (k : i32) : heading =
+    ? k = 3
+    ?> { dx = 0; dy = 1; diagonal = !- }
+    |: { dx = -1; dy = 0; diagonal = !- }
+
 := heading_of (k : i32) : heading =
-    ? k = 1 ?> { dx = 0; dy = -1; diagonal = !- }
-    |? k = 2 ?> { dx = 1; dy = 0; diagonal = !- }
-    |? k = 3 ?> { dx = 0; dy = 1; diagonal = !- }
-    |? k = 4 ?> { dx = -1; dy = 0; diagonal = !- }
+    ? k = 1 || k = 2
+    ?> north_east k
+    |? k = 3 || k = 4
+    ?> south_west k
     |: diagonal_heading k
 
 :== arena = { pace : scoreboard::pace; engaged : client::engaged }
@@ -46,7 +59,8 @@
 :== turn = { a : arena; now : i32; health : i32 }
 
 := drink_noted (r : turn) (at : i32) (drunk : bool) : () =
-    ? drunk ?> probe::note (("heal (potion) at health " ++#? r::health ++# " t=" ++#? at))
+    ? drunk
+    ?> probe::note (("heal (potion) at health " ++#? r::health ++# " t=" ++#? at))
     |: probe::note (("heal dropped by the action gate at health " ++#? r::health))
 
 := drank (r : turn) (t : tally) (next_step_at : i32) : stepped =
@@ -93,11 +107,13 @@
 
 := stepped_randomly (r : turn) (t : tally) (next_step_at : i32) : stepped =
     := h = heading_of (random' 1i32 9i32)
-    ? client::step h::dx h::dy ?> { t ?| retreats = t::retreats + 1 }, r::now + step_cost h
+    ? client::step h::dx h::dy
+    ?> { t ?| retreats = t::retreats + 1 }, r::now + step_cost h
     |: { t ?| gated = t::gated + 1 }, next_step_at
 
 := step_somewhere (r : turn) (t : tally) (next_step_at : i32) : stepped =
-    ? r::now >= next_step_at && client::player_walking () = !- ?> stepped_randomly r t next_step_at
+    ? r::now >= next_step_at && client::player_walking () = !-
+    ?> stepped_randomly r t next_step_at
     |: t, next_step_at
 
 := stood (t : tally) (step_at : i32) : stepped = { t ?| holds = t::holds + 1 }, step_at
@@ -150,7 +166,8 @@
 := tick (a : arena) (first : tally) : () = ticked a first 0
 
 :~ ^ heading_sums (k : i32) (i : i32) (dx : i32) (dy : i32) (diagonals : i32) : i32 * i32 * i32 =
-    ? i > k ?> dx, dy, diagonals
+    ? i > k
+    ?> dx, dy, diagonals
     |:
         := h = heading_of i
         heading_sums k (i + 1) (dx + h::dx) (dy + h::dy) (? h::diagonal ?> diagonals + 1 |: diagonals)
@@ -201,7 +218,6 @@
     probe::note (("in game as " ++# name ++# " health " ++#? health ++# " mana " ++#? mana))
     client::after 1500 \ () => settling r
 
-///> _
 := main () =
     client::seed_random_from_clock ()
     := r = fresh_run ()

@@ -22,7 +22,6 @@
 := plan_line (d : occupancy::device) : string =
     "lanes kernel, 64 threads, registers not counted: " ++# occupancy::described (occupancy::launch d (lanes_kernel ()))
 
-///> _
 := main () : i32 =
     ?= occupancy::probed 0i32 ?|
     | Some d =>

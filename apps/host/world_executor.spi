@@ -62,9 +62,14 @@
 := logged_experience (x : executor) : string =
     line_after x::files::experience_prefix (file_system::read_all_text x::files::run_log)
 
+:= ended_cleanly (x : executor) : list event =
+    [ arena_host::RunEnded (block_plan::outcome_of_experience (logged_experience x)) ]
+
 := run_ended (x : executor) (code : i32) : list event =
-    ? code = -1i32 ?> [ arena_host::RunTimedOut ]
-    |? code = 0i32 ?> [ arena_host::RunEnded (block_plan::outcome_of_experience (logged_experience x)) ]
+    ? code = -1i32
+    ?> [ arena_host::RunTimedOut ]
+    |? code = 0i32
+    ?> ended_cleanly x
     |: [ arena_host::RunEnded (:< block_plan ;; Crashed) ]
 
 := run_events (x : executor) : list event =

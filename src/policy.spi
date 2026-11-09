@@ -68,7 +68,8 @@
     | Scored : aim
 
 := weaker_or_nearer (a : candidate) (b : candidate) : bool =
-    ? a::health_percent <> b::health_percent ?> a::health_percent < b::health_percent
+    ? a::health_percent <> b::health_percent
+    ?> a::health_percent < b::health_percent
     |: a::distance < b::distance
 
 := aim_score (w : aim) (c : candidate) : i32 =
@@ -80,13 +81,17 @@
     + w::distance * c::distance
 
 := reach_first (a : candidate) (b : candidate) : bool =
-    ? in_reach a <> in_reach b ?> in_reach a
-    |? a::is_current <> b::is_current ?> a::is_current
+    ? in_reach a <> in_reach b
+    ?> in_reach a
+    |? a::is_current <> b::is_current
+    ?> a::is_current
     |: weaker_or_nearer a b
 
 := current_first (a : candidate) (b : candidate) : bool =
-    ? a::is_current <> b::is_current ?> a::is_current
-    |? in_reach a <> in_reach b ?> in_reach a
+    ? a::is_current <> b::is_current
+    ?> a::is_current
+    |? in_reach a <> in_reach b
+    ?> in_reach a
     |: weaker_or_nearer a b
 
 := scored_first (w : aim) (a : candidate) (b : candidate) : bool =

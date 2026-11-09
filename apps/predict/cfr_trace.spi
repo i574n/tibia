@@ -46,5 +46,4 @@
         0
     | _ => 1
 
-///> _
 := main () : i32 = trace (cfr_tactic 3)

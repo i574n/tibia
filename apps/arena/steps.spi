@@ -106,7 +106,8 @@
     ? client::step dx 0 = !- ?> probe::note ("knight walk step " ++#? dx ++# " refused at " ++# player_at ())
 
 := leg_turn (dx : i32) (left : i32) (again : i32 -> i32 -> i32 -> ()) : () =
-    ? left = 0 ?> again (0 - dx) (knight_walk_leg ()) 0
+    ? left = 0
+    ?> again (0 - dx) (knight_walk_leg ()) 0
     |:
         stepped_or_noted dx
         poll_later \ () => again dx (left - 1) 0
@@ -114,8 +115,10 @@
 := walk_stopped () : () = probe::note "knight walk stopped: no player in game"
 
 :~ ^ walk_leg (dx : i32) (left : i32) (waits : i32) : () =
-    ? client::player_present () = !- ?> walk_stopped ()
-    |? client::player_walking () ?> still_walking waits \ () => walk_leg dx left (waits + 1)
+    ? client::player_present () = !-
+    ?> walk_stopped ()
+    |? client::player_walking ()
+    ?> still_walking waits \ () => walk_leg dx left (waits + 1)
     |: leg_turn dx left walk_leg
 
 := start_spot () : string = ? client::player_positioned () ?> player_at () |: "nil"
@@ -169,7 +172,6 @@
     ? walking ?> client::after 2000 walk_back_and_forth
     client::after (measure_ms ()) \ () => measure_end log
 
-///> _
 := main () =
     := chasing, walking = steps_flags ()
     := log = fresh_step_log chasing

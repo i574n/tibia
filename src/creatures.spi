@@ -105,43 +105,62 @@
 := canary_step_speed_exact_up_to () : i32 = 408
 
 := step_speed_above_362 (speed : i32) : i32 =
-    ? speed <= 388 ?> (5559 * speed + 947585) / 4096
+    ? speed <= 388
+    ?> (5559 * speed + 947585) / 4096
     |: (5325 * speed + 1037437) / 4096
 
 := step_speed_above_281 (speed : i32) : i32 =
-    ? speed <= 301 ?> (6372 * speed + 680716) / 4096
-    |? speed <= 337 ?> (6063 * speed + 774007) / 4096
-    |? speed <= 362 ?> (5735 * speed + 883711) / 4096
+    ? speed <= 301
+    ?> (6372 * speed + 680716) / 4096
+    |? speed <= 337
+    ?> (6063 * speed + 774007) / 4096
+    |? speed <= 362
+    ?> (5735 * speed + 883711) / 4096
     |: step_speed_above_362 speed
 
 := step_speed_above_214 (speed : i32) : i32 =
-    ? speed <= 232 ?> (7282 * speed + 449600) / 4096
-    |? speed <= 255 ?> (6964 * speed + 523272) / 4096
-    |? speed <= 281 ?> (6617 * speed + 612091) / 4096
+    ? speed <= 232
+    ?> (7282 * speed + 449600) / 4096
+    |? speed <= 255
+    ?> (6964 * speed + 523272) / 4096
+    |? speed <= 281
+    ?> (6617 * speed + 612091) / 4096
     |: step_speed_above_281 speed
 
 := step_speed_above_137 (speed : i32) : i32 =
-    ? speed <= 156 ?> (8648 * speed + 202848) / 4096
-    |? speed <= 196 ?> (8056 * speed + 295768) / 4096
-    |? speed <= 214 ?> (7510 * speed + 400590) / 4096
+    ? speed <= 156
+    ?> (8648 * speed + 202848) / 4096
+    |? speed <= 196
+    ?> (8056 * speed + 295768) / 4096
+    |? speed <= 214
+    ?> (7510 * speed + 400590) / 4096
     |: step_speed_above_214 speed
 
 := step_speed_above_96 (speed : i32) : i32 =
-    ? speed <= 114 ?> (9558 * speed + 88680) / 4096
-    |? speed <= 122 ?> (9217 * speed + 127881) / 4096
-    |? speed <= 137 ?> (9012 * speed + 153088) / 4096
+    ? speed <= 114
+    ?> (9558 * speed + 88680) / 4096
+    |? speed <= 122
+    ?> (9217 * speed + 127881) / 4096
+    |? speed <= 137
+    ?> (9012 * speed + 153088) / 4096
     |: step_speed_above_137 speed
 
 := step_speed_above_47 (speed : i32) : i32 =
-    ? speed <= 61 ?> (11118 * speed - 33954) / 4096
-    |? speed <= 80 ?> (10582 * speed - 732) / 4096
-    |? speed <= 96 ?> (10013 * speed + 45006) / 4096
+    ? speed <= 61
+    ?> (11118 * speed - 33954) / 4096
+    |? speed <= 80
+    ?> (10582 * speed - 732) / 4096
+    |? speed <= 96
+    ?> (10013 * speed + 45006) / 4096
     |: step_speed_above_96 speed
 
 := canary_step_speed (speed : i32) : i32 =
-    ? speed < 8 ?> 1
-    |? speed <= 35 ?> (12289 * speed - 81935) / 4096
-    |? speed <= 47 ?> (11606 * speed - 57372) / 4096
+    ? speed < 8
+    ?> 1
+    |? speed <= 35
+    ?> (12289 * speed - 81935) / 4096
+    |? speed <= 47
+    ?> (11606 * speed - 57372) / 4096
     |: step_speed_above_47 speed
 
 := canary_step_speed_in_double (speed : i32) : i32 =
@@ -238,7 +257,8 @@
 
 :~ ^ step_speed_mismatches (speed : i32) (count : i32) : i32 =
     := agrees = canary_step_speed speed = canary_step_speed_in_double speed
-    ? speed > canary_step_speed_exact_up_to () ?> count
+    ? speed > canary_step_speed_exact_up_to ()
+    ?> count
     |: step_speed_mismatches (speed + 1) (? agrees ?> count |: count + 1)
 
 ///> c

@@ -25,8 +25,10 @@
 := below_ground (line : string) : bool = line |> sm'::split " " |> am'::any floor_six
 
 := started_at (line : string) : option i32 =
-    ? sm'::contains "client bot starts @t+" line ?> stamp_of line
-    |? sm'::contains "policy starts at " line ?> Some 0
+    ? sm'::contains "client bot starts @t+" line
+    ?> stamp_of line
+    |? sm'::contains "policy starts at " line
+    ?> Some 0
     |: None
 
 := hit_at (line : string) : option i32 =
@@ -56,7 +58,8 @@
 
 := summed (s : summary) (r : run_hits) : summary =
     := floor = ? r::below_ground ?> 1 |: 0
-    ? r::started = !- ?> { s ?| unstarted = s::unstarted + 1 }
+    ? r::started = !-
+    ?> { s ?| unstarted = s::unstarted + 1 }
     |: added_run s r floor
 
 := hurt_at (t : i32) : string = "You lose 20 hitpoints due to an attack by a cyclops. @t+" ++#? t

@@ -1340,7 +1340,8 @@
     candidates_with (\ turn => live_side_step sx sy turn from) sx sy from
 
 := first_usable (usable : occupancy) (c : candidates) (from : tile) : tile =
-    ? usable c::both ?> c::both |? usable c::across ?> c::across |? usable c::along ?> c::along
+    ? usable c::both
+    ?> c::both |? usable c::across ?> c::across |? usable c::along ?> c::along
     |? usable c::left ?> c::left |? usable c::right ?> c::right |: from
 
 := free_and (l : layout) (taken : occupancy) (also : occupancy) : occupancy = \ p => free l taken p && also p
@@ -1493,7 +1494,8 @@
 := sweep_grid (g : route_grid) : bool =
     clear_above g
     :~ ^ sweep (row : i32) (changed : bool) : bool =
-        ? row >= region_rows () ?> changed
+        ? row >= region_rows ()
+        ?> changed
         |:
             grow_row g row
             sweep (row + 1) (commit_row g row changed)
@@ -1683,7 +1685,8 @@
 
 := pick_step (v : step_window) : i32 =
     :~ ^ pick (k : i32) (best : i32) (low : i32) : i32 =
-        ? k >= 8 ?> best
+        ? k >= 8
+        ?> best
         |:
             := best, low = pick_better v k best low
             pick (k + 1) best low
@@ -1905,7 +1908,8 @@
     (blocked ArenaHunt (player_start ArenaHunt), x) |> _assert_eq (!-, 0i32)
 
 :~ ^ walk_until_adjacent (l : layout) (target : tile) (steps : i32) (at : tile) : i32 * tile =
-    ? geometry::chebyshev_distance target at <= 1 || steps >= 100 ?> steps, at
+    ? geometry::chebyshev_distance target at <= 1 || steps >= 100
+    ?> steps, at
     |: walk_until_adjacent l target (steps + 1) (step_toward l nobody target at)
 
 ///> c

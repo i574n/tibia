@@ -55,14 +55,16 @@
     ? score > best::score ?> { g = candidate; score = score } |: best
 
 :~ ^ offspring_from (fitness : genome -> i32) (r : genome_round) (child : i32) (best : scored_genome) : scored_genome =
-    ? child >= r::s::offspring ?> best
+    ? child >= r::s::offspring
+    ?> best
     |: offspring_from fitness r (child + 1) (fitter_genome fitness (genome_child r child) best)
 
 := next_genome_round (r : genome_round) (best : scored_genome) : genome_round =
     { r ?| index = r::index + 1; width = (? r::width > 1 ?> r::width / 2 |: 1); parent = best }
 
 :~ ^ genome_climb (fitness : genome -> i32) (r : genome_round) : genome =
-    ? r::index >= r::s::generations ?> r::parent::g
+    ? r::index >= r::s::generations
+    ?> r::parent::g
     |: genome_climb fitness (next_genome_round r (offspring_from fitness r 0 r::parent))
 
 := evolve (fitness : genome -> i32) (s : genome_search) (start : genome) : genome =
@@ -131,7 +133,8 @@
     { r ?| index = r::index + 1; width = (? r::width * 4 / 5 > 10 ?> r::width * 4 / 5 |: 10); parent = best }
 
 :~ ^ vector_climb (fitness : vector -> i32) (r : vector_round) : vector =
-    ? r::index >= r::s::generations ?> r::parent::v
+    ? r::index >= r::s::generations
+    ?> r::parent::v
     |: vector_climb fitness (next_vector_round r (pairs_from fitness r 0 r::parent))
 
 := evolve_vector (fitness : vector -> i32) (s : vector_search) (start : vector) : vector =
@@ -139,10 +142,13 @@
 
 := rescored (score : vector -> i32) (p : scored_vector) : scored_vector = { v = p::v; score = score p::v }
 
+:= resampled_round (score : vector -> i32) (r : vector_round) : vector_round =
+    next_vector_round r (pairs_from score r 0 (rescored score r::parent))
+
 :~ ^ resampled_climb (fitness : i32 -> vector -> i32) (r : vector_round) : vector =
-    := score = fitness r::index
-    ? r::index >= r::s::generations ?> r::parent::v
-    |: resampled_climb fitness (next_vector_round r (pairs_from score r 0 (rescored score r::parent)))
+    ? r::index >= r::s::generations
+    ?> r::parent::v
+    |: resampled_climb fitness (resampled_round (fitness r::index) r)
 
 := evolve_vector_resampled (fitness : i32 -> vector -> i32) (s : vector_search) (start : vector) : vector =
     resampled_climb fitness { s = s; index = 0; width = 250; parent = { v = start; score = 0 } }

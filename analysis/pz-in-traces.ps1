@@ -17,7 +17,7 @@ function Measure-Seen([string[]] $paths, [string[]] $sections) {
             --count 'monsters= (?<value>\d+,\d+)' --count-in 'monsters=seen at \d+,\d+:(?<rest>.*)$' --in-set "monsters=$zone" 2>&1 |
             ForEach-Object { "$_" })
         if ($LASTEXITCODE) { $out | Select-Object -Last 3; throw "pz-in-traces: kit table sequences exited $LASTEXITCODE" }
-        $rows = @($out | Where-Object { $_ -and $_ -notmatch '^kit table ' } | ConvertFrom-Csv -Delimiter "`t")
+        $rows = @($out | Where-Object { $_ -and $_ -notmatch '^(kit|rig) table ' } | ConvertFrom-Csv -Delimiter "`t")
     }
     [pscustomobject]@{
         runs = [math]::Max($rows.Count, 1)

@@ -57,8 +57,10 @@
     !+
 
 := ended (done : mut i32) (elapsed : i32) (here : client::spot) (arrived : bool) (steps : i32) : bool =
-    ? arrived ?> finished_arrived done elapsed steps here
-    |? elapsed > watch_ms () ?> finished_not_arrived done elapsed steps
+    ? arrived
+    ?> finished_arrived done elapsed steps here
+    |? elapsed > watch_ms ()
+    ?> finished_not_arrived done elapsed steps
     |: !-
 
 := path_tick (done : mut i32) (elapsed : i32) (t : trail) (again : trail -> ()) : () =
@@ -68,7 +70,8 @@
 
 := watch (done : mut i32) (started_at : i32) : () =
     :~ ^ go (t : trail) : () =
-        ? client::player_present () = !- ?> probe::finish_once_without_parity done "offline"
+        ? client::player_present () = !-
+        ?> probe::finish_once_without_parity done "offline"
         |: path_tick done (client::now_ms () - started_at) t go
     go (fresh_trail ())
 
@@ -107,7 +110,6 @@
 
 := timed_out (done : mut i32) : () = probe::finish_once_without_parity done "timeout"
 
-///> _
 := main () =
     := done = mut 0
     := ready () = client::after 1500 \ () => path_started done

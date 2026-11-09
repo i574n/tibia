@@ -64,7 +64,6 @@
     (orders_of "green frog,3,,2", orders_of ";wolf;;troll,2;")
     |> _assert_eq (;[ "green frog,3,,2" ], ;[ "wolf"; "troll,2" ])
 
-///> _
 := main () =
     := summon_at, orders = summon_place (), wanted_orders ()
     probe::started_as (probe::game_master ()) server_text_noted (\ () => summon_ready summon_at orders) 60000 timed_out

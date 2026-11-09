@@ -4,12 +4,13 @@ param(
     [int] $Shield = 11,
     [string] $Out = '',
     [string] $Module = 'predict',
-    [ValidateSet('c', 'rust')] [string] $Backend = 'c',
-    [switch] $SkipChecks
+    [ValidateSet('c', 'rust', 'zig')] [string] $Backend = 'c',
+    [switch] $SkipChecks,
+    [switch] $CheckOnly
 )
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-if (!$SkipChecks) {
+if (!$SkipChecks -and !$CheckOnly) {
     Push-Location
     try { & (Join-Path $PSScriptRoot 'build.ps1') -ChecksOnly | ForEach-Object { Write-Host "predict / $_" } }
     finally { Pop-Location }
@@ -31,7 +32,9 @@ function Set-Manifests([string] $dir, [string] $relative) {
     Set-Text $toml "packageDir = '$relative'" "packageDir = '$lib'"
     $text = [IO.File]::ReadAllText($toml)
     if ($Module -ne 'predict' -and $dir -eq 'apps/predict' -and $text -match "(?m)^modules" -and $text -notmatch "(?m)^$Module\s*$") {
-        Set-Text $toml "`npredict`n" "`npredict`n$Module`n"
+        $closing = $text.LastIndexOf("`n'''")
+        if ($closing -lt 0) { throw "predict / $dir/spiral.toml has no closing ''' for its modules" }
+        [IO.File]::WriteAllText($toml, $text.Insert($closing, "`n$Module"))
     }
 }
 Set-Manifests 'apps/predict' '../../deps/spiral/lib'
@@ -49,11 +52,23 @@ $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path (Resolve-Path (Join-Path $repo 'dep
 $cache = if ($env:SPIRAL_BIN_CACHE_DIR) { $env:SPIRAL_BIN_CACHE_DIR } elseif ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'spiral-bin' } else { Join-Path $HOME '.cache/spiral-bin' }
 $dotnet = Join-Path $cache "toolchains/dotnet/dotnet$(if ($IsWindows) { '.exe' })"
 $compiler = Join-Path $cache 'bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'
-$source = Join-Path $work "predict.$(if ($Backend -eq 'rust') { 'rs' } else { 'c' })"
-& $dotnet $compiler --backend ($Backend -eq 'rust' ? 'Rust' : 'C') (Join-Path $work "apps/predict/$Module.spi") $source 2>&1 | Select-Object -Last 2 | Write-Host
+if ($CheckOnly) {
+    foreach ($entry in (Join-Path $work "apps/predict/$Module.spi"), (Join-Path $work 'src/hunting_pack.spi')) {
+        & $dotnet $compiler --check --timeout-ms 120000 $entry 2>&1 | Select-Object -Last 2 | Write-Host
+        if ($LASTEXITCODE -ne 0) { throw "predict / $Label / check failed for $entry (exit $LASTEXITCODE)" }
+    }
+    return
+}
+$target = @{
+    c = @{ ext = 'c'; name = 'C'; build = { gcc -O2 -o $exe $source -lm } }
+    rust = @{ ext = 'rs'; name = 'Rust'; build = { rustc --edition 2024 -O -A warnings -o $exe $source } }
+    zig = @{ ext = 'zig'; name = 'Zig'; build = { zig build-exe $source -O ReleaseFast --stack 1073741824 -fno-emit-implib "-femit-bin=$exe" } }
+}[$Backend]
+$source = Join-Path $work "predict.$($target.ext)"
+& $dotnet $compiler --backend $target.name (Join-Path $work "apps/predict/$Module.spi") $source 2>&1 | Select-Object -Last 2 | Write-Host
 if ($LASTEXITCODE -ne 0) { throw "predict / $Label / compile failed" }
 $exe = Join-Path $work "predict$(if ($IsWindows) { '.exe' })"
-if ($Backend -eq 'rust') { & rustc --edition 2024 -O -A warnings -o $exe $source } else { & gcc -O2 -o $exe $source -lm }
+& $target.build
 if ($LASTEXITCODE -ne 0) { throw "predict / $Label / $Backend build failed" }
 $watch = [Diagnostics.Stopwatch]::StartNew()
 $rows = @(& $exe)

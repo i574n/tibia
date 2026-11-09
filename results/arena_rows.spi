@@ -104,10 +104,13 @@
     := fields = part |> sm'::split ":" |> array
     ? am'::length fields <> 2 ?> None |: monster_count (am'::index 0 fields) (am'::index 1 fields)
 
+:= part_at (parts : array string) (i : i32) : option counted = counted_monster (am'::index i parts)
+
 :~ ^ mixed_from (parts : array string) (i : i32) (found : list counted) : option monster_spec =
-    ? i < 0 ?> Some (Mix found)
+    ? i < 0
+    ?> Some (Mix found)
     |:
-        ?= counted_monster (am'::index i parts) ?|
+        ?= part_at parts i ?|
         | Some pair => mixed_from parts (i - 1) (pair :: found)
         | None => None
 
@@ -204,7 +207,8 @@
     number cells ForeignActions |> and_then (\ a => Decoded (Recorded (p, a)))
 
 := foreign_of (cells : array string) : decoded foreign =
-    ? cell cells ForeignPotions = "" && cell cells ForeignActions = "" ?> Decoded NotRecorded
+    ? cell cells ForeignPotions = "" && cell cells ForeignActions = ""
+    ?> Decoded NotRecorded
     |: number cells ForeignPotions |> and_then (foreign_with cells)
 
 := economy_row (cells : array string) (b : base_run) : decoded some_arena_row =
@@ -218,7 +222,8 @@
 
 := row_of_cells (cells : array string) : decoded some_arena_row =
     := width : i32 = am'::length cells
-    ? width = 10 || width = 13 || width = 15 ?> base_of cells |> and_then (row_by_width cells width)
+    ? width = 10 || width = 13 || width = 15
+    ?> base_of cells |> and_then (row_by_width cells width)
     |: Rejected (WrongWidth width)
 
 := row_of_line (line : string) : decoded some_arena_row = line |> sm'::split "\t" |> array |> row_of_cells
@@ -335,13 +340,14 @@
 
 := arm_step_of_cells (cells : array string) : decoded arm_step =
     := name = am'::index 1 cells
-    ? am'::length cells <> 5 ?> Rejected (WrongWidth (am'::length cells))
+    ? am'::length cells <> 5
+    ?> Rejected (WrongWidth (am'::length cells))
     |: named (arm_of name) (UnknownCompetitor name) |> and_then (arm_read cells)
 
 := arm_step_of_line (line : string) : decoded arm_step = line |> sm'::split "\t" |> array |> arm_step_of_cells
 
 := arm_line () : string =
-    "C:/Users/i574n/tibia-local/arena-logs/20261023-183122-cyclops-spiral-retreat-1.log"
+    "20261023-183122-cyclops-spiral-retreat-1.log"
     ^^ "\tspiral-retreat\t10\t76\t18"
 
 := log_text (log_name n : log_name) : string = n

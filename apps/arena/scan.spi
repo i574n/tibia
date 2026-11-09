@@ -59,7 +59,6 @@
     scan marks_unloaded radius
     probe::finish "scanned"
 
-///> _
 := main () =
     := ~radius = 12i32
     := marks_unloaded = client::env_is "TIBIA_SCAN_MARKS_UNLOADED" "1"

@@ -1,0 +1,83 @@
+///- --package .
+:# bc_direction static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== tally = { mr : i32; xr : i32; tr : i32; ae : i32; an : i32; kills : i32; deaths : i32 }
+
+:= zero_tally () : tally = { mr = 0; xr = 0; tr = 0; ae = 0; an = 0; kills = 0; deaths = 0 }
+
+:= one_if (c : bool) : i32 =
+    ? c
+    ?> 1
+    |: 0
+
+:= retreat_add (c : tally) (teacher : bool) (student : bool) : tally =
+    { c ?|
+        mr = c::mr + one_if (teacher && student = !-)
+        xr = c::xr + one_if (student && teacher = !-)
+        tr = c::tr + 1
+    }
+
+:= stance_add (c : tally) ((tr, ts) : plan) ((_, ss) : plan) : tally =
+    ? tr
+    ?> c
+    |: { c ?| ae = c::ae + one_if (bc_dataset::engages ts <> bc_dataset::engages ss); an = c::an + 1 }
+
+:= both_add (c : tally) (t : plan) (s : plan) : tally =
+    := tr, _ = t
+    := sr, _ = s
+    stance_add (retreat_add c tr sr) t s
+
+:= tallied (b : beat) (r : bc_onpolicy::run) (p : pack) (c : tally) : tally =
+    := aimed = aimed_by b::camp r::d::order p
+    ? bc_dataset::targeted aimed ?>
+        := t, s = bc_onpolicy::plans_of b r::sb (attackers_of aimed) aimed
+        both_add c t s
+    |: c
+
+:= noted (r : bc_onpolicy::run) (tick : i32) (p : pack) (c : tally) : tally =
+    := b = bc_onpolicy::beat_at r::camp r::seed tick
+    ? bc_dataset::decides b::now p
+    ?> tallied b r p c
+    |: c
+
+:= scored (p : pack) (c : tally) : tally =
+    { c ?| kills = c::kills + p::score::kills; deaths = c::deaths + p::score::deaths }
+
+:= stepped (r : bc_onpolicy::run) (tick : i32) (p : pack) : pack = advance r::camp r::d r::seed tick p
+
+:~ ^ rolled (r : bc_onpolicy::run) (tick : i32) (p : pack) (c : tally) : tally =
+    ? tick >= scenario_ticks ()
+    ?> scored p c
+    |: rolled r (tick + 1) (stepped r tick p) (noted r tick p c)
+
+:~ ^ seeds_from (camp : camp) (d : tactic) (student : brain) (i : i32) (c : tally) : tally =
+    ? i >= bc_run::seed_count ()
+    ?> c
+    |: seeds_from camp d student (i + 1) (rolled (bc_onpolicy::run_of camp d student i) 0 (start camp) c)
+
+:= rate_row (driver : string) (name : string) (k : i32) (n : i32) : () =
+    console::write_line (driver ++# "\t" ++# name ++# "\t" ++#? k ++# "\tof\t" ++#? n)
+
+:= score_row (driver : string) (c : tally) : () =
+    console::write_line (
+        driver ++# "\tkills\t" ++#? c::kills ++# "\tdeaths\t" ++#? c::deaths ++# "\thunts\t" ++#? bc_run::seed_count ()
+    )
+
+:= report (driver : string) (c : tally) : () =
+    rate_row driver "missed_retreat" c::mr c::tr
+    rate_row driver "extra_retreat" c::xr c::tr
+    rate_row driver "stance_when_teacher_stays" c::ae c::an
+    score_row driver c
+
+:= diagnose (camp : camp) (student : tactic) : () =
+    report "student_drives" (seeds_from camp student student::brain 0 (zero_tally ()))
+    report "teacher_drives" (seeds_from camp (bc_run::teacher ()) student::brain 0 (zero_tally ()))
+
+:= main () =
+    := w = bc_train::quantized (bc_run::trained (bc_run::pairs_from (training_first ())))
+    diagnose (bc_run::bc_camp ()) (bc_eval::student_tactic w)
+    0i32

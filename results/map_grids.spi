@@ -31,7 +31,8 @@
 
 := cell_step (g : list string) (r : frame) (s : frame) (dy : i32) (line : string) (c : i32) ((cells, agree) : tally) =
     := mark = sm'::index (4 + c) line
-    ? mark = '?' ?> cells, agree
+    ? mark = '?'
+    ?> cells, agree
     |:
         := walkable = region_walkable g r (s::x - s::radius + c) (s::y + dy)
         cells + 1, ? walkable = (mark <> '#') ?> agree + 1 |: agree
@@ -40,7 +41,8 @@
     ? c > 2 * s::radius ?> t |: row_cells g r s dy line (c + 1) (cell_step g r s dy line c t)
 
 :~ ^ scan_rows (g : list string) (r : frame) (s : frame) (scan : list string) (at : i32) (k : i32) (t : tally) : tally =
-    ? k > 2 * s::radius ?> t
+    ? k > 2 * s::radius
+    ?> t
     |: scan_rows g r s scan at (k + 1) (row_cells g r s (k - s::radius) (line_at scan (at + k)) 0 t)
 
 := agreement () : tally =

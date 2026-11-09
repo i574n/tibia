@@ -118,9 +118,12 @@
 := sidestep (sx : i32) (sy : i32) (slot : i32) : offset = ? slot <= 4 ?> across sx sy slot |: along sx sy slot
 
 := candidate_step (sx : i32) (sy : i32) (slot : i32) : offset =
-    ? slot = 0 ?> { dx = sx; dy = sy; present = !+ }
-    |? slot = 1 ?> { dx = sx; dy = 0; present = !+ }
-    |? slot = 2 ?> { dx = 0; dy = sy; present = !+ }
+    ? slot = 0
+    ?> { dx = sx; dy = sy; present = !+ }
+    |? slot = 1
+    ?> { dx = sx; dy = 0; present = !+ }
+    |? slot = 2
+    ?> { dx = 0; dy = sy; present = !+ }
     |: sidestep sx sy slot
 
 := usable (o : offset) : bool = o::present && (o::dx <> 0 || o::dy <> 0)
@@ -177,7 +180,8 @@
     ? near ?> joined text (described_creature c) |: text
 
 :~ ^ near_from (r : retreat_ctx) (index : i32) (text : string) : string =
-    ? index > client::crowd_size r::people ?> text
+    ? index > client::crowd_size r::people
+    ?> text
     |: near_from r (index + 1) (with_near r (client::member r::people index) text)
 
 := near_monsters (r : retreat_ctx) : string = near_from r 1 ""
@@ -208,7 +212,8 @@
     |: Gated, 0
 
 :~ ^ attempt_from (r : retreat_ctx) (slot : i32) : retreat * i32 =
-    ? slot >= slots () ?> Cornered, 0
+    ? slot >= slots ()
+    ?> Cornered, 0
     |:
         := o = candidate_step r::sx r::sy slot
         ? free_step r::here o ?> stepped_by r o |: attempt_from r (slot + 1)
@@ -218,7 +223,8 @@
     ? close ?> joined text (described_creature c) |: text
 
 :~ ^ adjacent_from (r : retreat_ctx) (index : i32) (text : string) : string =
-    ? index > client::crowd_size r::people ?> text
+    ? index > client::crowd_size r::people
+    ?> text
     |: adjacent_from r (index + 1) (with_adjacent r (client::member r::people index) text)
 
 := rejected_item (here : spot) (o : offset) : string =
@@ -227,7 +233,8 @@
     "" ++#? dx ++# "," ++#? dy ++# ":" ++# label
 
 :~ ^ rejected_from (r : retreat_ctx) (slot : i32) (text : string) : string =
-    ? slot >= slots () ?> text
+    ? slot >= slots ()
+    ?> text
     |:
         := o = candidate_step r::sx r::sy slot
         rejected_from r (slot + 1) (? usable o ?> joined text (rejected_item r::here o) |: text)
@@ -393,7 +400,8 @@
 
 := kite_engaged (m : moment) (code : i32) (t : tally) (k : clocks) : tallied =
     := reach = reach_of m
-    ? (code / 2) % 2 = 1 && reach <> (:< policy ;; NoTarget) ?> engaged m (reach = (:< policy ;; OutOfReach)) t, k
+    ? (code / 2) % 2 = 1 && reach <> (:< policy ;; NoTarget)
+    ?> engaged m (reach = (:< policy ;; OutOfReach)) t, k
     |: held m t, k
 
 := kite_drank (m : moment) (code : i32) (t : tally) (k : clocks) : tallied =
@@ -576,8 +584,10 @@
     | Target
 
 := mover_of (c : client::creature) : option mover =
-    ? client::creature_is_local_player c ?> Some Knight
-    |? client::same_creature (client::attacking ()) c ?> Some Target
+    ? client::creature_is_local_player c
+    ?> Some Knight
+    |? client::same_creature (client::attacking ()) c
+    ?> Some Target
     |: None
 
 := mover_label (m : mover) : string = case_labels::case_label "" "_" m
@@ -592,7 +602,8 @@
     | None => ()
 
 := moved (s : session) (c : client::creature) (new_position : position) : () =
-    ? *s::marks::started_at = 0 && client::creature_is_monster c ?> monster_moved s c new_position
+    ? *s::marks::started_at = 0 && client::creature_is_monster c
+    ?> monster_moved s c new_position
     |? *s::marks::started_at > 0 ?> watched_moved s c new_position
 
 := on_move (s : session) (c : client::creature) (new_position : position) (old_position : position) : () =
@@ -638,7 +649,6 @@
     client::on_position_change (on_move s)
     client::after (probe::start_delay_ms () - probe::settle_ms ()) \ () => settling s
 
-///> _
 := main () =
     := s, ms = session_from_environment (), scoreboard::probe_timeout_ms ()
     client::disable_client_bot (probe::bot_profile ())

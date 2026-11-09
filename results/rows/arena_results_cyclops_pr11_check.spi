@@ -1,3 +1,4 @@
 ///- --no-respell
 open table_rows
-inl table () = Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-15T14:17:17\tspiral-policy\t1\tcyclops\t3\t675\t76845\t103\t16\t0\t13\t12\t0\t0\t0\n2026-10-15T14:20:09\tvbot\t1\tcyclops\t3\t675\t100411\t69\t27\t2\t17\t91\t0\t\t"
+inl table () =
+    Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-15T14:17:17\tspiral-policy\t1\tcyclops\t3\t675\t76845\t103\t16\t0\t13\t12\t0\t0\t0\n2026-10-15T14:20:09\tvbot\t1\tcyclops\t3\t675\t100411\t69\t27\t2\t17\t91\t0\t\t"

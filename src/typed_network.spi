@@ -79,8 +79,10 @@
 := typed_score (g : graph eight frozen) : i32 = network::heal_score (weights_of g) 0 0
 
 :~ ^ same_from (a : network::weights) (b : network::weights) (i : i32) : bool =
-    ? i >= network::weight_count () ?> !+
-    |? network::weight a i <> network::weight b i ?> !-
+    ? i >= network::weight_count ()
+    ?> !+
+    |? network::weight a i <> network::weight b i
+    ?> !-
     |: same_from a b (i + 1)
 
 := same_weights (a : network::weights) (b : network::weights) : bool = same_from a b 0

@@ -51,7 +51,8 @@
 
 := loot_breaks (limit : i32) : i32 =
     :~ ^ check (i : i32) (broken : i32) : i32 =
-        ? i >= limit * limit ?> broken
+        ? i >= limit * limit
+        ?> broken
         |: check (i + 1) (? loot_holds (i * 53 % 997) (case_purse limit i) ?> broken |: broken + 1)
     check 0 0
 

@@ -15,6 +15,12 @@ $Exclude = @($Exclude | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 
 . ../deps/spiral/lib/spiral/lib.ps1
 $spiral = Ensure-SpiralCompiler | Select-Object -Last 1
+$packageDir = $env:SPIRAL_COMPILER_PACKAGE_DIR ? $env:SPIRAL_COMPILER_PACKAGE_DIR : (& { . (Join-Path $spiral.Bundle '../scripts/env.ps1'); Get-SpiralPackageDir })
+if (!$packageDir -or !(Test-Path (Join-Path $packageDir 'core'))) { throw "build.ps1 / core package: '$packageDir' has no core; the formatter and checks would run without |core-, so the gate stops (clone deps/The-Spiral-Language)" }
+Write-Output "build.ps1 / core package / $packageDir"
+$absolute = @(git -C .. ls-files results | Where-Object { (Get-Content (Join-Path .. $_) -Raw) -match '[A-Za-z]:(/|\\\\)|/home/|/Users/' })
+if ($absolute) { $absolute | ForEach-Object { Write-Output "build.ps1 / paths / absolute or home path in tracked result: $_" }; throw "build.ps1 / paths: tracked results must name logs relative to the log root" }
+Write-Output "build.ps1 / paths / tracked results hold no absolute paths"
 $layout = @(& $spiral.Dotnet $spiral.Compiler format ../src ../apps/arena ../apps/map ../apps/host ../apps/offscreen ../apps/canary ../apps/predict ../apps/suite --check 2>&1)
 if ($LASTEXITCODE -ne 0) {
     $layout | Select-Object -Last 10 | ForEach-Object { Write-Output "build.ps1 / layout / $_" }
@@ -33,7 +39,8 @@ foreach ($tool in 'erlang', 'elixir') {
     if (Test-Path $bin) { $env:PATH = "$bin$([IO.Path]::PathSeparator)$env:PATH" }
 }
 $checked = @((Resolve-Path ../src).Path, (Resolve-Path ../apps).Path)
-Push-Location ../deps/spiral/apps/cells
+$cellsRoot = (Resolve-Path ($env:SPIRAL_CELLS_ROOT ? $env:SPIRAL_CELLS_ROOT : '../deps/spiral/apps/cells')).Path
+Push-Location $cellsRoot
 if (-not (Test-Path 'deps/kino/mix.exs')) {
     foreach ($task in 'local.hex', 'local.rebar', 'deps.get') {
         $taskArgs = $task -like 'local.*' ? @('--force', '--if-missing') : @()
@@ -58,7 +65,7 @@ if ($ChecksOnly) { return }
 
 & ../apps/arena/build.ps1
 
-$runNotebook = (Resolve-Path "../deps/spiral/apps/cells/spi/run_notebook.ps1").Path
+$runNotebook = (Resolve-Path (Join-Path $cellsRoot 'spi/run_notebook.ps1')).Path
 $wgslRun = @($env:SPIRAL_WGSL_RUN, "../target/wgsl-run/release/spiral-wgsl$(_exe)") |
     Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 if ($wgslRun) { $env:SPIRAL_WGSL_RUN = (Resolve-Path $wgslRun).Path }

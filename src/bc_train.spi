@@ -1,0 +1,215 @@
+///- --package .
+
+:# bc_train static =
+    :< testing
+
+:== floats = array f32
+
+:== example = { x : floats; y : floats; m : floats }
+
+:= inputs () : i32 = network::input_count ()
+
+:= hiddens () : i32 = network::hidden_count ()
+
+:= weight_total () : i32 = network::weight_count ()
+
+:= in_at (j : i32) (i : i32) : i32 = j * inputs () + i
+
+:= out_at (k : i32) (j : i32) : i32 = inputs () * hiddens () + k * hiddens () + j
+
+:= feature_value (x : network::inputs) (i : i32) : i32 = network::dot_with (\ (c : i32) => ? c = i ?> 1 |: 0) x
+
+:~ ^ fill_from (o : floats) (value : i32 -> f32) (i : i32) : () =
+    ? i < length o ?>
+        set o i (value i)
+        fill_from o value (i + 1)
+
+:= filled (n : i32) (value : i32 -> f32) : floats =
+    := o = f32_grads::zeros n
+    fill_from o value 0
+    o
+
+:= features_of (x : network::inputs) : floats = filled (inputs ()) (\ (i : i32) => conv (feature_value x i) / 256.0f32)
+
+:= target_of (l : bc_dataset::label) : f32 = ? bc_dataset::is_known l && bc_dataset::agrees l !+ ?> 1.0f32 |: 0.0f32
+
+:= mask_of (l : bc_dataset::label) : f32 = ? bc_dataset::is_known l ?> 1.0f32 |: 0.0f32
+
+:= label_at (q : bc_dataset::pair) (k : i32) : bc_dataset::label =
+    ? k = 0 ?> q::heal |? k = 1 ?> q::engage |: q::retreat
+
+:= example_of (q : bc_dataset::pair) : example =
+    {
+        x = features_of q::x
+        y = filled 3 \ k => target_of (label_at q k)
+        m = filled 3 \ k => mask_of (label_at q k)
+    }
+
+:= examples_of (pairs : list bc_dataset::pair) : list example =
+    pairs |> listm::fold (\ (acc : list example) (q : bc_dataset::pair) => example_of q :: acc) []
+
+:~ ^ dot_from (w : floats) (row : i32 -> i32) (v : floats) (i : i32) (acc : f32) : f32 =
+    ? i >= length v ?> acc |: dot_from w row v (i + 1) (acc + index w (row i) * index v i)
+
+:= pre_act (w : floats) (x : floats) (j : i32) : f32 = dot_from w (in_at j) x 0 0.0f32
+
+:= hidden_of (w : floats) (x : floats) : floats =
+    filled (hiddens ()) (\ (j : i32) => max (pre_act w x j) 0.0f32)
+
+:= logit (w : floats) (h : floats) (k : i32) : f32 = dot_from w (out_at k) h 0 0.0f32 - 1.0f32
+
+:= coupling (e : example) : f32 = index e::m 2 * index e::y 2
+
+:= head_mask (e : example) (k : i32) : f32 = ? k = 1 ?> index e::m 1 * (1.0f32 - coupling e) |: index e::m k
+
+:~ ^ loss_from (w : floats) (e : example) (h : floats) (k : i32) (acc : f32) : f32 =
+    ? k >= 3
+    ?> acc
+    |: loss_from w e h (k + 1) (acc + head_mask e k * f32_grads::bce_logits (logit w h k) (index e::y k))
+
+:= margin (w : floats) (h : floats) : f32 = logit w h 2 - logit w h 1
+
+:= loss_of (w : floats) (e : example) : f32 =
+    := h = hidden_of w e::x
+    loss_from w e h 0 0.0f32 + coupling e * f32_grads::bce_logits (margin w h) 1.0f32
+
+:== back = { g : floats; dh : floats; w : floats; h : floats }
+
+:~ ^ out_back (b : back) (k : i32) (dz : f32) (j : i32) : () =
+    ? j < hiddens () ?>
+        set b::g (out_at k j) (index b::g (out_at k j) + dz * index b::h j)
+        set b::dh j (index b::dh j + dz * index b::w (out_at k j))
+        out_back b k dz (j + 1)
+
+:= coupled_grad (b : back) (e : example) : f32 = coupling e * f32_grads::bce_logits_backward (margin b::w b::h) 1.0f32
+
+:= head_dz (b : back) (e : example) (k : i32) : f32 =
+    := own = head_mask e k * f32_grads::bce_logits_backward (logit b::w b::h k) (index e::y k)
+    own + (? k = 2 ?> coupled_grad b e |? k = 1 ?> 0.0f32 - coupled_grad b e |: 0.0f32)
+
+:~ ^ outs_back (b : back) (e : example) (k : i32) : () =
+    ? k < 3 ?>
+        out_back b k (head_dz b e k) 0
+        outs_back b e (k + 1)
+
+:~ ^ in_back (g : floats) (x : floats) (j : i32) (da : f32) (i : i32) : () =
+    ? i < inputs () ?>
+        set g (in_at j i) (index g (in_at j i) + da * index x i)
+        in_back g x j da (i + 1)
+
+:~ ^ hidden_back (g : floats) (w : floats) (e : example) (dh : floats) (j : i32) : () =
+    ? j < hiddens () ?>
+        in_back g e::x j (? pre_act w e::x j > 0.0f32 ?> index dh j |: 0.0f32) 0
+        hidden_back g w e dh (j + 1)
+
+:= backprop (w : floats) (g : floats) (e : example) : () =
+    := h = hidden_of w e::x
+    := dh = f32_grads::zeros (hiddens ())
+    outs_back { g = g; dh = dh; w = w; h = h } e 0
+    hidden_back g w e dh 0
+
+:= example_count (data : list example) : f32 =
+    := count : i32 = listm::length data
+    conv count
+
+:= mean_loss (w : floats) (data : list example) (n : f32) : f32 =
+    (data |> listm::fold (\ (s : f32) (e : example) => s + loss_of w e) 0.0f32) / n
+
+:= gradient_of (w : floats) (data : list example) : floats * f32 =
+    := g = f32_grads::zeros (weight_total ())
+    data |> listm::iter (backprop w g)
+    := n = example_count data
+    f32_optim::scale_from g (1.0f32 / n) 0
+    g, mean_loss w data n
+
+:== trainer = { o : f32_optim::adamw; lr : f32; steps : i32 }
+
+:~ ^ train_from (t : trainer) (w : floats) (data : list example) (s : f32_optim::moments) (it : i32) : f32 =
+    := g, loss = gradient_of w data
+    ? it >= t::steps ?> loss |: train_from t w data (f32_optim::adamw_step t::o t::lr w g s) (it + 1)
+
+:= train (t : trainer) (w : floats) (data : list example) : f32 =
+    train_from t w data (f32_optim::zero_moments (weight_total ())) 0
+
+:= rounded (v : f32) : i32 =
+    := r = v * 256.0f32
+    conv (? r >= 0.0f32 ?> r + 0.5f32 |: r - 0.5f32)
+
+:~ ^ quantize_from (w : floats) (i : i32) (acc : network::weights) : network::weights =
+    ? i >= length w ?> acc |: quantize_from w (i + 1) (network::with_weight i (rounded (index w i)) acc)
+
+:= quantized (w : floats) : network::weights = quantize_from w 0 (network::zero_weights ())
+
+:= seeded (seed : i32) (i : i32) : f32 =
+    := h = (seed * 1103515245 + i * 12345 + 1013904223) % 1000
+    conv (? h < 0 ?> 0 - h |: h) / 2000.0f32 - 0.25f32
+
+:= initial (seed : i32) : floats = filled (weight_total ()) (seeded seed)
+
+:== tally = { agree : i32; total : i32 }
+
+:= counted (l : bc_dataset::label) (value : bool) (t : tally) : tally =
+    ? bc_dataset::is_known l
+    ?> { agree = t::agree + (? bc_dataset::agrees l value ?> 1 |: 0); total = t::total + 1 }
+    |: t
+
+:= tally_pair (w : network::weights) (t : tally) (q : bc_dataset::pair) : tally =
+    := d = network::decide w q::x
+    t |> counted q::heal d::heal |> counted q::engage d::engage |> counted q::retreat d::retreat
+
+:= agreement (w : network::weights) (pairs : list bc_dataset::pair) : tally =
+    pairs |> listm::fold (tally_pair w) { agree = 0; total = 0 }
+
+:= central_diff (w : floats) (e : example) (i : i32) : f32 =
+    := keep = index w i
+    set w i (keep + 0.001f32)
+    := up = loss_of w e
+    set w i (keep - 0.001f32)
+    := down = loss_of w e
+    set w i keep
+    (up - down) / 0.002f32
+
+:= close (a : f32) (b : f32) : bool = abs (a - b) <= 0.01f32 * (abs a + abs b) + 0.0001f32
+
+:= synthetic () : example =
+    {
+        x = filled 8 (\ i => 0.1f32 * conv (i + 1))
+        y = filled 3 (\ k => ? k = 1 ?> 0.0f32 |: 1.0f32)
+        m = filled 3 (\ _ => 1.0f32)
+    }
+
+:= checks_at (w : floats) (g : floats) (e : example) (i : i32) : bool = close (index g i) (central_diff w e i)
+
+:= grad_case () : floats * floats * example =
+    := e = synthetic ()
+    := w = initial 3
+    := g = f32_grads::zeros (weight_total ())
+    backprop w g e
+    w, g, e
+
+:= grad_checks () : bool * bool * bool =
+    := w, g, e = grad_case ()
+    := at = checks_at w g e
+    at (out_at 0 2), at (in_at 2 0), at (out_at 2 4)
+///> c
+:# shadow_gradients_match_central_differences =
+    grad_checks () |> _assert_eq (!+, !+, !+)
+
+:= plain_adam () : f32_optim::adamw =
+    { lr = 0.02f32; beta1 = 0.9f32; beta2 = 0.999f32; eps = 0.00000001f32; decay = 0.0f32 }
+
+:= student_trainer () : trainer = { o = plain_adam (); lr = 0.02f32; steps = 400 }
+
+:= trained_student (pairs : list bc_dataset::pair) : floats =
+    := w = initial 7
+    train (student_trainer ()) w (examples_of pairs) |> ignore
+    w
+
+:= student_agreement () : tally =
+    := pairs = bc_dataset::network_test_pairs ()
+    agreement (quantized (trained_student pairs)) pairs
+
+///> c
+:# a_cloned_and_quantized_student_reproduces_a_network_teacher =
+    := t = student_agreement ()
+    (t::total > 0, t::agree * 100 >= t::total * 95) |> _assert_eq (!+, !+)

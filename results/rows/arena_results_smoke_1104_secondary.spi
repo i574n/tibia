@@ -1,3 +1,4 @@
 ///- --no-respell
 open table_rows
-inl table () = Table "file\tarm\tsteps\ttaken\tpotions\nC:/Users/i574n/tibia-local/arena-logs/20261104-033429-troll-spiral-policy-1.log\tspiral-policy\t0\t2\t0"
+inl table () =
+    Table "file\tarm\tsteps\ttaken\tpotions\n20261104-033429-troll-spiral-policy-1.log\tspiral-policy\t0\t2\t0"

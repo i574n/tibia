@@ -77,8 +77,10 @@
     { number = conv (key >>> 3); wire = key &&& 7u64; at = at }
 
 := skipped_wire (i : i32) (wire : u64) : i32 =
-    ? wire = 5u64 ?> i + 4
-    |? wire = 1u64 ?> i + 8
+    ? wire = 5u64
+    ?> i + 4
+    |? wire = 1u64
+    ?> i + 8
     |: failwith "map: appearances.dat has an unknown protobuf wire type"
 
 := varint_field \* state. (b : bytes) (f : field_head) (s : state) (v : visitors state) : i32 * state =
@@ -91,13 +93,16 @@
 
 := field_next \* state. (b : bytes) (i : i32) (s : state) (v : visitors state) : i32 * state =
     := f = field_at b i
-    ? f::wire = 0u64 ?> varint_field b f s v
-    |? f::wire = 2u64 ?> bytes_field b f s v
+    ? f::wire = 0u64
+    ?> varint_field b f s v
+    |? f::wire = 2u64
+    ?> bytes_field b f s v
     |: skipped_wire f::at f::wire, s
 
 := fold_fields \* st. (b : bytes) (start : i32) (stop : i32) (seed : st) (v : visitors st) : st =
     :~ ^ next (i : i32) (s : st) : st =
-        ? i >= stop ?> s
+        ? i >= stop
+        ?> s
         |:
             := i, s = field_next b i s v
             next i s
@@ -198,9 +203,12 @@
 :== item_scan = { text : bytes; exits : array bool; tags : item_tags; ids : id_names }
 
 :~ ^ matches_from (text : bytes) (pattern : bytes) (i : i32) (k : i32) : bool =
-    ? k >= length pattern ?> !+
-    |? i + k >= length text ?> !-
-    |? index text (i + k) <> index pattern k ?> !-
+    ? k >= length pattern
+    ?> !+
+    |? i + k >= length text
+    ?> !-
+    |? index text (i + k) <> index pattern k
+    ?> !-
     |: matches_from text pattern i (k + 1)
 
 :~ ^ find_from (text : bytes) (i : i32) (stop : i32) (pattern : bytes) : i32 =
@@ -211,10 +219,14 @@
 
 := word_start (text : bytes) (i : i32) : bool = i = 0 || word_byte (index text (i - 1)) = !-
 
+:= byte_or_zero (text : bytes) (k : i32) : u8 = ? k < length text ?> index text k |: 0u8
+
 :~ ^ digits_from (text : bytes) (from : i32) (k : i32) (value : i32) : i32 =
-    := c = ? k < length text ?> index text k |: 0u8
-    ? c >= 48u8 && c <= 57u8 ?> digits_from text from (k + 1) (value * 10 + conv (c - 48u8))
-    |? k > from && c = 34u8 ?> value
+    := c = byte_or_zero text k
+    ? c >= 48u8 && c <= 57u8
+    ?> digits_from text from (k + 1) (value * 10 + conv (c - 48u8))
+    |? k > from && c = 34u8
+    ?> value
     |: -1
 
 := value_at (text : bytes) (at : i32) (pattern : bytes) : i32 =
@@ -249,8 +261,10 @@
 
 := item_head (s : item_scan) (open_at : i32) (after : i32) : i32 =
     := head_end = find_byte s::text after 62u8
-    ? head_end < 0 ?> -1
-    |? index s::text (head_end - 1) = 47u8 ?> open_at + 1
+    ? head_end < 0
+    ?> -1
+    |? index s::text (head_end - 1) = 47u8
+    ?> open_at + 1
     |: item_body s open_at after head_end
 
 := item_at (s : item_scan) (open_at : i32) : i32 =
@@ -350,13 +364,17 @@
 
 :~ ^ props_end (b : bytes) (i : i32) : i32 =
     := c = index b i
-    ? c = otbm_escape () ?> props_end b (i + 2)
-    |? c = otbm_node_start () || c = otbm_node_end () ?> i
+    ? c = otbm_escape ()
+    ?> props_end b (i + 2)
+    |? c = otbm_node_start () || c = otbm_node_end ()
+    ?> i
     |: props_end b (i + 1)
 
 :~ ^ prop_count_from (b : bytes) (i : i32) (stop : i32) (total : i32) : i32 =
-    ? i >= stop ?> total
-    |? index b i = otbm_escape () ?> prop_count_from b (i + 2) stop (total + 1)
+    ? i >= stop
+    ?> total
+    |? index b i = otbm_escape ()
+    ?> prop_count_from b (i + 2) stop (total + 1)
     |: prop_count_from b (i + 1) stop (total + 1)
 
 := prop_count (b : bytes) (from : i32) (stop : i32) : i32 = prop_count_from b from stop 0
@@ -436,11 +454,15 @@
     note_attribute_item m t n::depth (prop_u16 m::b n::from (offset + 1))
     offset + item_attribute_bytes ()
 
-:= attribute_step (m : map_inputs) (t : stacks) (n : node_at) (offset : i32) : i32 =
-    := kind = prop m::b n::from offset
-    ? kind = tile_flags_attribute () ?> flags_attribute m t n offset
-    |? kind = item_attribute () ?> item_attribute_at m t n offset
+:= attribute_by (m : map_inputs) (t : stacks) (n : node_at) (offset : i32) (kind : i32) : i32 =
+    ? kind = tile_flags_attribute ()
+    ?> flags_attribute m t n offset
+    |? kind = item_attribute ()
+    ?> item_attribute_at m t n offset
     |: -1
+
+:= attribute_step (m : map_inputs) (t : stacks) (n : node_at) (offset : i32) : i32 =
+    attribute_by m t n offset (prop m::b n::from offset)
 
 :~ ^ tile_attributes (m : map_inputs) (t : stacks) (n : node_at) (count : i32) (offset : i32) : () =
     ? offset >= 0 && offset < count ?> tile_attributes m t n count (attribute_step m t n offset)
@@ -510,10 +532,14 @@
     zone_closed t t::grid::marks depth kind cell
     road_closed t::counts t::grid::walk depth cell
 
+:= close_tile (t : stacks) (depth : i32) (kind : i32) : () =
+    ? tile_kind kind && index t::counts::cell depth >= 0 ?> tile_closed t depth kind (index t::counts::cell depth)
+
 := close_node (m : map_inputs) (t : stacks) (depth : i32) : () =
     := kind = index t::nodes::kind depth
-    ? kind = item_node () ?> close_item m t depth
-    |? tile_kind kind && index t::counts::cell depth >= 0 ?> tile_closed t depth kind (index t::counts::cell depth)
+    ? kind = item_node ()
+    ?> close_item m t depth
+    |: close_tile t depth kind
 
 := area_opened (b : bytes) (nodes : node_stack) (n : node_at) : () =
     set nodes::area_x n::depth (prop_u16 b n::from 0)
@@ -523,8 +549,10 @@
 := item_identity (b : bytes) (n : node_at) : i32 = ? prop_count b n::from n::stop >= 2 ?> prop_u16 b n::from 0 |: -1
 
 := node_opened (m : map_inputs) (t : stacks) (n : node_at) (kind : i32) : () =
-    ? kind = area_node () ?> area_opened m::b t::nodes n
-    |? tile_kind kind ?> open_tile m t n
+    ? kind = area_node ()
+    ?> area_opened m::b t::nodes n
+    |? tile_kind kind
+    ?> open_tile m t n
     |? kind = item_node () ?> set t::nodes::item_id n::depth (item_identity m::b n)
 
 := node_start (m : map_inputs) (t : stacks) (i : i32) (depth : i32) : i32 =
@@ -540,8 +568,10 @@
 
 := walk_step (m : map_inputs) (t : stacks) (i : i32) (depth : i32) : i32 * i32 =
     := c = index m::b i
-    ? c = otbm_node_start () ?> (node_start m t i depth, depth + 1)
-    |? c = otbm_node_end () ?> node_closed m t i depth
+    ? c = otbm_node_start ()
+    ?> (node_start m t i depth, depth + 1)
+    |? c = otbm_node_end ()
+    ?> node_closed m t i depth
     |: (i + 1, depth)
 
 :~ ^ walk_from (m : map_inputs) (t : stacks) (i : i32) (depth : i32) : () =
@@ -560,7 +590,8 @@
 := bit_of (on : bool) (bit : i32) : u32 = ? on ?> 1u32 <<< bit |: 0u32
 
 :~ ^ row_bits (cells : array bool) (row : i32) (first : i32) (bit : i32) (acc : u32) : u32 =
-    ? bit >= row_word_bits () ?> acc
+    ? bit >= row_word_bits ()
+    ?> acc
     |: row_bits cells row first (bit + 1) (acc ||| bit_of (bit_set cells row (first + bit)) bit)
 
 := row_word (cells : array bool) (row : i32) (word : i32) : u32 = row_bits cells row (word * row_word_bits ()) 0 0u32
@@ -621,7 +652,8 @@
 := row_test (items : array table_item) (i : i32) : string = "row <= " ++ sm'::obj_to_string (item_first items i - 1)
 
 :~ ^ item_chain (items : array table_item) (lo : i32) (hi : i32) : string =
-    ? lo = hi ?> item_text items lo
+    ? lo = hi
+    ?> item_text items lo
     |:
         := mid = (lo + hi) / 2
         if_then (row_test items (mid + 1)) (item_chain items lo mid) (item_chain items (mid + 1) hi)
@@ -651,7 +683,8 @@
     items_by (group_count items) (group_item (base ++ "_" ++ sm'::obj_to_string level) items)
 
 :~ ^ emit_level (base : string) (level : i32) (items : array table_item) : () =
-    ? length items <= table_fan () ?> row_function base (whole_chain items)
+    ? length items <= table_fan ()
+    ?> row_function base (whole_chain items)
     |: emit_level base (level + 1) (next_items base level items)
 
 := word_name (table : string) (word : i32) : string = table ++ "_" ++ sm'::obj_to_string word
@@ -696,13 +729,15 @@
     ? text = "" ?> part |: text ++ separator ++ part
 
 := span_step (cells : array bool) (row : i32) (column : i32) (text : string) : i32 * string =
-    ? bit_set cells row column = !- ?> (column + 1, text)
+    ? bit_set cells row column = !-
+    ?> (column + 1, text)
     |:
         := last = last_of cells row column
         last + 1, joined text (span_text column last) " || "
 
 :~ ^ spans_from (cells : array bool) (row : i32) (column : i32) (text : string) : string =
-    ? column >= spot_side () ?> text
+    ? column >= spot_side ()
+    ?> text
     |:
         := column, text = span_step cells row column text
         spans_from cells row column text
@@ -714,12 +749,15 @@
 := zone_budget () : i32 = 150
 
 :~ ^ span_rows_from (cells : array bool) (row : i32) (count : i32) : i32 =
-    ? row >= spot_side () ?> count
+    ? row >= spot_side ()
+    ?> count
     |: span_rows_from cells (row + 1) (? row_spans cells row = "" ?> count |: count + 1)
 
 :~ ^ span_row_from (cells : array bool) (row : i32) (n : i32) : i32 =
-    ? row_spans cells row = "" ?> span_row_from cells (row + 1) n
-    |? n = 0 ?> row
+    ? row_spans cells row = ""
+    ?> span_row_from cells (row + 1) n
+    |? n = 0
+    ?> row
     |: span_row_from cells (row + 1) (n - 1)
 
 := zone_clause (cells : array bool) (n : i32) : table_item =
@@ -756,7 +794,8 @@
 
 :~ ^ zone_end (clauses : array table_item) (hi : i32) (used : i32) : i32 =
     := next = hi + 1
-    ? next >= length clauses || used + clause_weight clauses next > zone_budget () ?> hi
+    ? next >= length clauses || used + clause_weight clauses next > zone_budget ()
+    ?> hi
     |: zone_end clauses next (used + clause_weight clauses next)
 
 := zone_hi (clauses : array table_item) (lo : i32) : i32 = zone_end clauses lo (clause_weight clauses lo)
@@ -790,7 +829,8 @@
 := radius_text () : string = " radius " ++ sm'::obj_to_string (spot_radius ())
 
 :~ ^ marks_from (cells : array bool) (row : i32) (column : i32) (text : string) : string =
-    ? column >= spot_side () ?> text
+    ? column >= spot_side ()
+    ?> text
     |: marks_from cells row (column + 1) (text ++ (? bit_set cells row column ?> "." |: "#"))
 
 :~ ^ dump_rows (cells : array bool) (row : i32) : () =
@@ -819,7 +859,8 @@
 := listed (cells : array bool) (label : string) : () = listed_columns cells label 0
 
 :~ ^ exit_count (exits : array bool) (identity : i32) (total : i32) : i32 =
-    ? identity >= item_id_limit () ?> total
+    ? identity >= item_id_limit ()
+    ?> total
     |: exit_count exits (identity + 1) (? index exits identity ?> total + 1 |: total)
 
 := listing_place () : string =
@@ -909,7 +950,6 @@
 :# row_spans_of_an_empty_row_is_empty =
     row_spans (filled (spot_side () * spot_side ()) !-) 1 |> _assert_eq ""
 
-///> _
 := main () =
     := kinds, items = item_kinds_of (read_input "TIBIA_MAP_APPEARANCES"), read_input "TIBIA_MAP_ITEMS"
     := exits, teleports = item_marks kinds items

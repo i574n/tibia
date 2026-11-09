@@ -10,10 +10,11 @@ if ($LASTEXITCODE -ne 0) { throw "arena-summary / kit table query failed ($LASTE
 $logs = @(Get-ChildItem $TibiaLogs -Filter "*-$Monster-*.log" | Where-Object {
     $parts = $_.BaseName -split "-$Monster-"
     $parts.Count -ge 2 -and [datetime]::ParseExact($parts[0], 'yyyyMMdd-HHmmss', $null) -ge $Since
-} | ForEach-Object FullName)
+} | ForEach-Object Name)
 if (!$logs) { "damage taken / no $Monster logs since $($Since.ToString('s'))"; return }
 $damage = Join-Path (New-Item -ItemType Directory -Force (Join-Path $TibiaRepo 'target/summary')).FullName "damage-$Monster.tsv"
-& $kit table logs @logs --field competitor="-$Monster-(.+)-\d+\.log$" --sum damage='You lose (\d+) hitpoints? due to an attack' --out $damage | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "arena-summary / kit table logs failed ($LASTEXITCODE)" }
+Push-Location $TibiaLogs
+try { & $kit table logs @logs --field competitor="-$Monster-(.+)-\d+\.log$" --sum damage='You lose (\d+) hitpoints? due to an attack' --out $damage | Out-Null; $tableExit = $LASTEXITCODE } finally { Pop-Location }
+if ($tableExit -ne 0) { throw "arena-summary / kit table logs failed ($tableExit)" }
 "damage taken since $($Since.ToString('s')), logs with at least one hit:"
 & $kit table query $damage --where 'damage>0' --group competitor --count damage --mean damage --sd damage

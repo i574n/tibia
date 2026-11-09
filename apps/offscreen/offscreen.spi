@@ -249,7 +249,8 @@
     create_desktop_at (wide_start wide_name)
 
 := working_folder (exe : string) (directory : string) : string =
-    ? directory <> "" ?> directory
+    ? directory <> ""
+    ?> directory
     |:
         ?= file_system::directory_get_parent exe |> optionm'::unbox ?|
         | Some parent => parent
@@ -272,7 +273,8 @@
     create_process_at app line folder (startup_for w) (information_start information)
 
 := started_process (information : process_information) (created : i32) : i64 =
-    ? created = 0 ?> 0
+    ? created = 0
+    ?> 0
     |:
         close_handle (information_thread information)
         information_process information
@@ -321,7 +323,8 @@
 
 := run_on_desktop (l : launch) : outcome =
     := desktop = create_desktop l::desktop
-    ? desktop = 0 ?> NoDesktop (last_error ())
+    ? desktop = 0
+    ?> NoDesktop (last_error ())
     |:
         := o = run_started l
         close_desktop desktop
@@ -443,7 +446,6 @@
     listm::iter console::write_line (report l o)
     exit_code_of o
 
-///> _
 := main () =
     := p = parse (env::command_line_arguments ())
     := code = ?= p ?| Ready l => launched_code l | _ => refusal_code p

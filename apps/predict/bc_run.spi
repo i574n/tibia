@@ -1,0 +1,161 @@
+///- --package .
+:# bc_run static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:= bc_camp () : camp =
+    uniform_camp (:< creatures ;; Cyclops) |> on_layout (:< terrain ;; ArenaSpot) |> mirroring_the_current_arena
+
+:= teacher () : tactic = live_retreat_tactic 160 2
+
+:= seed_count () : i32 = 100
+
+:= train_steps () : i32 = 300
+
+:= pairs_from (first : u32) : list bc_dataset::pair =
+    bc_dataset::dataset_of (bc_camp ()) (teacher ()) first (seed_count ()) (scenario_ticks ())
+
+:= head_value (d : network::decision) (k : i32) : bool = ? k = 0 ?> d::heal |? k = 1 ?> d::engage |: d::retreat
+
+:= head_tally (w : network::weights) (k : i32) (t : bc_train::tally) (q : bc_dataset::pair) : bc_train::tally =
+    bc_train::counted (bc_train::label_at q k) (head_value (network::decide w q::x) k) t
+
+:= head_agreement (w : network::weights) (pairs : list bc_dataset::pair) (k : i32) : bc_train::tally =
+    pairs |> listm::fold (head_tally w k) { agree = 0; total = 0 }
+
+:= head_row (name : string) (w : network::weights) (pairs : list bc_dataset::pair) (k : i32) : string =
+    := t = head_agreement w pairs k
+    name ++# "\thead\t" ++#? k ++# "\tagree\t" ++#? t::agree ++# "\tknown\t" ++#? t::total
+
+:= report (name : string) (w : network::weights) (pairs : list bc_dataset::pair) : () =
+    console::write_line (head_row name w pairs 0)
+    console::write_line (head_row name w pairs 1)
+    console::write_line (head_row name w pairs 2)
+
+:= trainer () : bc_train::trainer = { o = bc_train::plain_adam (); lr = 0.02f32; steps = train_steps () }
+
+:== logits = { heal : f32; engage : f32; retreat : f32 }
+
+:= logits_of (w : array f32) (q : bc_dataset::pair) : logits =
+    := h = bc_train::hidden_of w (bc_train::features_of q::x)
+    { heal = bc_train::logit w h 0; engage = bc_train::logit w h 1; retreat = bc_train::logit w h 2 }
+
+:= independent (z : logits) : network::decision =
+    { heal = z::heal > 0.0f32; engage = z::engage > 0.0f32; retreat = z::retreat > 0.0f32 }
+
+:= coupled (z : logits) : network::decision =
+    {
+        heal = z::heal > 0.0f32
+        engage = z::engage > 0.0f32 && z::engage >= z::retreat
+        retreat = z::retreat > 0.0f32 && z::retreat > z::engage
+    }
+
+:= rule_tally
+    (rule : logits -> network::decision) (w : array f32) (t : bc_train::tally) (q : bc_dataset::pair)
+    : bc_train::tally
+    =
+    bc_train::counted q::retreat (rule (logits_of w q))::retreat t
+
+:== confusion = { tr : i32; te : i32; tn : i32; fr : i32; fe : i32; fn : i32 }
+
+:= retreat_side (d : network::decision) (c : confusion) : confusion =
+    ? d::retreat ?> { c ?| tr = c::tr + 1 } |? d::engage ?> { c ?| te = c::te + 1 } |: { c ?| tn = c::tn + 1 }
+
+:= holding_side (d : network::decision) (c : confusion) : confusion =
+    ? d::retreat ?> { c ?| fr = c::fr + 1 } |? d::engage ?> { c ?| fe = c::fe + 1 } |: { c ?| fn = c::fn + 1 }
+
+:= acted (d : network::decision) (c : confusion) (teacher : bool) : confusion =
+    ? teacher ?> retreat_side d c |: holding_side d c
+
+:= confused (w : network::weights) (c : confusion) (q : bc_dataset::pair) : confusion =
+    ? bc_dataset::is_known q::retreat ?> acted (network::decide w q::x) c (bc_dataset::agrees q::retreat !+) |: c
+
+:| act =
+    | Retreats
+    | Engages
+    | Holds
+
+:= truth (l : bc_dataset::label) : bool = bc_dataset::is_known l && bc_dataset::agrees l !+
+
+:= teacher_act (q : bc_dataset::pair) : act = ? truth q::retreat ?> Retreats |? truth q::engage ?> Engages |: Holds
+
+:= student_act (q : bc_dataset::pair) (d : network::decision) : act =
+    ? d::retreat ?> Retreats |? bc_dataset::is_known q::engage && d::engage ?> Engages |: Holds
+
+:= act_match (w : network::weights) (q : bc_dataset::pair) : i32 =
+    ? teacher_act q = student_act q (network::decide w q::x)
+    ?> 1
+    |: 0
+
+:= act_tally (w : network::weights) (t : bc_train::tally) (q : bc_dataset::pair) : bc_train::tally =
+    ? bc_dataset::is_known q::retreat ?>
+        { agree = t::agree + act_match w q; total = t::total + 1 }
+    |: t
+
+:= engage_tally (w : network::weights) (t : bc_train::tally) (q : bc_dataset::pair) : bc_train::tally =
+    ? truth q::retreat ?> t |: bc_train::counted q::engage (network::decide w q::x)::engage t
+
+:= trained (train : list bc_dataset::pair) : array f32 =
+    := w = bc_train::initial 7
+    := loss = bc_train::train (trainer ()) w (bc_train::examples_of train)
+    console::write_line ("final_loss\t" ++#? loss)
+    w
+
+:= tally_row (label : string) (t : bc_train::tally) : string =
+    label ++# "\tagree\t" ++#? t::agree ++# "\tknown\t" ++#? t::total
+
+:= tallied
+    (step : bc_train::tally -> bc_dataset::pair -> bc_train::tally) (pairs : list bc_dataset::pair)
+    : bc_train::tally
+    =
+    pairs |> listm::fold step { agree = 0; total = 0 }
+
+:= rule_count (rule : logits -> network::decision) (w : array f32) (pairs : list bc_dataset::pair) : bc_train::tally =
+    tallied (rule_tally rule w) pairs
+
+:= rule_row
+    (name : string) (rule : logits -> network::decision) (w : array f32) (pairs : list bc_dataset::pair)
+    : string
+    =
+    tally_row ("float_retreat\t" ++# name) (rule_count rule w pairs)
+
+:= confusion_of (w : network::weights) (pairs : list bc_dataset::pair) : confusion =
+    pairs |> listm::fold (confused w) { tr = 0; te = 0; tn = 0; fr = 0; fe = 0; fn = 0 }
+
+:= triple (a : i32) (b : i32) (c : i32) : string = "" ++#? a ++# "\t" ++#? b ++# "\t" ++#? c
+
+:= confusion_row (w : network::weights) (pairs : list bc_dataset::pair) : string =
+    := c = confusion_of w pairs
+    "confusion\tretreat r/e/n\t" ++# triple c::tr c::te c::tn ++# "\tno_retreat r/e/n\t" ++# triple c::fr c::fe c::fn
+
+:= action_row (w : network::weights) (pairs : list bc_dataset::pair) : string =
+    tally_row "action" (tallied (act_tally w) pairs)
+
+:= engage_row (w : network::weights) (pairs : list bc_dataset::pair) : string =
+    tally_row "engage_without_teacher_retreat" (tallied (engage_tally w) pairs)
+
+:= float_rows (w : array f32) (held : list bc_dataset::pair) : () =
+    console::write_line (rule_row "independent" independent w held)
+    console::write_line (rule_row "coupled" coupled w held)
+
+:= quantized_rows (q : network::weights) (held : list bc_dataset::pair) : () =
+    console::write_line (confusion_row q held)
+    console::write_line (action_row q held)
+    console::write_line (engage_row q held)
+
+:= pair_count (pairs : list bc_dataset::pair) : i32 = listm::length pairs
+
+:= diagnose (w : array f32) (train : list bc_dataset::pair) (held : list bc_dataset::pair) : () =
+    := q = bc_train::quantized w
+    report "train" q train
+    report "held_out" q held
+    float_rows w held
+    quantized_rows q held
+
+:= main () =
+    := train = pairs_from (training_first ())
+    console::write_line ("train_pairs\t" ++#? pair_count train)
+    diagnose (trained train) train (pairs_from (held_out_first ()))
+    0i32

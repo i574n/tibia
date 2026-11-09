@@ -44,8 +44,7 @@
     probe::finish_once w::done "cleared"
 
 := clear_if_full (w : watch) (health : i32) (at : i32) : bool =
-    ? *w::cleared = 0 && gained w >= w::full_experience
-    ?>
+    ? *w::cleared = 0 && gained w >= w::full_experience ?>
         cleared_now w health at
         !+
     |: !-

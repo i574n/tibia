@@ -40,10 +40,15 @@
 
 := in_window (g : grid) (residual : i32) : bool = residual <= g::think_ms + g::tolerance_ms
 
-:= stepped_pair (g : grid) (residual : i32) (c : counts) : counts =
-    ? on_grid g residual ?> { c ?| step_on_grid = c::step_on_grid + 1 }
-    |? in_window g residual ?> { c ?| step_in_window = c::step_in_window + 1 }
+:= stepped_off_grid (g : grid) (residual : i32) (c : counts) : counts =
+    ? in_window g residual
+    ?> { c ?| step_in_window = c::step_in_window + 1 }
     |: { c ?| step_other = c::step_other + 1 }
+
+:= stepped_pair (g : grid) (residual : i32) (c : counts) : counts =
+    ? on_grid g residual
+    ?> { c ?| step_on_grid = c::step_on_grid + 1 }
+    |: stepped_off_grid g residual c
 
 := plain_pair (g : grid) (residual : i32) (c : counts) : counts =
     ? on_grid g residual ?> { c ?| on_grid = c::on_grid + 1 } |: { c ?| off_grid = c::off_grid + 1 }

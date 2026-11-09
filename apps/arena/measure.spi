@@ -126,8 +126,10 @@
     now
 
 := swing_after (b : bench) (now : i32) (last_swing_at : i32) : i32 =
-    ? client::slot_occupied b::target = !- ?> engaged_adjacent b now last_swing_at
-    |? now - last_swing_at >= swing_ms () ?> swing_settled b now
+    ? client::slot_occupied b::target = !-
+    ?> engaged_adjacent b now last_swing_at
+    |? now - last_swing_at >= swing_ms ()
+    ?> swing_settled b now
     |: last_swing_at
 
 := potion_due (b : bench) (now : i32) (last_potion_at : i32) : bool =
@@ -160,7 +162,8 @@
     |: Some next
 
 :~ ^ ticked (b : bench) (p : paces) : () =
-    ? client::player_present () = !- ?> probe::finish_once_without_parity b::run::done "offline"
+    ? client::player_present () = !-
+    ?> probe::finish_once_without_parity b::run::done "offline"
     |:
         ?= tick_step b p ?|
         | Some next => client::after (tick_ms ()) \ () => ticked b next
@@ -218,7 +221,8 @@
     server_text_noted mode text
 
 := other_text (b : bench) (mode : string) (text : string) : () =
-    ? sm'::contains "You died" text ?> died b mode text
+    ? sm'::contains "You died" text
+    ?> died b mode text
     |? sm'::contains "You lose" text = !- ?> server_text_noted mode text
 
 := on_text (b : bench) (mode : string) (text : string) : () =
@@ -244,7 +248,6 @@
     probe::note (("in game as " ++# name ++# " health " ++#? health))
     client::after 1000 \ () => started b
 
-///> _
 := main () =
     := b = fresh_bench (client::env_i32 "TIBIA_MEASURE_POTION_BELOW" 90)
     := on_timeout () = probe::finish_once_without_parity b::run::done "timeout"

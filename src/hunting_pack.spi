@@ -85,8 +85,10 @@
 := codes_distinct () : bool =
     := n = roll_count ()
     :~ ^ clash (i : i32) (j : i32) : bool =
-        ? i >= n ?> !-
-        |? j >= n ?> clash (i + 1) (i + 2)
+        ? i >= n
+        ?> !-
+        |? j >= n
+        ?> clash (i + 1) (i + 2)
         |: roll_code i = roll_code j || clash i (j + 1)
     not (clash 0 1)
 
@@ -647,8 +649,10 @@
 
 := swing_waits (now : i32) (held : cooldowns::timers) : cooldowns::timers =
     := due = cooldowns::ready_at (cooldowns::strike_spell ()) held
-    ? swing_is_waiting held ?> swing_resumes_at now held
-    |? due <= now ?> held
+    ? swing_is_waiting held
+    ?> swing_resumes_at now held
+    |? due <= now
+    ?> held
     |: swing_deferred held due
 
 := swing_after_step (camp : camp) (now : i32) (held : cooldowns::timers) : cooldowns::timers =
@@ -880,8 +884,7 @@
 
 := nth_open_cardinal (free_at : i32 -> bool) (pick : i32) : i32 =
     :~ ^ nth (k : i32) (left : i32) : i32 =
-        ? free_at k
-        ?>
+        ? free_at k ?>
             ? left = 1
             ?> k
             |: nth (k + 1) (left - 1)
@@ -996,7 +999,8 @@
 
 := foe_flees (t : turn) (k : foe_kind) (s : foe_stats) (f : foe) (p : pack) : pack =
     := fled = fled_foe t s f p
-    ? geometry::chebyshev_distance p::hunter::at fled::at >= escape_distance () ?> foe_escapes t k f p
+    ? geometry::chebyshev_distance p::hunter::at fled::at >= escape_distance ()
+    ?> foe_escapes t k f p
     |: with_slot t::index fled p
 
 := keeps_range (t : turn) (s : foe_stats) (f : foe) (p : pack) : bool =
@@ -1004,8 +1008,10 @@
     && distance_to f p <= s::target_distance && geometry::sees f::at p::hunter::at
 
 := nearby_count (f : foe) (p : pack) : i32 =
-    ? geometry::chebyshev_distance f::at p::hunter::at <= 1 ?> (? f::chase::nearby < 2 ?> f::chase::nearby + 1 |: 2)
-    |? f::chase::nearby > 0 ?> f::chase::nearby - 1
+    ? geometry::chebyshev_distance f::at p::hunter::at <= 1
+    ?> (? f::chase::nearby < 2 ?> f::chase::nearby + 1 |: 2)
+    |? f::chase::nearby > 0
+    ?> f::chase::nearby - 1
     |: 0
 
 := slowed_by_target (f : foe) (away : geometry::position) (counted : i32) (cost : i32) : i32 =
@@ -1031,7 +1037,8 @@
     ? distance_to f p < s::target_distance ?> foe_backs_off t s f p |: foe_dances_at_target t f p
 
 := foe_loses_sight (t : turn) (f : foe) (p : pack) : pack =
-    ? f::chase::acquired_at >= never () ?> p
+    ? f::chase::acquired_at >= never ()
+    ?> p
     |: with_slot t::index { f ?| chase = { (f::chase) ?| acquired_at = never () } } p
 
 := waits_to_acquire (t : turn) (f : foe) : bool =
@@ -1068,27 +1075,36 @@
     retimed_target t (with_slot t::index (chased_foe t s f toward) p)
 
 := foe_follows (t : turn) (s : foe_stats) (f : foe) (p : pack) : pack =
-    ? t::camp::foes::ranged && s::target_distance > 1 && thinks_now t::seed t::index t::now = !- ?> p
-    |? follows_later t f ?> p
+    ? t::camp::foes::ranged && s::target_distance > 1 && thinks_now t::seed t::index t::now = !-
+    ?> p
+    |? follows_later t f
+    ?> p
     |: foe_chases t s f p
 
 := foe_tracks (t : turn) (s : foe_stats) (f : foe) (p : pack) : pack =
-    ? geometry::sees f::at p::hunter::at = !- ?> foe_loses_sight t f p
-    |? waits_to_acquire t f ?> foe_acquires t s f p
+    ? geometry::sees f::at p::hunter::at = !-
+    ?> foe_loses_sight t f p
+    |? waits_to_acquire t f
+    ?> foe_acquires t s f p
     |: foe_follows t s f p
 
 := foe_moves_steady (t : turn) (s : foe_stats) (f : foe) (p : pack) : pack =
-    ? keeps_range t s f p ?> foe_keeps_range t s f p
-    |? distance_to f p <= 1 ?> foe_dances_at_target t f p
+    ? keeps_range t s f p
+    ?> foe_keeps_range t s f p
+    |? distance_to f p <= 1
+    ?> foe_dances_at_target t f p
     |: foe_tracks t s f p
 
 := foe_moves_live (t : turn) (k : foe_kind) (s : foe_stats) (f : foe) (p : pack) : pack =
-    ? t::now < f::next_step_at ?> p
-    |? vitality::health f::life <= s::run_health ?> foe_flees t k s f p
+    ? t::now < f::next_step_at
+    ?> p
+    |? vitality::health f::life <= s::run_health
+    ?> foe_flees t k s f p
     |: foe_moves_steady t s f p
 
 := foe_moves (t : turn) (k : foe_kind) (s : foe_stats) (f : foe) (p : pack) : pack =
-    ? f::respawn::returns_at <= t::now ?> foe_respawns t k f p
+    ? f::respawn::returns_at <= t::now
+    ?> foe_respawns t k f p
     |: foe_moves_live t k s f p
 
 := paced_strike (t : turn) (g : foe) (period : i32) : i32 =
@@ -1103,7 +1119,8 @@
     g::strikes_at + (t::now - g::strikes_at + period - 1) / period * period
 
 := on_canary_round (t : turn) (g : foe) (period : i32) (p : pack) : pack =
-    ? t::now - g::strikes_at < tick_ms () ?> melee_hits t g (g::strikes_at + period) p
+    ? t::now - g::strikes_at < tick_ms ()
+    ?> melee_hits t g (g::strikes_at + period) p
     |: with_slot t::index { g ?| strikes_at = next_canary_round t g period } p
 
 := hit_ready (t : turn) (g : foe) (p : pack) : pack =
@@ -1132,8 +1149,10 @@
 
 := foe_strikes (t : turn) (k : foe_kind) (s : foe_stats) (q : pack) : pack =
     := g = slot t::index q
-    ? vitality::health g::life <= s::run_health ?> q
-    |? t::camp::foes::ranged && creatures::is_ranged k ?> foe_shoots t k g q
+    ? vitality::health g::life <= s::run_health
+    ?> q
+    |? t::camp::foes::ranged && creatures::is_ranged k
+    ?> foe_shoots t k g q
     |: foe_melee t g q
 
 := foe_turn (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
@@ -1184,8 +1203,10 @@
     | None => !-
 
 := entrant_by_order (t : turn) (appeared : bool) (p : pack) : party_slot =
-    ? appeared && t::now < 1000 ?> Ally
-    |? sector_rank p::hunter::at <= sector_rank p::ally::at ?> Hunter
+    ? appeared && t::now < 1000
+    ?> Ally
+    |? sector_rank p::hunter::at <= sector_rank p::ally::at
+    ?> Hunter
     |: Ally
 
 := entrant_after_entry (f : foe) (moved : bool) (newcomer : party_slot) : party_slot =
@@ -1193,13 +1214,16 @@
 
 := entrant_by_entry (f : foe) (first : bool) (second : bool) : party_slot =
     := moved = foe_moved_since_aim f
-    ? second ?> entrant_after_entry f moved Ally
-    |? first ?> entrant_after_entry f moved Hunter
+    ? second
+    ?> entrant_after_entry f moved Ally
+    |? first
+    ?> entrant_after_entry f moved Hunter
     |: f::aim::entrant
 
 := aimed_entrant (t : turn) (f : foe) (p : pack) (sight : per_slot bool) : party_slot =
     := e = entered f sight
-    ? e::hunter && e::ally ?> entrant_by_order t (never_aimed f) p
+    ? e::hunter && e::ally
+    ?> entrant_by_order t (never_aimed f) p
     |: entrant_by_entry f e::hunter e::ally
 
 := aim_rolls (t : turn) : i32 * i32 =
@@ -1315,12 +1339,14 @@
 
 :== beat = { camp : camp; seed : u32; tick : i32; now : i32 }
 
-:= foes_act_where (b : beat) (mask : u32) (p : pack) : pack =
-    :~ ^ each (i : i32) (q : pack) : pack =
-        ? i >= band_size () ?> q
-        |? picked_in mask i ?> each (i + 1) (foe_acts b::camp b::seed b::tick b::now i q)
-        |: each (i + 1) q
-    each 0 p
+:~ ^ foes_act_from (b : beat) (mask : u32) (i : i32) (q : pack) : pack =
+    ? i >= band_size ()
+    ?> q
+    |? picked_in mask i
+    ?> foes_act_from b mask (i + 1) (foe_acts b::camp b::seed b::tick b::now i q)
+    |: foes_act_from b mask (i + 1) q
+
+:= foes_act_where (b : beat) (mask : u32) (p : pack) : pack = foes_act_from b mask 0 p
 
 := foes_act (camp : camp) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
     :~ ^ each (i : i32) (q : pack) : pack =
@@ -1529,8 +1555,10 @@
     q |> with_hunter { k ?| next_step_at = approach_step_at camp now h toward }
 
 := approach_from (camp : camp) (now : i32) (h : hunter) (toward : geometry::position) (p : pack) : pack =
-    ? now < h::next_step_at ?> p
-    |? approach_delayed camp now h toward ?> approach_waits camp now h toward p
+    ? now < h::next_step_at
+    ?> p
+    |? approach_delayed camp now h toward
+    ?> approach_waits camp now h toward p
     |: approach_walks camp now h toward p
 
 := player_approaches (camp : camp) (now : i32) (aim : i32) (p : pack) : pack =
@@ -1850,8 +1878,10 @@
     ? f::respawn::returns_at - now > travel ?> f::respawn::returns_at - now |: travel
 
 := spawn_wait (now : i32) (f : foe) (p : pack) (travel : i32) : i32 =
-    ? awaiting_return f ?> return_wait now f travel
-    |? geometry::chebyshev_distance f::spawn p::hunter::at <= 1 ?> never ()
+    ? awaiting_return f
+    ?> return_wait now f travel
+    |? geometry::chebyshev_distance f::spawn p::hunter::at <= 1
+    ?> never ()
     |: travel
 
 := expected_wait_ms (camp : camp) (now : i32) (index : i32) (p : pack) : i32 =
@@ -1937,11 +1967,16 @@
         )
     )
 
+:= steps_if_free (b : beat) (next : geometry::position) (p : pack) : pack =
+    ? terrain::free b::camp::layout (taken_by_foes p) next
+    ?> hunter_steps b::camp b::now next p
+    |: p
+
 := steps_somewhere (b : beat) (p : pack) : pack =
     := next = terrain::neighbor (random_step_index b p) p::hunter::at
-    ? b::now < p::hunter::next_step_at ?> p
-    |? terrain::free b::camp::layout (taken_by_foes p) next ?> hunter_steps b::camp b::now next p
-    |: p
+    ? b::now < p::hunter::next_step_at
+    ?> p
+    |: steps_if_free b next p
 
 := random_moved (b : beat) (p : pack) : pack =
     ?= random_move_of b::seed b::tick (slot_number p::hunter::call_sign) ?|
@@ -2078,8 +2113,10 @@
 
 := knight_turn_inline (b : beat) (t : tactic) (p : pack) : pack =
     := h = p::hunter
-    ? units::at_least (quantity::hp 0) h::health ?> respawn_player b::camp p
-    |? b::now < h::clock::next_decision_at ?> p
+    ? units::at_least (quantity::hp 0) h::health
+    ?> respawn_player b::camp p
+    |? b::now < h::clock::next_decision_at
+    ?> p
     |: decided_turn b t p
 
 :~ ^ knight_turn_shared (b : beat) (t : tactic) (p : pack) : pack = knight_turn_inline b t p
@@ -2095,11 +2132,16 @@
     ? index = 5 ?> 1193 |? index = 6 ?> 1318 |? index = 7 ?> 2346 |? index = 8 ?> 1847 |: 1520
 
 := measured_entry_ms (index : i32) : i32 =
-    ? index = 0 ?> 746
-    |? index = 1 ?> 745
-    |? index = 2 ?> 618
-    |? index = 3 ?> 934
-    |? index = 4 ?> 1116
+    ? index = 0
+    ?> 746
+    |? index = 1
+    ?> 745
+    |? index = 2
+    ?> 618
+    |? index = 3
+    ?> 934
+    |? index = 4
+    ?> 1116
     |: late_entry_ms index
 
 := ally_entry_ms (seed : u32) : i32 = measured_entry_ms (conv (keyed_rng::roll_between 0 9 (key seed 0 0 PackEntry)))
@@ -2120,7 +2162,8 @@
 
 := knights_act (b : beat) (t : tactic) (q : pack) : pack =
     := after_lead = knight_turn b t q
-    ? b::camp::crew::party > 1 && q::ally_in_world ?> turned (knight_turn b t (turned after_lead))
+    ? b::camp::crew::party > 1 && q::ally_in_world
+    ?> turned (knight_turn b t (turned after_lead))
     |: after_lead
 
 := poll_landing (b : beat) : i32 =
@@ -2355,7 +2398,8 @@
 
 := clear_profit (r : seed_run) (limit : i32) : gold_amount =
     := l = clear_ledger_of r::camp r::tactic r::first r::count
-    ? l::clear_ms <= limit * r::count ?> clear_loss l
+    ? l::clear_ms <= limit * r::count
+    ?> clear_loss l
     |: quantity::gp (below_the_kill_floor () - l::clear_ms / r::count)
 
 := amount_on \* u. (o : objective u) (r : seed_run) : units::amount u =

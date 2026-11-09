@@ -73,8 +73,10 @@
     probe::finish_reporting_parity "cleared"
 
 := finish_or_continue (p : pace) (t : tally) (on_cleared : () -> ()) (continue : () -> ()) : () =
-    ? elapsed p > run_ms () ?> run_complete p t
-    |? gained p >= p::full_experience ?> cleared_noted p t on_cleared
+    ? elapsed p > run_ms ()
+    ?> run_complete p t
+    |? gained p >= p::full_experience
+    ?> cleared_noted p t on_cleared
     |: continue ()
 
 ///> lua

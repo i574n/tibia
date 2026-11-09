@@ -34,7 +34,8 @@
 := next_run (h : host) : list host_command = [ ResetCharacter; StartRun (h::progress::stage, h::progress::run) ]
 
 := closing (h : host) (fate : block_plan::run_fate) : host * list host_command =
-    ? block_plan::finished h::runs h::progress ?> { h ?| phase = Ended }, [ Record fate; ReleaseWindow ]
+    ? block_plan::finished h::runs h::progress
+    ?> { h ?| phase = Ended }, [ Record fate; ReleaseWindow ]
     |: h, Record fate :: next_run h
 
 := settled (h : host) (o : block_plan::run_outcome) : host * list host_command =

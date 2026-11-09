@@ -18,7 +18,8 @@
 
 := bucket (x : network::inputs) : i32 =
     :~ ^ go (j : i32) (b : i32) : i32 =
-        ? j >= plane_count () ?> b
+        ? j >= plane_count ()
+        ?> b
         |: go (j + 1) (? plane_dot j x >= 0 ?> b ||| (1 <<< j) |: b)
     go 0 0
 
