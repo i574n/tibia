@@ -1,4 +1,4 @@
-param([int] $Runs = 3, [string] $Monster = 'troll', [int] $MonsterCount = 3, [int] $AxeSkill = 30, [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [int] $FullExperience = 90, [int] $TimeoutSeconds = 240, [int] $KiteAt = 3, [int] $RetreatAt = 2, [string[]] $Competitors = @('spiral-policy', 'vbot'), [string] $Out = (Join-Path (Split-Path $PSScriptRoot -Parent) 'results\rows\arena_results.spi'), [string] $SpawnFile = '', [string] $KnightAt = '', [int] $RunMs = 0, [string] $Scenario = '', [string] $Ally = '', [string] $AllyAt = '', [string] $ServerProbe = '')
+param([int] $Runs = 3, [string] $Monster = 'troll', [int] $MonsterCount = 3, [int] $AxeSkill = 30, [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [int] $FullExperience = 90, [int] $TimeoutSeconds = 240, [int] $KiteAt = 3, [int] $RetreatAt = 2, [string[]] $Competitors = @('spiral-policy', 'vbot'), [string] $Out = (Join-Path (Split-Path $PSScriptRoot -Parent) 'results\rows\arena_results.spi'), [string] $SpawnFile = '', [string] $KnightAt = '', [int] $RunMs = 0, [string] $Scenario = '', [string] $Ally = '', [string] $AllyAt = '', [string] $ServerGauge = '')
 $ErrorActionPreference = 'Stop'
 $Competitors = @($Competitors -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $root = $PSScriptRoot
@@ -9,16 +9,16 @@ if ($RunMs -gt 0) { $env:TIBIA_ARENA_RUN_MS = "$RunMs" }
 $label = if ($Scenario) { $Scenario } else { $Monster -replace '[:,]', '_' }
 if (-not (Test-Path $Out)) { New-ResultTable $Out "timestamp`tcompetitor`trun`tmonster`tcount`texperience`tcleared_ms`tlowest_health`tactions_allowed`tactions_dropped`tpotions`tgold`tdeaths`tforeign_potions`tforeign_actions" }
 . (Join-Path $root 'arena-check.ps1')
-$probeInstalled = ''
-$probeTrace = ''
-if ($ServerProbe) {
+$gaugeInstalled = ''
+$gaugeTrace = ''
+if ($ServerGauge) {
     $canaryDir = Join-Path $TibiaWorld 'canary'
-    $probeInstalled = Join-Path $canaryDir ('data\scripts\' + (Split-Path $ServerProbe -Leaf))
-    $probeTrace = Join-Path $canaryDir (([IO.Path]::GetFileNameWithoutExtension($ServerProbe) -replace '_', '-') + '.log')
-    if (Test-Path -LiteralPath $probeInstalled) { throw "server probe already installed at $probeInstalled; not touching it" }
-    if (Test-Path -LiteralPath $probeTrace) { Remove-Item -LiteralPath $probeTrace }
-    Copy-Item -LiteralPath $ServerProbe -Destination $probeInstalled
-    "server probe installed: $probeInstalled"
+    $gaugeInstalled = Join-Path $canaryDir ('data\scripts\' + (Split-Path $ServerGauge -Leaf))
+    $gaugeTrace = Join-Path $canaryDir (([IO.Path]::GetFileNameWithoutExtension($ServerGauge) -replace '_', '-') + '.log')
+    if (Test-Path -LiteralPath $gaugeInstalled) { throw "server gauge already installed at $gaugeInstalled; not touching it" }
+    if (Test-Path -LiteralPath $gaugeTrace) { Remove-Item -LiteralPath $gaugeTrace }
+    Copy-Item -LiteralPath $ServerGauge -Destination $gaugeInstalled
+    "server gauge installed: $gaugeInstalled"
 }
 
 function Read-Number([string[]] $lines, [string] $pattern) {
@@ -59,9 +59,9 @@ try {
             if ($SpawnFile) { $scenarioArgs += @('-SpawnFile', $SpawnFile) }
             if ($KnightAt) { $scenarioArgs += @('-KnightAt', $KnightAt) }
             if ($Ally) { $scenarioArgs += @('-Ally', $Ally, '-AllyAt', $AllyAt) }
-            if ($competitor -eq 'vbot') { $scenarioArgs += @('-ProbeBody', 'vbot', '-Bot', 'vBot') }
-            if ($competitor -eq 'nexbot') { $scenarioArgs += @('-ProbeBody', 'nexbot', '-Bot', 'nExBot') }
-            if ($competitor -eq 'random-control') { $scenarioArgs += @('-ProbeBody', 'random') }
+            if ($competitor -eq 'vbot') { $scenarioArgs += @('-GaugeBody', 'vbot', '-Bot', 'vBot') }
+            if ($competitor -eq 'nexbot') { $scenarioArgs += @('-GaugeBody', 'nexbot', '-Bot', 'nExBot') }
+            if ($competitor -eq 'random-control') { $scenarioArgs += @('-GaugeBody', 'random') }
             foreach ($attempt in 1..2) {
                 $lines = @(pwsh @scenarioArgs 2>&1 | ForEach-Object { "$_" })
                 $logDir = $TibiaLogs
@@ -86,10 +86,10 @@ try {
     }
 }
 finally {
-    if ($probeInstalled -and (Test-Path -LiteralPath $probeInstalled)) { Remove-Item -LiteralPath $probeInstalled; "server probe removed: $probeInstalled" }
-    if ($probeTrace -and (Test-Path -LiteralPath $probeTrace)) {
-        $kept = Join-Path $TibiaLogs ("{0}-{1}-{2}" -f (Get-Date -Format 'yyyyMMdd-HHmmss'), $label, (Split-Path $probeTrace -Leaf))
-        Move-Item -LiteralPath $probeTrace -Destination $kept
-        "server probe trace: $kept"
+    if ($gaugeInstalled -and (Test-Path -LiteralPath $gaugeInstalled)) { Remove-Item -LiteralPath $gaugeInstalled; "server gauge removed: $gaugeInstalled" }
+    if ($gaugeTrace -and (Test-Path -LiteralPath $gaugeTrace)) {
+        $kept = Join-Path $TibiaLogs ("{0}-{1}-{2}" -f (Get-Date -Format 'yyyyMMdd-HHmmss'), $label, (Split-Path $gaugeTrace -Leaf))
+        Move-Item -LiteralPath $gaugeTrace -Destination $kept
+        "server gauge trace: $kept"
     }
 }

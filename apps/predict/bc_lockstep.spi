@@ -1,0 +1,68 @@
+///- --package .
+:# bc_lockstep static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:= bit (differs : bool) (b : i32) : i32 =
+    ? differs
+    ?> b
+    |: 0
+
+:= target_code (t : option i32) : i32 =
+    ?= t ?|
+    | Some k => k
+    | None => -1
+
+:= body_mask (a : hunter) (b : hunter) : i32 =
+    := moved = a::at::x <> b::at::x || a::at::y <> b::at::y
+    bit moved 1
+    + bit (units::value_of a::health <> units::value_of b::health) 2
+    + bit (a::next_step_at <> b::next_step_at) 4
+
+:= clock_mask (a : hunter) (b : hunter) : i32 =
+    := acted = units::value_of a::clock::next_action_at <> units::value_of b::clock::next_action_at
+    bit (a::clock::next_decision_at <> b::clock::next_decision_at) 8 + bit acted 16
+
+:= tally_mask (a : hunter) (b : hunter) : i32 =
+    := t, u = a::tally, b::tally
+    bit (t::potions <> u::potions) 32 + bit (t::hits_taken <> u::hits_taken) 64 + bit (t::retreats <> u::retreats) 128
+
+:= score_mask (a : pack) (b : pack) : i32 =
+    bit (a::score::kills <> b::score::kills || a::score::deaths <> b::score::deaths) 512
+
+:= pack_mask (a : pack) (b : pack) : i32 =
+    := h, k = a::hunter, b::hunter
+    := aimed = bit (target_code h::target <> target_code k::target) 256
+    body_mask h k + clock_mask h k + tally_mask h k + aimed + score_mask a b
+
+:== lock = { camp : camp; s : tactic; seed : u32 }
+
+:= teacher_step (l : lock) (tick : i32) (p : pack) : pack = advance l::camp (bc_run::teacher ()) l::seed tick p
+
+:= student_step (l : lock) (tick : i32) (p : pack) : pack = advance l::camp l::s l::seed tick p
+
+:~ ^ lockstep (l : lock) (tick : i32) (pt : pack) (ps : pack) : i32 * i32 =
+    := m = pack_mask pt ps
+    ? m <> 0 || tick >= scenario_ticks ()
+    ?> tick, m
+    |: lockstep l (tick + 1) (teacher_step l tick pt) (student_step l tick ps)
+
+:= row (seed : u32) (tick : i32) (m : i32) : () =
+    console::write_line ("lockstep\tseed\t" ++#? seed ++# "\tfirst_tick\t" ++#? tick ++# "\tmask\t" ++#? m)
+
+:= seed_row (camp : camp) (s : tactic) (i : i32) : () =
+    := seed = held_out_first () + conv i
+    := tick, m = lockstep { camp = camp; s = s; seed = seed } 0 (start camp) (start camp)
+    row seed tick m
+
+:~ ^ seeds_from (camp : camp) (s : tactic) (i : i32) : () =
+    ? i < bc_run::seed_count () ?>
+        seed_row camp s i
+        seeds_from camp s (i + 1)
+
+:= main () =
+    := w = bc_train::quantized (bc_run::trained (bc_dagger::aggregated (bc_run::pairs_from (training_first ()))))
+    seeds_from (bc_run::bc_camp ()) (bc_eval::student_tactic w) 0
+    0i32

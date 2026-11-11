@@ -12,7 +12,7 @@ The arena probe's output for the PC1 runs on 2026-10-14, kept verbatim as eviden
 === PC-1 run 3 15:49:56
 [tibia-probe] finish: summoned
 [tibia-probe] in game as Knight Sample at nil (path check, standing, no attack)
-=== harness fixed 15:53:38: runs 1-3 above crashed on a nil position; valid runs follow
+=== runner fixed 15:53:38: runs 1-3 above crashed on a nil position; valid runs follow
 === PC-1 valid run 1 15:53:38
 [tibia-probe] finish: summoned
 [tibia-probe] path t=0 ms monster at 1949,1343,7 distance 6 step 0

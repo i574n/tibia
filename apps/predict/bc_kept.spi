@@ -1,0 +1,37 @@
+///- --package .
+:# bc_kept static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== pairs = list bc_dataset::pair
+
+:= trained_kept (train : pairs) : array f32 =
+    := w = bc_train::initial 7
+    := loss = bc_train::train (bc_run::trainer ()) w (bc_train::kept_examples_of train)
+    console::write_line ("kept_final_loss\t" ++#? loss)
+    w
+
+:= student_of (train : pairs) : network::weights = bc_train::quantized (trained_kept train)
+
+:= driven (w : network::weights) : bc_direction::tally =
+    := s = bc_eval::student_tactic w
+    bc_direction::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_direction::zero_tally ())
+
+:= evaluated (name : string) (w : network::weights) : () =
+    console::write_line ("arm\t" ++# name)
+    bc_dagger::paired w
+    bc_direction::report name (driven w)
+
+:= dagger_of (w0 : network::weights) (base : pairs) : pairs =
+    bc_dagger::seeds_relabelled (bc_run::bc_camp ()) (bc_eval::student_tactic w0) 0 base
+
+:= main () =
+    := base = bc_run::pairs_from (training_first ())
+    := w0 = student_of base
+    evaluated "K0" w0
+    := all = dagger_of w0 base
+    console::write_line ("kept_dagger_pairs\t" ++#? bc_run::pair_count all)
+    evaluated "K1" (student_of all)
+    0i32

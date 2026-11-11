@@ -1,0 +1,67 @@
+///- --package .
+:# bc_healcal static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== pairs = list bc_dataset::pair
+
+:== scored = bc_calib::scored
+
+:= heal_into (w : network::weights) (acc : list scored) (q : bc_dataset::pair) : list scored =
+    ? bc_dataset::is_known q::heal
+    ?> { r = network::heal_logit w q::x; t = bc_dataset::agrees q::heal !+ } :: acc
+    |: acc
+
+:= heal_rows (w : network::weights) (ps : pairs) : list scored = ps |> listm::fold (heal_into w) []
+
+:= heal_counted (theta : i32) (acc : i32 * i32) (row : scored) : i32 * i32 =
+    := missed, extra = acc
+    ? row::t && row::r <= theta ?> missed + 1, extra |? row::t = !- && row::r > theta ?> missed, extra + 1 |: acc
+
+:= heal_errors (theta : i32) (rows : list scored) : i32 * i32 = rows |> listm::fold (heal_counted theta) (0, 0)
+
+:= heal_balanced (theta : i32) (rows : list scored) : bool =
+    := missed, extra = heal_errors theta rows
+    missed <= extra
+
+:~ ^ largest_from (rows : list scored) (lo : i32) (hi : i32) : i32 =
+    ? lo >= hi
+    ?> lo
+    |:
+        := mid = (lo + hi + 1) / 2
+        ? heal_balanced mid rows ?> largest_from rows mid hi |: largest_from rows lo (mid - 1)
+
+:= lower (m : i32) (row : scored) : i32 = ? row::r < m ?> row::r |: m
+
+:= heal_theta (rows : list scored) : i32 =
+    largest_from rows (rows |> listm::fold lower 0) (rows |> listm::fold bc_calib::higher 0)
+
+:= thresholded (w : network::weights) (theta : i32) : tactic =
+    { (bc_run::teacher ()) ?| brain = Calibrated (w, { heal = theta; retreat = 0 }) }
+
+:= heal_row (name : string) (theta : i32) (rows : list scored) : () =
+    := missed, extra = heal_errors theta rows
+    console::write_line (name ++# "\ttheta_h\t" ++#? theta ++# "\tmissed\t" ++#? missed ++# "\textra\t" ++#? extra)
+
+:= second_round () : network::weights * pairs =
+    := twice = bc_indep2::next_round (bc_indep2::next_round (bc_run::pairs_from (training_first ())))
+    bc_train::quantized (bc_indep::trained_independent twice), twice
+
+:= traced (w : network::weights) (theta : i32) : () = bc_lockstep2::seeds_from (bc_run::bc_camp ()) (thresholded w theta) 0
+
+:= reported (w : network::weights) (theta : i32) : () =
+    bc_indep::evaluated "I2" (bc_indep::student_tactic w)
+    bc_indep::evaluated "H0" (thresholded w 0)
+    bc_indep::evaluated "H1" (thresholded w theta)
+    traced w theta
+
+:= main () =
+    := w, twice = second_round ()
+    := rows = heal_rows w twice
+    := theta = heal_theta rows
+    heal_row "train_at_zero" 0 rows
+    heal_row "train_calibrated" theta rows
+    reported w theta
+    0i32

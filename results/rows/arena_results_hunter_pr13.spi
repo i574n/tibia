@@ -1,4 +1,17 @@
 ///- --no-respell
 open table_rows
 inl table () =
-    Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-18T21:28:43\tspiral-policy\t1\thunter\t3\t225\t\t107\t2\t0\t1\t0\t0\t0\t0\n2026-10-18T21:32:07\tspiral-policy\t2\thunter\t3\t450\t\t296\t2\t0\t0\t0\t0\t0\t0\n2026-10-18T21:33:41\tspiral-policy\t3\thunter\t3\t675\t51449\t113\t7\t0\t4\t0\t0\t0\t0\n2026-10-18T21:36:54\tspiral-policy\t4\thunter\t3\t225\t\t79\t3\t0\t2\t0\t0\t0\t0\n2026-10-18T21:38:28\tspiral-policy\t5\thunter\t3\t675\t51574\t107\t7\t2\t3\t0\t0\t0\t0\n2026-10-18T21:41:40\tspiral-policy\t6\thunter\t3\t225\t\t152\t2\t0\t1\t0\t0\t0\t0\n2026-10-18T21:43:20\tspiral-policy\t7\thunter\t3\t675\t59240\t115\t9\t0\t6\t0\t0\t0\t0\n2026-10-18T21:45:13\tspiral-policy\t8\thunter\t3\t675\t71596\t108\t9\t0\t6\t0\t0\t0\t0\n2026-10-18T21:48:25\tspiral-policy\t9\thunter\t3\t225\t\t227\t1\t0\t0\t0\t0\t0\t0\n2026-10-18T21:50:21\tspiral-policy\t10\thunter\t3\t675\t74335\t130\t10\t0\t7\t0\t0\t0\t0"
+    Table (
+        "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\taction"
+        ^^ "s_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n"
+        ^^ "2026-10-18T21:28:43\tspiral-policy\t1\thunter\t3\t225\t\t107\t2\t0\t1\t0\t0\t0\t0\n"
+        ^^ "2026-10-18T21:32:07\tspiral-policy\t2\thunter\t3\t450\t\t296\t2\t0\t0\t0\t0\t0\t0\n"
+        ^^ "2026-10-18T21:33:41\tspiral-policy\t3\thunter\t3\t675\t51449\t113\t7\t0\t4\t0\t0\t0\t0\n"
+        ^^ "2026-10-18T21:36:54\tspiral-policy\t4\thunter\t3\t225\t\t79\t3\t0\t2\t0\t0\t0\t0\n"
+        ^^ "2026-10-18T21:38:28\tspiral-policy\t5\thunter\t3\t675\t51574\t107\t7\t2\t3\t0\t0\t0\t0\n"
+        ^^ "2026-10-18T21:41:40\tspiral-policy\t6\thunter\t3\t225\t\t152\t2\t0\t1\t0\t0\t0\t0\n"
+        ^^ "2026-10-18T21:43:20\tspiral-policy\t7\thunter\t3\t675\t59240\t115\t9\t0\t6\t0\t0\t0\t0\n"
+        ^^ "2026-10-18T21:45:13\tspiral-policy\t8\thunter\t3\t675\t71596\t108\t9\t0\t6\t0\t0\t0\t0\n"
+        ^^ "2026-10-18T21:48:25\tspiral-policy\t9\thunter\t3\t225\t\t227\t1\t0\t0\t0\t0\t0\t0\n"
+        ^^ "2026-10-18T21:50:21\tspiral-policy\t10\thunter\t3\t675\t74335\t130\t10\t0\t7\t0\t0\t0\t0"
+    )

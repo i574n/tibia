@@ -1748,7 +1748,7 @@
     := sx, sy = toward_signs threat from
     best_step l taken (farther_from threat from) sx sy from
 
-:= step_away_like_the_live_probe (l : layout) (taken : occupancy) (threat : tile) (from : tile) : tile =
+:= step_away_like_the_live_gauge (l : layout) (taken : occupancy) (threat : tile) (from : tile) : tile =
     := sx, sy = toward_signs threat from
     first_usable (\ p => geometry::same_tile p from = !- && free l taken p) (live_candidates sx sy from) from
 

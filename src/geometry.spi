@@ -206,19 +206,19 @@
 := xy (p : position) : i32 * i32 = p::x, p::y
 
 ///> c
-:# steps_match_canary_walk_probe_2026_10_12 =
+:# steps_match_canary_walk_gauge_2026_10_12 =
     := ~start = position 1942 1346 7
     := north = step North start
     (xy north, xy (step East north)) |> _assert_eq ((1942i32, 1345i32), (1943i32, 1345i32))
 
 ///> c
-:# steps_close_the_canary_walk_probe_loop_2026_10_12 =
+:# steps_close_the_canary_walk_gauge_loop_2026_10_12 =
     := ~start = position 1942 1346 7
     := south = start |> step North |> step East |> step South
     (xy south, same_tile start (step West south)) |> _assert_eq ((1943i32, 1346i32), !+)
 
 ///> c
-:# diagonal_steps_match_canary_walk_probe_2026_10_12 =
+:# diagonal_steps_match_canary_walk_gauge_2026_10_12 =
     := ~start = position 1932 1352 7
     := north_east = step NorthEast start
     (xy north_east, xy (step SouthEast north_east)) |> _assert_eq ((1933i32, 1351i32), (1934i32, 1352i32))

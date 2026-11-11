@@ -1,0 +1,17 @@
+///- --package .
+:# bc_indep2 static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== pairs = list bc_dataset::pair
+
+:= next_round (ps : pairs) : pairs = bc_indep::dagger_of (bc_indep::student_of ps) ps
+
+:= main () =
+    := once = next_round (bc_run::pairs_from (training_first ()))
+    := twice = next_round once
+    bc_indep::count_row "round2_pairs" twice
+    bc_indep::evaluated "I2" (bc_indep::student_of twice)
+    0i32

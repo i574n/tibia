@@ -38,25 +38,25 @@
     | Missing => advanced runs p p::counted (p::missing + 1)
 
 :| stage_step =
-    | InstallProbe : string
+    | InstallGauge : string
     | Runs : i32
-    | RemoveProbe
+    | RemoveGauge
     | KeepTrace : string
 
-:= probed_stage (probe : string) (runs : i32) (trace : string) : list stage_step =
-    [ InstallProbe probe; Runs runs; RemoveProbe; KeepTrace trace ]
+:= gauged_stage (gauge : string) (runs : i32) (trace : string) : list stage_step =
+    [ InstallGauge gauge; Runs runs; RemoveGauge; KeepTrace trace ]
 
 := plain_stage (runs : i32) : list stage_step = [ Runs runs ]
 
 := runs_of (steps : list stage_step) : i32 =
     listm::fold (\ total step => ?= step ?| Runs n => total + n | _ => total) 0 steps
 
-:= probe_left_installed (steps : list stage_step) : bool =
+:= gauge_left_installed (steps : list stage_step) : bool =
     listm::fold
         \ installed step =>
             ?= step ?|
-            | InstallProbe _ => !+
-            | RemoveProbe => !-
+            | InstallGauge _ => !+
+            | RemoveGauge => !-
             | _ => installed
         !-
         steps
@@ -140,22 +140,22 @@
 ///> c
 ///> lua
 ///> gleam
-:# a_probed_stage_keeps_its_run_count =
+:# a_gauged_stage_keeps_its_run_count =
     := ~runs = 10i32
-    (runs_of (probed_stage "lead_trace.lua" runs "lead-trace.log"), runs_of (plain_stage runs))
+    (runs_of (gauged_stage "lead_trace.lua" runs "lead-trace.log"), runs_of (plain_stage runs))
     |> _assert_eq (10i32, 10i32)
 
 ///> c
 ///> lua
 ///> gleam
-:# a_probed_stage_removes_its_probe_and_keeps_the_trace =
+:# a_gauged_stage_removes_its_gauge_and_keeps_the_trace =
     := ~runs = 10i32
-    := steps = probed_stage "lead_trace.lua" runs "lead-trace.log"
-    probe_left_installed steps |> _assert_eq !-
+    := steps = gauged_stage "lead_trace.lua" runs "lead-trace.log"
+    gauge_left_installed steps |> _assert_eq !-
 
 ///> c
 ///> lua
 ///> gleam
-:# a_stage_without_removal_leaves_its_probe_installed =
+:# a_stage_without_removal_leaves_its_gauge_installed =
     := ~runs = 10i32
-    probe_left_installed [ InstallProbe "lead_trace.lua"; Runs runs ] |> _assert_eq !+
+    gauge_left_installed [ InstallGauge "lead_trace.lua"; Runs runs ] |> _assert_eq !+

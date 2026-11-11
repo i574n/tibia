@@ -1,0 +1,49 @@
+///- --package .
+:# bc_indep static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== pairs = list bc_dataset::pair
+
+:= trained_independent (train : pairs) : array f32 =
+    := w = bc_train::initial 7
+    := loss = bc_train::train (bc_run::trainer ()) w (bc_train::independent_examples_of train)
+    console::write_line ("independent_final_loss\t" ++#? loss)
+    w
+
+:= student_tactic (w : network::weights) : tactic = { (bc_run::teacher ()) ?| brain = Independent w }
+
+:= student_of (train : pairs) : tactic = student_tactic (bc_train::quantized (trained_independent train))
+
+:= paired_at (s : tactic) (seed : u32) (u : bc_eval::sums) : bc_eval::sums =
+    bc_eval::added (conv (bc_eval::seed_score (bc_run::teacher ()) seed)) (conv (bc_eval::seed_score s seed)) u
+
+:~ ^ paired_from (s : tactic) (i : i32) (u : bc_eval::sums) : bc_eval::sums =
+    ? i >= bc_run::seed_count ()
+    ?> u
+    |: paired_from s (i + 1) (paired_at s (held_out_first () + conv i) u)
+
+:= zero_sums () : bc_eval::sums = { n = 0.0f32; t = bc_eval::empty (); s = bc_eval::empty (); d = bc_eval::empty () }
+
+:= driven (s : tactic) : bc_direction::tally =
+    bc_direction::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_direction::zero_tally ())
+
+:= evaluated (name : string) (s : tactic) : () =
+    console::write_line ("arm\t" ++# name)
+    bc_eval::report (paired_from s 0 (zero_sums ()))
+    bc_direction::report name (driven s)
+
+:= count_row (name : string) (ps : pairs) : () = console::write_line (name ++# "\t" ++#? bc_run::pair_count ps)
+
+:= dagger_of (s : tactic) (base : pairs) : pairs = bc_dagger::seeds_relabelled (bc_run::bc_camp ()) s 0 base
+
+:= main () =
+    := base = bc_run::pairs_from (training_first ())
+    := s0 = student_of base
+    evaluated "I0" s0
+    := all = dagger_of s0 base
+    count_row "independent_dagger_pairs" all
+    evaluated "I1" (student_of all)
+    0i32

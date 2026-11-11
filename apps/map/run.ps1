@@ -12,14 +12,17 @@ $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path $spiral 'deps/The-Spiral-Language/V
 $env:SPIRAL_WORKSPACE_ROOT = Join-Path $spiral 'apps/compiler/tmp'
 $dotnet = Join-Path $env:LOCALAPPDATA "spiral-bin/toolchains/dotnet/dotnet$(if ($IsWindows) { '.exe' })"
 $compiler = Join-Path $env:LOCALAPPDATA 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'
-& $dotnet $compiler --backend Rust (Join-Path $ScriptDir 'map.spi') (Join-Path $out 'map.rs')
-if ($LASTEXITCODE -ne 0) { throw "map / spiral compile failed ($LASTEXITCODE)" }
-$exe = Join-Path $out "map$(if ($IsWindows) { '.exe' })"
+$units = @(@{ Spi = 'apps/map_kinds/map_kinds.spi'; Rs = 'apps/map_kinds/kinds.rs' }, @{ Spi = 'apps/map_items/map_items.spi'; Rs = 'apps/map_items/items.rs' }, @{ Spi = 'apps/map_walk/map_walk.spi'; Rs = 'apps/map_walk/walk.rs' }, @{ Spi = 'apps/map/map.spi'; Rs = 'apps/map/map.rs' })
+foreach ($unit in $units) {
+    & $dotnet $compiler --backend Rust (Join-Path $repo $unit.Spi) (Join-Path $repo $unit.Rs)
+    if ($LASTEXITCODE -ne 0) { throw "map / spiral compile failed for $($unit.Spi) ($LASTEXITCODE)" }
+}
 Push-Location $repo
-rustc --edition 2024 -O -A warnings -o $exe (Join-Path $out 'map.rs')
-$rustcExit = $LASTEXITCODE
+cargo build --release -p map
+$cargoExit = $LASTEXITCODE
 Pop-Location
-if ($rustcExit -ne 0) { throw "map / rustc failed ($rustcExit)" }
+if ($cargoExit -ne 0) { throw "map / cargo build failed ($cargoExit)" }
+$exe = Join-Path $repo "target/release/map$(if ($IsWindows) { '.exe' })"
 "map / $(Push-Location $repo; rustc --version; Pop-Location)"
 
 $canary = Join-Path $TibiaWorld 'canary'
@@ -42,7 +45,8 @@ $dumpText = ($dump -join "`n") + "`n"
 if ($dumpText -match '["\\]') { throw "map / the walkability dump has a quote or backslash, which the row module literal cannot hold" }
 $module = "///- --no-respell`nopen table_rows`ninl table () = Table `"$($dumpText.Replace("`n", '\n'))`"`n"
 $committed = if (Test-Path $region) { [IO.File]::ReadAllText($region) } else { '' }
-if ($committed -ne $module) {
+$committedText = ([regex]::Matches($committed, '"([^"]*)"') | ForEach-Object { $_.Groups[1].Value }) -join ''
+if ($committedText -ne $dumpText.Replace("`n", '\n')) {
     if (!$Update) { throw "map / the walkability dump differs from $regionName; rerun with -Update to rewrite it" }
     [IO.File]::WriteAllText($region, $module)
     "map / rewrote $regionName from the server map"

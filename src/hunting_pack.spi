@@ -236,10 +236,16 @@
 
 :== cfr_brain = { table : array i32; depth : i32 }
 
+:== weights = network::weights
+
+:== thresholds = { heal : i32; retreat : i32 }
+
 :| brain =
     | Rules : policy::adaptive
-    | Network : network::weights
-    | Hashed : network::weights
+    | Network : weights
+    | Hashed : weights
+    | Independent : weights
+    | Calibrated : weights * thresholds
     | Softened : soft_brain
     | Cfr : cfr_brain
     | Temperate : policy::temperate
@@ -247,7 +253,7 @@
 
 :| footing_rule =
     | StepAway
-    | StepAwayLikeTheLiveProbe
+    | StepAwayLikeTheLiveGauge
     | ScoredStep : terrain::footing
 
 :== patrol_route = { points : fixed_views::band geometry::position; count : i32 }
@@ -382,11 +388,11 @@
 
 :| chase_pace =
     | ChasesAtTheServerPace
-    | ChasesAtTheProbePace
+    | ChasesAtTheGaugePace
 
 :| retreat_pace =
     | RetreatsAtTheServerPace
-    | RetreatsAtTheProbePace
+    | RetreatsAtTheGaugePace
 
 :| ally_entry =
     | EntersWithTheKnight
@@ -586,15 +592,15 @@
 
 := sighting_like_canary (c : camp) : camp = { c ?| motion = { (c::motion) ?| sight = SightStopsAtProjectileBlockers } }
 
-:= live_probe_step_ms () : i32 = 650
+:= live_gauge_step_ms () : i32 = 650
 
 := live_chase_step_ms () : i32 = 558
 
-:= chasing_at_the_live_probe_pace (c : camp) : camp =
-    { c ?| knight = { (c::knight) ?| chase_pace = ChasesAtTheProbePace } }
+:= chasing_at_the_live_gauge_pace (c : camp) : camp =
+    { c ?| knight = { (c::knight) ?| chase_pace = ChasesAtTheGaugePace } }
 
-:= pacing_retreats_like_the_live_probe (c : camp) : camp =
-    { c ?| knight = { (c::knight) ?| retreat_pace = RetreatsAtTheProbePace } }
+:= pacing_retreats_like_the_live_gauge (c : camp) : camp =
+    { c ?| knight = { (c::knight) ?| retreat_pace = RetreatsAtTheGaugePace } }
 
 := blocks_sight (camp : camp) (p : geometry::position) : bool =
     ?= camp::motion::sight ?|
@@ -617,7 +623,7 @@
     |> acquiring_like_canary
     |> following_like_canary
     |> sighting_like_canary
-    |> pacing_retreats_like_the_live_probe
+    |> pacing_retreats_like_the_live_gauge
 
 := canary_spawn_check_ms () : i32 = 30000
 
@@ -705,13 +711,13 @@
 := hunter_step_ms_at (camp : camp) (at : geometry::position) : i32 =
     step_ms_at camp at (creatures::knight_speed camp::crew::hunter_level) (hunter_of camp)::step_ms
 
-:= no_faster_than_probe (server : i32) : i32 = ? server > live_probe_step_ms () ?> server |: live_probe_step_ms ()
+:= no_faster_than_gauge (server : i32) : i32 = ? server > live_gauge_step_ms () ?> server |: live_gauge_step_ms ()
 
 := retreat_step_ms_at (camp : camp) (at : geometry::position) : i32 =
     := server = hunter_step_ms_at camp at
     ?= camp::knight::retreat_pace ?|
     | RetreatsAtTheServerPace => server
-    | RetreatsAtTheProbePace => no_faster_than_probe server
+    | RetreatsAtTheGaugePace => no_faster_than_gauge server
 
 := player_max_health (c : camp) : units::amount quantity::hitpoints =
     quantity::hp (knight_max_health (hunter_of c)::level)
@@ -920,7 +926,7 @@
 := turn_at (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) : turn =
     { camp = camp; seed = seed; tick = tick; now = now; index = index }
 
-:= wanders (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
+:~ wanders (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
     wander_turn (turn_at camp seed tick now index) p
 
 :== reach_view = { centre : geometry::position; dx : i32; dy : i32; reach : i32 }
@@ -979,7 +985,7 @@
 := respawn_check_until (f : foe) : i32 =
     f::respawn::returns_at - canary_unblockable_spawn_delay_ms () + canary_spawn_check_ms ()
 
-:= foe_respawns (t : turn) (k : foe_kind) (f : foe) (p : pack) : pack =
+:~ foe_respawns (t : turn) (k : foe_kind) (f : foe) (p : pack) : pack =
     := fresh = fresh_foe k f::spawn
     with_slot t::index { fresh ?| respawn = { (fresh::respawn) ?| check_until = respawn_check_until f } } p
 
@@ -1053,7 +1059,7 @@
         next_step_at = t::now + player_think_ms () + foe_step_ms t s f
     }
 
-:= foe_acquires (t : turn) (s : foe_stats) (f : foe) (p : pack) : pack =
+:~ foe_acquires (t : turn) (s : foe_stats) (f : foe) (p : pack) : pack =
     ? thinks_now t::seed t::index t::now ?> with_slot t::index (acquired_foe t s f) p |: p
 
 := follows_later (t : turn) (f : foe) : bool =
@@ -1070,7 +1076,7 @@
 := chased_foe (t : turn) (s : foe_stats) (f : foe) (toward : geometry::position) : foe =
     { f ?| at = toward; next_step_at = t::now + geometry::step_cost (chase_step_ms t s f) f::at toward }
 
-:= foe_chases (t : turn) (s : foe_stats) (f : foe) (p : pack) : pack =
+:~ foe_chases (t : turn) (s : foe_stats) (f : foe) (p : pack) : pack =
     := toward = terrain::step_toward t::camp::layout (taken_by_others t::index p) p::hunter::at f::at
     retimed_target t (with_slot t::index (chased_foe t s f toward) p)
 
@@ -1088,21 +1094,21 @@
     ?> foe_acquires t s f p
     |: foe_follows t s f p
 
-:= foe_moves_steady (t : turn) (s : foe_stats) (f : foe) (p : pack) : pack =
+:~ foe_moves_steady (t : turn) (s : foe_stats) (f : foe) (p : pack) : pack =
     ? keeps_range t s f p
     ?> foe_keeps_range t s f p
     |? distance_to f p <= 1
     ?> foe_dances_at_target t f p
     |: foe_tracks t s f p
 
-:= foe_moves_live (t : turn) (k : foe_kind) (s : foe_stats) (f : foe) (p : pack) : pack =
+:~ foe_moves_live (t : turn) (k : foe_kind) (s : foe_stats) (f : foe) (p : pack) : pack =
     ? t::now < f::next_step_at
     ?> p
     |? vitality::health f::life <= s::run_health
     ?> foe_flees t k s f p
     |: foe_moves_steady t s f p
 
-:= foe_moves (t : turn) (k : foe_kind) (s : foe_stats) (f : foe) (p : pack) : pack =
+:~ foe_moves (t : turn) (k : foe_kind) (s : foe_stats) (f : foe) (p : pack) : pack =
     ? f::respawn::returns_at <= t::now
     ?> foe_respawns t k f p
     |: foe_moves_live t k s f p
@@ -1147,7 +1153,7 @@
 := foe_shoots (t : turn) (k : foe_kind) (g : foe) (p : pack) : pack =
     creature_shoots t (creatures::ranged_attack_of k) g p
 
-:= foe_strikes (t : turn) (k : foe_kind) (s : foe_stats) (q : pack) : pack =
+:~ foe_strikes (t : turn) (k : foe_kind) (s : foe_stats) (q : pack) : pack =
     := g = slot t::index q
     ? vitality::health g::life <= s::run_health
     ?> q
@@ -1332,7 +1338,7 @@
 := foe_acts_at (t : turn) (p : pack) : pack =
     ? t::now < t::camp::foes::wakes_at ?> idle_turn t p |: viewed_turn t p
 
-:= foe_acts (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
+:~ foe_acts (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
     foe_acts_at (turn_at camp seed tick now index) p
 
 := picked_in (mask : u32) (i : i32) : bool = ((mask >>> i) &&& 1u32) = 1u32
@@ -1440,7 +1446,7 @@
         tally = potion_tally h::tally
     }
 
-:= player_heals (camp : camp) (seed : u32) (tick : i32) (slot : action_proof) (p : pack) : pack =
+:~ player_heals (camp : camp) (seed : u32) (tick : i32) (slot : action_proof) (p : pack) : pack =
     := h = p::hunter
     p |> with_hunter (healed_hunter camp slot (heal_amount seed tick (hunter_of camp) h) h)
 
@@ -1508,7 +1514,7 @@
     | Survived wounded => strike_survived t h f wounded q
     | Slain _ => strike_slain t k s f h q
 
-:= strikes_target (t : turn) (h : hunter) (p : pack) : pack =
+:~ strikes_target (t : turn) (h : hunter) (p : pack) : pack =
     := k = kind_of t::index t::camp
     := s = creatures::stats_of k
     := timed = strike_timed t h
@@ -1524,7 +1530,7 @@
     := q = { h ?| at = to; next_step_at = now + geometry::step_cost (hunter_step_ms_at c h::at) h::at to }
     q |> with_timers (swing_after_step c now h::clock::timers)
 
-:= hunter_steps (camp : camp) (now : i32) (toward : geometry::position) (p : pack) : pack =
+:~ hunter_steps (camp : camp) (now : i32) (toward : geometry::position) (p : pack) : pack =
     p |> with_hunter (stepped_hunter camp now toward p::hunter)
 
 := no_faster_than_live_chase (server : i32) : i32 = ? server > live_chase_step_ms () ?> server |: live_chase_step_ms ()
@@ -1533,7 +1539,7 @@
     := server = hunter_step_ms_at camp at
     ?= camp::knight::chase_pace ?|
     | ChasesAtTheServerPace => server
-    | ChasesAtTheProbePace => no_faster_than_live_chase server
+    | ChasesAtTheGaugePace => no_faster_than_live_chase server
 
 := fresh_walk_delays (camp : camp) : bool =
     ?= camp::motion::approach ?|
@@ -1615,8 +1621,8 @@
 := plain_step_away (camp : camp) (threat : foe) (p : pack) : geometry::position =
     terrain::step_away camp::layout (taken_by_foes p) threat::at p::hunter::at
 
-:= probe_step_away (camp : camp) (threat : foe) (p : pack) : geometry::position =
-    terrain::step_away_like_the_live_probe camp::layout (taken_by_foes p) threat::at p::hunter::at
+:= gauge_step_away (camp : camp) (threat : foe) (p : pack) : geometry::position =
+    terrain::step_away_like_the_live_gauge camp::layout (taken_by_foes p) threat::at p::hunter::at
 
 := scored_step_away (camp : camp) (w : terrain::footing) (threat : foe) (p : pack) : geometry::position =
     terrain::scored_step camp::layout (taken_by_foes p) (foes_near p) w threat::at p::hunter::at
@@ -1624,7 +1630,7 @@
 := retreat_target (camp : camp) (rule : footing_rule) (threat : foe) (p : pack) =
     ?= rule ?|
     | StepAway => plain_step_away camp threat p
-    | StepAwayLikeTheLiveProbe => probe_step_away camp threat p
+    | StepAwayLikeTheLiveGauge => gauge_step_away camp threat p
     | ScoredStep w => scored_step_away camp w threat p
 
 := retreat_step_at (camp : camp) (now : i32) (h : hunter) (away : geometry::position) : i32 =
@@ -1649,7 +1655,7 @@
 := retreat_with (r : retreat_beat) (away : geometry::position) (p : pack) : pack =
     p |> with_hunter (retreated_hunter r (geometry::same_tile away p::hunter::at) away p::hunter)
 
-:= player_retreats (camp : camp) (rule : footing_rule) (slot : action_proof) (p : pack) : pack =
+:~ player_retreats (camp : camp) (rule : footing_rule) (slot : action_proof) (p : pack) : pack =
     := r = { camp = camp; now = units::value_of (readiness::since slot); slot = slot }
     retreat_with r (retreat_target camp rule (slot_of_nearest_attacker p) p) p
 
@@ -1696,6 +1702,9 @@
 
 := network_heals (b : beat) (w : network::weights) (attackers : i32) (p : pack) : bool =
     (observe b::now p)::heal_ready && (network::decide w (features b::camp attackers b::now p))::heal
+
+:= thresholded_heals (b : beat) (w : network::weights) (theta : i32) (attackers : i32) (p : pack) : bool =
+    (observe b::now p)::heal_ready && (network::decide_at theta 0 w (features b::camp attackers b::now p))::heal
 
 := hashed_heals (b : beat) (w : network::weights) (attackers : i32) (p : pack) : bool =
     (observe b::now p)::heal_ready && (hashed::decide w (features b::camp attackers b::now p))::heal
@@ -1765,11 +1774,17 @@
 := cfr_heals (b : beat) (c : cfr_brain) (attackers : i32) (p : pack) : bool =
     (observe b::now p)::heal_ready && arena_act b c attackers p = arena_cfr::Potion
 
+:= independent_heals (b : beat) (d : brain) (attackers : i32) (p : pack) : bool =
+    ?= d ?|
+    | Independent w => network_heals b w attackers p
+    | Calibrated (w, t) => thresholded_heals b w t::heal attackers p
+    | _ => !-
+
 := weights_heals (b : beat) (d : brain) (attackers : i32) (p : pack) : bool =
     ?= d ?|
     | Network w => network_heals b w attackers p
     | Hashed w => hashed_heals b w attackers p
-    | _ => !-
+    | other => independent_heals b other attackers p
 
 := learned_heals (b : beat) (d : brain) (attackers : i32) (p : pack) : bool =
     ?= d ?|
@@ -1777,7 +1792,7 @@
     | Cfr c => cfr_heals b c attackers p
     | other => weights_heals b other attackers p
 
-:= wants_heal (b : beat) (d : brain) (attackers : i32) (p : pack) : bool =
+:~ wants_heal (b : beat) (d : brain) (attackers : i32) (p : pack) : bool =
     ?= d ?|
     | Rules a => rules_heals a attackers b::now p
     | Temperate r => temperate_heals b r p
@@ -1806,6 +1821,16 @@
     := d = network::decide w (features b::camp attackers b::now p)
     d::retreat, network_engagement o d::engage
 
+:= independent_plan (b : beat) (w : network::weights) (attackers : i32) (p : pack) : plan =
+    := o = observe b::now p
+    := d = network::decide_independent w (features b::camp attackers b::now p)
+    d::retreat, network_engagement o d::engage
+
+:= calibrated_plan (b : beat) (w : network::weights) (theta : i32) (attackers : i32) (p : pack) : plan =
+    := o = observe b::now p
+    := d = network::decide_calibrated theta w (features b::camp attackers b::now p)
+    d::retreat, network_engagement o d::engage
+
 := hashed_plan (b : beat) (w : network::weights) (attackers : i32) (p : pack) : plan =
     := o = observe b::now p
     := d = hashed::decide w (features b::camp attackers b::now p)
@@ -1828,11 +1853,17 @@
     := a = arena_act b c attackers p
     a = arena_cfr::Retreat, network_engagement (observe b::now p) (a = arena_cfr::Melee)
 
+:= independent_weights_plan (b : beat) (d : brain) (attackers : i32) (p : pack) : plan =
+    ?= d ?|
+    | Independent w => independent_plan b w attackers p
+    | Calibrated (w, t) => calibrated_plan b w t::retreat attackers p
+    | _ => random_plan ()
+
 := weights_plan (b : beat) (d : brain) (attackers : i32) (p : pack) : plan =
     ?= d ?|
     | Network w => network_plan b w attackers p
     | Hashed w => hashed_plan b w attackers p
-    | _ => random_plan ()
+    | other => independent_weights_plan b other attackers p
 
 := learned_plan (b : beat) (d : brain) (attackers : i32) (p : pack) : plan =
     ?= d ?|
@@ -1840,7 +1871,7 @@
     | Cfr c => cfr_plan b c attackers p
     | other => weights_plan b other attackers p
 
-:= after_heal_plan (b : beat) (d : brain) (attackers : i32) (p : pack) : plan =
+:~ after_heal_plan (b : beat) (d : brain) (attackers : i32) (p : pack) : plan =
     ?= d ?|
     | Rules a => rules_plan a attackers b::now p
     | Temperate r => temperate_plan b r p
@@ -1861,7 +1892,7 @@
     := goal = fixed_views::band_at p::hunter::waypoint route::points
     ? geometry::chebyshev_distance goal p::hunter::at <= 1 ?> next_waypoint route p |: patrol_walk c route now goal p
 
-:= patrol_step (camp : camp) (route : patrol_route) (now : i32) (p : pack) : pack =
+:~ patrol_step (camp : camp) (route : patrol_route) (now : i32) (p : pack) : pack =
     ? now < p::hunter::next_step_at ?> p |: patrol_goal camp route now p
 
 := awaiting_return (f : foe) : bool = f::respawn::returns_at < never ()
@@ -1918,14 +1949,14 @@
     := index = soonest_claimed_spawn camp (claims_of border p) now p
     ? claimed_wait_ms camp (claims_of border p) now index p >= never () ?> p |: step_to_spawn camp now index p
 
-:= territory_step (camp : camp) (border : i32) (now : i32) (p : pack) : pack =
+:~ territory_step (camp : camp) (border : i32) (now : i32) (p : pack) : pack =
     ? now < p::hunter::next_step_at ?> p |: territory_claim camp border now p
 
 := sweep_pick (camp : camp) (now : i32) (p : pack) : pack =
     := index = soonest_spawn camp now p
     ? expected_wait_ms camp now index p >= never () ?> p |: step_to_spawn camp now index p
 
-:= sweep_step (camp : camp) (now : i32) (p : pack) : pack =
+:~ sweep_step (camp : camp) (now : i32) (p : pack) : pack =
     ? now < p::hunter::next_step_at ?> p |: sweep_pick camp now p
 
 :| random_move =
@@ -1972,7 +2003,7 @@
     ?> hunter_steps b::camp b::now next p
     |: p
 
-:= steps_somewhere (b : beat) (p : pack) : pack =
+:~ steps_somewhere (b : beat) (p : pack) : pack =
     := next = terrain::neighbor (random_step_index b p) p::hunter::at
     ? b::now < p::hunter::next_step_at
     ?> p
@@ -2001,15 +2032,15 @@
 
 := attackers_of (p : pack) : i32 = fixed_views::counted (\ (f : foe) => distance_to f p <= 1) p::foes
 
-:= heals_now (b : beat) (t : tactic) (attackers : i32) (q : pack) : bool =
+:~ heals_now (b : beat) (t : tactic) (attackers : i32) (q : pack) : bool =
     q::hunter::tally::potions < b::camp::crew::potion_budget && wants_heal b t::brain attackers q
 
-:= heal_gate (b : beat) (heals : bool) (q : pack) : pack =
+:~ heal_gate (b : beat) (heals : bool) (q : pack) : pack =
     ?= readiness::action_gate (quantity::ms b::now) q::hunter::clock::next_action_at ?|
     | Open slot => ? heals ?> player_heals b::camp b::seed b::tick slot q |: q
     | ClosedUntil _ => q
 
-:= patrol_turn (b : beat) (t : tactic) (q : pack) : pack =
+:~ patrol_turn (b : beat) (t : tactic) (q : pack) : pack =
     ?= t::patrol ?|
     | Stays => q
     | Patrols r => patrol_step b::camp r b::now q
@@ -2021,14 +2052,14 @@
     | Open proof => player_strikes b::camp b::seed b::tick proof aim q
     | ClosedUntil _ => q
 
-:= engaged (b : beat) (plan : stance) (aim : i32) (q : pack) : pack =
+:~ engaged (b : beat) (plan : stance) (aim : i32) (q : pack) : pack =
     :< policy
     ?= plan ?|
     | Strike => strike_gate b aim q
     | Approach => player_approaches b::camp b::now aim q
     | Hold => q
 
-:= retreat_gate (b : beat) (t : tactic) (p : stance) (aim : i32) (q : pack) : pack =
+:~ retreat_gate (b : beat) (t : tactic) (p : stance) (aim : i32) (q : pack) : pack =
     ?= readiness::action_gate (quantity::ms b::now) q::hunter::clock::next_action_at ?|
     | Open s => player_retreats b::camp t::footing s q
     | ClosedUntil _ => engaged b p aim q
@@ -2036,11 +2067,11 @@
 := retreat_or_engage (b : beat) (t : tactic) (retreat : bool) (plan : stance) (aim : i32) (q : pack) : pack =
     ? retreat && b::now >= q::hunter::next_step_at ?> retreat_gate b t plan aim q |: engaged b plan aim q
 
-:= target_turn (b : beat) (t : tactic) (attackers : i32) (aim : i32) (q : pack) : pack =
+:~ target_turn (b : beat) (t : tactic) (attackers : i32) (aim : i32) (q : pack) : pack =
     ?= after_heal_plan b t::brain attackers q ?|
     | retreat, plan => retreat_or_engage b t retreat plan aim q
 
-:= acts_on_target (b : beat) (t : tactic) (attackers : i32) (q : pack) : pack =
+:~ acts_on_target (b : beat) (t : tactic) (attackers : i32) (q : pack) : pack =
     ?= q::hunter::target ?|
     | None => patrol_turn b t q
     | Some aim => target_turn b t attackers aim q
@@ -2077,7 +2108,7 @@
     | Cfr c => cfr_logged b c attackers p
     | _ => p
 
-:= acts_after_aim (b : beat) (t : tactic) (aimed : pack) : pack =
+:~ acts_after_aim (b : beat) (t : tactic) (aimed : pack) : pack =
     := attackers = attackers_of aimed
     acts_on_target b t attackers (heal_gate b (heals_now b t attackers aimed) (logged b t attackers aimed))
 
@@ -2089,7 +2120,7 @@
     | RandomControl => random_acts camp seed tick now (aimed_by camp t::order p)
     | _ => ruled_acts camp t seed tick now p
 
-:= respawn_player (camp : camp) (p : pack) : pack =
+:~ respawn_player (camp : camp) (p : pack) : pack =
     := h = p::hunter
     { p ?|
         hunter = { h ?| at = knight_start camp h::call_sign; health = player_max_health camp; target = None }
@@ -2106,7 +2137,7 @@
 := recharged (now : i32) (p : pack) : pack =
     ? now < p::hunter::clock::next_charge_at ?> p |: p |> with_hunter (charged_up now p::hunter)
 
-:= decided_turn (b : beat) (t : tactic) (p : pack) : pack =
+:~ decided_turn (b : beat) (t : tactic) (p : pack) : pack =
     := h = p::hunter
     := decided = h |> with_clock { (h::clock) ?| next_decision_at = b::now + client_decision_ms () }
     player_acts b::camp t b::seed b::tick b::now (p |> with_hunter decided)
@@ -2119,13 +2150,15 @@
     ?> p
     |: decided_turn b t p
 
-:~ ^ knight_turn_shared (b : beat) (t : tactic) (p : pack) : pack = knight_turn_inline b t p
+:~ knight_turn_shared (b : beat) (t : tactic) (p : pack) : pack = knight_turn_inline b t p
 
 := knight_turn (b : beat) (t : tactic) (p : pack) : pack =
+    := shared = \ () => knight_turn_shared b t p : pack
     backend_switch {
-        C = \ () => knight_turn_shared b t p : pack
-        Rust = \ () => knight_turn_shared b t p : pack
+        C = shared
+        Rust = shared
         Wgsl = \ () => knight_turn_inline b t p : pack
+        Zig = shared
     }
 
 := late_entry_ms (index : i32) : i32 =
@@ -2477,7 +2510,7 @@
 := live_retreat_tactic (heal : i32) (retreat_at : i32) : tactic =
     := evolved_shape : tactic =
         tactic_with_order (:< policy ;; ReachFirst) { first = heal; second = 0; third = retreat_at }
-    { evolved_shape ?| footing = StepAwayLikeTheLiveProbe }
+    { evolved_shape ?| footing = StepAwayLikeTheLiveGauge }
 
 := cfr_tactic (depth : i32) : tactic =
     := shape = live_retreat_tactic 160 2

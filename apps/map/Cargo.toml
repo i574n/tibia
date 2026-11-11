@@ -1,0 +1,17 @@
+[package]
+name = "map"
+version = "0.0.1"
+edition = "2024"
+
+[package.metadata.spiral]
+entry = "map.spi"
+output = "map.rs"
+
+[[bin]]
+name = "map"
+path = "map.rs"
+
+[dependencies]
+map_kinds = { path = "../map_kinds" }
+map_items = { path = "../map_items" }
+map_walk = { path = "../map_walk" }

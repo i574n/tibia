@@ -1,0 +1,11 @@
+///- --package .
+:# bc_engage static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:= main () =
+    := twice = bc_indep2::next_round (bc_indep2::next_round (bc_run::pairs_from (training_first ())))
+    bc_lockstep2::seeds_from (bc_run::bc_camp ()) (bc_indep::student_of twice) 0
+    0i32

@@ -19,7 +19,7 @@
     | NoDesktop : u32
     | NotStarted : u32
 
-:= defaults () : launch = { exe = ""; directory = ""; arguments = ""; desktop = "tibia-probe"; timeout_seconds = 120 }
+:= defaults () : launch = { exe = ""; directory = ""; arguments = ""; desktop = "tibia-gauge"; timeout_seconds = 120 }
 
 := timeout_set (l : launch) (value : string) : parsed =
     ?= convert::try_convert value ?|
@@ -350,19 +350,19 @@
     | MissingValue flag => flag
     | _ => ""
 
-:= probe_launch () : launch = ready_launch (parse [ "--exe"; "C:\\otc\\otclient.exe"; "--arguments"; "--mode probe" ])
+:= gauge_launch () : launch = ready_launch (parse [ "--exe"; "C:\\otc\\otclient.exe"; "--arguments"; "--mode gauge" ])
 
 ///> lua
 ///> rust
 :# flags_fill_the_launch_and_keep_the_script_defaults =
-    := l = probe_launch ()
-    (l::desktop, l::timeout_seconds) |> _assert_eq ("tibia-probe", 120i32)
+    := l = gauge_launch ()
+    (l::desktop, l::timeout_seconds) |> _assert_eq ("tibia-gauge", 120i32)
 
 ///> lua
 ///> rust
-:# flags_build_the_quoted_command_line_on_the_probe_station =
-    := l = probe_launch ()
-    (command_line l, station_desktop l) |> _assert_eq ("\"C:\\otc\\otclient.exe\" --mode probe", "WinSta0\\tibia-probe")
+:# flags_build_the_quoted_command_line_on_the_gauge_station =
+    := l = gauge_launch ()
+    (command_line l, station_desktop l) |> _assert_eq ("\"C:\\otc\\otclient.exe\" --mode gauge", "WinSta0\\tibia-gauge")
 
 ///> lua
 ///> rust
@@ -395,13 +395,13 @@
 ///> rust
 :# reports_match_run_offscreen_ps1 =
     report (thirty_second_launch ()) (Exited (77u32, 0u32))
-    |> _assert_eq [ "offscreen: pid 77 exit 0 on desktop tibia-probe" ]
+    |> _assert_eq [ "offscreen: pid 77 exit 0 on desktop tibia-gauge" ]
 
 ///> lua
 ///> rust
 :# a_timeout_report_matches_run_offscreen_ps1 =
     report (thirty_second_launch ()) (TimedOut (77u32, 124u32))
-    |> _assert_eq [ "offscreen: killed after 30 s"; "offscreen: pid 77 exit 124 on desktop tibia-probe" ]
+    |> _assert_eq [ "offscreen: killed after 30 s"; "offscreen: pid 77 exit 124 on desktop tibia-gauge" ]
 
 := hidden_exit (windows : bool) : i64 * i64 =
     := desktop = ? windows ?> create_desktop "spiral-offscreen-test" |: 1

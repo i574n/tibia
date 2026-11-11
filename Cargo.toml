@@ -1,0 +1,16 @@
+[workspace]
+resolver = "3"
+members = [
+    "apps/map",
+    "apps/map_items",
+    "apps/map_kinds",
+    "apps/map_walk",
+]
+
+[profile.release]
+codegen-units = 1
+opt-level = 3
+lto = true
+
+[workspace.metadata.spiral]
+template = "typed-units/1"

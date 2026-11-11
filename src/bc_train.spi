@@ -48,6 +48,36 @@
 := examples_of (pairs : list bc_dataset::pair) : list example =
     pairs |> listm::fold (\ (acc : list example) (q : bc_dataset::pair) => example_of q :: acc) []
 
+:= kept_mask (q : bc_dataset::pair) (k : i32) : f32 =
+    ? k = 3
+    ?> 1.0f32
+    |: mask_of (label_at q k)
+
+:= kept_example_of (q : bc_dataset::pair) : example = { (example_of q) ?| m = filled 4 (kept_mask q) }
+
+:= independent_mask (q : bc_dataset::pair) (k : i32) : f32 =
+    ? k >= 3
+    ?> 1.0f32
+    |: mask_of (label_at q k)
+
+:= independent_example_of (q : bc_dataset::pair) : example = { (example_of q) ?| m = filled 5 (independent_mask q) }
+
+:= independent_examples_of (pairs : list bc_dataset::pair) : list example =
+    pairs |> listm::fold (\ (acc : list example) (q : bc_dataset::pair) => independent_example_of q :: acc) []
+
+:= heal_weighted_mask (positive : f32) (q : bc_dataset::pair) (k : i32) : f32 =
+    ? k = 0 && target_of q::heal = 1.0f32 ?> positive * mask_of q::heal |: independent_mask q k
+
+:= heal_weighted_example_of (positive : f32) (q : bc_dataset::pair) : example =
+    { (example_of q) ?| m = filled 5 (heal_weighted_mask positive q) }
+
+:= heal_weighted_examples_of (positive : f32) (pairs : list bc_dataset::pair) : list example =
+    pairs
+    |> listm::fold (\ (acc : list example) (q : bc_dataset::pair) => heal_weighted_example_of positive q :: acc) []
+
+:= kept_examples_of (pairs : list bc_dataset::pair) : list example =
+    pairs |> listm::fold (\ (acc : list example) (q : bc_dataset::pair) => kept_example_of q :: acc) []
+
 :~ ^ dot_from (w : floats) (row : i32 -> i32) (v : floats) (i : i32) (acc : f32) : f32 =
     ? i >= length v ?> acc |: dot_from w row v (i + 1) (acc + index w (row i) * index v i)
 
@@ -58,9 +88,21 @@
 
 := logit (w : floats) (h : floats) (k : i32) : f32 = dot_from w (out_at k) h 0 0.0f32 - 1.0f32
 
-:= coupling (e : example) : f32 = index e::m 2 * index e::y 2
+:= independent_flag (e : example) : f32 =
+    ? length e::m > 4
+    ?> index e::m 4
+    |: 0.0f32
 
-:= head_mask (e : example) (k : i32) : f32 = ? k = 1 ?> index e::m 1 * (1.0f32 - coupling e) |: index e::m k
+:= coupling (e : example) : f32 = index e::m 2 * index e::y 2 * (1.0f32 - independent_flag e)
+
+:= engage_kept (e : example) : f32 =
+    ? length e::m > 3
+    ?> index e::m 3
+    |: 0.0f32
+
+:= retreat_masking (e : example) : f32 = coupling e * (1.0f32 - engage_kept e)
+
+:= head_mask (e : example) (k : i32) : f32 = ? k = 1 ?> index e::m 1 * (1.0f32 - retreat_masking e) |: index e::m k
 
 :~ ^ loss_from (w : floats) (e : example) (h : floats) (k : i32) (acc : f32) : f32 =
     ? k >= 3
@@ -180,12 +222,15 @@
 
 := checks_at (w : floats) (g : floats) (e : example) (i : i32) : bool = close (index g i) (central_diff w e i)
 
-:= grad_case () : floats * floats * example =
-    := e = synthetic ()
+:= masks_with (n : i32) : example = { (synthetic ()) ?| m = filled n (\ _ => 1.0f32) }
+
+:= grad_case_of (e : example) : floats * floats * example =
     := w = initial 3
     := g = f32_grads::zeros (weight_total ())
     backprop w g e
     w, g, e
+
+:= grad_case () : floats * floats * example = grad_case_of (synthetic ())
 
 := grad_checks () : bool * bool * bool =
     := w, g, e = grad_case ()
@@ -194,6 +239,20 @@
 ///> c
 :# shadow_gradients_match_central_differences =
     grad_checks () |> _assert_eq (!+, !+, !+)
+
+:= independent_grad_checks () : bool * bool * bool =
+    := w, g, e = grad_case_of (masks_with 5)
+    := at = checks_at w g e
+    at (out_at 0 2), at (in_at 2 0), at (out_at 1 4)
+
+///> c
+:# engage_is_masked_on_retreat_rows_unless_a_channel_keeps_it =
+    (head_mask (masks_with 3) 1, head_mask (masks_with 4) 1, coupling (masks_with 5))
+    |> _assert_eq (0.0f32, 1.0f32, 0.0f32)
+
+///> c
+:# independent_channel_gradients_match_central_differences =
+    independent_grad_checks () |> _assert_eq (!+, !+, !+)
 
 := plain_adam () : f32_optim::adamw =
     { lr = 0.02f32; beta1 = 0.9f32; beta2 = 0.999f32; eps = 0.00000001f32; decay = 0.0f32 }

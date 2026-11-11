@@ -67,7 +67,7 @@
 := swings_noted (b : bench) (label : string) : () =
     := l, total, median = hits_summary b
     := misses, kills = *b::counts::misses, *b::counts::kills
-    probe::note (swings_line label l misses total median kills (experience_gained b) (client::player_health ()))
+    gauge::note (swings_line label l misses total median kills (experience_gained b) (client::player_health ()))
 
 := taken_summary (b : bench) : i32 * i32 * i32 * i32 =
     := count, total = samples::sample_count b::taken, samples::sample_total b::taken
@@ -75,19 +75,19 @@
 
 := taken_noted (b : bench) : () =
     := count, total, median, most = taken_summary b
-    probe::note (taken_line count total median most)
+    gauge::note (taken_line count total median most)
 
 := report (b : bench) (label : string) : () =
-    probe::note (("potions " ++#? *b::counts::potions))
+    gauge::note (("potions " ++#? *b::counts::potions))
     swings_noted b label
-    probe::note ("hits " ++# samples::samples_joined b::hits)
+    gauge::note ("hits " ++# samples::samples_joined b::hits)
     taken_noted b
-    probe::note ("taken " ++# samples::samples_joined b::taken)
+    gauge::note ("taken " ++# samples::samples_joined b::taken)
 
 := kill_counted (b : bench) : () =
     bump b::counts::kills
     := kills, plus = *b::counts::kills, experience_gained b
-    probe::note (kill_line kills plus)
+    gauge::note (kill_line kills plus)
     client::empty_slot b::target
 
 := kill_checked (b : bench) : () =
@@ -96,24 +96,24 @@
 := engaged (b : bench) (target : client::creature) (now : i32) : i32 =
     client::occupy_slot b::target target
     client::attack target
-    probe::stored b::counts::pending_hit 0
+    gauge::stored b::counts::pending_hit 0
     now
 
 := adjacent_engaged
-    (b : bench) (people : client::crowd) (seen : probe::spotted) (now : i32) (last_swing_at : i32)
+    (b : bench) (people : client::crowd) (seen : gauge::spotted) (now : i32) (last_swing_at : i32)
     : i32
     =
-    ?= probe::within 1 seen ?|
+    ?= gauge::within 1 seen ?|
     | Some n => engaged b (client::member people n::index) now
     | None => last_swing_at
 
 := engaged_adjacent (b : bench) (now : i32) (last_swing_at : i32) : i32 =
     := here = client::player_spot ()
     := people = client::spectators here
-    adjacent_engaged b people (probe::nearest_monster here people) now last_swing_at
+    adjacent_engaged b people (gauge::nearest_monster here people) now last_swing_at
 
 := adjacent_to_player (target : client::creature) : bool =
-    probe::chebyshev (client::creature_spot target) (client::player_spot ()) <= 1
+    gauge::chebyshev (client::creature_spot target) (client::player_spot ()) <= 1
 
 := healthy_unhit (b : bench) : bool = client::player_health () > 0 && *b::counts::pending_hit = 0
 
@@ -122,7 +122,7 @@
 
 := swing_settled (b : bench) (now : i32) : i32 =
     ? swing_missed b (client::slot_creature b::target) ?> bump b::counts::misses
-    probe::stored b::counts::pending_hit 0
+    gauge::stored b::counts::pending_hit 0
     now
 
 := swing_after (b : bench) (now : i32) (last_swing_at : i32) : i32 =
@@ -151,7 +151,7 @@
 
 := measure_complete (b : bench) : () =
     report b "end"
-    probe::finish_once_without_parity b::run::done "measure complete"
+    gauge::finish_once_without_parity b::run::done "measure complete"
 
 := tick_step (b : bench) (p : paces) : option paces =
     := now = client::now_ms ()
@@ -163,7 +163,7 @@
 
 :~ ^ ticked (b : bench) (p : paces) : () =
     ? client::player_present () = !-
-    ?> probe::finish_once_without_parity b::run::done "offline"
+    ?> gauge::finish_once_without_parity b::run::done "offline"
     |:
         ?= tick_step b p ?|
         | Some next => client::after (tick_ms ()) \ () => ticked b next
@@ -208,16 +208,16 @@
         run = fresh_run potion_below
     }
 
-:= server_text_noted (mode : string) (text : string) : () = probe::note (("server text [" ++# mode ++# "]: " ++# text))
+:= server_text_noted (mode : string) (text : string) : () = gauge::note (("server text [" ++# mode ++# "]: " ++# text))
 
 := hit_seen (b : bench) (amount : i32) (text : string) : () =
     samples::sample b::hits amount
-    probe::stored b::counts::pending_hit 1
-    ? sm'::contains "critical" text ?> probe::note ("critical: " ++# text)
+    gauge::stored b::counts::pending_hit 1
+    ? sm'::contains "critical" text ?> gauge::note ("critical: " ++# text)
 
 := died (b : bench) (mode : string) (text : string) : () =
     ? client::player_present () ?> report b "death"
-    client::after 500 (\ () => probe::finish_once_without_parity b::run::done "death")
+    client::after 500 (\ () => gauge::finish_once_without_parity b::run::done "death")
     server_text_noted mode text
 
 := other_text (b : bench) (mode : string) (text : string) : () =
@@ -234,22 +234,22 @@
 := fight_noted () : () =
     client::chasing !-
     client::fight_balanced ()
-    := mode, at = client::fight_mode_text (), probe::described (client::player_spot ())
-    probe::note (("fight mode " ++# mode ++# " at " ++# at))
+    := mode, at = client::fight_mode_text (), gauge::described (client::player_spot ())
+    gauge::note (("fight mode " ++# mode ++# " at " ++# at))
 
 := started (b : bench) : () =
     fight_noted ()
-    probe::stored b::run::start_experience (client::player_experience ())
-    probe::stored b::run::started_at (client::now_ms ())
+    gauge::stored b::run::start_experience (client::player_experience ())
+    gauge::stored b::run::started_at (client::now_ms ())
     tick b
 
 := ready (b : bench) : () =
     := name, health = client::player_name (), client::player_health ()
-    probe::note (("in game as " ++# name ++# " health " ++#? health))
+    gauge::note (("in game as " ++# name ++# " health " ++#? health))
     client::after 1000 \ () => started b
 
 := main () =
     := b = fresh_bench (client::env_i32 "TIBIA_MEASURE_POTION_BELOW" 90)
-    := on_timeout () = probe::finish_once_without_parity b::run::done "timeout"
-    probe::started_as (probe::knight ()) (on_text b) (\ () => ready b) 260000 on_timeout
+    := on_timeout () = gauge::finish_once_without_parity b::run::done "timeout"
+    gauge::started_as (gauge::knight ()) (on_text b) (\ () => ready b) 260000 on_timeout
     0i32

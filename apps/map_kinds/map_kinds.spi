@@ -1,0 +1,5 @@
+:< kinds
+
+:= main () : i32 =
+    export "map_kinds_rows" kinds_rows
+    0i32

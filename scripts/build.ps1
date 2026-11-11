@@ -21,7 +21,7 @@ Write-Output "build.ps1 / core package / $packageDir"
 $absolute = @(git -C .. ls-files results | Where-Object { (Get-Content (Join-Path .. $_) -Raw) -match '[A-Za-z]:(/|\\\\)|/home/|/Users/' })
 if ($absolute) { $absolute | ForEach-Object { Write-Output "build.ps1 / paths / absolute or home path in tracked result: $_" }; throw "build.ps1 / paths: tracked results must name logs relative to the log root" }
 Write-Output "build.ps1 / paths / tracked results hold no absolute paths"
-$layout = @(& $spiral.Dotnet $spiral.Compiler format ../src ../apps/arena ../apps/map ../apps/host ../apps/offscreen ../apps/canary ../apps/predict ../apps/suite --check 2>&1)
+$layout = @(& $spiral.Dotnet $spiral.Compiler format ../src ../apps/arena ../apps/map ../apps/host ../apps/offscreen ../apps/canary ../apps/predict ../apps/suite ../apps/report --check 2>&1)
 if ($LASTEXITCODE -ne 0) {
     $layout | Select-Object -Last 10 | ForEach-Object { Write-Output "build.ps1 / layout / $_" }
     foreach ($file in @($layout | Select-String '^would change: (.+)$' | ForEach-Object { $_.Matches[0].Groups[1].Value })) {
@@ -30,7 +30,7 @@ if ($LASTEXITCODE -ne 0) {
         $line = @(0..($before.Count - 1) | Where-Object { $_ -ge $after.Count -or $before[$_] -cne $after[$_] } | Select-Object -First 1)[0]
         if ($null -ne $line) { Write-Output "build.ps1 / layout / ${file}:$($line + 1): $($before[$line].Substring(0, [math]::Min(100, $before[$line].Length)))" }
     }
-    throw "build.ps1 / layout: run SpiralCompiler format on src, apps/arena, apps/map, apps/host, apps/offscreen, apps/canary, apps/predict and apps/suite"
+    throw "build.ps1 / layout: run SpiralCompiler format on src, apps/arena, apps/map, apps/host, apps/offscreen, apps/canary, apps/predict, apps/suite and apps/report"
 }
 Write-Output "build.ps1 / layout / formatter check clean"
 
@@ -94,7 +94,7 @@ $testRows = [Collections.Generic.List[object]]::new()
 $wgslRows = [Collections.Generic.List[object]]::new()
 
 $notebooks = (New-Item -ItemType Directory -Force "../notebooks").FullName
-$sources = Get-ChildItem ../src, ../apps/arena, ../apps/host, ../apps/offscreen, ../apps/map, ../apps/predict, ../apps/canary, ../apps/suite, ../results -File -Filter "*.spi" |
+$sources = Get-ChildItem ../src, ../apps/arena, ../apps/host, ../apps/offscreen, ../apps/map, ../apps/predict, ../apps/canary, ../apps/suite, ../apps/report, ../results -File -Filter "*.spi" |
     Where-Object { !$Files -or $_.BaseName -in $Files } |
     Where-Object { Select-String -Path $_.FullName -Pattern '^(test|:#) ' -Quiet } |
     Where-Object { $_.BaseName -notin $Exclude } |

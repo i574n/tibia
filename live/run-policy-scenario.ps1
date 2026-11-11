@@ -1,19 +1,19 @@
-param([int] $TimeoutSeconds = 240, [int] $AxeSkill = 30, [string] $Monster = 'troll', [int] $MonsterCount = 3, [string] $ProbeBody = 'competitor', [int] $SpawnRadius = 2, [ValidateSet('none', 'vBot', 'nExBot')] [string] $Bot = 'none', [switch] $NoParity, [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [string] $SummonAt = '1932,1352', [string] $KnightAt = '1932,1349', [string] $SpawnFile = '', [string] $Ally = '', [string] $AllyAt = '', [switch] $ExternalWorld)
+param([int] $TimeoutSeconds = 240, [int] $AxeSkill = 30, [string] $Monster = 'troll', [int] $MonsterCount = 3, [string] $GaugeBody = 'competitor', [int] $SpawnRadius = 2, [ValidateSet('none', 'vBot', 'nExBot')] [string] $Bot = 'none', [switch] $NoParity, [int] $Level = 8, [int] $HealBelow = 120, [int] $StrikeAbove = 40, [string] $SummonAt = '1932,1352', [string] $KnightAt = '1932,1349', [string] $SpawnFile = '', [string] $Ally = '', [string] $AllyAt = '', [switch] $ExternalWorld)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'paths.ps1')
 $root = $TibiaWorld
 $canaryDir = Join-Path $root 'canary'
 $worldLog = Join-Path $canaryDir 'world.log'
 $mariadb = (Join-Path $MariaDbBin 'mariadb.exe')
-$probe = Join-Path $root 'probe-policy.lua'
+$gauge = Join-Path $root 'gauge-policy.lua'
 
-Update-ArenaProbes
-$bodyPath = if ([IO.Path]::IsPathRooted($ProbeBody)) { $ProbeBody } elseif (Test-Path (Join-Path $TibiaArena "$ProbeBody.spi")) { Join-Path $TibiaArenaTarget "$ProbeBody.lua" } else { Join-Path $TibiaLive $ProbeBody }
+Update-ArenaGauges
+$bodyPath = if ([IO.Path]::IsPathRooted($GaugeBody)) { $GaugeBody } elseif (Test-Path (Join-Path $TibiaArena "$GaugeBody.spi")) { Join-Path $TibiaArenaTarget "$GaugeBody.lua" } else { Join-Path $TibiaLive $GaugeBody }
 $body = [IO.File]::ReadAllText($bodyPath)
 $parity = if ($NoParity) { '' } else { "do`n(function()`n" + [IO.File]::ReadAllText((Join-Path $TibiaArenaTarget 'parity.lua')) + "`nend)()`nend`n" }
-[IO.File]::WriteAllText($probe, "$parity$body")
-$syntax = lua -e "local f, e = loadfile([[$probe]]); if not f then print(e); os.exit(1) end"
-if ($LASTEXITCODE -ne 0) { throw "probe does not parse: $syntax" }
+[IO.File]::WriteAllText($gauge, "$parity$body")
+$syntax = lua -e "local f, e = loadfile([[$gauge]]); if not f then print(e); os.exit(1) end"
+if ($LASTEXITCODE -ne 0) { throw "gauge does not parse: $syntax" }
 $mix = @(if ($Monster -match ':') { $Monster -split ',' | ForEach-Object { $name, $count = $_ -split ':'; [pscustomobject]@{ Name = $name.Trim(); Count = [int]$count } } } else { [pscustomobject]@{ Name = $Monster; Count = $MonsterCount } })
 $summonX, $summonY = $SummonAt -split ','
 $knightX, $knightY = $KnightAt -split ','
@@ -110,7 +110,7 @@ try {
         $loader = Join-Path $botDir '_Loader.lua'
         $wrap = { param($name) "do`n(function()`n" + [IO.File]::ReadAllText((Join-Path $TibiaArenaTarget "$name.lua")) + "`nend)()`nend`n" }
         $luaDofile = if ($env:TIBIA_NEXBOT_LUA_DOFILE -ne '0') { & $wrap 'bot_dofile' } else { '' }
-        if ($luaDofile) { Copy-Item (Join-Path $TibiaArenaTarget 'bot_env.lua') (Join-Path $botDir 'bot_env_probe.lua') -Force }
+        if ($luaDofile) { Copy-Item (Join-Path $TibiaArenaTarget 'bot_env.lua') (Join-Path $botDir 'bot_env_gauge.lua') -Force }
         [IO.File]::WriteAllText($loader, (& $wrap 'bot_prelude') + $luaDofile + [IO.File]::ReadAllText($loader))
         $shimmed = 0
         foreach ($script in Get-ChildItem $botDir -Recurse -Filter '*.lua') {
@@ -136,19 +136,19 @@ try {
         "== nExBot seeded: TargetBot arena ($Monster, chase), HealBot potion at hp% <= $healPercent (health below $effectiveBelow of $healthMax), network calls stubbed"
     }
     "== world online, knight level $Level ($healthMax hp), axe skill $AxeSkill, $MonsterCount x $Monster, heal below $HealBelow"
-    if ($MonsterCount -gt 0) { & (Join-Path $TibiaLive 'run-probe.ps1') -Script $summon -TimeoutSeconds 60 | Select-Object -Last 2 }
-    "== timeline: summon probe done at wall $([DateTimeOffset]::Now.ToUnixTimeSeconds()) ($([DateTimeOffset]::Now.ToUnixTimeMilliseconds()) ms)"
+    if ($MonsterCount -gt 0) { & (Join-Path $TibiaLive 'run-gauge.ps1') -Script $summon -TimeoutSeconds 60 | Select-Object -Last 2 }
+    "== timeline: summon gauge done at wall $([DateTimeOffset]::Now.ToUnixTimeSeconds()) ($([DateTimeOffset]::Now.ToUnixTimeMilliseconds()) ms)"
     '== policy'
     $allyRun = $null
     if ($Ally) {
-        $allyOut = Join-Path $root 'ally-probe.out'
+        $allyOut = Join-Path $root 'ally-gauge.out'
         $allyProfile = Join-Path $root 'ally-profile'
         $gateFile = Join-Path $allyProfile 'login-gate'
         New-Item -ItemType Directory -Force $allyProfile | Out-Null
         if (Test-Path -LiteralPath $gateFile) { Remove-Item -LiteralPath $gateFile -Force }
         $env:TIBIA_ARENA_CHARACTER = $Ally
         $env:TIBIA_LOGIN_GATE = $gateFile
-        $allyRun = Start-Process pwsh -ArgumentList '-NoProfile', '-File', (Join-Path $TibiaLive 'run-probe.ps1'), '-Script', $probe, '-TimeoutSeconds', $TimeoutSeconds, '-UserDir', $allyProfile -RedirectStandardOutput $allyOut -WindowStyle Hidden -PassThru
+        $allyRun = Start-Process pwsh -ArgumentList '-NoProfile', '-File', (Join-Path $TibiaLive 'run-gauge.ps1'), '-Script', $gauge, '-TimeoutSeconds', $TimeoutSeconds, '-UserDir', $allyProfile -RedirectStandardOutput $allyOut -WindowStyle Hidden -PassThru
         $env:TIBIA_ARENA_CHARACTER = $null
         $env:TIBIA_LOGIN_GATE = $null
         $gate = Start-ThreadJob -ArgumentList $worldLog, $gateFile, $Ally -ScriptBlock {
@@ -168,7 +168,7 @@ try {
             "== login gate: opened at $opened ms, ally login line $($entered - $opened) ms after the knight's"
         }
     }
-    & (Join-Path $TibiaLive 'run-probe.ps1') -Script $probe -TimeoutSeconds $TimeoutSeconds
+    & (Join-Path $TibiaLive 'run-gauge.ps1') -Script $gauge -TimeoutSeconds $TimeoutSeconds
     if ($allyRun) {
         $allyRun.WaitForExit()
         Receive-Job $gate -Wait -AutoRemoveJob

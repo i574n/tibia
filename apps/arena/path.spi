@@ -26,34 +26,34 @@
 
 := fresh_trail () : trail = { last = None; steps = 0 }
 
-:= seen_spot (people : client::crowd) (seen : probe::nearest) : client::spot =
+:= seen_spot (people : client::crowd) (seen : gauge::nearest) : client::spot =
     client::creature_spot (client::member people seen::index)
 
 := step_noted (elapsed : i32) (at : client::spot) (distance : i32) (steps : i32) : () =
-    probe::note (step_line elapsed (probe::described at) distance steps)
+    gauge::note (step_line elapsed (gauge::described at) distance steps)
 
 := trail_moved (t : trail) (at : client::spot) (dt : i32) (distance : i32) : trail =
     := moved, steps = followed t::last at t::steps
     ? moved ?> step_noted dt at distance steps
     { last = (? moved ?> Some at |: t::last); steps = steps }
 
-:= seen_trail (t : trail) (people : client::crowd) (seen : probe::spotted) (elapsed : i32) : bool * trail =
+:= seen_trail (t : trail) (people : client::crowd) (seen : gauge::spotted) (elapsed : i32) : bool * trail =
     ?= seen ?|
     | Some n => n::distance <= 1, trail_moved t (seen_spot people n) elapsed n::distance
     | None => !-, t
 
 := sample_at (here : client::spot) (t : trail) (elapsed : i32) : bool * trail =
     := people = client::spectators here
-    seen_trail t people (probe::nearest_monster here people) elapsed
+    seen_trail t people (gauge::nearest_monster here people) elapsed
 
 := finished_arrived (done : mut i32) (elapsed : i32) (steps : i32) (here : client::spot) : bool =
-    probe::note (arrived_line elapsed steps (probe::described here))
-    probe::finish_once_without_parity done "arrived"
+    gauge::note (arrived_line elapsed steps (gauge::described here))
+    gauge::finish_once_without_parity done "arrived"
     !+
 
 := finished_not_arrived (done : mut i32) (elapsed : i32) (steps : i32) : bool =
-    probe::note (not_arrived_line elapsed steps)
-    probe::finish_once_without_parity done "not arrived"
+    gauge::note (not_arrived_line elapsed steps)
+    gauge::finish_once_without_parity done "not arrived"
     !+
 
 := ended (done : mut i32) (elapsed : i32) (here : client::spot) (arrived : bool) (steps : i32) : bool =
@@ -71,7 +71,7 @@
 := watch (done : mut i32) (started_at : i32) : () =
     :~ ^ go (t : trail) : () =
         ? client::player_present () = !-
-        ?> probe::finish_once_without_parity done "offline"
+        ?> gauge::finish_once_without_parity done "offline"
         |: path_tick done (client::now_ms () - started_at) t go
     go (fresh_trail ())
 
@@ -92,27 +92,27 @@
 
 ///> lua
 ///> c
-:# the_step_line_keeps_the_probe_wording =
+:# the_step_line_keeps_the_gauge_wording =
     step_line 850 "1939,1352,7" 3 4 |> _assert_eq "path t=850 ms monster at 1939,1352,7 distance 3 step 4"
 
 ///> lua
 ///> c
-:# the_end_lines_keep_the_probe_wording =
+:# the_end_lines_keep_the_gauge_wording =
     (arrived_line 2400 6 "1936,1349,7", not_arrived_line 30050 9)
     |> _assert_eq ("arrived at 2400 ms after 6 steps, knight at 1936,1349,7", "not arrived after 30050 ms, 9 steps")
 
-:= server_text_noted (mode : string) (text : string) : () = probe::note ("server text [" ++# mode ++# "]: " ++# text)
+:= server_text_noted (mode : string) (text : string) : () = gauge::note ("server text [" ++# mode ++# "]: " ++# text)
 
 := path_started (done : mut i32) : () =
-    := name, at = client::player_name (), probe::described (client::player_spot ())
-    probe::note ("in game as " ++# name ++# " at " ++# at ++# " (path check, standing, no attack)")
+    := name, at = client::player_name (), gauge::described (client::player_spot ())
+    gauge::note ("in game as " ++# name ++# " at " ++# at ++# " (path check, standing, no attack)")
     watch done (client::now_ms ())
 
-:= timed_out (done : mut i32) : () = probe::finish_once_without_parity done "timeout"
+:= timed_out (done : mut i32) : () = gauge::finish_once_without_parity done "timeout"
 
 := main () =
     := done = mut 0
     := ready () = client::after 1500 \ () => path_started done
-    client::disable_client_bot (probe::bot_profile ())
-    probe::started_as (probe::knight ()) server_text_noted ready 60000 \ () => timed_out done
+    client::disable_client_bot (gauge::bot_profile ())
+    gauge::started_as (gauge::knight ()) server_text_noted ready 60000 \ () => timed_out done
     0i32

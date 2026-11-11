@@ -22,15 +22,15 @@
 
 := diagonal_move (n : client::spot) (o : client::spot) : bool = axis_gap n::x o::x = 1 && axis_gap n::y o::y = 1
 
-:= near_player (n : client::spot) : bool = client::player_present () && probe::chebyshev n (client::player_spot ()) <= 1
+:= near_player (n : client::spot) : bool = client::player_present () && gauge::chebyshev n (client::player_spot ()) <= 1
 
 := step_head (s : step_seen) : string =
-    := name, from, to = client::creature_name s::c, probe::described s::o, probe::described s::n
+    := name, from, to = client::creature_name s::c, gauge::described s::o, gauge::described s::n
     name ++# " " ++#? s::id ++# " " ++# s::kind ++# " step " ++# from ++# " -> " ++# to
 
 := interval_noted (log : step_log) (s : step_seen) (measured : string) (interval : i32) : () =
     samples::labeled_sample log::intervals measured interval
-    probe::note (step_head s ++# "; interval after its " ++# measured ++# " step " ++#? interval ++# " ms")
+    gauge::note (step_head s ++# "; interval after its " ++# measured ++# " step " ++#? interval ++# " ms")
 
 := step_logged (log : step_log) (s : step_seen) (now : i32) : () =
     := last = samples::last_stamp log::stamps s::id
@@ -69,18 +69,18 @@
     := sx, sy = direction_of (here::x - there::x), direction_of (here::y - there::y)
     ? sx <> 0 || sy <> 0 ?> client::step sx sy |> ignore
 
-:= away_from (here : client::spot) (people : client::crowd) (n : probe::nearest) : () =
+:= away_from (here : client::spot) (people : client::crowd) (n : gauge::nearest) : () =
     ? client::player_walking () = !- ?> step_from here (client::creature_spot (client::member people n::index))
 
-:= away_from_seen (here : client::spot) (people : client::crowd) (seen : probe::spotted) : () =
-    ?= probe::within 2 seen ?|
+:= away_from_seen (here : client::spot) (people : client::crowd) (seen : gauge::spotted) : () =
+    ?= gauge::within 2 seen ?|
     | Some n => away_from here people n
     | None => ()
 
 := away_once () : () =
     := here = client::player_spot ()
     := people = client::spectators here
-    away_from_seen here people (probe::nearest_monster here people)
+    away_from_seen here people (gauge::nearest_monster here people)
 
 :~ ^ walk_away () : () =
     ? client::player_present () ?>
@@ -92,18 +92,18 @@
 
 := poll_later (next : () -> ()) : () = client::after (knight_walk_poll_ms ()) next
 
-:= player_at () : string = probe::described (client::player_spot ())
+:= player_at () : string = gauge::described (client::player_spot ())
 
 := walking_note (waits : i32) : () =
     ? waits % 40 = 39
-    ?> probe::note ("knight walk still walking at " ++# player_at () ++# " after " ++#? (waits + 1) ++# " polls")
+    ?> gauge::note ("knight walk still walking at " ++# player_at () ++# " after " ++#? (waits + 1) ++# " polls")
 
 := still_walking (waits : i32) (again : () -> ()) : () =
     walking_note waits
     poll_later again
 
 := stepped_or_noted (dx : i32) : () =
-    ? client::step dx 0 = !- ?> probe::note ("knight walk step " ++#? dx ++# " refused at " ++# player_at ())
+    ? client::step dx 0 = !- ?> gauge::note ("knight walk step " ++#? dx ++# " refused at " ++# player_at ())
 
 := leg_turn (dx : i32) (left : i32) (again : i32 -> i32 -> i32 -> ()) : () =
     ? left = 0
@@ -112,7 +112,7 @@
         stepped_or_noted dx
         poll_later \ () => again dx (left - 1) 0
 
-:= walk_stopped () : () = probe::note "knight walk stopped: no player in game"
+:= walk_stopped () : () = gauge::note "knight walk stopped: no player in game"
 
 :~ ^ walk_leg (dx : i32) (left : i32) (waits : i32) : () =
     ? client::player_present () = !-
@@ -129,7 +129,7 @@
     "knight walk starts at " ++# start_at ++# " speed " ++# client::player_speed () ++# " walking " ++# walking
 
 := walk_back_and_forth () : () =
-    probe::note (walk_start_line ())
+    gauge::note (walk_start_line ())
     walk_leg (0 - 1) (knight_walk_leg ()) 0
 
 ///> lua
@@ -153,9 +153,9 @@
 
 := steps_flags () : bool * bool = client::env_is "TIBIA_STEPS_CHASE" "1", client::env_is "TIBIA_STEPS_KNIGHT_WALK" "1"
 
-:= timed_out () : () = probe::finish "timeout"
+:= timed_out () : () = gauge::finish "timeout"
 
-:= text_noted (mode : string) (text : string) : () = probe::note (("server text [" ++# mode ++# "]: " ++# text))
+:= text_noted (mode : string) (text : string) : () = gauge::note (("server text [" ++# mode ++# "]: " ++# text))
 
 := ready_line () : string =
     := name = client::player_name ()
@@ -163,11 +163,11 @@
     "in game as " ++# name ++# " at " ++# at ++# " speed " ++# client::player_speed ()
 
 := measure_end (log : step_log) : () =
-    probe::note ("end: " ++# samples::labeled_summary log::intervals)
-    probe::finish "steps measured"
+    gauge::note ("end: " ++# samples::labeled_summary log::intervals)
+    gauge::finish "steps measured"
 
 := ready (log : step_log) (walking : bool) : () =
-    probe::note (ready_line ())
+    gauge::note (ready_line ())
     ? log::chasing ?> client::after 2000 walk_away
     ? walking ?> client::after 2000 walk_back_and_forth
     client::after (measure_ms ()) \ () => measure_end log
@@ -176,5 +176,5 @@
     := chasing, walking = steps_flags ()
     := log = fresh_step_log chasing
     client::on_position_change (record log)
-    probe::started_as (probe::knight ()) text_noted (\ () => ready log walking) 90000 timed_out
+    gauge::started_as (gauge::knight ()) text_noted (\ () => ready log walking) 90000 timed_out
     0i32

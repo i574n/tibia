@@ -71,7 +71,7 @@
     := original = hooks::field_function owner name
     ? hooks::is_function original ?> hooks::replace3 owner name \ (a, b, c) => admitted3 s original a b c
 
-:= login_note () : string = "[tibia-probe] parity: login protection ended for every competitor by one turn after login"
+:= login_note () : string = "[tibia-gauge] parity: login protection ended for every competitor by one turn after login"
 
 := end_login_protection (turn : hooks::host_fn) (login_ended : mut bool) : () =
     ? hooks::online () && *login_ended = !- ?>

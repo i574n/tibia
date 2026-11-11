@@ -62,7 +62,7 @@
 
 := position_z (p : host) : i32 = $'(!p).z' : i32
 
-:= online () : bool = $'g_game.isOnline()' : bool
+:= online () : bool = client::online ()
 
 := turn_south (turn : host_fn) : () = $'(!turn)(South)' : ()
 

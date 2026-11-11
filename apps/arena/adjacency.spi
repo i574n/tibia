@@ -24,7 +24,7 @@
     }
 
 := adjacent_live (here : client::spot) (c : client::creature) : bool =
-    client::live_monster c && probe::chebyshev (client::creature_spot c) here <= 1
+    client::live_monster c && gauge::chebyshev (client::creature_spot c) here <= 1
 
 :~ ^ adjacent_from (here : client::spot) (people : client::crowd) (index : i32) (n : i32) : i32 =
     ? index > client::crowd_size people
@@ -36,7 +36,7 @@
 := joined (text : string) (item : string) : string = ? text = "" ?> item |: text ++# " " ++# item
 
 := with_position (text : string) (c : client::creature) : string =
-    ? client::positioned_monster c ?> joined text (probe::described (client::creature_spot c)) |: text
+    ? client::positioned_monster c ?> joined text (gauge::described (client::creature_spot c)) |: text
 
 :~ ^ positions_from (people : client::crowd) (index : i32) (text : string) : string =
     ? index > client::crowd_size people
@@ -44,7 +44,7 @@
     |: positions_from people (index + 1) (with_position text (client::member people index))
 
 := start_positions (here : client::spot) (people : client::crowd) : string =
-    "start positions: knight " ++# probe::described here ++# " monsters " ++# positions_from people 1 ""
+    "start positions: knight " ++# gauge::described here ++# " monsters " ++# positions_from people 1 ""
 
 := per_second (adjacent_ms : i32) (hits : i32) : f64 =
     (conv hits : f64) * 1000.0 / (conv (? adjacent_ms > 1 ?> adjacent_ms |: 1) : f64)
@@ -65,34 +65,34 @@
 
 := tick_counted (m : meter) (elapsed : i32) (here : client::spot) (people : client::crowd) : () =
     := adjacent = adjacent_monsters here people
-    probe::stored m::adjacent_ms (*m::adjacent_ms + adjacent * elapsed)
+    gauge::stored m::adjacent_ms (*m::adjacent_ms + adjacent * elapsed)
     time_by_count m adjacent elapsed
 
 := ticked_since (m : meter) (last : i32) (now : i32) (here : client::spot) (people : client::crowd) : () =
-    ? last < 0 ?> probe::note (start_positions here people) |: tick_counted m (now - last) here people
+    ? last < 0 ?> gauge::note (start_positions here people) |: tick_counted m (now - last) here people
 
 := on_tick (m : meter) (now : i32) (here : client::spot) (people : client::crowd) : () =
     ? m::enabled ?>
         ticked_since m (*m::last_tick) now here people
-        probe::stored m::last_tick now
+        gauge::stored m::last_tick now
 
 := hit_noted (elapsed : i32) : () =
     := here = client::player_spot ()
-    probe::note (hit_line elapsed (adjacent_monsters here (client::spectators here)))
+    gauge::note (hit_line elapsed (adjacent_monsters here (client::spectators here)))
 
 := on_text (m : meter) (elapsed : i32) (text : string) : () =
     ? m::enabled && sm'::contains "due to an attack" text ?>
-        probe::stored m::hits (*m::hits + 1)
+        gauge::stored m::hits (*m::hits + 1)
         ? client::player_present () ?> hit_noted elapsed
 
 := counts_noted (m : meter) : () =
     := none, one, two, three =
         index m::ms_by_count 0, index m::ms_by_count 1, index m::ms_by_count 2, index m::ms_by_count 3
-    probe::note (count_line none one two three)
+    gauge::note (count_line none one two three)
 
 := on_cleared (m : meter) () : () =
     ? m::enabled ?>
-        probe::note (rate_line (*m::adjacent_ms) (*m::hits))
+        gauge::note (rate_line (*m::adjacent_ms) (*m::hits))
         counts_noted m
 
 ///> lua
@@ -115,6 +115,6 @@
 
 ///> lua
 ///> c
-:# count_line_and_hit_line_keep_the_probe_wording =
+:# count_line_and_hit_line_keep_the_gauge_wording =
     count_line 1200 3400 500 0 |> _assert_eq "adjacent time by count: 0 1200 1 3400 2 500 3 0 ms"
     hit_line 8125 2 |> _assert_eq "hit at 8125 ms with 2 adjacent"

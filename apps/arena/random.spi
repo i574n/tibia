@@ -60,8 +60,8 @@
 
 := drink_noted (r : turn) (at : i32) (drunk : bool) : () =
     ? drunk
-    ?> probe::note (("heal (potion) at health " ++#? r::health ++# " t=" ++#? at))
-    |: probe::note (("heal dropped by the action gate at health " ++#? r::health))
+    ?> gauge::note (("heal (potion) at health " ++#? r::health ++# " t=" ++#? at))
+    |: gauge::note (("heal dropped by the action gate at health " ++#? r::health))
 
 := drank (r : turn) (t : tally) (next_step_at : i32) : stepped =
     := at = scoreboard::elapsed r::a::pace
@@ -70,11 +70,11 @@
     ? drunk ?> { t ?| heals = t::heals + 1 }, next_step_at |: t, next_step_at
 
 := strike_where (target : client::creature) (here : client::spot) : string =
-    " at " ++# probe::described (client::creature_spot target) ++# " from " ++# probe::described here
+    " at " ++# gauge::described (client::creature_spot target) ++# " from " ++# gauge::described here
 
 := strike_noted (r : turn) (target : client::creature) (here : client::spot) : () =
     := name = client::creature_name target
-    probe::note ("strike " ++# name ++# strike_where target here ++# " health " ++#? r::health)
+    gauge::note ("strike " ++# name ++# strike_where target here ++# " health " ++#? r::health)
 
 := struck (r : turn) (target : client::creature) (here : client::spot) : () =
     ? client::same_creature (client::attacking ()) target = !- ?>
@@ -91,7 +91,7 @@
     { t ?| strikes = t::strikes + 1 }, next_step_at
 
 := engage_found
-    (r : turn) (t : tally) (step_at : i32) (here : client::spot) (people : client::crowd) (seen : probe::spotted)
+    (r : turn) (t : tally) (step_at : i32) (here : client::spot) (people : client::crowd) (seen : gauge::spotted)
     : stepped
     =
     ?= seen ?|
@@ -101,7 +101,7 @@
 := engaged_nearest (r : turn) (t : tally) (next_step_at : i32) : stepped =
     := here = client::player_spot ()
     := people = client::spectators here
-    engage_found r t next_step_at here people (probe::nearest_monster here people)
+    engage_found r t next_step_at here people (gauge::nearest_monster here people)
 
 := step_cost (h : heading) : i32 = step_ms () * (? h::diagonal ?> 3 |: 1)
 
@@ -127,8 +127,8 @@
 
 := summary_noted (a : arena) (t : tally) : () =
     ? scoreboard::due_for_summary t ?>
-        := at = probe::described (client::player_spot ())
-        probe::note (scoreboard::summary a::pace t ++# " player at " ++# at)
+        := at = gauge::described (client::player_spot ())
+        gauge::note (scoreboard::summary a::pace t ++# " player at " ++# at)
 
 := kills_counted (a : arena) (t : tally) : tally = { t ?| kills = t::kills + client::forget_dead a::engaged }
 
@@ -139,8 +139,8 @@
     t, next_step_at
 
 := died (a : arena) (t : tally) : option stepped =
-    probe::note ("dead: " ++# scoreboard::summary a::pace t)
-    probe::finish_reporting_parity "death"
+    gauge::note ("dead: " ++# scoreboard::summary a::pace t)
+    gauge::finish_reporting_parity "death"
     None
 
 := present_outcome (a : arena) (t : tally) (next_step_at : i32) : option stepped =
@@ -151,7 +151,7 @@
 
 := tick_outcome (a : arena) (t : tally) (next_step_at : i32) : option stepped =
     ? client::player_present () = !- ?>
-        probe::finish_reporting_parity "offline"
+        gauge::finish_reporting_parity "offline"
         None
     |: present_outcome a t next_step_at
 
@@ -188,11 +188,11 @@
 
 := fresh_run () : run = { started_at = mut 0; engaged = client::no_engaged () }
 
-:= timed_out () : () = probe::finish_reporting_parity "timeout"
+:= timed_out () : () = gauge::finish_reporting_parity "timeout"
 
 := on_text (r : run) (mode : string) (text : string) : () =
     := t = client::now_ms () - *r::started_at
-    probe::note (("server text [" ++# mode ++# "] t=" ++#? t ++# ": " ++# text))
+    gauge::note (("server text [" ++# mode ++# "] t=" ++#? t ++# ": " ++# text))
 
 := start_line (at : string) (every : i32) : string =
     := odds = " (drink, engage, random step or stand, equal odds every "
@@ -202,9 +202,9 @@
     { pace = scoreboard::pace_from_environment start_experience r::started_at; engaged = r::engaged }
 
 := random_started (r : run) (experience : i32) : () =
-    := at, ms = probe::described (client::player_spot ()), tick_ms ()
-    probe::note (start_line at ms)
-    probe::stored r::started_at (client::now_ms ())
+    := at, ms = gauge::described (client::player_spot ()), tick_ms ()
+    gauge::note (start_line at ms)
+    gauge::stored r::started_at (client::now_ms ())
     tick (arena_for r experience) (scoreboard::empty ())
 
 := settling (r : run) : () =
@@ -215,12 +215,12 @@
 
 := ready (r : run) : () =
     := name, health, mana = client::player_name (), client::player_health (), client::player_mana ()
-    probe::note (("in game as " ++# name ++# " health " ++#? health ++# " mana " ++#? mana))
+    gauge::note (("in game as " ++# name ++# " health " ++#? health ++# " mana " ++#? mana))
     client::after 1500 \ () => settling r
 
 := main () =
     client::seed_random_from_clock ()
     := r = fresh_run ()
-    client::disable_client_bot (probe::bot_profile ())
-    probe::started_as (probe::knight ()) (on_text r) (\ () => ready r) 200000 timed_out
+    client::disable_client_bot (gauge::bot_profile ())
+    gauge::started_as (gauge::knight ()) (on_text r) (\ () => ready r) 200000 timed_out
     0i32

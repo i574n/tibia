@@ -1,6 +1,7 @@
 # OT Agent Arena
 
-A reproducible benchmark for agents that play Tibia (Canary 3.6.1, client 15.11) on a local OT server. The arena is the result we
+A reproducible benchmark for agents that play Tibia (Canary 3.6.1, client 15.11) on a local OT server. The arena is the
+result we
 publish; topping it is meaningful only because the baselines are tuned by their own authors, not by us.
 
 ## Three layers
@@ -30,7 +31,8 @@ Bot authors may submit configs; the best submitted config per scenario becomes t
 Every competitor, ours included, plays under the same conditions, so a win cannot come from speed or extra sight:
 
 - Same information: the client screen (15x11 tiles), even though the protocol sends 18x14; no server-side state.
-- Same client: OTClient Redemption 4.1 for every competitor. The bots only run inside it, so our agent runs inside it too,
+- Same client: OTClient Redemption 4.1 for every competitor. The bots only run inside it, so our agent runs inside it
+  too,
   as Lua compiled from the same Spiral source as the simulator.
 - Same action-rate cap and the same 15x11 view, enforced by one arena layer inside OTClient that wraps every `g_game`
   action and observation, for bots and agents alike. First version (2026-10-13, `live/parity.lua`):
@@ -38,8 +40,10 @@ Every competitor, ours included, plays under the same conditions, so a win canno
   only creatures on the 15x11 screen. It reports allowed and dropped actions per run. The gate answers only for itself:
   an admitted call returns true whatever the wrapped `g_game` call returns, so a probe can tell a dropped action from an
   admitted one.
-- Same measurement rate: every probe watches health, experience and the clear every 100 ms. The vBot probe sampled every 10 s
-  until 2026-10-14, which rounded vBot's clear times up by about 5 s and turned its lowest-health figures into snapshots.
+- Same measurement rate: every probe watches health, experience and the clear every 100 ms. The vBot probe sampled every
+  10 s
+  until 2026-10-14, which rounded vBot's clear times up by about 5 s and turned its lowest-health figures into
+  snapshots.
 - Same decision rate: a cap on actions does not equalize reaction time. vBot's HealBot macro runs every 100 ms; our
   probe decided every 250 ms in v1 and v2 and reacted later to damage bursts, so it now ticks every 100 ms too. The
   simulator's knight decides on its 100 ms tick (`hunting_pack.client_decision_ms`) behind the same 250 ms action
@@ -81,7 +85,10 @@ Pack v1, scenario "cyclops clear" (live through `live/run-arena.ps1`, simulated 
 | Healing | Potion below the simulator's profit-tuned threshold, the same for every competitor (100 from the corrected simulator); runs before 2026-10-13 15:00 are void: deaths dropped gear the reset did not restore |
 | End | 675 experience (three kills at 225) or 200 s |
 | Recorded | Clear time, potions, gold, deaths, lowest health, damage taken (from the kept logs) |
-Paths under `lab/` cited in the rows below name exploratory scripts and probes that were removed on 2026-10-21 when the lab folder was emptied; the methods are described in each row. Model predictions for the current bundle are reproduced by `scripts/predict.ps1` (entry `apps/predict/predict.spi`), and candidates are scored under rule D16 by `scripts/score.ps1`.
+Paths under `lab/` cited in the rows below name exploratory scripts and probes that were removed on 2026-10-21 when the
+lab folder was emptied; the methods are described in each row. Model predictions for the current bundle are reproduced
+by `scripts/predict.ps1` (entry `apps/predict/predict.spi`), and candidates are scored under rule D16 by
+`scripts/score.ps1`.
 
 ### Pre-registration PR-1 (written 2026-10-14 07:30, before any run)
 
@@ -253,7 +260,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 
 
 
-### Pre-registration PC-4, the level-30 knight's straight step on arena ground (written 2026-10-20 02:10, before any PC-4 run)
+### Pre-registration PC-4, the level-30 knight's straight step on arena ground
+(written 2026-10-20 02:10, before any PC-4 run)
 
 | Item | Value |
 | --- | --- |
@@ -296,7 +304,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Post-hoc, the retreat-step gap (2026-10-21 01:29-02:08, rule D12 written before measuring, TIBIA-POTION-FIDELITY notes 82-83) | Live, the retreating knight gets cornered in the pocket at 1936,1349 in 41 of 60 runs (blocked south row and 1937,1348, a cyclops on 1937,1349), and only 11 of 60 ever pass x 1945; the model escaped east in about half its clears. The model's terrain matches every tile the client reports blocked. Adopted by D12: Canary's dance step (`Monster::doFollowCreature` -> `getDanceStep`; `staticAttackChance` 90 for cyclops, troll and hunter, so 10% per think when the path offers no step; an orthogonal step that keeps the distance, at double cost while the target is near), bundle builder `dancing_like_canary`. Retreat 12.87 at shield 11 (squared t over PR-12 and PR-16 0.80, within the cap 2.04), rules 14.62, steps per clear 20.6 (|t| 4.69 -> 4.27). Side effects: hunter clears 30 -> 51 of 100 (inside 45-80 again), hunting-ground kills 12.70 (live 12.80). Rejected by D12: Canary's step formula on arena ground (cyclops 700 ms instead of 702, which the 100 ms tick turns into 800; hunter 650 instead of 700), because steps rose to 27.4. One traced clear shows the knight winning a same-tick race into 1937,1349 that a cyclops wins live; the step gap stays open |
 | Post-hoc, the race into the pocket (2026-10-21 02:08-02:15, D12 and the search cap D14, TIBIA-POTION-FIDELITY notes 84-85) | Rejected by D12: the knight acting before the foes each tick (`seeing_a_tick_late`: the probe polls every 100 ms and can act only on positions the client already has, so a monster step in the same server instant is unseen); steps fell to 16.1, but the retreat squared t reached 2.11, over the cap 2.04. D14 then allowed one last candidate, both cited changes together: the last-tick view plus Canary's step formula on the server map (`stepping_by_canary_formula`: `creatures.step_ms_from_canary_formula` with ground speed 160, 100 on the road). Retreat 12.81 at shield 11 and 12.64 for the PR-12 mix (t -0.23 and 0.67, squared t 0.50), rules 14.55 (t 0.28 and 0.31), steps per clear 12.4 against 11.7 live, hits taken 62.3 against 61.3. Adopted into `mirroring_the_current_arena`, in sample; the D12 search is closed for the night, and PR-17 tests the bundle on fresh runs. Side effects outside D14's scope: hunter clears 51 -> 99 of 100, above the band 45-80 (the last-tick view alone: 59 without it, 99 without the step formula; traced in lab: any knight aim or action that runs before the hunters' move in the same tick pre-empts their flee step (aim alone first: 100; actions first with the old target: 99; both after: 59), so it conflicts with the retreat-step fix, which needs the knight's movement first; both point to sub-tick event order, TIBIA-POTION-FIDELITY notes 100-107), hunting ground 12.94 kills and 14.20 potions per hunt (live 12.80 and 12.70) |
 
-### Pre-registration PC-10, what happens at a free think that does not move (written 2026-10-23 07:4x, before any PC-10 run)
+### Pre-registration PC-10, what happens at a free think that does not move
+(written 2026-10-23 07:4x, before any PC-10 run)
 
 | Item | Value |
 | --- | --- |
@@ -307,7 +316,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | RESULT, hunter half (2026-10-23 18:27) | (a) by L8. 10 hunter runs 18:04-18:27, all cleared, probe trace `arena-logs/20261023-182655-hunter-lead-trace.log` split into its 10 runs at the start-tile sightings (1932,1349; the knight leaving and re-entering probe range logs 8 extra mid-run sightings). Free thinks 21, races 2, true misses 7 in 6 of 10 runs (2, 4, 5, 7, 9, 10), by the counts of TIBIA-EVENT-TIME note 126. The misses are skipped steps, not late ones: the next free think also gives no move until the knight moves (run 2: knight 3274 ms, hunter 3462 ms). The boxed hunter moved before the policy start in 4 of 10 runs, exactly the 4 without a true miss. Source (EVENT-TIME note 130): getRandomStep tries all four directions, so the misses come from follow mode; hunter.lua targetDistance 4 equals the hunter's distance to the knight's start tile, so it holds until the knight moves. Candidate H1 is pre-registered under rule L10 (note 131); rejected 2026-10-23 23:1x by L10 (c), 0 of 100 boxed movers in the model (note 135). Boosted creature: Poison Spider |
 | RESULT, cyclops half (2026-10-23 18:55) | Descriptive under L8, whose verdict the hunter half already decided. 10 cyclops retreat runs 18:29-18:55, all cleared, trace `arena-logs/20261023-185445-cyclops-lead-trace.log` split the same way (11 sightings, 10 runs). Free thinks 2, races 0, true misses 1 (run 8). The boxed cyclops moved before the policy start in 9 of 10 runs (not run 8); last night's PC-8 had it staying in 8 of 10. The contrast with the hunter half fits the source reading: the melee cyclops (targetDistance 1) approaches as soon as its exit frees, while the hunter (targetDistance 4) already holds its distance from the start. Boosted creature: Poison Spider |
 | Probe port (2026-10-25) | The hand-written `live/server-probes/lead_trace.lua` this row ran with is retired. Its Spiral port, `apps/canary/lead_trace.spi`, built to `target/canary/lead_trace.lua` by `apps/canary/build.ps1`, writes the same trace lines under the fake-Canary stubs (15 of 15 on the boxed-hunter stub), so later runs pass `-ServerProbe target/canary/lead_trace.lua` (TIBIA-NO-HAND-LUA) |
-### Pre-registration PR-35, the CFR brain on the retreat-fixed game, against retreat-at-2 (written 2026-11-07 16:4x, before the fixed game has run in the simulator)
+### Pre-registration PR-35, the CFR brain on the retreat-fixed game, against retreat-at-2
+(written 2026-11-07 16:4x, before the fixed game has run in the simulator)
 
 | Item | Value |
 | --- | --- |
@@ -318,7 +328,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | Clears at least 50: the retreat model was the blocker, and TIBIA-NUGGET-TABULAR-CFR closes with the CFR brain as a measured baseline. Clears under 50: a fresh trace on one seed before any further change. Worth at or above retreat2 with no more deaths: a candidate, and an 8-block pre-registered run decides. No seeds or arms are added after a look |
 | RESULT (2026-11-07 16:1x, node job-1794077968283-tibia-pr35-run, arena_cfr 04580E30E651, hunting_pack 4BF49F1FCD5B, cfr_arena B5B504FB4D68, C, 374 s; that tree's arena_cfr 15/15 and hunting_pack 15/15 cells green in job-1794077943855-tibia-retreat-cells) | Holds: the retreat model was the blocker. cfr clears 63 of 100 (PR-30 and PR-32: 0), with 64 deaths (126) and worth -1,000,378,953 (-1,000,600,000). retreat2 is unchanged to the digit (-150,600, 38 deaths, 100 clears), so the arena is unchanged and the shift is the brain's alone. As predicted, cfr stays far below retreat2's worth, so no 8-block run. Descriptive: cfr_argmax clears 53 but dies 175 times (127 before); playing the table's top action every time is worse than sampling it. TIBIA-NUGGET-TABULAR-CFR closes with the CFR brain as a measured baseline: 63 clears and 64 deaths per 100 against retreat-at-2's 100 and 38. The open gap is the abstraction's flat 52 damage per step, one bucket per step, and a camp reduced to press or spread |
 
-### Pre-registration PR-37-IS, PR-36-IS replicated on a fresh seed block (written 2026-11-07 16:2x, before any seed of 1101-1200 has run under this program)
+### Pre-registration PR-37-IS, PR-36-IS replicated on a fresh seed block
+(written 2026-11-07 16:2x, before any seed of 1101-1200 has run under this program)
 
 | Item | Value |
 | --- | --- |
@@ -330,7 +341,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | Target 50 within 25 percent AND bucket-0 ess at least 10 (the floor is PR-36-IS's own and is not moved): WPDIS from a behavior within 25 epsilon is a screen. Anything else, accurate below the floor included: off-policy scoring of potions closes for this hunt length, policy steps are scored by fresh sims, and TIBIA-IS-BEHAVIOR-75 closes on that. No seeds, targets or floors are changed after a look |
 | RESULT (2026-11-07 17:0x, node job-1794084426364-tibia-pr37is-run, `is_softened.spi` E89E0F241295, 364 s; the rows on seeds 1001-1100 repeat PR-35-IS and PR-36-IS to the digit) | "Anything else": off-policy scoring of potions closes for this hunt length, and policy steps are scored by fresh sims. On seeds 1101-1200, target 50: WPDIS 48,900 vs fresh 10,240, +377.5 percent, bucket-0 ess 374,467 q16 (about 5.7 hunts); target 90: 21,437 vs 17,490, +22.5 percent, ess about 2.2 hunts; target 0: ess 0. PR-36-IS's +0.8 percent was a lucky draw on about 4 hunts, as its own ess floor had warned. At about a thousand soft decisions per hunt, even a 25-epsilon gap compounds into weights carried by a handful of hunts. The estimators (path IS, PDIS, WPDIS, horizon, behavior choice) stay in `logprob` with their tests as the record of this line |
 
-### Pre-registration PR-36-IS, WPDIS from a behavior nearer the target (written 2026-11-07 16:0x, before the behavior-75 rows exist)
+### Pre-registration PR-36-IS, WPDIS from a behavior nearer the target
+(written 2026-11-07 16:0x, before the behavior-75 rows exist)
 
 | Item | Value |
 | --- | --- |
@@ -353,7 +365,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | Holds: WPDIS over a short horizon is the screen for epsilon steps up to 50, and TIBIA-IS-SHORT-HORIZON closes on it. Fails at 50 with ess under 10: the behavior policy explores too little for this target, and the next step is a behavior closer to it (epsilon 75) rather than more estimator work. No seeds, targets or horizons are changed after a look |
 | RESULT (2026-11-07 15:5x, node job-1794077143695-tibia-pr35is-run, `is_softened.spi` 673767636889, 293 s) | Fails at 50 with ess under 10: the behavior explores too little for that target. WPDIS over buckets 0-2 against the fresh mean over 1,800 ticks: target 90 17,039 vs 17,760 (-4.0 percent, within 10); target 50 16,723 vs 9,860 (+69.6 percent, outside 25), bucket-2 ess 65,531 q16, about 1.0 effective hunt of 100; target 0 0 vs 0. Post-hoc: the horizon never bound. The capped fresh means equal the uncapped ones exactly (17,760 and 9,860), and the bucket-1 and bucket-2 ess are identical (3,514,996 and 65,531), so every hunt has ended by bucket 1 and three buckets are the whole hunt. That is why `wpdis_3` equals PR-34's 10-bucket WPDIS. PR-34's "few effective hunts in the late buckets" was therefore not the cause: at epsilon 50 a single hunt carries the whole weight from bucket 0 on. Next, by the rule: a behavior closer to the target (epsilon 75), not more estimator work |
 
-### Pre-registration PR-34, weighted per-decision importance sampling of potions (written 2026-11-06 20:1x, before any WPDIS measurement has run)
+### Pre-registration PR-34, weighted per-decision importance sampling of potions
+(written 2026-11-06 20:1x, before any WPDIS measurement has run)
 
 | Item | Value |
 | --- | --- |
@@ -365,7 +378,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | Holds: WPDIS is the off-policy screen for epsilon steps up to 50, and TIBIA-IS-WPDIS closes on it. Fails at 50: report the per-bucket ess, and the next step is a shorter horizon (score policy changes over the first buckets only). No seeds, targets or bucket counts are changed after a look |
 | RESULT (2026-11-06 20:2x, node job-1794010851240-tibia-pr34-run, tree 22B02C8F3504, C, 248 s) | Fails at target 50, holds at 90 and 0. WPDIS potions (x 1000) against fresh: target 90, 17,039 against 17,760 (-4.0 percent; within 10 as predicted, and closer than path IS's -4.6 and per-decision's -16); target 50, 16,723 against 9,860 (+69.6 percent; predicted within 50); target 0, 0 against 0. Normalizing per bucket cut the epsilon-50 error from path IS's +165 percent and unnormalized per-decision's +1,188 to +70, but not to the bar. The per-bucket ess the decision rule asks for is not printed by this program (a gap in the program, recorded on TIBIA-IS-WPDIS); next per the rule: a shorter horizon, scoring policy changes over the first buckets only. PR-31's and PR-33's rows reproduce exactly |
 
-### Pre-registration PR-33, per-decision importance sampling of potions against PR-31's path IS (written 2026-11-06 18:0x, before the per-decision code has run anywhere)
+### Pre-registration PR-33, per-decision importance sampling of potions against PR-31's path IS
+(written 2026-11-06 18:0x, before the per-decision code has run anywhere)
 
 | Item | Value |
 | --- | --- |
@@ -377,7 +391,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | Holds: per-decision IS becomes the estimator for policy steps up to epsilon 50 here, and the nugget closes on it. Fails at target 50: the per-step variance still dominates, and weighted (self-normalized per step) PDIS from TIBIA-IS-PER-DECISION-DESIGN (4) is the next step. No seeds or targets are added after a look |
 | RESULT (2026-11-06 19:3x, node job-1794003746311-tibia-pr33-run, tree 0DB9F7CC7B89, C, 187 s) | Fails. Per-decision potions (x 1000) against fresh: target 90, 14,915 against 17,760 (-16 percent; predicted within 10); target 50, 126,958 against 9,860 (+1,188 percent; predicted within 25, and worse than PR-31's path IS at +165); target 0, 0 against 0 (under 1 potion, as predicted). PR-31's six rows reproduce exactly on this tree, so the run is deterministic. Reading: this estimator is the ordinary, unnormalized per-decision form; at epsilon 50 every kept act multiplies the weight by 975/950, so over the hundreds of decisions in a hunt a few hunts carry very large weights, and at 100 seeds that tail dominates even though the estimator is unbiased. By the decision rule, the self-normalized per-step form (TIBIA-IS-PER-DECISION-DESIGN (4)) is next |
 
-### Pre-registration PR-32, the CFR brain on the arena game with kill value, against retreat-at-2 (written 2026-11-06 17:55, before the new game has run anywhere)
+### Pre-registration PR-32, the CFR brain on the arena game with kill value, against retreat-at-2
+(written 2026-11-06 17:55, before the new game has run anywhere)
 
 | Item | Value |
 | --- | --- |
@@ -389,7 +404,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | RESULT (2026-11-06 19:4x, node job-1794007757319-tibia-pr32-run-b, arena_cfr FB75664F5F69, hunting_pack 26090976D5C2, C, 557 s) | Fails as worded (clears under 50), but NOT read as a verdict on the kill term: every number equals PR-30's to the digit (cfr -1,000,600,000 worth, 126 deaths, 0 clears; cfr_argmax 127 deaths, 0 clears; retreat2 -150,600, 38 deaths, 100 clears). Two readings fit the identity, and a code read of the dispatch (target_turn -> after_heal_plan -> learned_plan -> cfr_plan, wired as designed) does not decide between them: (a) the brain's draws do not reach play; (b) they do, but both games give the same nearly pure strategy on every state the knight actually visits (Melee at healthy hp, since Melee costs no tempo in either game; Potion when low; Retreat when crowded), so the same rolls give the same hunts, and the clear failure comes from a miscalibrated action, most likely Retreat, which removes an attacker in the abstraction but not on the live spot. Diagnosis first: TIBIA-CFR-BRAIN-TRACE (the drawn action and plan per think on one seed). Both PR-30's and this row's conclusions stay open until then |
 | DIAGNOSIS (2026-11-06 20:1x, node job-1794010075650-tibia-cfr-trace, apps/predict/cfr_trace.spi, seed 1001) | Reading (b) holds: the draws reach play. From tick 20 the brain draws Retreat in every state with at least one attacker, even at full hp (515) against one attacker; the knight never swings (kills stay 0), loses hp while stepping away, dies near tick 630, respawns at 515 with no attackers, and draws Melee only while nothing is adjacent. Cause, in the abstract game: with one attacker, Retreat costs 40 tempo and no damage and removes that attacker for good, while a Melee step costs 52 damage and makes no progress until the target is Low, so Retreat is cheaper at every step; on the live spot, stepping away does not remove the cyclops. That is why PR-30 and PR-32 match to the digit: both games yield the same always-retreat policy. Fix: TIBIA-CFR-RETREAT-MODEL (Retreat avoids one step's damage but keeps the attacker), then PR-32 rerun as a new pre-registration |
 
-### Pre-registration PR-31, off-policy importance sampling of softened hunts against fresh sims (written 2026-11-06 14:35, before any target is logged)
+### Pre-registration PR-31, off-policy importance sampling of softened hunts against fresh sims
+(written 2026-11-06 14:35, before any target is logged)
 
 | Item | Value |
 | --- | --- |
@@ -401,7 +417,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | Holds: path-level IS only scores small policy steps here, recorded as the nugget's verdict; per-decision weighting waits for per-step rewards, which the sim does not log. Fails with target 50 within 10 percent and ess at least 10: IS becomes the cheap screen for epsilon and core candidates, and a second pre-registered run tries a different core. No seeds or targets are added after a look |
 | RESULT (2026-11-06 17:3x, node job-1793994599738-tibia-pr31-run, tree EF7486F7554A, C, 189 s) | Holds on every point. Target 90: clear ms IS 54,635 against fresh 57,999 (-5.8 percent), potions IS 16.935 against 17.760 per hunt (-4.6 percent), ess 53.6 of 100, 0 off path. Target 50: clear ms IS 76,428 against 51,850 (+47 percent), potions 26.170 against 9.860 (+165 percent), ess 1.0, 0 off path. Target 0: no estimate, all 100 hunts off path. So path IS only scores small policy steps here; per-decision weighting (TIBIA-IS-PER-DECISION-DESIGN) is the next step, and its code waits on this result. Descriptive: the greedy policy drinks no potions on the troll camp (fresh potions 0 at epsilon 0), so every potion in the softened runs comes from exploration flips. The proof of record for the tree, job-1793996115107-tibia-ci-final, was still running when this row was written |
 
-### Pre-registration PR-30, the tabular CFR arena strategy as a brain against retreat-at-2 in the simulator (written 2026-11-06 13:35, before the CFR brain exists)
+### Pre-registration PR-30, the tabular CFR arena strategy as a brain against retreat-at-2 in the simulator
+(written 2026-11-06 13:35, before the CFR brain exists)
 
 | Item | Value |
 | --- | --- |
@@ -413,7 +430,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | Holds (A below B, or A with more deaths): the CFR table stays a non-NN baseline recorded beside the LSH table and the network, and TIBIA-NUGGET-TABULAR-CFR closes on that verdict. Fails (A at or above B with no more deaths): A becomes a candidate, and a second pre-registered run on 8 held-out blocks decides adoption. A crash is rerun once, then counted missing; no seeds or arms are added after a look |
 | RESULT (2026-11-06 17:2x, node job-1793993684886-tibia-pr30-run, tree EF7486F7554A, C, 375 s) | Holds, by a wide margin. A (cfr): worth -1,000,600,000, 126 deaths, 0 clears of 100. B (retreat2): worth -150,600, 38 deaths, 100 clears. Descriptive: the argmax variant is the same failure (-1,000,600,000, 127 deaths, 0 clears). The CFR brain never clears the spot, which fits the prediction's first reason: the abstract game pays Melee nothing, so the table never commits to finishing a cyclops, and a hunt that never kills falls to the objective's below-the-floor value. The CFR table stays a non-NN baseline; the gap is designed in TIBIA-CFR-KILL-VALUE-DESIGN (a kill removes an attacker), and its code waits on this result. Its unit tests were green on the node (arena_cfr 13/13, hunting_pack 13/13); the proof of record for that tree, job-1793996115107-tibia-ci-final, was still running when this row was written |
 
-### Pre-registration PR-29, the LSH table policy against the network in the simulator (written 2026-11-06 10:35, before job-1793968277925-tibia-hashed-lanes reports)
+### Pre-registration PR-29, the LSH table policy against the network in the simulator
+(written 2026-11-06 10:35, before job-1793968277925-tibia-hashed-lanes reports)
 
 | Item | Value |
 | --- | --- |
@@ -424,7 +442,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | Holds (median below and 3+ lanes below): the table stays a non-NN baseline only, recorded next to the network. Fails (median at or above -68,350): the table is a candidate policy, and a second pre-registered run at 8 lanes decides. No lanes are added to this run |
 | RESULT (2026-11-07) | VOID, no verdict: job-1793968277925 hit its wall-clock cap (exit 124 after about 13.4 h including the queue) with no lane row, on a node at 100 percent all day. The 11-07 smoke (job-1794087750728-tibia-hsmoke, `hashed_lanes.spi` 1A5C9FDB8FAF at tiny_plan) measured 7 hunts/s single-threaded on the loaded node: robust_plan is 204,800 hunts per lane, about 32 h for 4 lanes. Replaced by PR-29b |
 
-### Pre-registration PR-29b, the LSH table against the network at an equal small search budget (written 2026-11-07 18:4x, before the run)
+### Pre-registration PR-29b, the LSH table against the network at an equal small search budget
+(written 2026-11-07 18:4x, before the run)
 
 | Item | Value |
 | --- | --- |
@@ -435,7 +454,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | Holds: the table stays a non-NN baseline only, TIBIA-NUGGET-LSH-TABLE closes with both medians recorded. Fails (table median at or above the network's): the table is a candidate, and a pre-registered 8-lane run at a larger plan decides. A lane where both arms stay at the no-clear floor (about -1,000,600,000) counts as a tie. No lanes, plans or arms change after a look |
 | RESULT (2026-11-07 20:0x, node job-1794091321041-tibia-pr29b-run, `hashed_lanes.spi` 13ECD31AEC00, 52,800 hunts in 4,208 s, 12 hunts/s) | Holds: the table is weaker in 4 of 4 paired lanes, with no ties. Held-out worth, hashed vs network: lane 0 -286,450 vs -78,700; lane 1 -1,000,097,788 vs -98,400; lane 2 -399,750 vs -247,200; lane 3 -1,000,096,435 vs -68,600. The hashed median is about -500,248,000 (two lanes never clear), the network median is -88,550. Train worth tracks held-out in every lane (largest gap 22,600, hashed lane 0), so neither arm overfits at this budget. Descriptive: at 1/32 of robust_plan's search the network's best lane (-68,600) already equals the 11-05 robust median (-68,350). The table stays a non-NN baseline only, and TIBIA-NUGGET-LSH-TABLE closes |
 
-### Pre-registration PR-28, two knights with the ally's measured entry delay in the model (written 2026-10-25 15:3x, before any PR-28 run)
+### Pre-registration PR-28, two knights with the ally's measured entry delay in the model
+(written 2026-10-25 15:3x, before any PR-28 run)
 
 | Item | Value |
 | --- | --- |
@@ -448,7 +468,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | RESULT (2026-10-25 21:1x, 11 duo hunts 20:05-21:03 in one window, smoke hunt run 1 valid with a 1256 ms gate delay, boosted Destroyer) | Both hold, so candidate 2 with `with_delayed_ally_entry` becomes the duo default and the 10-14 saturation sweep reruns on it. Counted hunt 2 crashed without the live layer noticing (it ended 81 s after hunt 1, the ally's log ends `finish: offline`, the knight was never hit and took 4 actions), so by the crash rule it is counted missing: no rerun was possible after the look. Valid 9 hunts: 16.78 party kills per hunt against 16.73 (t 0.17, df 8, critical 2.31) and 6.89 potions against 6.68 (t 0.59). As run, with hunt 2 included: 15.5 kills (t -0.94) and 6.4 potions (t -0.48), critical 2.26, so it holds either way. Descriptive: the per-knight split misses the prediction, with knight 3.33 and ally 3.56 potions per hunt (ally share 52 percent against the predicted 27), and kills 8.2 and 8.6. The totals land, but the model gives the ally too few potions; this goes on TIBIA-PARTY. Login delays in the 9 valid hunts are 803-1119 ms (mean 892), against PR-27's 618-2346. 0 deaths, lowest health 183 (knight) and 159 (ally) on average. Late troll kills per hunt: 1.67 (knight) and 2.33 (ally). Parity prelude (NO-HAND-LUA M4, first live run): a `parity: gap 250 ms, view 15x11` summary line in all 11 knight logs, 4-26 actions allowed and 0-4 dropped per hunt. Read with scratch pr28-read.ps1 (`kit table logs`, `table query --where 'run>2' --group run --sum kills,potions`, `table test --test one-sample`), tables in `target\pr28-*.tsv` |
 | Saturation sweep rerun (rule P12 with amendment A1, run 2026-10-27 19:1x, `apps/predict/sweep.spi`) | On the duo default camp, rules were evolved on training_block (seed 91, 6 generations by 6 offspring from { 160; 0; 4 }, ProfitKeepingKills at the validated arm's training kills) and judged once on held_out_block. Validated arm `cavebot_with_heal 160`: 1673 kills, 0 deaths, profit -17929. Evolved genes { 106; 0; 4 }: 1669 kills, 1 death, profit -29269. The evolved rules fall short of the 5 percent profit bar (63 percent lower), and both kills and deaths are worse, so saturation stands on the live-checked duo model. The validated arm's 16.73 held-out kills per hunt reproduce the PR-28 prediction |
 
-### Pre-registration PR-26, where the late troll clusters come from (written 2026-10-23 04:5x, landed here 07:2x, before any PR-26 run)
+### Pre-registration PR-26, where the late troll clusters come from
+(written 2026-10-23 04:5x, landed here 07:2x, before any PR-26 run)
 
 | Item | Value |
 | --- | --- |
@@ -461,7 +482,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | RESULT (2026-10-23 11:2x) | (c), report only, in both readings. All 10 runs: 96 troll deaths, 12 late clusters holding 35 trolls, classes R 30, F 0, I 5 (R 86 percent, F 0 percent), and the respawns appear within 1500 ms in 0 of 12 clusters. The 7 runs with no load beside them (1 and 5-10; kit's heavy job ran 10:26-10:40 beside runs 2-4, an kit window-registry bug, TIBIA-PARTY note 71): 10 clusters, 30 trolls, R 25, F 0, I 5 (R 83 percent), synced 0 of 10. Read by scratch read-ground.ps1 on the block's one kept trace (`arena-logs/20261023-111503-hunting-ground-ground-trace.log`), split into its 10 run sections at each run's first pre-sighting line (canary restarts per run, so creature ids repeat across sections). No troll left view and came back. The late clusters are respawns from different spawns that appear seconds to tens of seconds apart (for example 256.4 s, 259.4 s and 288.7 s) and die together, so they gather on the way to the knight; they do not respawn in sync. Cross-check: trace troll deaths per run equal the client's `Loot of a troll` count in 9 of 10 runs (run 9: 12 vs 11). Late troll deaths 3.9 per hunt (P5's live 3.85). Valid: the boosted creature was Poison Spider |
 | Probe port (2026-10-25) | The hand-written `live/server-probes/ground_trace.lua` this row ran with is retired. Its Spiral port, `apps/canary/ground_trace.spi`, built to `target/canary/ground_trace.lua` by `apps/canary/build.ps1`, writes the same trace lines under the fake-Canary stub (9 of 9), so later runs pass `-ServerProbe target/canary/ground_trace.lua` (TIBIA-NO-HAND-LUA) |
 
-### Pre-registration PR-27, two knights logging in together (written 2026-10-23 23:2x, before any live-layer change or PR-27 run)
+### Pre-registration PR-27, two knights logging in together
+(written 2026-10-23 23:2x, before any live-layer change or PR-27 run)
 
 | Item | Value |
 | --- | --- |
@@ -473,7 +495,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | Both hold: candidate 2 becomes the duo default (TIBIA-PARTY), and the 2026-10-14 duo saturation sweep is rerun on it before any party claim. Either fails: the remaining gap is named on TIBIA-PARTY. Descriptive: the per-knight split against the predicted share, the login delays, deaths, each knight's lowest health, late troll kills per hunt |
 | RESULT (2026-10-24 03:4x, 11 duo hunts 02:34-03:39 in one window, smoke hunt run 1 valid with an 812 ms gate delay, no crash, boosted Hunter) | (H) failed: the ally's login line came within 1000 ms of the knight's in 4 of the 10 counted hunts (need 8), so by the pre-registration the kill and potion tests are not read, and modelling the remaining gap gets its own rule on TIBIA-PARTY. Delays per counted hunt in ms: 746 745 618 934 1116 1193 1318 2346 1847 1520 (median 1155, mean 1238), against PR-25's 11-19 s and PR-24's -1 to 5 s. The live layer change cut the gap about twelvefold, but the delay grew through the block (about 0.7 s in hunts 2-4, 1.1-2.3 s in hunts 6-11). Read with `kit table logs` on the knight logs (`--count gated`, `--last delay`) and `table query --where 'gated>0' --where 'delay<=1000'` (`target\pr27-gate.tsv`) |
 
-### Pre-registration PR-25, two knights with Canary's target order and respawn grid in the model (written 2026-10-23 15:1x, before any PR-25 run)
+### Pre-registration PR-25, two knights with Canary's target order and respawn grid in the model
+(written 2026-10-23 15:1x, before any PR-25 run)
 
 | Item | Value |
 | --- | --- |
@@ -504,7 +527,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Reading | From client logs by the note-100 method of record (`monster ...82 moved` before the policy line). (a) 6 or more of 10 movers: the probe is not the cause, the session difference points to load, and the next step is 10 probe-free runs beside a fixed scratch CPU load. (b) 3 or fewer: the probe changes the outcome, so PC-8's data stands only for probed runs. (c) 4-5: report only. No W39 candidate before this decides |
 | RESULT (2026-10-23 10:16) | (a). The walled-in hunter (id 82) moved in 8 of 10 runs (not in runs 7 and 10), by `kit table logs <the 10 PC-9 hunter logs, 20261023-095427 .. 101615> --count-by mover='monster 13421772(\d+) moved'`; hunters 81 and 83 moved in 10 of 10. The probe is not the cause: without it the boxed hunter moves as often as in PC-8 (8 of 10), so PR-22's 6 of 20 points to machine load. The machine was quiet: every lane held its compiles, and nothing heavy ran beside the block. 9 of 10 runs cleared; run 9 hit the 200 s cap. Next by the rule: 10 probe-free runs beside a fixed scratch CPU load, pre-registered before they run. Boosted creature: Poison Spider, not a spawned kind here |
 
-### Pre-registration PC-8, the walled-in monster's first step, timed on the server (written 2026-10-23 00:03, before any PC-8 run)
+### Pre-registration PC-8, the walled-in monster's first step, timed on the server
+(written 2026-10-23 00:03, before any PC-8 run)
 
 | Item | Value |
 | --- | --- |
@@ -537,7 +561,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | Both hold: the duo model matches live, and the 2026-10-14 saturation finding stands on a live-checked model. Either fails: the gap is named on TIBIA-PARTY before any candidate. Descriptive: kills and potions split between the knights (the model's 7.14 vs 0.42 is a sharp claim about who gets attacked), deaths, each knight's lowest health |
 | RESULT (2026-10-22 15:00, hunt logs closing 13:59-14:56, block job ended 14:57, all 10 counted, no crash; the smoke hunt, closing 13:53, showed both knights in game and loot by either) | Both fail, so the duo model does not match live, and the gap is named on TIBIA-PARTY before any candidate is judged. Party kills 16.6 per hunt (95% CI 15.70-17.50) against 15.36, t 3.10; party potions 5.1 (CI 4.01-6.19) against 7.56, t -5.10 (sums per hunt: kills 17 16 14 16 16 18 16 18 17 18, potions 6 3 7 3 4 7 4 6 6 5). The split is the model's largest error: knight 9.7 kills, 2.8 potions and 18.8 hits taken per hunt, ally 6.9 kills, 2.3 potions and 20.3 hits, where the model gives knight 7.14 potions and ally 0.42; the ally used more potions than the knight in 4 of 10 hunts. 0 deaths, as predicted; lowest health 132.9 (knight) and 141.6 (ally) on average. Against the solo hunts on the same ground (PR-23, 14.8 potions, 14.2 kills), the second knight cuts potions by 2.9x live, where the model says 2.0x. No compile job ran during the block (tibia stopped its own queue at the go) |
 
-### Pre-registration PR-23, the hunting ground's potion gap on fresh hunts (written 2026-10-22 07:37, before any PR-23 run)
+### Pre-registration PR-23, the hunting ground's potion gap on fresh hunts
+(written 2026-10-22 07:37, before any PR-23 run)
 
 | Item | Value |
 | --- | --- |
@@ -558,7 +583,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | k <= 16: PR-21 was an outlier, and the model targets PR-18/19's rate. k >= 19: the live rate has moved up, and the next step is finding what changed. k of 17 or 18: inconclusive; both rates are kept in view. Descriptive: each run's login delay against whether it cleared, by `kit table logs <the 20 logs> --field run='-(\d+)\.log' --last login='Your last visit.*@t\+(\d+)' --count kills='You gained \d+ experience' --out target/pr22-login.tsv`, then `kit table query target/pr22-login.tsv --group kills --count file --mean login` (kills 3 = cleared); PC-7's measure runs on these logs once kit's latency verb exists |
 | RESULT (2026-10-22 11:28, runs 09:40-10:25, all 20 counted, no crash; a first start at 09:33 aborted at run 1 on a runner bug before any row, ledger addendum) | k = 14 of 20, so PR-21 was an outlier and the model targets PR-18/19's rate (0.725); without PR-21 the live blocks clear 43 of 60. `kit experiment analyze target/ledger PR-22-CLEARS`: binomial p_at_most 0.48 at 0.725, inside the registered band. Hits taken 20.45 per run (sd 8.57; the bundle's 21.03, descriptive). Login delay against clears: the 14 cleared runs logged in after 5.47 s on average, the 6 that did not after 6.34 s (5 with one kill, 6.18 s; 1 with two, 7.17 s), so a later login did not raise clears here. PC-7 lines present in all 20 logs (per run 28.1 chase changes, 94.2 knight/target moves, 2.2 pre-policy monster moves). The first pre-policy monster move came 578-2445 ms after login (none under 200 ms; TIBIA-EVENT-TIME's D36 gate). The cleared column of runs 1-3 was printed mid-block by a progress check (ledger disclosure); no action followed. No compile job started during the block |
 
-### Pre-registration PC-7, the knight's first step after its target leaves (written 2026-10-22 05:45, before any PC-7 run)
+### Pre-registration PC-7, the knight's first step after its target leaves
+(written 2026-10-22 05:45, before any PC-7 run)
 
 | Item | Value |
 | --- | --- |
@@ -569,7 +595,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Predictions | From the source: L1 within 0-250 ms in at least 90% of events (probe tick plus client lag); L2 about U(0, 1000) + 558 ms, median 0.95-1.35 s, at least 90% of L2 at 0.5 s or more |
 | Decision | Confirmed when L2's median is in 0.85-1.45 s and at least 85% of L2 are 0.5 s or more: rule D32 (TIBIA-FIDELITY note 86) is scored as registered. Refuted when L2's median is below 0.7 s: D32 is withdrawn before scoring. Anything else: D32 is scored as registered and PC-7 is reported as inconclusive |
 
-### Pre-registration PR-21, the knight's chase steps at the live probe's pace (written 2026-10-22 01:33, before any PR-21 run)
+### Pre-registration PR-21, the knight's chase steps at the live probe's pace
+(written 2026-10-22 01:33, before any PR-21 run)
 
 | Field | Content |
 | --- | --- |
@@ -641,7 +668,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | The fixes hold when the live share of step-spanning pairs on the grid is below 20% and the no-step share is above 85%; the current model holds when the step share is above 50%. Anything between is inconclusive. Run once, no further looks |
 | RESULT (2026-10-20 11:59) | The fixes hold. 40 logs: step-spanning pairs 232, on the grid 9 (3.9%; fixed model 2%, current model 70.5%), late by 60-1060 ms 210 (90.5%), other 13; pairs without a step 935 of 940 on the grid (99.5%). The late residuals cluster again at 160-200 ms (about a quarter of them), Canary's `hasExtraSwing` when an adjacent creature moves, which the patched model spreads more evenly; that is the next refinement, not part of this test. Both changes are in src since 2026-10-20 14:30 (`hunting_pack.live_think_period_ms`, `swing_after_step` in `player_retreats`); pack_sim 32/32 after re-pinning three tests, gpu_sim 6/6, hunt_sim 11/11 |
 
-### Pre-registration PR-15, the hunting ground with Canary's own spawns (written 2026-10-20 11:35, before any hunting-ground run)
+### Pre-registration PR-15, the hunting ground with Canary's own spawns
+(written 2026-10-20 11:35, before any hunting-ground run)
 
 | Item | Value |
 | --- | --- |
@@ -659,7 +687,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Post-hoc (2026-10-20 13:31, explanatory) | The potion gap splits into fewer and softer hits: live 65.9 hits per hunt (65.4 by cyclops, 0.5 by trolls) against the model's 71.9, and 33.3 damage per landed cyclops hit against about 35.6 implied by the model's potions; 33.3 sits below even the model's fully charged mean (35.16), so the block-charge share cannot explain it here. Checked 14:44: every PR-15 run started at shield skill 12 (the scenario reset never reset shielding, which rose to 12 on 2026-10-19 and stayed; fixed since for future runs), while the model assumes 11; with shield 12 the model predicts 15.08 instead of 15.46 potions (tree with the 14:30 swing fixes), about 0.4 of the gap. Same direction as the parity arena (model +0.9 to +1.2 potions per clear): the model over-counts damage taken on every arena without login protection. Later the same day (post-hoc): the live policy starts 2.5 s after login (TIBIA-START-SYNC) while the prediction let the knight act from t 0; delaying the model knight's first decision by those 2.2 s alone moves the hunting ground to 10.66 kills and 13.23 potions, so with the start delay modeled the potions would hold and the kills fail. The verdict above stays as registered; why a 2.2 s idle moves a 300 s hunt this much is open (TIBIA-POTION-FIDELITY) |
 | Post-hoc (2026-10-21 03:55-04:04, diagnosis only; the bundle is frozen until PR-17, rule D15) | With the overnight bundle the model gives 70.8 damaging hits per hunt (live 65.2), damage 2398 (2176), and potions 14.20 (12.70), at an equal 33.9 damage per hit (live 33.4) and the same kill mix (about 4.7 cyclopes and 8.2 trolls). Trolls are not the gap: with troll melee zeroed the model still takes 69.8 hits. In 10-s buckets the extra hits sit at wave onsets: the opening (10-20 s: live 1.5, model 4.5) and the two respawn waves (+1.0 near 130 s, +2.9 near 255 s); between onsets the rates match. First cyclops hit per hunt: live median about 18.5 s (12-23), model 16 (9-20; 18 without the step formula). Live chasing cyclopes (7 step-probe logs) step straight in 700-719 ms, Canary's formula. The 10 of 37 intervals of 1200-2200 ms all fall in close-quarters jostling within 2 tiles of the knight, not on the approach. They fit Canary's fresh-walk delay (`getEventStepTicks` with `RespectDelay` waits a full step before a new walk), but a lab prototype of that delay leaves the opening unchanged and breaks the ranged hunters. Why the model's cyclopes arrive about 2 s early at each wave stays open (candidates: target acquisition and the first walk start at login or spawn); a rule and a score come after PR-17 |
 
-### Pre-registration PR-14, ranged hunters with the calibrated follow pace (written 2026-10-19 06:01, before any PR-14 run)
+### Pre-registration PR-14, ranged hunters with the calibrated follow pace
+(written 2026-10-19 06:01, before any PR-14 run)
 
 | Item | Value |
 | --- | --- |
@@ -690,7 +719,8 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Decision | The rule set holds when both t are within 2.26 and at least 9 of 10 runs clear. It fails on either t beyond 2.26 or 3 or more uncleared runs; in between it is inconclusive. No runs are added after a look |
 | RESULT (2026-10-18 21:25-21:50, 10 runs, no crashes) | FAILS on the clear rate: 5 of 10 runs clear (the model predicted 99 of 100). The other five stopped at the 200 s cap with 225 (four runs) or 450 experience (one run). Potions: 3.00 per run over all 10 runs (sd 2.62, t 0.40). Clear time over the 5 clears: 61.6 s (sd 10.9, t -0.40, 4 df). No deaths. Health conservation: 44 of 44 readings balance. All five uncleared runs make their last kill far east (x 1942-1957, after chasing a fleeing hunter about 10-25 tiles along y 1352-1354) and then log "attacking nothing" until the cap: the remaining hunters never come back into the client's view. The cleared runs kill at x 1920-1937. In the model the remaining hunters shadow the knight at about 4 tiles on the same chase (lab/tibia-fidelity/hunter-companions-model-run6.txt), and Canary's monster view (11 by 11) matches the model's, so the gap is in how live companions follow; a diagnostic block with a per-second monster trace comes next. The analysis script of the time printed "predicts" because it tested only the two t values; the pre-registered decision also counts uncleared runs |
 | Diagnostic block (2026-10-19 05:02-05:14, 5 runs, not pre-registered, not part of the verdict) | Same scenario with a once-per-second trace of every monster the client sees (`seen at` lines; `lab/tibia-fidelity/companion-trace.ps1`), into `results/rows/arena_results_hunter_diag_1019.spi`. 4 of 5 clear (9 of 15 with PR-13). The uncleared run repeats the PR-13 pattern: the knight follows a fleeing hunter 30 tiles east along y 1353, the third hunter falls behind at 5 tiles, drops out of view at x 1933 and never returns, and the knight stands at 1963,1352 seeing nothing until the cap. Follow pace by distance to the knight (`lab/tibia-fidelity/follow-pace.ps1`, healthy hunters, knight moving): live 0.93 tiles/s at 5, 0.83 at 6; the model 1.15 and 1.19, almost never standing still. At 4 tiles and closer the model matches live. Canary re-plans a follow path on every knight move (`Creature::onCreatureMove` sets `isUpdatingPath`), so that alone does not explain the slower live pace; the model now lets a ranged hunter beyond its target distance step only on its creature think (`hunting_pack.thinks_now`), a calibration to the measured pace (model 0.91 and 1.00 tiles/s at 5 and 6) whose server-side cause is still open. With it, 94 of 100 held-out model clears finish (the 6 others strand a hunter the same way as live), against 100 before; 9 of 15 live clears is still well below |
-### Pre-registration PR-11, rules vs vBot without the login-protection artifact (written 2026-10-15 14:21, before any PR-11 run)
+### Pre-registration PR-11, rules vs vBot without the login-protection artifact
+(written 2026-10-15 14:21, before any PR-11 run)
 
 | Item | Value |
 | --- | --- |
@@ -754,13 +784,16 @@ Paths under `lab/` cited in the rows below name exploratory scripts and probes t
 | Deaths/h | Deaths per in-game hour |
 | Score | XP/h subject to deaths/h at or below the best baseline's, reported with a confidence interval |
 
-Every comparison is pre-registered: hypothesis, primary metric, test and run count are written down before the first run,
-and the data is analysed once, after the last run. Interim looks are limited to counting completed runs. A comparison that
+Every comparison is pre-registered: hypothesis, primary metric, test and run count are written down before the first
+run,
+and the data is analysed once, after the last run. Interim looks are limited to counting completed runs. A comparison
+that
 ends inconclusive is reported as such; a new comparison needs a new pre-registration.
 
 ## Evaluation cost
 
-The open-source bots run only inside a real OTClient against a real Canary server, so their runs take wall-clock time. Our
+The open-source bots run only inside a real OTClient against a real Canary server, so their runs take wall-clock time.
+Our
 simulator runs faster than real time, but arena results always come from the real server so every competitor is
 measured the same way.
 
@@ -784,14 +817,18 @@ Tuning rules, from the first simulator runs (2026-10-13, `hunt_sim.spi`):
 - The agent and every baseline are tuned on the same training seeds and scored on held-out seeds.
 - Use at least 20 training seeds. An evolution search on 6 seeds overfit: it scored 31 on held-out seeds where a
   cavebot scored 34.
-- A baseline tuned to the edge of its range is not tuned. In the room-and-corridor scenario the cavebot's heal sweep (40-200)
+- A baseline tuned to the edge of its range is not tuned. In the room-and-corridor scenario the cavebot's heal sweep
+  (40-200)
   picked 200, and evolved rules 'won' by 81600 gp; with the sweep widened to 400 the cavebot tuned to 230 and the win
   vanished (-477181 vs -477431 gp). Sweeps now reach `hunting_pack.highest_tuned_heal`.
 - A death rarer than the training set can show is invisible to tuning. On the mixed camp, evolved rules saw 0 deaths in
-  100 training clears and pushed the heal threshold down; held out they died twice, against the cavebot's once, and lost on
-  cost. When deaths are near 1%, train on fresh seed blocks per generation (`search.evolve_vector_resampled`) or on several
+  100 training clears and pushed the heal threshold down; held out they died twice, against the cavebot's once, and lost
+  on
+  cost. When deaths are near 1%, train on fresh seed blocks per generation (`search.evolve_vector_resampled`) or on
+  several
   hundred seeds.
-- Fix the number of runs before looking. The retreat policy 'beat' vBot after 20 runs (t -2.14) and 38 (t -2.36); 18 more
+- Fix the number of runs before looking. The retreat policy 'beat' vBot after 20 runs (t -2.14) and 38 (t -2.36); 18
+  more
   runs brought it to t -1.89, a tie. Stopping when a result looks significant inflates claims.
 - Never compare against hand-picked baseline settings. A hand-picked cavebot "lost" 34 to 90; the same cavebot,
   tuned on the training seeds, tied at 90.

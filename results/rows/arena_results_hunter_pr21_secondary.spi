@@ -1,4 +1,25 @@
 ///- --no-respell
 open table_rows
 inl table () =
-    Table "file\tarm\tsteps\ttaken\tpotions\n20261022-053004-hunter-spiral-policy-1.log\tspiral-policy\t0\t25\t6\n20261022-053203-hunter-spiral-policy-2.log\tspiral-policy\t0\t16\t3\n20261022-053403-hunter-spiral-policy-3.log\tspiral-policy\t0\t27\t6\n20261022-053749-hunter-spiral-policy-4.log\tspiral-policy\t0\t5\t0\n20261022-053949-hunter-spiral-policy-5.log\tspiral-policy\t0\t21\t3\n20261022-054140-hunter-spiral-policy-6.log\tspiral-policy\t0\t22\t5\n20261022-054334-hunter-spiral-policy-7.log\tspiral-policy\t0\t18\t3\n20261022-054532-hunter-spiral-policy-8.log\tspiral-policy\t0\t27\t4\n20261022-054738-hunter-spiral-policy-9.log\tspiral-policy\t0\t22\t4\n20261022-055001-hunter-spiral-policy-10.log\tspiral-policy\t0\t23\t5\n20261022-055158-hunter-spiral-policy-11.log\tspiral-policy\t0\t35\t8\n20261022-055415-hunter-spiral-policy-12.log\tspiral-policy\t0\t29\t7\n20261022-055613-hunter-spiral-policy-13.log\tspiral-policy\t0\t33\t7\n20261022-055809-hunter-spiral-policy-14.log\tspiral-policy\t0\t23\t5\n20261022-060003-hunter-spiral-policy-15.log\tspiral-policy\t0\t28\t6\n20261022-060145-hunter-spiral-policy-16.log\tspiral-policy\t0\t23\t4\n20261022-060411-hunter-spiral-policy-17.log\tspiral-policy\t0\t17\t2\n20261022-060611-hunter-spiral-policy-18.log\tspiral-policy\t0\t17\t3\n20261022-060804-hunter-spiral-policy-19.log\tspiral-policy\t0\t31\t5\n20261022-060952-hunter-spiral-policy-20.log\tspiral-policy\t0\t34\t7"
+    Table (
+        "file\tarm\tsteps\ttaken\tpotions\n20261022-053004-hunter-spiral-policy-1.log\tspiral-policy\t0\t25\t6\n"
+        ^^ "20261022-053203-hunter-spiral-policy-2.log\tspiral-policy\t0\t16\t3\n"
+        ^^ "20261022-053403-hunter-spiral-policy-3.log\tspiral-policy\t0\t27\t6\n"
+        ^^ "20261022-053749-hunter-spiral-policy-4.log\tspiral-policy\t0\t5\t0\n"
+        ^^ "20261022-053949-hunter-spiral-policy-5.log\tspiral-policy\t0\t21\t3\n"
+        ^^ "20261022-054140-hunter-spiral-policy-6.log\tspiral-policy\t0\t22\t5\n"
+        ^^ "20261022-054334-hunter-spiral-policy-7.log\tspiral-policy\t0\t18\t3\n"
+        ^^ "20261022-054532-hunter-spiral-policy-8.log\tspiral-policy\t0\t27\t4\n"
+        ^^ "20261022-054738-hunter-spiral-policy-9.log\tspiral-policy\t0\t22\t4\n"
+        ^^ "20261022-055001-hunter-spiral-policy-10.log\tspiral-policy\t0\t23\t5\n"
+        ^^ "20261022-055158-hunter-spiral-policy-11.log\tspiral-policy\t0\t35\t8\n"
+        ^^ "20261022-055415-hunter-spiral-policy-12.log\tspiral-policy\t0\t29\t7\n"
+        ^^ "20261022-055613-hunter-spiral-policy-13.log\tspiral-policy\t0\t33\t7\n"
+        ^^ "20261022-055809-hunter-spiral-policy-14.log\tspiral-policy\t0\t23\t5\n"
+        ^^ "20261022-060003-hunter-spiral-policy-15.log\tspiral-policy\t0\t28\t6\n"
+        ^^ "20261022-060145-hunter-spiral-policy-16.log\tspiral-policy\t0\t23\t4\n"
+        ^^ "20261022-060411-hunter-spiral-policy-17.log\tspiral-policy\t0\t17\t2\n"
+        ^^ "20261022-060611-hunter-spiral-policy-18.log\tspiral-policy\t0\t17\t3\n"
+        ^^ "20261022-060804-hunter-spiral-policy-19.log\tspiral-policy\t0\t31\t5\n"
+        ^^ "20261022-060952-hunter-spiral-policy-20.log\tspiral-policy\t0\t34\t7"
+    )

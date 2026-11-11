@@ -1,0 +1,12 @@
+[package]
+name = "map_kinds"
+version = "0.0.1"
+edition = "2024"
+
+[package.metadata.spiral]
+entry = "map_kinds.spi"
+output = "kinds.rs"
+
+[lib]
+name = "map_kinds"
+path = "kinds.rs"

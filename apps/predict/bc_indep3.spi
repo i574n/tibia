@@ -1,0 +1,13 @@
+///- --package .
+:# bc_indep3 static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:= main () =
+    := twice = bc_indep2::next_round (bc_indep2::next_round (bc_run::pairs_from (training_first ())))
+    := thrice = bc_indep2::next_round twice
+    bc_indep::count_row "round3_pairs" thrice
+    bc_indep::evaluated "I3" (bc_indep::student_of thrice)
+    0i32

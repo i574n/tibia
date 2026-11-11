@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory)] [string] $Exe,
     [string] $WorkingDirectory = (Split-Path $Exe),
     [int] $TimeoutSeconds = 120,
-    [string] $DesktopName = 'tibia-probe',
+    [string] $DesktopName = 'tibia-gauge',
     [string] $Arguments = ''
 )
 $ErrorActionPreference = 'Stop'

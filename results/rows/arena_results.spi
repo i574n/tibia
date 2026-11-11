@@ -1,4 +1,16 @@
 ///- --no-respell
 open table_rows
 inl table () =
-    Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\n2026-10-13T08:54:41\tspiral-policy\t1\ttroll\t3\t90\t98750\t169\t21\t8\n2026-10-13T08:58:28\tvbot\t1\ttroll\t3\t90\t110034\t179\t17\t5\n2026-10-13T09:01:06\tspiral-policy\t2\ttroll\t3\t90\t84250\t181\t14\t6\n2026-10-13T09:04:50\tvbot\t2\ttroll\t3\t90\t140016\t165\t39\t4\n2026-10-13T09:07:23\tspiral-policy\t3\ttroll\t3\t90\t79250\t176\t17\t6\n2026-10-13T09:11:08\tvbot\t3\ttroll\t3\t90\t80007\t185\t6\t3\n2026-10-13T09:13:29\tspiral-policy\t4\ttroll\t3\t60\t67250\t180\t10\t5\n2026-10-13T09:17:20\tvbot\t4\ttroll\t3\t90\t100048\t185\t40\t8\n2026-10-13T09:20:20\tspiral-policy\t5\ttroll\t3\t90\t106000\t169\t14\t4\n2026-10-13T09:24:03\tvbot\t5\ttroll\t3\t90\t110022\t171\t12\t8"
+    Table (
+        "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\taction"
+        ^^ "s_dropped\n2026-10-13T08:54:41\tspiral-policy\t1\ttroll\t3\t90\t98750\t169\t21\t8\n"
+        ^^ "2026-10-13T08:58:28\tvbot\t1\ttroll\t3\t90\t110034\t179\t17\t5\n"
+        ^^ "2026-10-13T09:01:06\tspiral-policy\t2\ttroll\t3\t90\t84250\t181\t14\t6\n"
+        ^^ "2026-10-13T09:04:50\tvbot\t2\ttroll\t3\t90\t140016\t165\t39\t4\n"
+        ^^ "2026-10-13T09:07:23\tspiral-policy\t3\ttroll\t3\t90\t79250\t176\t17\t6\n"
+        ^^ "2026-10-13T09:11:08\tvbot\t3\ttroll\t3\t90\t80007\t185\t6\t3\n"
+        ^^ "2026-10-13T09:13:29\tspiral-policy\t4\ttroll\t3\t60\t67250\t180\t10\t5\n"
+        ^^ "2026-10-13T09:17:20\tvbot\t4\ttroll\t3\t90\t100048\t185\t40\t8\n"
+        ^^ "2026-10-13T09:20:20\tspiral-policy\t5\ttroll\t3\t90\t106000\t169\t14\t4\n"
+        ^^ "2026-10-13T09:24:03\tvbot\t5\ttroll\t3\t90\t110022\t171\t12\t8"
+    )

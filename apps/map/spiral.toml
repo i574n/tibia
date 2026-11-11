@@ -1,5 +1,6 @@
 packageDir = '../../deps/spiral/lib'
-packages = ['|core-', 'spiral-']
+packages = ['|core-', 'spiral-', '../map_kinds-', '../map_items-', '../map_walk-']
+link = ['../map_kinds-', '../map_items-', '../map_walk-']
 modules = '''
 map
 '''

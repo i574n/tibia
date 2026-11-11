@@ -1,0 +1,44 @@
+///- --package .
+:# bc_healtrace static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:= view_at (camp : camp) (s : tactic) (i : i32) (x : bc_lockstep2::split) : pack * i32 =
+    := r = bc_onpolicy::run_of camp s s::brain i
+    := b = bc_onpolicy::beat_at camp r::seed (x::tick - 1)
+    := q, aimed = bc_lockstep2::view_aimed b r x::prev
+    aimed, b::now
+
+:= split_view (camp : camp) (s : tactic) (i : i32) : bc_lockstep2::split * pack * i32 =
+    := x = bc_lockstep2::split_of camp s (held_out_first () + conv i)
+    := aimed, now = view_at camp s i x
+    x, aimed, now
+
+:= inputs_text (camp : camp) (aimed : pack) (now : i32) (n : i32) : string =
+    := ready = bc_lockstep2::flag (observe now aimed)::heal_ready
+    "\thp\t" ++#? health_fraction camp aimed ++# "\tready\t" ++# ready ++# "\tattackers\t" ++#? n
+
+:= probe_text (camp : camp) (w : network::weights) (aimed : pack) (now : i32) : string =
+    := n = attackers_of aimed
+    "\th\t" ++#? network::heal_logit w (features camp n now aimed) ++# inputs_text camp aimed now n
+
+:= probe_head (camp : camp) (s : tactic) (i : i32) (x : bc_lockstep2::split) : string =
+    "heal_probe\t" ++#? (held_out_first () + conv i) ++# "\t" ++# bc_lockstep2::split_text camp s i x
+
+:= heal_probe (camp : camp) (s : tactic) (w : network::weights) (i : i32) : () =
+    := x, aimed, now = split_view camp s i
+    console::write_line (probe_head camp s i x ++# probe_text camp w aimed now)
+
+:~ ^ probes_from (camp : camp) (s : tactic) (w : network::weights) (i : i32) : () =
+    ? i < bc_run::seed_count () ?>
+        heal_probe camp s w i
+        probes_from camp s w (i + 1)
+
+:= main () =
+    := w, twice = bc_healcal::second_round ()
+    := theta = bc_healcal::heal_theta (bc_healcal::heal_rows w twice)
+    console::write_line ("theta_h\t" ++#? theta)
+    probes_from (bc_run::bc_camp ()) (bc_healcal::thresholded w theta) w 0
+    0i32

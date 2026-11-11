@@ -1,4 +1,17 @@
 ///- --no-respell
 open table_rows
 inl table () =
-    Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-23T03:20:34\tspiral-retreat\t1\tcyclops\t3\t675\t97797\t113\t24\t6\t15\t53\t0\t0\t0\n2026-10-23T03:23:28\tspiral-retreat\t2\tcyclops\t3\t675\t98416\t98\t28\t7\t17\t39\t0\t0\t0\n2026-10-23T03:25:59\tspiral-retreat\t3\tcyclops\t3\t675\t89473\t98\t19\t2\t12\t104\t0\t0\t0\n2026-10-23T03:28:21\tspiral-retreat\t4\tcyclops\t3\t675\t85424\t100\t19\t2\t11\t82\t0\t0\t0\n2026-10-23T03:30:26\tspiral-retreat\t5\tcyclops\t3\t675\t70890\t118\t44\t14\t8\t47\t0\t0\t0\n2026-10-23T03:33:01\tspiral-retreat\t6\tcyclops\t3\t675\t98644\t87\t37\t12\t16\t31\t0\t0\t0\n2026-10-23T03:35:42\tspiral-retreat\t7\tcyclops\t3\t675\t94198\t40\t75\t39\t11\t30\t0\t0\t0\n2026-10-23T03:38:02\tspiral-retreat\t8\tcyclops\t3\t675\t84006\t113\t20\t7\t12\t47\t0\t0\t0\n2026-10-23T03:40:07\tspiral-retreat\t9\tcyclops\t3\t675\t69243\t107\t15\t2\t8\t41\t0\t0\t0\n2026-10-23T03:42:41\tspiral-retreat\t10\tcyclops\t3\t675\t91939\t76\t22\t3\t14\t93\t0\t0\t0"
+    Table (
+        "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\taction"
+        ^^ "s_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n"
+        ^^ "2026-10-23T03:20:34\tspiral-retreat\t1\tcyclops\t3\t675\t97797\t113\t24\t6\t15\t53\t0\t0\t0\n"
+        ^^ "2026-10-23T03:23:28\tspiral-retreat\t2\tcyclops\t3\t675\t98416\t98\t28\t7\t17\t39\t0\t0\t0\n"
+        ^^ "2026-10-23T03:25:59\tspiral-retreat\t3\tcyclops\t3\t675\t89473\t98\t19\t2\t12\t104\t0\t0\t0\n"
+        ^^ "2026-10-23T03:28:21\tspiral-retreat\t4\tcyclops\t3\t675\t85424\t100\t19\t2\t11\t82\t0\t0\t0\n"
+        ^^ "2026-10-23T03:30:26\tspiral-retreat\t5\tcyclops\t3\t675\t70890\t118\t44\t14\t8\t47\t0\t0\t0\n"
+        ^^ "2026-10-23T03:33:01\tspiral-retreat\t6\tcyclops\t3\t675\t98644\t87\t37\t12\t16\t31\t0\t0\t0\n"
+        ^^ "2026-10-23T03:35:42\tspiral-retreat\t7\tcyclops\t3\t675\t94198\t40\t75\t39\t11\t30\t0\t0\t0\n"
+        ^^ "2026-10-23T03:38:02\tspiral-retreat\t8\tcyclops\t3\t675\t84006\t113\t20\t7\t12\t47\t0\t0\t0\n"
+        ^^ "2026-10-23T03:40:07\tspiral-retreat\t9\tcyclops\t3\t675\t69243\t107\t15\t2\t8\t41\t0\t0\t0\n"
+        ^^ "2026-10-23T03:42:41\tspiral-retreat\t10\tcyclops\t3\t675\t91939\t76\t22\t3\t14\t93\t0\t0\t0"
+    )

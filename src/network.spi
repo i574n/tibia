@@ -142,6 +142,35 @@
 
 := decide (w : weights) (x : inputs) : decision = outputs_from w x 0 0 0 0
 
+:= unscaled (h : i32) (e : i32) (r : i32) : i32 * i32 * i32 = h / one (), e / one (), r / one ()
+
+:~ ^ raw_from (w : weights) (x : inputs) (j : i32) (h : i32) (e : i32) (r : i32) : i32 * i32 * i32 =
+    ? j >= hidden_count ()
+    ?> unscaled h e r
+    |:
+        := a = hidden_unit w x j
+        raw_from w x (j + 1) (added w j a 0 h) (added w j a 1 e) (added w j a 2 r)
+
+:= decide_independent (w : weights) (x : inputs) : decision =
+    := h, e, r = raw_from w x 0 0 0 0
+    { heal = h > 0; engage = e > 0; retreat = r > 0 }
+
+:= decide_calibrated (theta : i32) (w : weights) (x : inputs) : decision =
+    := h, e, r = raw_from w x 0 0 0 0
+    { heal = h > 0; engage = e > 0; retreat = r > theta }
+
+:= retreat_logit (w : weights) (x : inputs) : i32 =
+    := h, e, r = raw_from w x 0 0 0 0
+    r
+
+:= heal_logit (w : weights) (x : inputs) : i32 =
+    := h, e, r = raw_from w x 0 0 0 0
+    h
+
+:= decide_at (theta_h : i32) (theta_r : i32) (w : weights) (x : inputs) : decision =
+    := h, e, r = raw_from w x 0 0 0 0
+    { heal = h > theta_h; engage = e > 0; retreat = r > theta_r }
+
 := with_weight (i : i32) (value : i32) (weights w) : weights =
     set w i value
     weights w

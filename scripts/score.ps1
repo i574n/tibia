@@ -8,7 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 . (Join-Path $repo 'live/paths.ps1')
-$kitPaths = (Join-Path $env:LOCALAPPDATA 'kit\bin\kit.exe'), 'C:\home\git\kit\kit.exe'
+$kitPaths = @(Join-Path $env:LOCALAPPDATA 'kit\bin\kit.exe')
 $kit = (Get-Command kit -ErrorAction Ignore).Source ?? @($kitPaths | Where-Object { Test-Path -LiteralPath $_ })[0]
 $scratch = (New-Item -ItemType Directory -Force (Join-Path $repo 'target/score')).FullName
 $checked = $false

@@ -23,7 +23,7 @@
     ? hooks::resource_exists full ?> loaded_chunk module_env full |: hooks::new_list ()
 
 := route_dofile () : () =
-    := module_env = hooks::call_for_value (hooks::current_dofile ()) "/bot_env_probe.lua"
+    := module_env = hooks::call_for_value (hooks::current_dofile ()) "/bot_env_gauge.lua"
     hooks::replace_dofile (dofile_through module_env)
     ? hooks::present module_env ?> hooks::set_field module_env "dofile" (hooks::current_dofile ())
 

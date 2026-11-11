@@ -1,7 +1,7 @@
 function Get-ForeignActivity([string[]] $lines) {
     $serverPotions = @($lines | Where-Object { $_ -match 'Using one of \d+ health potions' }).Count
     $ownPotions = @($lines | Where-Object { $_ -match 'heal \(potion\) at health' }).Count
-    $ownOther = @($lines | Where-Object { $_ -match 'heal dropped by the action gate|\[tibia-probe\] (approach|strike) |\[tibia-probe\] hold at health' }).Count
+    $ownOther = @($lines | Where-Object { $_ -match 'heal dropped by the action gate|\[tibia-(?:probe|gauge)\] (approach|strike) |\[tibia-(?:probe|gauge)\] hold at health' }).Count
     $walks = 0
     foreach ($line in $lines) { if ($line -match 'retreats (\d+) cornered \d+ gated (\d+)') { $walks = [int]$Matches[1] + [int]$Matches[2] } }
     $gated = $null
@@ -18,7 +18,7 @@ function Get-ForeignActivity([string[]] $lines) {
 
 function Get-FinishReason([string[]] $lines) {
     $reason = ''
-    foreach ($line in $lines) { if ($line -match '\[tibia-probe\] finish: (.+)$') { $reason = $Matches[1].Trim() } }
+    foreach ($line in $lines) { if ($line -match '\[tibia-(?:probe|gauge)\] finish: (.+)$') { $reason = $Matches[1].Trim() } }
     $reason
 }
 

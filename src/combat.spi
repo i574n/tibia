@@ -5,7 +5,7 @@
 :< keyed_rng
 
 :| combat_roll =
-    | ArmorProbe
+    | ArmorRoll
     | BoutSwing
     | StatsDraw
     | ArrowShot
@@ -14,7 +14,7 @@
 :+ purpose_code combat_roll =
     \ r =>
         ?= r ?|
-        | ArmorProbe => 4u32
+        | ArmorRoll => 4u32
         | BoutSwing => 7u32
         | StatsDraw => 9u32
         | ArrowShot => 11u32
@@ -256,7 +256,7 @@
 ///> c
 :# armor_block_follows_canary_bounds =
     := ~armor = 10i32
-    armor_blocks armor (combat_key 1u32 2u32 3u32 ArmorProbe) |> _assert_eq (!+, 1i32, 0i32)
+    armor_blocks armor (combat_key 1u32 2u32 3u32 ArmorRoll) |> _assert_eq (!+, 1i32, 0i32)
 
 ///> c
 :# truncated_normal_stays_in_unit_range_with_mean_near_half =

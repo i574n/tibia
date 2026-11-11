@@ -1,4 +1,16 @@
 ///- --no-respell
 open table_rows
 inl table () =
-    Table "file\tarm\tsteps\ttaken\tpotions\n20261023-102227-hunting-ground-spiral-policy-1.log\tspiral-policy\t0\t47\t8\n20261023-102823-hunting-ground-spiral-policy-2.log\tspiral-policy\t0\t82\t14\n20261023-103423-hunting-ground-spiral-policy-3.log\tspiral-policy\t0\t69\t13\n20261023-104022-hunting-ground-spiral-policy-4.log\tspiral-policy\t0\t64\t13\n20261023-104612-hunting-ground-spiral-policy-5.log\tspiral-policy\t0\t56\t10\n20261023-105157-hunting-ground-spiral-policy-6.log\tspiral-policy\t0\t58\t12\n20261023-105745-hunting-ground-spiral-policy-7.log\tspiral-policy\t0\t71\t13\n20261023-110333-hunting-ground-spiral-policy-8.log\tspiral-policy\t0\t61\t12\n20261023-110920-hunting-ground-spiral-policy-9.log\tspiral-policy\t0\t63\t13\n20261023-111503-hunting-ground-spiral-policy-10.log\tspiral-policy\t0\t80\t16"
+    Table (
+        "file\tarm\tsteps\ttaken\tpotions\n"
+        ^^ "20261023-102227-hunting-ground-spiral-policy-1.log\tspiral-policy\t0\t47\t8\n"
+        ^^ "20261023-102823-hunting-ground-spiral-policy-2.log\tspiral-policy\t0\t82\t14\n"
+        ^^ "20261023-103423-hunting-ground-spiral-policy-3.log\tspiral-policy\t0\t69\t13\n"
+        ^^ "20261023-104022-hunting-ground-spiral-policy-4.log\tspiral-policy\t0\t64\t13\n"
+        ^^ "20261023-104612-hunting-ground-spiral-policy-5.log\tspiral-policy\t0\t56\t10\n"
+        ^^ "20261023-105157-hunting-ground-spiral-policy-6.log\tspiral-policy\t0\t58\t12\n"
+        ^^ "20261023-105745-hunting-ground-spiral-policy-7.log\tspiral-policy\t0\t71\t13\n"
+        ^^ "20261023-110333-hunting-ground-spiral-policy-8.log\tspiral-policy\t0\t61\t12\n"
+        ^^ "20261023-110920-hunting-ground-spiral-policy-9.log\tspiral-policy\t0\t63\t13\n"
+        ^^ "20261023-111503-hunting-ground-spiral-policy-10.log\tspiral-policy\t0\t80\t16"
+    )

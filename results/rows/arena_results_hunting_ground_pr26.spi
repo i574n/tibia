@@ -1,4 +1,17 @@
 ///- --no-respell
 open table_rows
 inl table () =
-    Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-23T10:22:27\tspiral-policy\t1\thunting-ground\t0\t1200\t\t106\t24\t2\t8\t178\t0\t0\t0\n2026-10-23T10:28:24\tspiral-policy\t2\thunting-ground\t0\t1110\t\t112\t28\t4\t14\t58\t0\t0\t0\n2026-10-23T10:34:23\tspiral-policy\t3\thunting-ground\t0\t1455\t\t111\t34\t10\t13\t173\t0\t0\t0\n2026-10-23T10:40:22\tspiral-policy\t4\thunting-ground\t0\t1455\t\t112\t31\t4\t13\t237\t0\t0\t0\n2026-10-23T10:46:12\tspiral-policy\t5\thunting-ground\t0\t1455\t\t104\t30\t6\t10\t149\t0\t0\t0\n2026-10-23T10:51:57\tspiral-policy\t6\thunting-ground\t0\t1455\t\t97\t30\t2\t12\t111\t0\t0\t0\n2026-10-23T10:57:45\tspiral-policy\t7\thunting-ground\t0\t1080\t\t96\t27\t6\t13\t124\t0\t0\t0\n2026-10-23T11:03:33\tspiral-policy\t8\thunting-ground\t0\t1395\t\t101\t29\t4\t12\t79\t0\t0\t0\n2026-10-23T11:09:20\tspiral-policy\t9\thunting-ground\t0\t1680\t\t113\t37\t12\t13\t146\t0\t0\t0\n2026-10-23T11:15:03\tspiral-policy\t10\thunting-ground\t0\t1140\t\t85\t31\t4\t16\t124\t0\t0\t0"
+    Table (
+        "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\taction"
+        ^^ "s_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n"
+        ^^ "2026-10-23T10:22:27\tspiral-policy\t1\thunting-ground\t0\t1200\t\t106\t24\t2\t8\t178\t0\t0\t0\n"
+        ^^ "2026-10-23T10:28:24\tspiral-policy\t2\thunting-ground\t0\t1110\t\t112\t28\t4\t14\t58\t0\t0\t0\n"
+        ^^ "2026-10-23T10:34:23\tspiral-policy\t3\thunting-ground\t0\t1455\t\t111\t34\t10\t13\t173\t0\t0\t0\n"
+        ^^ "2026-10-23T10:40:22\tspiral-policy\t4\thunting-ground\t0\t1455\t\t112\t31\t4\t13\t237\t0\t0\t0\n"
+        ^^ "2026-10-23T10:46:12\tspiral-policy\t5\thunting-ground\t0\t1455\t\t104\t30\t6\t10\t149\t0\t0\t0\n"
+        ^^ "2026-10-23T10:51:57\tspiral-policy\t6\thunting-ground\t0\t1455\t\t97\t30\t2\t12\t111\t0\t0\t0\n"
+        ^^ "2026-10-23T10:57:45\tspiral-policy\t7\thunting-ground\t0\t1080\t\t96\t27\t6\t13\t124\t0\t0\t0\n"
+        ^^ "2026-10-23T11:03:33\tspiral-policy\t8\thunting-ground\t0\t1395\t\t101\t29\t4\t12\t79\t0\t0\t0\n"
+        ^^ "2026-10-23T11:09:20\tspiral-policy\t9\thunting-ground\t0\t1680\t\t113\t37\t12\t13\t146\t0\t0\t0\n"
+        ^^ "2026-10-23T11:15:03\tspiral-policy\t10\thunting-ground\t0\t1140\t\t85\t31\t4\t16\t124\t0\t0\t0"
+    )

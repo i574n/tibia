@@ -1,0 +1,5 @@
+:< walk
+
+:= main () : i32 =
+    export "map_walk_rows" walk_rows
+    0i32

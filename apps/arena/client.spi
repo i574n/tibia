@@ -35,27 +35,70 @@
 
 := spot_of (p : native_position) : spot = { x = $'!p.x' : i32; y = $'!p.y' : i32; z = $'!p.z' : i32 }
 
+:| player_number =
+    | GetHealth
+    | GetMaxHealth
+    | GetMana
+    | GetExperience
+
+:= player_number_method (n : player_number) : string =
+    ?= n ?|
+    | GetHealth => "getHealth"
+    | GetMaxHealth => "getMaxHealth"
+    | GetMana => "getMana"
+    | GetExperience => "getExperience"
+
+:= player_number_of (n : player_number) : i32 =
+    := method = player_number_method n
+    $'(function(p) return p[!method](p) end)(g_game.getLocalPlayer())' : i32
+
+:| game_flag =
+    | IsOnline
+    | IsAttacking
+
+:= game_flag_method (f : game_flag) : string =
+    ?= f ?|
+    | IsOnline => "isOnline"
+    | IsAttacking => "isAttacking"
+
+:= game_flag_of (f : game_flag) : bool =
+    := method = game_flag_method f
+    $'g_game[!method]()' : bool
+
+:| game_order =
+    | CancelAttack
+    | SafeLogout
+
+:= game_order_method (o : game_order) : string =
+    ?= o ?|
+    | CancelAttack => "cancelAttack"
+    | SafeLogout => "safeLogout"
+
+:= game_order_run (o : game_order) : () =
+    := method = game_order_method o
+    $'g_game[!method]()' : ()
+
 := player_spot () : spot = spot_of ($'g_game.getLocalPlayer():getPosition()' : native_position)
 
 := player_positioned () : bool = $'g_game.getLocalPlayer():getPosition() ~= nil' : bool
 
 := player_exists () : bool = $'g_game.getLocalPlayer() ~= nil' : bool
 
-:= game_online () : bool = $'g_game.isOnline()' : bool
+:= game_online () : bool = game_flag_of IsOnline
 
 :~ player_present () : bool = player_exists () && game_online ()
 
 := player_name () : string = $'g_game.getLocalPlayer():getName()' : string
 
-:= player_health () : i32 = $'g_game.getLocalPlayer():getHealth()' : i32
+:= player_health () : i32 = player_number_of GetHealth
 
-:= player_max_health () : i32 = $'g_game.getLocalPlayer():getMaxHealth()' : i32
+:= player_max_health () : i32 = player_number_of GetMaxHealth
 
 := player_shield_skill () : i32 = $'g_game.getLocalPlayer():getSkillLevel(Skill.Shielding)' : i32
 
-:= player_mana () : i32 = $'g_game.getLocalPlayer():getMana()' : i32
+:= player_mana () : i32 = player_number_of GetMana
 
-:= player_experience () : i32 = $'g_game.getLocalPlayer():getExperience()' : i32
+:= player_experience () : i32 = player_number_of GetExperience
 
 := player_walking () : bool = $'g_game.getLocalPlayer():isWalking()' : bool
 
@@ -127,7 +170,7 @@
 
 := attacking () : creature = $'g_game.getAttackingCreature()' : creature
 
-:= attacking_anyone () : bool = $'g_game.isAttacking()' : bool
+:= attacking_anyone () : bool = game_flag_of IsAttacking
 
 := creature_present (c : creature) : bool = $'(!c) ~= nil' : bool
 
@@ -145,7 +188,7 @@
 
 := attack (c : creature) : () = $'g_game.attack(!c)' : ()
 
-:= cancel_attack () : () = $'g_game.cancelAttack()' : ()
+:= cancel_attack () : () = game_order_run CancelAttack
 
 := chase_on () : bool = $'g_game.getChaseMode() == ChaseOpponent' : bool
 
@@ -350,13 +393,13 @@
     connect_creature_moves handler
     connect_player_moves handler
 
-:= online () : bool = $'g_game.isOnline()' : bool
+:= online () : bool = game_flag_of IsOnline
 
-:= log_out () : () = $'g_game.safeLogout()' : ()
+:= log_out () : () = game_order_run SafeLogout
 
 := exit_client () : () = $'g_app.exit()' : ()
 
-:= hidden_requested () : bool = env_is "TIBIA_PROBE_HIDDEN" "1"
+:= hidden_requested () : bool = env_is "TIBIA_GAUGE_HIDDEN" "1"
 
 := hide_window () : () =
     $'g_window.move({ x = -32000, y = -32000 })' : ()
@@ -374,19 +417,19 @@
         sounds_disable ()
         sounds_stop ()
 
-:= probe_log_missing () : bool = $'TibiaProbeLog == nil' : bool
+:= gauge_log_missing () : bool = $'TibiaGaugeLog == nil' : bool
 
-:= probe_log_start () : () = $'TibiaProbeLog = {}' : ()
+:= gauge_log_start () : () = $'TibiaGaugeLog = {}' : ()
 
-:= probe_log_text () : string = $'table.concat(TibiaProbeLog, string.char(10))' : string
+:= gauge_log_text () : string = $'table.concat(TibiaGaugeLog, string.char(10))' : string
 
 :~ log_flush () : () =
-    := joined = probe_log_text () ++# "\n"
-    $'g_resources.writeFileContents("/tibia-probe.log", !joined)' : ()
+    := joined = gauge_log_text () ++# "\n"
+    $'g_resources.writeFileContents("/tibia-gauge.log", !joined)' : ()
 
 :~ write_log_line (line : string) : () =
-    ? probe_log_missing () ?> probe_log_start ()
-    $'table.insert(TibiaProbeLog, !line)' : ()
+    ? gauge_log_missing () ?> gauge_log_start ()
+    $'table.insert(TibiaGaugeLog, !line)' : ()
     $'g_logger.info(!line)' : ()
     log_flush ()
 
@@ -426,3 +469,9 @@
 :# footing_follows_the_host_tile_facts =
     (footing_of !+ !+ !- !+, footing_of !+ !+ !+ !+, footing_of !+ !- !- !+) |> _assert_eq (Free, Ramp, Occupied)
     (footing_of !+ !- !- !-, footing_of !- !+ !- !+) |> _assert_eq (Blocked, Unknown)
+
+///> lua
+///> c
+:# host_rows_name_their_lua_methods =
+    (player_number_method GetMaxHealth, game_flag_method IsAttacking, game_order_method SafeLogout)
+    |> _assert_eq ("getMaxHealth", "isAttacking", "safeLogout")

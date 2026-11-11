@@ -14,17 +14,20 @@ that generates terrain's walk, road, sight and protection-zone tables; item kind
 `apps/offscreen` and `apps/canary`.
 - **Rules:** geometry, vitality, coins, rng, cooldowns, damage, combat, creatures, experience, skills, blessings, wire.
 - **Typed domain:** quantity (phantom units), readiness (GADT witnesses), vocations (vocation-indexed
-  spells), catalog (existential spawns), views (HKT `mapped` and `counted`), terrain (layouts, incl. the scanned arena spot).
+  spells), catalog (existential spawns), views (HKT `mapped` and `counted`), terrain (layouts, incl. the scanned arena
+  spot).
 - **Decisions:** policy, network (integer neural policy), hashed (sign-bit LSH policy table), search (evolution).
 - **Learning machinery:** regret (regret-matching+ self-play), arena_cfr (CFR+ on an arena game with exact hp,
   4128 states, solved backward over a few steps into a per-state strategy table that hunting_pack's `Cfr` brain
   draws from), logprob (fixed-point log2/exp2, importance weights, a self-normalized importance-sampling estimate
   with its effective sample size, and target paths that drop a hunt once the target could not have acted as it did),
   soft_policy (epsilon-soft sampling that logs each decision's probability under the behavior and under a target).
-- **Simulators and entries:** hunt with its hunt_sim tests, hunting_pack (the multi-creature simulator) with its pack_sim
-  and gpu_sim tests. Its GPU shader inlines to 252k lines (probe run 281 s); `knight_turn` is shared on C only.
+- **Simulators and entries:** hunt with its hunt_sim tests, hunting_pack (the multi-creature simulator) with its
+  pack_sim
+  and gpu_sim tests. Its GPU shader inlines to 252k lines (trial run 281 s); `knight_turn` is shared on C only.
 - **Postable:** measured with the poster's own check (`SpiralCompiler --x-compat` and the x profile: 280 weighted
-  characters minus each post's `cN k/n` header and its defused dots), every top-level cell of `src` and the apps fits one
+  characters minus each post's `cN k/n` header and its defused dots), every top-level cell of `src` and the apps fits
+  one
   post (2026-10-30). The 17 remaining findings are `@` words inside log strings, which the poster defuses. The generated
   terrain tables are a fan-4 tree of small inline parts, checked equal to the old tables over every word, row and zone
   offset.
@@ -41,7 +44,10 @@ where a test needs the training host.
 
 ## Findings so far
 
-Correction 2026-10-14: every live `spiral-*` run from 2026-10-13 11:48 until the fix ran with vBot's HealBot and TargetBot active alongside our policy (a bot setting the vBot probe left enabled; BENCHMARK.md, PR-1). The findings below come from the re-measurement on the fixed arena (PR-4, 30 runs per competitor, every run checked for foreign actions); the earlier live claims are withdrawn.
+Correction 2026-10-14: every live `spiral-*` run from 2026-10-13 11:48 until the fix ran with vBot's HealBot and
+TargetBot active alongside our policy (a bot setting the vBot gauge left enabled; BENCHMARK.md, PR-1). The findings
+below come from the re-measurement on the fixed arena
+(PR-4, 30 runs per competitor, every run checked for foreign actions); the earlier live claims are withdrawn.
 
 1. **The simulator predicts live clear times and, mostly, potion use.** Clear times matched in every live check.
    Potions took four corrections, each measured live or read from Canary's source: login protection keeps monsters off
@@ -60,18 +66,31 @@ Correction 2026-10-14: every live `spiral-*` run from 2026-10-13 11:48 until the
    retreat gap traces to crowding: the model's knight is pinned in the spot's dead end with three cyclopes, the live one
    keeps stepping (4.0 vs 11.5 retreat steps per clear).
    Update 2026-10-21: the arena bundle `mirroring_the_current_arena` (Canary's knight step speed, dance step and step
-   formula on the map's ground speed, with the knight acting on the client's last view) closes the cyclops gap out of sample. PR-17,
+   formula on the map's ground speed, with the knight acting on the client's last view) closes the cyclops gap out of
+   sample. PR-17,
    40 fresh runs: rules 13.90 live against 14.55 predicted (t -0.87), retreat 13.25 against 12.81 (t 0.74); retreat
-   steps 12.4 against 11.7 live. Since 2026-10-22 the bundle also carries two hunter-arena facts, each adopted by a rule written before measuring:
+   steps 12.4 against 11.7 live. Since 2026-10-22 the bundle also carries two hunter-arena facts, each adopted by a rule
+   written before measuring:
    three Canary timing facts (all3; PR-18 holds at 14 of 20 clears, where the bundle predicted 99 of 100), and arrows
    that stop only at projectile blockers, which lift predicted hunter hits from 14.9 to 21.0 per run (PR-19, 20 fresh
    runs: 20.45 live, t -0.40, and 15 of 20 clears; all3 alone rejects at t 3.86). The hunting ground's potion
    gap closed as noise on fresh hunts (PR-23, 2026-10-22: 14.8 live against 14.84 predicted at shield 11,
    t -0.05; PR-15's 12.7 was a low draw). Still open: the hunter clear time (55.9 s vs 60.5 s in PR-19), where
-   live hunters walk faster at two to three tiles from the knight than the model's (about 1 tile per second against 0.44-0.66). A hunter run is decided
+   live hunters walk faster at two to three tiles from the knight than the model's
+   (about 1 tile per second against 0.44-0.66). A hunter run is decided
    by its first chase: live, the first target leads the knight 20 or more tiles away in about half the runs, and the
    run fails when the other hunters lose contact on such a chase; in the model such long chases are rarer (20%).
-   Seven Canary movement facts were tested against this on 2026-10-21 and none passed in sample (TIBIA-FIDELITY). Since then, the model's long chases were traced to one path: once the knight lines up on a hunter's row, the hunter runs straight along it, the same way in every seed, while live hunters break off and still stay ahead (half of the live long chases end south, none of the model's do). Letting the model's hunters break off at random makes the knight catch every one, so the missing piece is what keeps a live hunter ahead after it turns. The likeliest answer is on the knight's side: when its target steps away from it, the live knight is still on its tile a second later in 98% of cases (the model's in 57-68%). Our competitor turns chase mode off while its target is adjacent, so Canary re-plans the knight's path only at the player's next one-second think and then waits a full step (TIBIA-FIDELITY note 85; a two-second follow timer, rule D30, was rejected). Modeled (rule D32), it reproduces the stalls (91% against 98% live) but the model knight then clears only 53 of 100 hunter runs against 72-95% live, so it stays off and the clear rate is the open question (notes 99-101). Retreat steps (15.1 vs 11.3 per clear)
+   Seven Canary movement facts were tested against this on 2026-10-21 and none passed in sample (TIBIA-FIDELITY). Since
+   then, the model's long chases were traced to one path: once the knight lines up on a hunter's row, the hunter runs
+   straight along it, the same way in every seed, while live hunters break off and still stay ahead
+   (half of the live long chases end south, none of the model's do). Letting the model's hunters break off at random
+   makes the knight catch every one, so the missing piece is what keeps a live hunter ahead after it turns. The
+   likeliest answer is on the knight's side: when its target steps away from it, the live knight is still on its tile a
+   second later in 98% of cases (the model's in 57-68%). Our competitor turns chase mode off while its target is
+   adjacent, so Canary re-plans the knight's path only at the player's next one-second think and then waits a full step
+   (TIBIA-FIDELITY note 85; a two-second follow timer, rule D30, was rejected). Modeled (rule D32), it reproduces the
+   stalls (91% against 98% live) but the model knight then clears only 53 of 100 hunter runs against 72-95% live, so it
+   stays off and the clear rate is the open question (notes 99-101). Retreat steps (15.1 vs 11.3 per clear)
    close when the knight's retreat steps follow the live competitor's own 650 ms pace: 11.7 predicted, 10.1 on 20 fresh
    runs (PR-20, t -0.54; potions 12.80 vs 13.32), adopted with the rest on 2026-10-22. The step count's spread is wide,
    so PR-20 could not reject the old 15.1 either, and its shape still differs: live runs are first pinned in the pocket
@@ -85,7 +104,7 @@ Correction 2026-10-14: every live `spiral-*` run from 2026-10-13 11:48 until the
 3. **Our rules policy is level with vBot.** With enough runs (PR-9, 50 each, pre-registered) the
    Spiral rules policy drinks 12.5 potions per cyclops clear against vBot's 14.7 (difference -2.2, t -3.8), but the
    whole difference sits in the first 10 s: Canary ends a fresh login's protection when the player moves, turns, talks
-   or uses an item, which vBot does and our probe does not, so vBot takes 9.1 hits in that window against our 1.6. After
+   or uses an item, which vBot does and our gauge does not, so vBot takes 9.1 hits in that window against our 1.6. After
    it the two take the same hits (60.1 vs 60.4). Re-tested with the protection ended for both (PR-11, 50 each): 14.4 vs
    14.8 potions, no difference shown (t -0.6), identical hits (69.1 vs 69.2). Our three policies drink alike live (rules
    12.5, ReachFirst 12.3, retreat 12.2). Against nExBot the retreat policy was narrowly better (12.2 vs 14.6 potions,
@@ -94,7 +113,8 @@ Correction 2026-10-14: every live `spiral-*` run from 2026-10-13 11:48 until the
    difference -1.18 (interval -2.42 .. 0.07, t -1.88). nExBot runs only with three arena shims (BENCHMARK.md PR-3a).
 4. **Learning wins little at this level of detail.** In every scenario tried (open field, corridor, room,
    arena spot, mixed cyclops and trolls, potion budgets, respawning hunts) tuned threshold rules match or beat neural
-   and scored learned policies. On a respawning hunting ground the rule that sweeps to the next spawn due beats every fixed
+   and scored learned policies. On a respawning hunting ground the rule that sweeps to the next spawn due beats every
+   fixed
    route at a 60 s respawn, the evolved one included, but not at 30 s. With more
    monsters than the knight can fight at once, the tuned sweeping cavebot leads and the retreat rules trade experience
    for cost, and two knights coordinate best by simply following one shared rule together. The duo model behind
@@ -127,36 +147,79 @@ Every mechanic comes from Canary's source or a live measurement, and the model i
 | Tile occupancy | no two creatures share a tile; steps go around taken tiles | as in Canary |
 | Pathing | arena spot: occupancy-aware routing with Canary's step weights (straight 10, diagonal 25, other creatures as obstacles), so monsters detour around each other; hunting ground: shortest path with straight steps only | Canary's A* (diagonal 25 vs straight 10); checked live (PC-1): a cyclops behind a wall takes exactly the router's straight-step path in all 5 runs, after idling 10-12 s |
 | Ranged follow pace | a ranged creature beyond its target distance steps only on its creature think (one step per second at most); within it, it keeps its distance at full pace | hunters 5-6 tiles from the knight: 0.83-0.93 tiles/s live, 0.91-1.00 in the model (1.15-1.19 before this rule); calibrated on the 2026-10-19 diagnostic block, server-side cause not yet traced |
-| Hunter clear rate | 77 of 100 clears predicted with the bundle adopted on 2026-10-22 (all4 plus retreat pacing; 76 since F34, the Canary flee threshold, joined it the same day), which PR-18 (14 of 20) and PR-19 (15 of 20) hold; the overnight bundle before it predicted 99 of 100, above the band of 16 of 25. The knight acting on the last tick's view alone causes the jump (59 of 100 without it); in lab, any knight aim or action that runs before the hunters' move in the same tick pre-empts their flee step, so a whole-turn reorder cannot serve both the retreat race and the hunters; that needs sub-tick event order. Earlier steps: 45 of 100 before the knight stepped at Canary's speed, 30 with that speed, 51 with the dance step, 87 of 100 with the 10 s wake the earlier predictions wrongly kept | 16 of 25 live (PR-13, diagnostic block, PR-14). Uncleared runs: the knight chases a distance-keeping hunter east along the road at about 2 tiles/s, its companions fall out of view, and after the kill it stands with nothing in sight. The model's knight approaches at 1.2-1.3 tiles/s; making it faster makes it catch its target sooner instead (BENCHMARK, PR-14 post-hoc diagnosis). Protection zones are ruled out: with them the model still predicts 87 of 100 (PC-5). Correction 2026-10-20 night: those predictions froze the hunters for the 10 s login wake, which the parity layer had removed; scoped to the arena as it ran (`mirroring_the_current_arena`) the model predicted 45 of 100, inside the band of 16 of 25. With the knight at Canary's step speed (2026-10-21) it drops to 30 (not yet traced; a guess is that a faster knight chases one hunter further from the others), so that match was partly two errors cancelling. Canary's dance step, adopted the same night for the retreat gap, brings it to 51; the last-tick view adopted after it overshoots to 99, so the hunter gap is open again, from above. Out of sample (PR-18, 2026-10-21, 20 runs): 14 of 20 clear, so the bundle's 99 of 100 fails, while the candidate all3 (three Canary timing facts that are off by default: the probe's request lands at a random poll phase plus 8 ms, a monster's first chase path waits for its next think after it acquires the knight, and the knight's follow walk from a stop waits a full step) predicted 77 of 100 and holds. all3 also held PR-17's arms, and rule D17 adopts it into the bundle on 2026-10-22. PR-18's damage gap (4.75 potions per run against all3's 2.21) was the arrows' sight line, not the within-tick order (next row): PR-19 (20 fresh runs) gave 15 of 20 clears and 3.25 potions per run against all4's 77 of 100 and 3.79, and all4 replaces all3 on 2026-10-22 (rule D18). Still open: clear time, 60.5 s live (PR-19) against 55.9 |
+| Hunter clear rate | 77 of 100 clears predicted with the bundle adopted on 2026-10-22 (all4 plus retreat pacing; 76 since F34, the Canary flee threshold, joined it the same day), which PR-18 (14 of 20) and PR-19 (15 of 20) hold; the overnight bundle before it predicted 99 of 100, above the band of 16 of 25. The knight acting on the last tick's view alone causes the jump (59 of 100 without it); in lab, any knight aim or action that runs before the hunters' move in the same tick pre-empts their flee step, so a whole-turn reorder cannot serve both the retreat race and the hunters; that needs sub-tick event order. Earlier steps: 45 of 100 before the knight stepped at Canary's speed, 30 with that speed, 51 with the dance step, 87 of 100 with the 10 s wake the earlier predictions wrongly kept | 16 of 25 live (PR-13, diagnostic block, PR-14). Uncleared runs: the knight chases a distance-keeping hunter east along the road at about 2 tiles/s, its companions fall out of view, and after the kill it stands with nothing in sight. The model's knight approaches at 1.2-1.3 tiles/s; making it faster makes it catch its target sooner instead (BENCHMARK, PR-14 post-hoc diagnosis). Protection zones are ruled out: with them the model still predicts 87 of 100 (PC-5). Correction 2026-10-20 night: those predictions froze the hunters for the 10 s login wake, which the parity layer had removed; scoped to the arena as it ran (`mirroring_the_current_arena`) the model predicted 45 of 100, inside the band of 16 of 25. With the knight at Canary's step speed (2026-10-21) it drops to 30 (not yet traced; a guess is that a faster knight chases one hunter further from the others), so that match was partly two errors cancelling. Canary's dance step, adopted the same night for the retreat gap, brings it to 51; the last-tick view adopted after it overshoots to 99, so the hunter gap is open again, from above. Out of sample (PR-18, 2026-10-21, 20 runs): 14 of 20 clear, so the bundle's 99 of 100 fails, while the candidate all3 (three Canary timing facts that are off by default: the gauge's request lands at a random poll phase plus 8 ms, a monster's first chase path waits for its next think after it acquires the knight, and the knight's follow walk from a stop waits a full step) predicted 77 of 100 and holds. all3 also held PR-17's arms, and rule D17 adopts it into the bundle on 2026-10-22. PR-18's damage gap (4.75 potions per run against all3's 2.21) was the arrows' sight line, not the within-tick order (next row): PR-19 (20 fresh runs) gave 15 of 20 clears and 3.25 potions per run against all4's 77 of 100 and 3.79, and all4 replaces all3 on 2026-10-22 (rule D18). Still open: clear time, 60.5 s live (PR-19) against 55.9 |
 | Monster wake | monsters neither move nor strike for the first 10 s of a live-mirroring scenario (`waking_at (live_wake_ms ())`); Canary's login protection (`isLoginProtected` blocks monster targeting) | the path check saw cyclops idle 10-12 s after the knight logs in; live, the standing knight takes 1.8 hits in its first 10 s against 7.9 simulated without the delay |
 | Monster sight | a monster follows only a knight within 11 tiles on both axes on its floor; otherwise it idles | Canary's viewport (8 + 3, 6 + 5) |
 | Arrow sight lines (in the bundle since 2026-10-22, `sighting_like_canary`) | a hunter's arrow needs a sight line that only projectile blockers stop (`terrain.sight_blocks`, from the generated `arena_sight_bits`); without the option, every unpassable tile stops it | Canary `Map::checkSightLine` stops only at `CONST_PROP_BLOCKPROJECTILE`, set by the appearance flag `unsight` or items.xml `blockProjectile`. PR-18 live: 0.25 hits per in-range hunter-second, the full datapack rate (an arrow every 2 s at 50%); the model's hunters were in range as often (1.66 vs 1.87 per second) but had a clear line for only 1.10. With the option, 21.03 hits per run against 23.85 live (without: 14.88), found on PR-18 data. Out of sample (PR-19, 2026-10-21, 20 runs): 20.45 hits per run, t -0.40, while all3 alone rejects (t 3.86); joins the bundle on 2026-10-22 (rule D18) |
-| Retreat pacing (in the bundle since 2026-10-22, `pacing_retreats_like_the_live_probe`) | a retreat step waits the longer of Canary's step time and the competitor's own 650 ms (x3 diagonal), `retreat_step_ms_at` | The live competitor paces its own retreat steps (`apps/arena/competitor.spi`, `step_ms` 650), above Canary's 500 ms (arena ground) and 300 ms (road) for a level-30 knight. In sample: steps per clear 15.1 -> 11.7 (80 live logs 11.3), retreat potions 13.11 -> 13.32. Out of sample (PR-20, 20 runs): 10.1 steps (t -0.54), 12.80 potions (t -0.65); joins the bundle on 2026-10-22 (rule D19) |
-| Chase pacing (off by default, `chasing_at_the_live_probe_pace`, 2026-10-22) | a knight chase step waits the longer of Canary's step time and 558 ms, the live probe's measured straight step (PC-4 median), `chase_step_ms_at` | Live, the knight chases through the client's attack-and-chase and moves slower than the formula. In sample (100 held-out runs, rule D29): the hunter score falls inside every band (in-reach 33.7%, 74 of 100 clears, 23.66 hits; cyclops arms and hunting-ground kills unchanged), where the bundle alone gives 77 and 21.03. Long first chases move from 20% to 31% (live 52%), all still east. Out of sample (PR-21, 2026-10-22, 20 runs): hits 23.8, t 0.09, but 19 of 20 clears, outside the 11..18 band, so it stays off (rule D29). PR-22 (2026-10-22, 20 fresh runs) cleared 14 of 20, so PR-21's clear rate was an outlier, and the hunter target stays PR-18/19's 0.725 |
+| Retreat pacing (in the bundle since 2026-10-22, `pacing_retreats_like_the_live_gauge`) | a retreat step waits the longer of Canary's step time and the competitor's own 650 ms (x3 diagonal), `retreat_step_ms_at` | The live competitor paces its own retreat steps (`apps/arena/competitor.spi`, `step_ms` 650), above Canary's 500 ms (arena ground) and 300 ms (road) for a level-30 knight. In sample: steps per clear 15.1 -> 11.7 (80 live logs 11.3), retreat potions 13.11 -> 13.32. Out of sample (PR-20, 20 runs): 10.1 steps (t -0.54), 12.80 potions (t -0.65); joins the bundle on 2026-10-22 (rule D19) |
+| Chase pacing (off by default, `chasing_at_the_live_gauge_pace`, 2026-10-22) | a knight chase step waits the longer of Canary's step time and 558 ms, the live gauge's measured straight step (PC-4 median), `chase_step_ms_at` | Live, the knight chases through the client's attack-and-chase and moves slower than the formula. In sample (100 held-out runs, rule D29): the hunter score falls inside every band (in-reach 33.7%, 74 of 100 clears, 23.66 hits; cyclops arms and hunting-ground kills unchanged), where the bundle alone gives 77 and 21.03. Long first chases move from 20% to 31% (live 52%), all still east. Out of sample (PR-21, 2026-10-22, 20 runs): hits 23.8, t 0.09, but 19 of 20 clears, outside the 11..18 band, so it stays off (rule D29). PR-22 (2026-10-22, 20 fresh runs) cleared 14 of 20, so PR-21's clear rate was an outlier, and the hunter target stays PR-18/19's 0.725 |
 | Monster idle walk | `wandering_while_idle`: until it targets the knight, a monster takes a random free cardinal step once 1000 ms have passed since its last move | Canary `Monster::doRandomStep`; PC-1 saw cyclops wander 0-7 steps during the 10 s login protection |
 | Monster swing period | `meleeing_every (live_creature_strike_ms ())`: 2166 ms between swings of an adjacent cyclops | single-cyclops live runs: 28 of 30 gaps between landed hits are one swing, mean 2166 ms (Canary's 100 ms creature check runs a few ms late per cycle) |
 | Knight swing after a step | `swinging_like_canary`: every knight step, retreats included (since 2026-10-20; before, only approach steps), cancels the pending swing; it resumes at the next think, about every 1083 ms like the creature checks (`live_think_period_ms`), or the next knight or target move once due | Canary `Player::onWalk`, `hasExtraSwing`; PC-3: 31 of 36 swing gaps spanning a step come late, mostly by 150-200 ms. PC-6, pre-registered on the 40 PR-12 retreat logs: 9 of 232 step-spanning gaps on the 2 s grid (model 2%, 70.5% before the fix), 935 of 940 without a step |
 | Monster first swing | `meleeing_every_once_targeted`: a cyclops's first swing waits one swing period after it can target the knight | Canary: a monster's `attackTicks` starts at 0 when it acquires a target; live, the first hit lands about 3.4 s after login, simulated before at 0.2 s. Scored best against the six live potion means (sum of squared t 13.5 vs 16.7, none beyond 2) |
 
-Live-mirroring model (2026-10-15, first swing folded in 2026-10-18): `mirroring_the_live_arena` turns on the five rules above that only matter live (wake,
-idle walk, swing period, first swing after targeting, swing after a step), and `live_retreat_tactic` steps exactly like the live probe. Before it, every
-seed replayed one geometry (fixed spawns, monsters frozen while the knight is protected), and the simulated knight escaped
-along the corridor that the live knight rarely reaches; live, the retreating knight sits cornered in the dead-end pocket at
-1936,1349 for 43% of the clear. Healing was never the gap: potions per 1000 hp of damage are about 5.8 live and simulated.
-Against pooled live means (in-sample, these data shaped the rules): 3 cyclops rules 12.30 vs 12.22 potions, ReachFirst 12.47 vs 12.30, retreat 11.76 vs
-12.62; 2 cyclops rules 4.72 vs 4.85, retreat 4.91 vs 5.45 (with the 2026-10-20 swing fixes; before them 12.51, 13.22, 11.46, 4.65 and 4.59). Scored against the six live means with their standard errors, the sum of squared t fell from 17.5 to 8.8 with the fixes, none beyond 2 (before: both retreat means). Folding in the first swing moved the simulated clear times by at most 0.6 s. The 3-cyclops ranking of retreat vs
-rules is still off by about 0.9 potions (model: retreat 0.54 better; live: 0.40 worse), the crowding at the pocket (BENCHMARK, PR-12 post-hoc). Under this model a lower heal threshold or a better standing tile saves
+Live-mirroring model (2026-10-15, first swing folded in 2026-10-18): `mirroring_the_live_arena` turns on the five rules
+above that only matter live (wake,
+idle walk, swing period, first swing after targeting, swing after a step), and `live_retreat_tactic` steps exactly like
+the live gauge. Before it, every
+seed replayed one geometry (fixed spawns, monsters frozen while the knight is protected), and the simulated knight
+escaped
+along the corridor that the live knight rarely reaches; live, the retreating knight sits cornered in the dead-end pocket
+at
+1936,1349 for 43% of the clear. Healing was never the gap: potions per 1000 hp of damage are about 5.8 live and
+simulated.
+Against pooled live means (in-sample, these data shaped the rules): 3 cyclops rules 12.30 vs 12.22 potions, ReachFirst
+12.47 vs 12.30, retreat 11.76 vs
+12.62; 2 cyclops rules 4.72 vs 4.85, retreat 4.91 vs 5.45
+(with the 2026-10-20 swing fixes; before them 12.51, 13.22, 11.46, 4.65 and 4.59). Scored against the six live means
+with their standard errors, the sum of squared t fell from 17.5 to 8.8 with the fixes, none beyond 2
+(before: both retreat means). Folding in the first swing moved the simulated clear times by at most 0.6 s. The 3-cyclops
+ranking of retreat vs
+rules is still off by about 0.9 potions (model: retreat 0.54 better; live: 0.40 worse), the crowding at the pocket
+(BENCHMARK, PR-12 post-hoc). Under this model a lower heal threshold or a better standing tile saves
 at most 0.3 potions per clear, so no live-runnable change to the rules policy is predicted to show live.
-The 10 s wake and the idle walk describe the arena before 2026-10-15 14:17, when our probe kept the login protection. Since then the parity layer ends the protection for every competitor at login, so the matching scenario is `mirroring_the_live_arena |> waking_at 0` (no wake, so no idle walk); its first prediction (rules 15.6 potions, 72 hits) ran about 5% high (PR-11: 14.4, 69). Since 2026-10-20 that scenario has its own bundle, `mirroring_the_current_arena`: on top of it, monsters re-path only on their think (Canary `Creature::onThink`, `following_on_think`) and swing only on their attack rounds, losing a round spent out of reach (`Monster::canUseSpell`, `meleeing_on_canary_rounds`). Chosen overnight by a rule written before measuring, it cut the misfit over PR-11, PR-12 and PR-15 from a sum of squared t of 36.9 to 12.6 (rules 14.63 vs 14.42 live). On 40 fresh runs (PR-16, 2026-10-21) it holds for the rules policy (14.35 live vs 14.63, t -0.43) but not for the retreat policy (12.45 live vs 13.74, t -2.39): the model's retreat steps more and strikes less than the live one (94.7 s vs 87.4 s per clear), the same bias it showed in sample. The cause was the knight's fixed 650 ms step; Canary steps a level-30 knight in 500 ms on arena ground, and the bundle now adds `paced_like_canary` (the knight steps by `creatures.player_step_ms`), which brings the retreat to 12.53 (in sample, rules unchanged) and hunting-ground kills to 12.73 per hunt (live 12.80). It also adds Canary's dance step (`dancing_like_canary`: an adjacent monster with no path step sidesteps 10% of its thinks, `staticAttackChance` 90), which moves retreat to 12.87 (the hunter clear rate went back inside its band at that step, before the last-tick view pushed it to 99 of 100). Two more server-and-client facts close the retreat step gap (20.6 steps per clear down to 12.4, live 11.7): monsters and the knight step by Canary's formula on the map's own ground speed (`stepping_by_canary_formula`; the scaled grass step had turned a cyclops's 700 ms into 800 on the 100 ms tick), and the knight acts on what the client saw a tick earlier (`seeing_a_tick_late`), so a cyclops can take the last free tile beside it first. All of this was fitted in sample overnight under rules written before each measurement (BENCHMARK, PR-16 rows), and it holds on fresh clears: PR-17 (2026-10-21, 40 runs) gave rules 13.90 against 14.55 (t -0.87) and retreat 13.25 against 12.81 (t 0.74).
+The 10 s wake and the idle walk describe the arena before 2026-10-15 14:17, when our gauge kept the login protection.
+Since then the parity layer ends the protection for every competitor at login, so the matching scenario is
+`mirroring_the_live_arena |> waking_at 0` (no wake, so no idle walk); its first prediction (rules 15.6 potions, 72 hits)
+ran about 5% high (PR-11: 14.4, 69). Since 2026-10-20 that scenario has its own bundle, `mirroring_the_current_arena`:
+on top of it, monsters re-path only on their think (Canary `Creature::onThink`, `following_on_think`) and swing only on
+their attack rounds, losing a round spent out of reach (`Monster::canUseSpell`, `meleeing_on_canary_rounds`). Chosen
+overnight by a rule written before measuring, it cut the misfit over PR-11, PR-12 and PR-15 from a sum of squared t of
+36.9 to 12.6 (rules 14.63 vs 14.42 live). On 40 fresh runs (PR-16, 2026-10-21) it holds for the rules policy
+(14.35 live vs 14.63, t -0.43) but not for the retreat policy (12.45 live vs 13.74, t -2.39): the model's retreat steps
+more and strikes less than the live one (94.7 s vs 87.4 s per clear), the same bias it showed in sample. The cause was
+the knight's fixed 650 ms step; Canary steps a level-30 knight in 500 ms on arena ground, and the bundle now adds
+`paced_like_canary` (the knight steps by `creatures.player_step_ms`), which brings the retreat to 12.53
+(in sample, rules unchanged) and hunting-ground kills to 12.73 per hunt (live 12.80). It also adds Canary's dance step
+(`dancing_like_canary`: an adjacent monster with no path step sidesteps 10% of its thinks, `staticAttackChance` 90),
+which moves retreat to 12.87
+(the hunter clear rate went back inside its band at that step, before the last-tick view pushed it to 99 of 100). Two
+more server-and-client facts close the retreat step gap (20.6 steps per clear down to 12.4, live 11.7): monsters and the
+knight step by Canary's formula on the map's own ground speed
+(`stepping_by_canary_formula`; the scaled grass step had turned a cyclops's 700 ms into 800 on the 100 ms tick), and the
+knight acts on what the client saw a tick earlier (`seeing_a_tick_late`), so a cyclops can take the last free tile
+beside it first. All of this was fitted in sample overnight under rules written before each measurement
+(BENCHMARK, PR-16 rows), and it holds on fresh clears: PR-17 (2026-10-21, 40 runs) gave rules 13.90 against 14.55
+(t -0.87) and retreat 13.25 against 12.81 (t 0.74).
 
-The multi-creature simulator is bit-exact on WGSL too, checked since 2026-10-20 when Cells began honoring a WGSL test's status (before, every GPU test passed whatever it returned; all 28 GPU twins pass under the fix) (`gpu_sim.spi`: a full troll hunt, five arena-spot cyclops
-clears, and a five-minute hunting-ground hunt with the shortest-path router and its scratch arrays). With parallel lanes (one seed per GPU thread, 2026-10-14) every lane matches C exactly; a launch costs about 4 s of fixed setup, then about 0.23 ms per arena clear against 1.6 ms on one C core, so the GPU pays off from about 4000 clears per launch. Large lane counts now run in chunks of 1024 (the 16384-lane hang, WGSL-LANES-LARGE-DISPATCH-HANG, is fixed in the pack-1e compiler).
+The multi-creature simulator is bit-exact on WGSL too, checked since 2026-10-20 when Cells began honoring a WGSL test's
+status (before, every GPU test passed whatever it returned; all 28 GPU twins pass under the fix)
+(`gpu_sim.spi`: a full troll hunt, five arena-spot cyclops
+clears, and a five-minute hunting-ground hunt with the shortest-path router and its scratch arrays). With parallel lanes
+(one seed per GPU thread, 2026-10-14) every lane matches C exactly; a launch costs about 4 s of fixed setup, then about
+0.23 ms per arena clear against 1.6 ms on one C core, so the GPU pays off from about 4000 clears per launch. Large lane
+counts now run in chunks of 1024
+(the 16384-lane hang, WGSL-LANES-LARGE-DISPATCH-HANG, is fixed in the pack-1e compiler).
 
 ## Simulator results
 
 Protocol: everything is tuned on training seeds and judged on held-out seeds; the seed blocks are typed, so tuning on
 held-out seeds does not compile. Claims are Pareto dominance on (kills, profit) or a cost within a stated time cap.
-Profit books gold looted, 50 gp per potion and 14000 gp per death. The control is a random policy (each decision tick it drinks, engages, steps to a random tile or stands, with equal odds; once engaged the server keeps swinging, as live): on held-out seeds it earns 54310 experience on the hunting ground at -1.15 million gp, and clears the arena spot in 94 s with 72 potions per clear (one potion per second at most, as the server allows), far below every rule.
+Profit books gold looted, 50 gp per potion and 14000 gp per death. The control is a random policy
+(each decision tick it drinks, engages, steps to a random tile or stands, with equal odds; once engaged the server keeps
+swinging, as live): on held-out seeds it earns 54310 experience on the hunting ground at -1.15 million gp, and clears
+the arena spot in 94 s with 72 potions per clear (one potion per second at most, as the server allows), far below every
+rule.
 
 - **Targeting** (three-troll pack, 20 seeds): finishing the current target first gets 330 kills; fighting whatever is in
   reach gets 75 kills and 381 escapes. The live client switched to that order and killed all three trolls, where the old
@@ -173,7 +236,8 @@ Profit books gold looted, 50 gp per potion and 14000 gp per death. The control i
   within the tuned cavebot's time +15% choose ReachFirst targeting, heal below 88 + 26 per attacker and stepping back as
   soon as one monster reaches the knight. On 100 held-out clears they use 1070 potions against the tuned cavebot's 1702
   (heal below 90), with one death against none, at 95.6 against 90.1 s per clear: cheaper, slower, not dominant.
-  Before road speed applied at the spot (radius 30) the same search chose 96 + 8 per attacker for 1069 potions, no deaths, at 90.9 s.
+  Before road speed applied at the spot (radius 30) the same search chose 96 + 8 per attacker for 1069 potions, no
+  deaths, at 90.9 s.
 - **Mixed camp** (one cyclops, two trolls, arena spot): the cavebot tuned on this camp (heal below 80) uses 85 potions
   in 100 held-out clears at 37.7 s. Rules evolved on this camp without knowing kinds use 74 potions at 37.6 s with no
   deaths, dominating it; kind-aware rules use 68 but die once. Rules evolved for three cyclops use 190 potions; counting
@@ -182,15 +246,19 @@ Profit books gold looted, 50 gp per potion and 14000 gp per death. The control i
   hunts, 100 held-out seeds): greedy one-tile steps stick behind walls there, so knight and monsters route with a
   shortest-path search (straight steps only: a diagonal costs three straight ones, and Canary's A* agrees), and every
   step costs what the server's ground under it says (roads, speed 100, are 1.6 times faster than the arena ground,
-  speed 160; measured live in PC-1, confirmed by the pre-registered PC-2). With the cavebot's heal tuned on training seeds (120), standing at the start earns
-  104920 experience; a hand-drawn route 108270, a loop by the spawns 114470, a route evolved on training seeds with roads
+  speed 160; measured live in PC-1, confirmed by the pre-registered PC-2). With the cavebot's heal tuned on training
+  seeds (120), standing at the start earns
+  104920 experience; a hand-drawn route 108270, a loop by the spawns 114470, a route evolved on training seeds with
+  roads
   (a two-point shuttle between 121,86 and 117,102) 119280, and sweeping to the nearest live or next-due spawn 119950
   (with the protection zones of the east buildings walled off since 2026-10-20). The rule that reads respawn
   timers leads at this 60 s respawn and ties at 120 s, but at 30 s the fixed routes beat it (hand route 133170, shuttle
   133200, sweeper 126980): which walker is best depends on the respawn time.
 - **Six cyclops on the hunting ground** (more than the knight can fight at once; 100 held-out hunts, each cavebot's heal
-  tuned on training seeds): standing (heal below 100) earns 112700 with 2 deaths at -211081 gp; sweeping the spawns (heal below 130) earns the most,
-  126900, with 3 deaths at -296687 gp. Stepping back at two attackers while sweeping (the live retreat rules) earns 121050 at -166786 with
+  tuned on training seeds): standing (heal below 100) earns 112700 with 2 deaths at -211081 gp; sweeping the spawns
+  (heal below 130) earns the most,
+  126900, with 3 deaths at -296687 gp. Stepping back at two attackers while sweeping (the live retreat rules) earns
+  121050 at -166786 with
   no deaths: about 5% less experience for 44% lower cost, a choice of objective rather than a better policy.
 - **Two knights on the six-cyclops ground** (100 held-out hunts, party experience): the second knight acts through the
   same code (the simulator swaps which knight is acting), and monsters chase and strike the nearer one. Both knights
@@ -208,7 +276,9 @@ Profit books gold looted, 50 gp per potion and 14000 gp per death. The control i
 
 PR-4 (2026-10-14, fixed arena): cyclops clear, BENCHMARK pack v1, full gear restored before every run, the same 250 ms
 action gate and 100 ms decision tick for every competitor, heal below 160, 30 runs each, alternating, every run cleared,
-no deaths, no arena failures. These runs predate the login-protection fix: vBot ended its protection at login and our probes did not, so the vBot row carries about 7 extra hits per clear (BENCHMARK.md PR-9 addendum; level on the fixed arena, PR-11).
+no deaths, no arena failures. These runs predate the login-protection fix: vBot ended its protection at login and our
+gauges did not, so the vBot row carries about 7 extra hits per clear
+(BENCHMARK.md PR-9 addendum; level on the fixed arena, PR-11).
 
 | Competitor | Potions | Clear time | Damage taken |
 | --- | --- | --- | --- |
@@ -217,10 +287,23 @@ no deaths, no arena failures. These runs predate the login-protection fix: vBot 
 | vBot 4.8 | 14.0 (sd 2.6) | 92.7 s | 2397 |
 
 Pre-registered tests: retreat vs vBot, no difference shown (t -1.45); retreat vs rules, no difference shown (t 1.82).
-Rules vs vBot, pre-registered as a fresh replication (PR-8, 30 runs each): 12.9 vs 14.2 potions, no difference shown (t -1.47); PR-4's 11.5 for the rules did not replicate. Rules vs vBot with 50 runs each (PR-9, 2026-10-15): 12.5 vs 14.7 potions, significant (t -3.80), clear time 88.7 vs 87.9 s, damage taken 2145 vs 2479; the whole difference comes from vBot ending its login protection in the first 10 s (BENCHMARK.md PR-9 addendum). With the protection ended for both (PR-11, 50 runs each): 14.4 vs 14.8 potions, no difference shown (t -0.58). Retreat vs nExBot 4.0.4 (PR-3a, 20 runs each, 2026-10-15): 12.2 vs 14.6 potions, significant (t -2.14), clear time 90.9 vs 88.4 s, damage taken 2030 vs 2421 (16 and 18 of 20 logs matched), no deaths. With the protection ended for both and synchronized starts (PR-12, 40 runs each, 2026-10-18 and 2026-10-20): 12.75 vs 13.93 potions, no difference shown (t -1.88), clear time 90.3 vs 89.2 s, damage taken 2230 vs 2369, no deaths; one retreat run ended without a clear, standing in the protection zone east of the spot (the retreat now skips zone tiles). The random control (PR-5, 10 runs: drink, engage, random step or stand with equal odds) clears in 102.7 s with 94.1 potions, far below every competitor.
+Rules vs vBot, pre-registered as a fresh replication (PR-8, 30 runs each): 12.9 vs 14.2 potions, no difference shown
+(t -1.47); PR-4's 11.5 for the rules did not replicate. Rules vs vBot with 50 runs each (PR-9, 2026-10-15): 12.5 vs 14.7
+potions, significant (t -3.80), clear time 88.7 vs 87.9 s, damage taken 2145 vs 2479; the whole difference comes from
+vBot ending its login protection in the first 10 s (BENCHMARK.md PR-9 addendum). With the protection ended for both
+(PR-11, 50 runs each): 14.4 vs 14.8 potions, no difference shown (t -0.58). Retreat vs nExBot 4.0.4
+(PR-3a, 20 runs each, 2026-10-15): 12.2 vs 14.6 potions, significant (t -2.14), clear time 90.9 vs 88.4 s, damage taken
+2030 vs 2421 (16 and 18 of 20 logs matched), no deaths. With the protection ended for both and synchronized starts
+(PR-12, 40 runs each, 2026-10-18 and 2026-10-20): 12.75 vs 13.93 potions, no difference shown (t -1.88), clear time 90.3
+vs 89.2 s, damage taken 2230 vs 2369, no deaths; one retreat run ended without a clear, standing in the protection zone
+east of the spot (the retreat now skips zone tiles). The random control
+(PR-5, 10 runs: drink, engage, random step or stand with equal odds) clears in 102.7 s with 94.1 potions, far below
+every competitor.
 
 The earlier table, kept as a record of the faulty arena:
-Measured with vBot's HealBot and TargetBot running alongside every `spiral-*` competitor (see the correction above); kept as a record until PR-4 replaces it. Cyclops clear, BENCHMARK pack v1: full gear restored before every run, the same 250 ms action gate and 100 ms decision
+Measured with vBot's HealBot and TargetBot running alongside every `spiral-*` competitor (see the correction above);
+kept as a record until PR-4 replaces it. Cyclops clear, BENCHMARK pack v1: full gear restored before every run, the same
+250 ms action gate and 100 ms decision
 tick for every competitor, heal below 160 unless stated, no deaths in any round below.
 
 | Comparison | Runs | Potions | Result |
@@ -234,12 +317,15 @@ tick for every competitor, heal below 160 unless stated, no deaths in any round 
 The first retreat-vs-vBot round alone looked significant (t -2.14); later rounds regressed toward a tie, which is why
 comparisons are now pre-registered with a fixed run count.
 
-Rounds before these measured arena faults rather than policies (and these rounds themselves carry the last one found, vBot left enabled during our runs): the forge inflating every monster, gear dropped on
-deaths and never restored, vBot's HealBot ignoring a closed backpack, our probe deciding every 250 ms, the probe
-leaving chase mode on during retreats, and the vBot probe sampling only every 10 s, which rounded vBot's clear times up
+Rounds before these measured arena faults rather than policies
+(and these rounds themselves carry the last one found, vBot left enabled during our runs): the forge inflating every
+monster, gear dropped on
+deaths and never restored, vBot's HealBot ignoring a closed backpack, our gauge deciding every 250 ms, the gauge
+leaving chase mode on during retreats, and the vBot gauge sampling only every 10 s, which rounded vBot's clear times up
 by about 5 s.
 
-The probes are in `apps/arena/` and the arena scripts in `live/`; the live world they drive (Canary 3.6.1, OTClient Redemption 4.1, run
+The gauges are in `apps/arena/` and the arena scripts in `live/`; the live world they drive
+(Canary 3.6.1, OTClient Redemption 4.1, run
 off-screen and muted) stays in a local folder outside the repo (see Running).
 
 ## Repository
@@ -248,7 +334,7 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 | --- | --- |
 | `src/` | The Spiral package (`spiral.toml` and its modules): rules, typed domain, simulators and their test blocks |
 | `docs/` | The plan, the benchmark with every pre-registration and its result (the one record of each experiment), the modeling notes and prior art |
-| `apps/arena/` | Every OTClient probe, compiled with the Lua backend. Layers: generic Lua-side state (`lua.spi`), typed client bindings (`client.spi`), the shared probe lifecycle (`probe.spi`), shared run modules (`scoreboard`, `observer`, `adjacency`), and one entry per probe: competitor, random, vbot, nexbot, summon, scan, path, measure, steps. `build.ps1` writes `target/arena/<probe>.lua`; `-ProbeBody <probe>` picks one and rebuilds stale outputs |
+| `apps/arena/` | Every OTClient gauge, compiled with the Lua backend. Layers: generic Lua-side state (`lua.spi`), typed client bindings (`client.spi`), the shared gauge lifecycle (`gauge.spi`), shared run modules (`scoreboard`, `observer`, `adjacency`), and one entry per gauge: competitor, random, vbot, nexbot, summon, scan, path, measure, steps. `build.ps1` writes `target/arena/<gauge>.lua`; `-GaugeBody <gauge>` picks one and rebuilds stale outputs |
 | `apps/map/` | The server-map tool (Rust backend): reads Canary's map, writes the generated terrain definitions and the region dump in `results/` |
 | `apps/predict/` | C entries over the simulators: `predict` prints the model's prediction tables for the current bundle (cyclops clears per policy, hunter clears, hunting-ground hunts); `lanes`, `lanes_gpu` and `gpu_plan` run evolution lanes; `sweep` is the saturation sweep; `cfr_arena` measures PR-30 (the CFR brain against retreat-at-2) and `is_softened` measures PR-31 (importance sampling against fresh sims). Only `predict` and the lane entries are in `spiral.toml`; `scripts/predict.ps1 -Module <name>` adds any other entry to its scratch copy of the manifest |
 | `live/` | The live arena layer: the parity layer, bot shims and configs, the run and check scripts, scenario assets, and the block runner |
@@ -264,9 +350,11 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
   builds what is missing.
 - Test: `pwsh scripts/build.ps1` runs every file with tests in `src` and in `apps/arena`, `apps/host`, `apps/offscreen`,
   `apps/map`, `apps/predict` and `apps/canary` through `deps/spiral/apps/cells/spi/run_notebook.ps1`
-  (or `$SPIRAL_CELLS_ROOT/spi/run_notebook.ps1` when that variable is set) and fails unless every test executed and passed (no failed, unsupported, skipped or missing rows); `-Files geometry,views`
+  (or `$SPIRAL_CELLS_ROOT/spi/run_notebook.ps1` when that variable is set) and fails unless every test executed and
+  passed (no failed, unsupported, skipped or missing rows); `-Files geometry,views`
   runs a subset. Notebook outputs go to `notebooks/` (ignored by git, published by `scripts/publish.ps1`).
-- Standards: `scripts/build.ps1` first runs `SpiralCompiler format --check` over src and those apps (predict aside) and stops on any layout
+- Standards: `scripts/build.ps1` first runs `SpiralCompiler format --check` over src and those apps (predict aside) and
+  stops on any layout
   change; locally, `kit standards src apps/arena apps/map` also checks the rules `src/standards.spi` declares (no
   comment lines, LF only, a target above every test, 120 columns, no floating point in 26 integer-only modules).
 - Live arena: the arena needs a local world outside the repo: Canary, MariaDB, OTClient, logs (default
@@ -275,9 +363,11 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
   15.13 client assets, nExBot 19632d4, and the MariaDB schema when no data exists) and moves any folder it replaces
   aside under `_replaced-<time>`; `pwsh live/world.ps1 -Action Start` starts the server. For example
   `pwsh live/run-arena.ps1 -Runs 1 -Monster cyclops -MonsterCount 3 -Level 30 -AxeSkill 60 -HealBelow 160
-  -StrikeAbove 0 -FullExperience 675 -Competitors spiral-policy,vbot -Out results/rows/arena_results_try.spi`. The hunting
+  -StrikeAbove 0 -FullExperience 675 -Competitors spiral-policy,vbot -Out
+  results/rows/arena_results_try.spi`. The hunting
   ground swaps in its own spawns and runs for a fixed time: `-Scenario hunting-ground -SpawnFile
-  live/hunting-ground-spawns.xml -KnightAt 1936,1336 -RunMs 300000 -MonsterCount 0 -FullExperience 1000000`. nExBot is not
+  live/hunting-ground-spawns.xml -KnightAt 1936,1336 -RunMs 300000 -MonsterCount 0 -FullExperience
+  1000000`. nExBot is not
   part of the repo (no license); `-Competitors nexbot` expects it under the world's `bots/`.
 - Pre-registered blocks: `pwsh live/block.ps1 -Ledger <ids>` runs the block, then computes each test with
   `kit experiment analyze` against `target/ledger`, kit's working copy (git-ignored). The record is the BENCHMARK
@@ -285,7 +375,8 @@ off-screen and muted) stays in a local folder outside the repo (see Running).
 
 ## Documents
 
-- [BENCHMARK.md](docs/BENCHMARK.md): the OT Agent Arena (fidelity, baselines, scenarios, metrics, pre-registrations, publication).
+- [BENCHMARK.md](docs/BENCHMARK.md): the OT Agent Arena
+  (fidelity, baselines, scenarios, metrics, pre-registrations, publication).
 
 ## Ground rules
 

@@ -1,9 +1,9 @@
 ///- --package .
-:# probe static =
+:# gauge static =
     :< testing
 
 :< sm'_operators
-:= note (message : string) : () = client::write_log_line ("[tibia-probe] " ++# message)
+:= note (message : string) : () = client::write_log_line ("[tibia-gauge] " ++# message)
 
 := described (s : client::spot) : string =
     := x, y, z = s::x, s::y, s::z

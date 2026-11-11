@@ -1,4 +1,17 @@
 ///- --no-respell
 open table_rows
 inl table () =
-    Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-23T09:54:27\tspiral-policy\t1\thunter\t3\t675\t54270\t99\t9\t2\t5\t0\t0\t0\t0\n2026-10-23T09:56:36\tspiral-policy\t2\thunter\t3\t675\t44472\t116\t6\t0\t3\t0\t0\t0\t0\n2026-10-23T09:58:50\tspiral-policy\t3\thunter\t3\t675\t50028\t101\t4\t0\t1\t0\t0\t0\t0\n2026-10-23T10:00:51\tspiral-policy\t4\thunter\t3\t675\t45639\t142\t7\t2\t3\t0\t0\t0\t0\n2026-10-23T10:03:02\tspiral-policy\t5\thunter\t3\t675\t46269\t133\t9\t2\t5\t0\t0\t0\t0\n2026-10-23T10:05:24\tspiral-policy\t6\thunter\t3\t675\t59764\t121\t7\t4\t2\t0\t0\t0\t0\n2026-10-23T10:07:59\tspiral-policy\t7\thunter\t3\t675\t70790\t116\t8\t0\t5\t0\t0\t0\t0\n2026-10-23T10:10:19\tspiral-policy\t8\thunter\t3\t675\t60532\t133\t8\t0\t5\t0\t0\t0\t0\n2026-10-23T10:14:05\tspiral-policy\t9\thunter\t3\t225\t\t201\t1\t0\t0\t0\t0\t0\t0\n2026-10-23T10:16:15\tspiral-policy\t10\thunter\t3\t675\t63291\t109\t8\t2\t4\t0\t0\t0\t0"
+    Table (
+        "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\taction"
+        ^^ "s_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n"
+        ^^ "2026-10-23T09:54:27\tspiral-policy\t1\thunter\t3\t675\t54270\t99\t9\t2\t5\t0\t0\t0\t0\n"
+        ^^ "2026-10-23T09:56:36\tspiral-policy\t2\thunter\t3\t675\t44472\t116\t6\t0\t3\t0\t0\t0\t0\n"
+        ^^ "2026-10-23T09:58:50\tspiral-policy\t3\thunter\t3\t675\t50028\t101\t4\t0\t1\t0\t0\t0\t0\n"
+        ^^ "2026-10-23T10:00:51\tspiral-policy\t4\thunter\t3\t675\t45639\t142\t7\t2\t3\t0\t0\t0\t0\n"
+        ^^ "2026-10-23T10:03:02\tspiral-policy\t5\thunter\t3\t675\t46269\t133\t9\t2\t5\t0\t0\t0\t0\n"
+        ^^ "2026-10-23T10:05:24\tspiral-policy\t6\thunter\t3\t675\t59764\t121\t7\t4\t2\t0\t0\t0\t0\n"
+        ^^ "2026-10-23T10:07:59\tspiral-policy\t7\thunter\t3\t675\t70790\t116\t8\t0\t5\t0\t0\t0\t0\n"
+        ^^ "2026-10-23T10:10:19\tspiral-policy\t8\thunter\t3\t675\t60532\t133\t8\t0\t5\t0\t0\t0\t0\n"
+        ^^ "2026-10-23T10:14:05\tspiral-policy\t9\thunter\t3\t225\t\t201\t1\t0\t0\t0\t0\t0\t0\n"
+        ^^ "2026-10-23T10:16:15\tspiral-policy\t10\thunter\t3\t675\t63291\t109\t8\t2\t4\t0\t0\t0\t0"
+    )

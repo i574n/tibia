@@ -27,7 +27,7 @@
     |: " (# wall or blocked, . walkable, K knight)"
 
 := row_noted (marks_unloaded : bool) (centre : client::spot) (radius : i32) (dy : i32) : () =
-    probe::note (row_label dy ++# " " ++# scan_row marks_unloaded centre radius dy)
+    gauge::note (row_label dy ++# " " ++# scan_row marks_unloaded centre radius dy)
 
 :~ ^ rows_from (marks_unloaded : bool) (centre : client::spot) (radius : i32) (dy : i32) : () =
     ? dy <= radius ?>
@@ -36,7 +36,7 @@
 
 := scan (marks_unloaded : bool) (radius : i32) : () =
     := centre = client::player_spot ()
-    probe::note ("scan around " ++# probe::described centre ++# legend marks_unloaded)
+    gauge::note ("scan around " ++# gauge::described centre ++# legend marks_unloaded)
     rows_from marks_unloaded centre radius (0 - radius)
 
 ///> lua
@@ -57,10 +57,10 @@
 
 := scan_then_finish (marks_unloaded : bool) (radius : i32) : () =
     scan marks_unloaded radius
-    probe::finish "scanned"
+    gauge::finish "scanned"
 
 := main () =
     := ~radius = 12i32
     := marks_unloaded = client::env_is "TIBIA_SCAN_MARKS_UNLOADED" "1"
-    probe::started (\ () => client::after 2500 (\ () => scan_then_finish marks_unloaded radius)) 40000
+    gauge::started (\ () => client::after 2500 (\ () => scan_then_finish marks_unloaded radius)) 40000
     0i32

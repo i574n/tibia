@@ -1,4 +1,12 @@
 ///- --no-respell
 open table_rows
 inl table () =
-    Table "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\tactions_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n2026-10-20T11:05:37\tspiral-retreat\t1\tcyclops\t3\t675\t87760\t101\t17\t4\t9\t52\t0\t0\t0\n2026-10-20T11:07:40\tspiral-retreat\t2\tcyclops\t3\t675\t82010\t88\t19\t2\t12\t56\t0\t0\t0\n2026-10-20T11:09:56\tspiral-retreat\t3\tcyclops\t3\t675\t96581\t80\t29\t2\t16\t91\t0\t0\t0\n2026-10-20T11:12:07\tspiral-retreat\t4\tcyclops\t3\t675\t91490\t83\t31\t12\t13\t75\t0\t0\t0\n2026-10-20T11:14:27\tspiral-retreat\t5\tcyclops\t3\t675\t100097\t18\t24\t3\t16\t71\t0\t0\t0"
+    Table (
+        "timestamp\tcompetitor\trun\tmonster\tcount\texperience\tcleared_ms\tlowest_health\tactions_allowed\taction"
+        ^^ "s_dropped\tpotions\tgold\tdeaths\tforeign_potions\tforeign_actions\n"
+        ^^ "2026-10-20T11:05:37\tspiral-retreat\t1\tcyclops\t3\t675\t87760\t101\t17\t4\t9\t52\t0\t0\t0\n"
+        ^^ "2026-10-20T11:07:40\tspiral-retreat\t2\tcyclops\t3\t675\t82010\t88\t19\t2\t12\t56\t0\t0\t0\n"
+        ^^ "2026-10-20T11:09:56\tspiral-retreat\t3\tcyclops\t3\t675\t96581\t80\t29\t2\t16\t91\t0\t0\t0\n"
+        ^^ "2026-10-20T11:12:07\tspiral-retreat\t4\tcyclops\t3\t675\t91490\t83\t31\t12\t13\t75\t0\t0\t0\n"
+        ^^ "2026-10-20T11:14:27\tspiral-retreat\t5\tcyclops\t3\t675\t100097\t18\t24\t3\t16\t71\t0\t0\t0"
+    )

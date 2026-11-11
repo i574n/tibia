@@ -40,7 +40,7 @@
     := p = default_plan () |> healing_from_environment |> stepping_from_environment
     ? client::env_is "TIBIA_ARENA_TARGETING" "reach" ?> { p ?| order = (:< policy ;; ReachFirst) } |: p
 
-:= finish (reason : string) : () = probe::finish_reporting_parity reason
+:= finish (reason : string) : () = gauge::finish_reporting_parity reason
 
 
 := candidate_of (current : client::creature) (c : client::creature) (distance : i32) : policy::candidate =
@@ -63,7 +63,7 @@
     | None => !+
 
 := nearer_sighting (s : sight_ctx) (index : i32) (best : option sighting) (c : client::creature) : option sighting =
-    := d = probe::chebyshev (client::creature_spot c) s::here
+    := d = gauge::chebyshev (client::creature_spot c) s::here
     ? better_than s best c d ?> Some { index = index; distance = d } |: best
 
 := sighted_step (s : sight_ctx) (index : i32) (best : option sighting) : option sighting =
@@ -93,7 +93,7 @@
     { attackers = t::attackers + 1; first = (? closer_threat people t c ?> Some index |: t::first) }
 
 := adjacent_threat (here : client::spot) (c : client::creature) : bool =
-    client::live_monster c && probe::chebyshev (client::creature_spot c) here <= 1
+    client::live_monster c && gauge::chebyshev (client::creature_spot c) here <= 1
 
 := threat_step (here : client::spot) (people : client::crowd) (index : i32) (t : threat) : threat =
     := c = client::member people index
@@ -173,10 +173,10 @@
 
 := joined (text : string) (item : string) : string = ? text = "" ?> item |: text ++# " " ++# item
 
-:= described_creature (c : client::creature) : string = probe::described (client::creature_spot c)
+:= described_creature (c : client::creature) : string = gauge::described (client::creature_spot c)
 
 := with_near (r : retreat_ctx) (c : client::creature) (text : string) : string =
-    := near = client::live_monster c && probe::chebyshev (client::creature_spot c) r::here <= 2
+    := near = client::live_monster c && gauge::chebyshev (client::creature_spot c) r::here <= 2
     ? near ?> joined text (described_creature c) |: text
 
 :~ ^ near_from (r : retreat_ctx) (index : i32) (text : string) : string =
@@ -199,9 +199,9 @@
 
 := step_note (r : retreat_ctx) (o : offset) : () =
     := t = scoreboard::elapsed r::a::pace
-    := from = probe::described r::here
+    := from = gauge::described r::here
     := near = near_monsters r
-    probe::note (step_line from o ++# " @t+" ++#? t ++# " near " ++# near)
+    gauge::note (step_line from o ++# " @t+" ++#? t ++# " near " ++# near)
 
 := step_cost (o : offset) : i32 = step_ms () * (? o::dx <> 0 && o::dy <> 0 ?> 3 |: 1)
 
@@ -219,7 +219,7 @@
         ? free_step r::here o ?> stepped_by r o |: attempt_from r (slot + 1)
 
 := with_adjacent (r : retreat_ctx) (c : client::creature) (text : string) : string =
-    := close = client::positioned_monster c && probe::chebyshev (client::creature_spot c) r::here <= 1
+    := close = client::positioned_monster c && gauge::chebyshev (client::creature_spot c) r::here <= 1
     ? close ?> joined text (described_creature c) |: text
 
 :~ ^ adjacent_from (r : retreat_ctx) (index : i32) (text : string) : string =
@@ -240,12 +240,12 @@
         rejected_from r (slot + 1) (? usable o ?> joined text (rejected_item r::here o) |: text)
 
 := corner_head (r : retreat_ctx) : string =
-    "cornered at " ++# probe::described r::here ++# " threat " ++# probe::described r::danger
+    "cornered at " ++# gauge::described r::here ++# " threat " ++# gauge::described r::danger
 
 := cornered_note (r : retreat_ctx) : () =
     := head = corner_head r
     := adjacent, candidates = adjacent_from r 1 "", rejected_from r 0 ""
-    probe::note (head ++# " adjacent [" ++# adjacent ++# "] candidates [" ++# candidates ++# "]")
+    gauge::note (head ++# " adjacent [" ++# adjacent ++# "] candidates [" ++# candidates ++# "]")
 
 := reported_corner (cornered_so_far : i32) : bool = (cornered_so_far + 1) % cornered_report_every () = 1
 
@@ -305,7 +305,7 @@
 
 := heal_noted (m : moment) (drunk : bool) : () =
     := what = ? drunk ?> "heal (potion) at health " |: "heal dropped by the action gate at health "
-    probe::note ((what ++#? m::health))
+    gauge::note ((what ++#? m::health))
 
 := drank (m : moment) (t : tally) (k : clocks) : tallied =
     := drunk = client::drink (health_potion ())
@@ -315,10 +315,10 @@
 := chase_noted (m : moment) (chasing : bool) : () =
     ? client::chase_on () <> chasing ?>
         := turned, at_ms = (? chasing ?> "on" |: "off"), scoreboard::elapsed m::a::pace
-        probe::note (("chase " ++# turned ++# " @t+" ++#? at_ms))
+        gauge::note (("chase " ++# turned ++# " @t+" ++#? at_ms))
 
 := spots_line (m : moment) (target : client::creature) : string =
-    " at " ++# probe::described (client::creature_spot target) ++# " from " ++# probe::described m::sense::here
+    " at " ++# gauge::described (client::creature_spot target) ++# " from " ++# gauge::described m::sense::here
 
 := engagement_line (m : moment) (chasing : bool) (target : client::creature) : string =
     := verb = ? chasing ?> "approach" |: "strike"
@@ -333,7 +333,7 @@
     struck m target
     := line = engagement_line m chasing target
     := ms = scoreboard::elapsed m::a::pace
-    probe::note (line ++# " health " ++#? m::health ++# " @t+" ++#? ms)
+    gauge::note (line ++# " health " ++#? m::health ++# " @t+" ++#? ms)
 
 := aimed (m : moment) (chasing : bool) : () =
     ?= m::sense::seen ?|
@@ -351,7 +351,7 @@
 := held (m : moment) (t : tally) : tally =
     ? client::attacking_anyone () && reach_of m = (:< policy ;; InReach) ?>
         client::cancel_attack ()
-        probe::note (("hold at health " ++#? m::health))
+        gauge::note (("hold at health " ++#? m::health))
     { t ?| holds = t::holds + 1 }
 
 := stepped_away (next_step_at : i32) (t : tally) (k : clocks) : acted =
@@ -438,17 +438,17 @@
     := spot = client::player_spot ()
     := sx, sy = spot::x, spot::y
     := label = ("seen at " ++#? sx ++# "," ++#? sy ++# ": ")
-    probe::note (label ++# client::monsters_described spot)
+    gauge::note (label ++# client::monsters_described spot)
 
 := player_detail () : string =
     := attacking = client::attacking_described ()
-    := at = probe::described (client::player_spot ())
+    := at = gauge::described (client::player_spot ())
     := zone = client::player_zone ()
     " attacking " ++# attacking ++# " player at " ++# at ++# " pz " ++# zone
 
 := summary_noted (a : arena) (t : tally) : () =
     := detail = player_detail ()
-    probe::note (scoreboard::summary a::pace t ++# detail)
+    gauge::note (scoreboard::summary a::pace t ++# detail)
 
 := traced (a : arena) (t : tally) : () =
     ? scoreboard::due_for_trace t ?> sighting_noted ()
@@ -464,7 +464,7 @@
     t, k
 
 := died (a : arena) (t : tally) : option tallied =
-    probe::note ("dead: " ++# scoreboard::summary a::pace t)
+    gauge::note ("dead: " ++# scoreboard::summary a::pace t)
     finish "death"
     None
 
@@ -553,16 +553,16 @@
 := shield_noted (s : session) (t : i32) : () =
     := shield = client::player_shield_skill ()
     ? shield <> *s::marks::shield_seen ?>
-        probe::stored s::marks::shield_seen shield
-        probe::note (("shield skill " ++#? shield ++# " @t+" ++#? t))
+        gauge::stored s::marks::shield_seen shield
+        gauge::note (("shield skill " ++#? shield ++# " @t+" ++#? t))
 
 := text_noted (s : session) (mode : string) (text : string) : i32 =
     := t = client::now_ms () - *s::marks::started_at
-    probe::note (("server text [" ++# mode ++# "]: " ++# text ++# " @t+" ++#? t))
+    gauge::note (("server text [" ++# mode ++# "]: " ++# text ++# " @t+" ++#? t))
     t
 
 := on_text (s : session) (mode : string) (text : string) : () =
-    ? sm'::contains "due to your" text ?> probe::stored s::marks::last_swing (client::now_ms ())
+    ? sm'::contains "due to your" text ?> gauge::stored s::marks::last_swing (client::now_ms ())
     := t = text_noted s mode text
     shield_noted s t
     adjacency::on_text s::meter t text
@@ -577,7 +577,7 @@
 
 := monster_moved (s : session) (c : client::creature) (new_position : position) : () =
     := n, id = client::spot_of new_position, client::creature_id c
-    probe::note (login_line s (moved_line ("monster " ++#? id) n))
+    gauge::note (login_line s (moved_line ("monster " ++#? id) n))
 
 :| mover =
     | Knight
@@ -598,7 +598,7 @@
 
 := watched_moved (s : session) (c : client::creature) (new_position : position) : () =
     ?= mover_of c ?|
-    | Some who => probe::note (since_start_line s (moved_line (mover_label who) (client::spot_of new_position)))
+    | Some who => gauge::note (since_start_line s (moved_line (mover_label who) (client::spot_of new_position)))
     | None => ()
 
 := moved (s : session) (c : client::creature) (new_position : position) : () =
@@ -614,13 +614,13 @@
     heal ++# " kite at " ++#? p::kite_at ++# " retreat at " ++#? p::retreat_at
 
 := start_text (p : plan) : string =
-    "policy starts at " ++# probe::described (client::player_spot ()) ++# thresholds_text p
+    "policy starts at " ++# gauge::described (client::player_spot ()) ++# thresholds_text p
 
 := policy_noted (p : plan) : () =
     := head = start_text p
     := targeting = client::env_text "TIBIA_ARENA_TARGETING" "current"
     := wall = client::wall_seconds ()
-    probe::note (head ++# " targeting " ++# targeting ++# " wall " ++#? wall)
+    gauge::note (head ++# " targeting " ++# targeting ++# " wall " ++#? wall)
 
 := arena_of (s : session) (start_experience : i32) : arena =
     := pace = scoreboard::pace_from_environment start_experience s::marks::started_at
@@ -630,27 +630,27 @@
 
 := policy_started (s : session) (start_experience : i32) : () =
     policy_noted s::p
-    probe::stored s::marks::started_at (client::now_ms ())
+    gauge::stored s::marks::started_at (client::now_ms ())
     tick (arena_of s start_experience) (scoreboard::empty ()) (first_clocks ())
 
 := settling (s : session) : () =
     := start_experience = client::player_experience ()
     client::chasing !-
     client::fight_balanced ()
-    client::after (probe::settle_ms ()) \ () => policy_started s start_experience
+    client::after (gauge::settle_ms ()) \ () => policy_started s start_experience
 
 := ready_noted () : () =
     := name, health, mana = client::player_name (), client::player_health (), client::player_mana ()
-    probe::note (("in game as " ++# name ++# " health " ++#? health ++# " mana " ++#? mana))
+    gauge::note (("in game as " ++# name ++# " health " ++#? health ++# " mana " ++#? mana))
 
 := ready (s : session) : () =
     ready_noted ()
-    probe::stored s::marks::logged_in_at (client::now_ms ())
+    gauge::stored s::marks::logged_in_at (client::now_ms ())
     client::on_position_change (on_move s)
-    client::after (probe::start_delay_ms () - probe::settle_ms ()) \ () => settling s
+    client::after (gauge::start_delay_ms () - gauge::settle_ms ()) \ () => settling s
 
 := main () =
-    := s, ms = session_from_environment (), scoreboard::probe_timeout_ms ()
-    client::disable_client_bot (probe::bot_profile ())
-    probe::started_as (probe::knight ()) (on_text s) (\ () => ready s) ms (\ () => finish "timeout")
+    := s, ms = session_from_environment (), scoreboard::gauge_timeout_ms ()
+    client::disable_client_bot (gauge::bot_profile ())
+    gauge::started_as (gauge::knight ()) (on_text s) (\ () => ready s) ms (\ () => finish "timeout")
     0i32

@@ -8,7 +8,7 @@ parity
 bot_prelude
 bot_dofile
 bot_env
-probe
+gauge
 scoreboard
 adjacency
 observer

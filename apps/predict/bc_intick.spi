@@ -1,0 +1,53 @@
+///- --package .
+:# bc_intick static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== drive = { camp : camp; d : tactic; seed : u32 }
+
+:== pairs = list bc_dataset::pair
+
+:= logged (r : drive) (tick : i32) (p : pack) (acc : pairs) : pairs =
+    := b = bc_onpolicy::beat_at r::camp r::seed tick
+    := q = bc_decision_point::knight_view b p
+    ? bc_dataset::decides b::now q
+    ?> bc_dataset::pair_at b (bc_run::teacher ()) q :: acc
+    |: acc
+
+:~ ^ rolled (r : drive) (tick : i32) (p : pack) (acc : pairs) : pairs =
+    ? tick >= scenario_ticks ()
+    ?> acc
+    |: rolled r (tick + 1) (advance r::camp r::d r::seed tick p) (logged r tick p acc)
+
+:= drive_at (camp : camp) (d : tactic) (i : i32) : drive = { camp = camp; d = d; seed = training_first () + conv i }
+
+:~ ^ seeds_from (camp : camp) (d : tactic) (i : i32) (acc : pairs) : pairs =
+    ? i >= bc_run::seed_count ()
+    ?> acc
+    |: seeds_from camp d (i + 1) (rolled (drive_at camp d i) 0 (start camp) acc)
+
+:= teacher_pairs () : pairs = seeds_from (bc_run::bc_camp ()) (bc_run::teacher ()) 0 []
+
+:= relabelled (s : tactic) (acc : pairs) : pairs = seeds_from (bc_run::bc_camp ()) s 0 acc
+
+:= trained_on (ps : pairs) : network::weights = bc_train::quantized (bc_run::trained ps)
+
+:= count_row (name : string) (ps : pairs) : () = console::write_line (name ++# "\t" ++#? bc_run::pair_count ps)
+
+:= intick_dagger () : network::weights =
+    := base = teacher_pairs ()
+    count_row "intick_teacher_pairs" base
+    := all = relabelled (bc_eval::student_tactic (trained_on base)) base
+    count_row "intick_dagger_pairs" all
+    trained_on all
+
+:= in_tick_table (s : tactic) : bc_decision_point::tally =
+    bc_decision_point::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_decision_point::zero_tally ())
+
+:= main () =
+    := w1 = intick_dagger ()
+    bc_dagger::paired w1
+    bc_decision_point::report "intick_student_drives" (in_tick_table (bc_eval::student_tactic w1))
+    0i32

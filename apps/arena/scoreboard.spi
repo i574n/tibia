@@ -4,7 +4,7 @@
 
 :< sm'_operators
 := run_ms () : i32 = client::env_i32 "TIBIA_ARENA_RUN_MS" 150000
-:= probe_timeout_ms () : i32 = run_ms () + 50000
+:= gauge_timeout_ms () : i32 = run_ms () + 50000
 := summary_every () : i32 = 100
 
 :== tally =
@@ -62,15 +62,15 @@
     }
 
 := run_complete (p : pace) (t : tally) : () =
-    probe::note ("end: " ++# summary p t)
-    probe::finish_reporting_parity "run complete"
+    gauge::note ("end: " ++# summary p t)
+    gauge::finish_reporting_parity "run complete"
 
 := cleared_noted (p : pace) (t : tally) (on_cleared : () -> ()) : () =
     := at = elapsed p
-    probe::note ("cleared at " ++#? at ++# " ms")
-    probe::note ("cleared: " ++# summary p t)
+    gauge::note ("cleared at " ++#? at ++# " ms")
+    gauge::note ("cleared: " ++# summary p t)
     on_cleared ()
-    probe::finish_reporting_parity "cleared"
+    gauge::finish_reporting_parity "cleared"
 
 := finish_or_continue (p : pace) (t : tally) (on_cleared : () -> ()) (continue : () -> ()) : () =
     ? elapsed p > run_ms ()

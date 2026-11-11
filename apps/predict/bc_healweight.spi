@@ -1,0 +1,42 @@
+///- --package .
+:# bc_healweight static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== pairs = list bc_dataset::pair
+
+:= heal_count (acc : i32 * i32) (q : bc_dataset::pair) : i32 * i32 =
+    := pos, neg = acc
+    ? bc_dataset::is_known q::heal = !- ?> acc |? bc_dataset::agrees q::heal !+ ?> pos + 1, neg |: pos, neg + 1
+
+:= ratio_of (ps : pairs) : f32 =
+    := pos, neg = ps |> listm::fold heal_count (0, 0)
+    console::write_line ("heal_rows\tpositive\t" ++#? pos ++# "\tnegative\t" ++#? neg)
+    conv neg / conv pos
+
+:= trained_with (name : string) (es : list bc_train::example) : network::weights =
+    := w = bc_train::initial 7
+    := loss = bc_train::train (bc_run::trainer ()) w es
+    console::write_line (name ++# "_final_loss\t" ++#? loss)
+    bc_train::quantized w
+
+:= weighted (name : string) (positive : f32) (ps : pairs) : network::weights =
+    trained_with name (bc_train::heal_weighted_examples_of positive ps)
+
+:= trained_pair (twice : pairs) : network::weights * network::weights =
+    := r = ratio_of twice
+    console::write_line ("heal_weight\t" ++#? r)
+    weighted "W1" 1.0f32 twice, weighted "WR" r twice
+
+:= reported (w1 : network::weights) (wr : network::weights) : () =
+    := s = bc_indep::student_tactic wr
+    bc_indep::evaluated "W1" (bc_indep::student_tactic w1)
+    bc_indep::evaluated "WR" s
+    bc_healtrace::probes_from (bc_run::bc_camp ()) s wr 0
+
+:= main () =
+    := w1, wr = trained_pair (bc_indep2::next_round (bc_indep2::next_round (bc_run::pairs_from (training_first ()))))
+    reported w1 wr
+    0i32

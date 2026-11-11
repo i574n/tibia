@@ -6,18 +6,16 @@
 := orders_of (text : string) : array string =
     text |> sm'::split ";" |> array |> am'::choose \ part => ? part = "" ?> None |: Some part
 
-:= order_count (orders : array string) : i32 = am'::length orders
-
 := order_at (orders : array string) (position : i32) : string = am'::index (position - 1) orders
 
 := creature_line (c : client::creature) : string =
     := name = client::creature_name c
     := monster = ? client::creature_is_monster c ?> "true" |: "false"
-    "sees " ++# name ++# " monster=" ++# monster ++# " at " ++# probe::described (client::creature_spot c)
+    "sees " ++# name ++# " monster=" ++# monster ++# " at " ++# gauge::described (client::creature_spot c)
 
 :~ ^ creatures_from (people : client::crowd) (size : i32) (index : i32) : () =
     ? index <= size ?>
-        probe::note (creature_line (client::member people index))
+        gauge::note (creature_line (client::member people index))
         creatures_from people size (index + 1)
 
 := list_creatures () : () =
@@ -29,7 +27,7 @@
     client::after (1200 + 500 * (index - 1)) (\ () => client::talk ("/m " ++# order))
 
 := orders_scheduled (orders : array string) : () =
-    := count = order_count orders
+    := count = am'::length orders
     :~ ^ schedule (index : i32) : () =
         ? index <= count ?>
             order_scheduled orders index
@@ -38,25 +36,25 @@
 
 := listed_then_finish () : () =
     list_creatures ()
-    probe::finish "summoned"
+    gauge::finish "summoned"
 
 := summon_orders (summon_at : string) (orders : array string) : () =
-    probe::note ("at " ++# probe::described (client::player_spot ()))
+    gauge::note ("at " ++# gauge::described (client::player_spot ()))
     client::talk ("/pos " ++# summon_at ++# ", 7")
     orders_scheduled orders
     client::after 4000 listed_then_finish
 
 := summon_ready (summon_at : string) (orders : array string) : () =
-    probe::note ("in game as " ++# client::player_name ())
+    gauge::note ("in game as " ++# client::player_name ())
     client::after 1500 \ () => summon_orders summon_at orders
 
-:= server_text_noted (mode : string) (text : string) : () = probe::note ("server text: " ++# text)
+:= server_text_noted (mode : string) (text : string) : () = gauge::note ("server text: " ++# text)
 
 := summon_place () : string = client::env_text "TIBIA_SUMMON_AT" "1932, 1352"
 
 := wanted_orders () : array string = orders_of (client::env_text "TIBIA_SUMMON_ORDERS" "green frog,3,,2")
 
-:= timed_out () : () = probe::finish "timeout"
+:= timed_out () : () = gauge::finish "timeout"
 
 ///> lua
 ///> c
@@ -66,5 +64,5 @@
 
 := main () =
     := summon_at, orders = summon_place (), wanted_orders ()
-    probe::started_as (probe::game_master ()) server_text_noted (\ () => summon_ready summon_at orders) 60000 timed_out
+    gauge::started_as (gauge::game_master ()) server_text_noted (\ () => summon_ready summon_at orders) 60000 timed_out
     0i32

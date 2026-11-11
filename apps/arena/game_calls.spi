@@ -50,7 +50,7 @@
 
 :~ target_distance_text () : string =
     := a = client::attacking ()
-    ? client::creature_present a ?> "" ++#? probe::chebyshev (client::creature_spot a) (client::player_spot ()) |: "-"
+    ? client::creature_present a ?> "" ++#? gauge::chebyshev (client::creature_spot a) (client::player_spot ()) |: "-"
 
 :~ called_text (s : counts) : string =
     := parts = listm::fold (\ acc (name, cell) => ? *cell > 0i32 ?> (name ++# "=" ++#? *cell) :: acc |: acc) [] s::other
@@ -70,7 +70,7 @@
 ///> lua
 :# called_text_lists_called_names_in_order =
     := s = fresh_counts ()
-    listm::iter (\ (name, cell) => ? name = "walk" || name = "autoWalk" ?> probe::stored cell (*cell + 2i32)) s::other
+    listm::iter (\ (name, cell) => ? name = "walk" || name = "autoWalk" ?> gauge::stored cell (*cell + 2i32)) s::other
     called_text s |> _assert_eq "autoWalk=2 walk=2"
 
 ///> lua

@@ -75,10 +75,11 @@ $rows = @(& $exe)
 $ms = $watch.ElapsedMilliseconds
 if ($LASTEXITCODE -ne 0) { throw "predict / $Label / run failed ($LASTEXITCODE)" }
 $hunts = $rows | Select-String "^hunts`t(\d+)$" | Select-Object -Last 1
-if ($hunts) {
+$count = $hunts ? [long]$hunts.Matches[0].Groups[1].Value : [long]@($rows | Where-Object { $_ -match '^\d+\t' }).Count
+if ($count -gt 0) {
     $metrics = (New-Item -ItemType Directory -Force (Join-Path $repo 'target/ci-metrics')).FullName
-    $rate = $ms -le 0 ? 0 : [long][math]::Floor([long]$hunts.Matches[0].Groups[1].Value * 1000 / $ms)
+    $rate = $ms -le 0 ? 0 : [long][math]::Floor($count * 1000 / $ms)
     @('# TYPE tibia_sim_hunts_per_second gauge', "tibia_sim_hunts_per_second{backend=`"$Backend`"} $rate") | Set-Content (Join-Path $metrics "sim-$Label.prom")
-    Write-Host "predict / $Label / $($hunts.Matches[0].Groups[1].Value) hunts in $ms ms = $rate hunts/s"
+    Write-Host "predict / $Label / $count hunts in $ms ms = $rate hunts/s"
 }
 if ($Out) { $rows | Set-Content $Out } else { $rows }

@@ -2,3 +2,5 @@ dist/
 deps/
 target/
 notebooks/
+apps/map*/*.rs
+/Cargo.lock

@@ -1,7 +1,7 @@
 param([string] $Results = (Join-Path (Split-Path $PSScriptRoot -Parent) 'results\rows\arena_results_cyclops.spi'), [string] $Monster = 'cyclops', [datetime] $Since = [datetime]::MinValue)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'paths.ps1')
-$kitPaths = (Join-Path $env:LOCALAPPDATA 'kit\bin\kit.exe'), 'C:\home\git\kit\kit.exe'
+$kitPaths = @(Join-Path $env:LOCALAPPDATA 'kit\bin\kit.exe')
 $kit = (Get-Command kit -ErrorAction Ignore).Source ?? @($kitPaths | Where-Object { Test-Path -LiteralPath $_ })[0]
 
 & $kit table query $Results --group competitor --count cleared_ms --mean cleared_ms,potions --sd cleared_ms,potions --min lowest_health --sum deaths

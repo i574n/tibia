@@ -145,14 +145,14 @@
     console::write_line (action_row q held)
     console::write_line (engage_row q held)
 
-:= pair_count (pairs : list bc_dataset::pair) : i32 = listm::length pairs
-
 := diagnose (w : array f32) (train : list bc_dataset::pair) (held : list bc_dataset::pair) : () =
     := q = bc_train::quantized w
     report "train" q train
     report "held_out" q held
     float_rows w held
     quantized_rows q held
+
+:= pair_count (pairs : list bc_dataset::pair) : i32 = listm::length pairs
 
 := main () =
     := train = pairs_from (training_first ())
