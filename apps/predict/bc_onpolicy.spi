@@ -31,7 +31,7 @@
     ?> targeted_add c rd ed
     |: untargeted_add c rd ed
 
-:= tallied_at (b : beat) (d : tactic) (student : brain) (p : pack) (c : split) : split =
+:= counted_at (b : beat) (d : tactic) (student : brain) (p : pack) (c : split) : split =
     := aimed = aimed_by b::camp d::order p
     := t, s = plans_of b student (attackers_of aimed) aimed
     split_add aimed c (missed t s)
@@ -41,7 +41,7 @@
 
 := logged (b : beat) (d : tactic) (student : brain) (p : pack) (c : split) : split =
     ? bc_dataset::decides b::now p
-    ?> tallied_at b d student p c
+    ?> counted_at b d student p c
     |: c
 
 :== run = { camp : camp; d : tactic; sb : brain; seed : u32 }

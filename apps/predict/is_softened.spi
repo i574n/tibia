@@ -21,7 +21,7 @@
 
 := clear_ms (elapsed : i32) (finished : pack) : i32 = elapsed
 
-:= potions_milli (elapsed : i32) (finished : pack) : i32 = finished::hunter::tally::potions * 1000
+:= potions_milli (elapsed : i32) (finished : pack) : i32 = finished::hunter::counts::potions * 1000
 
 := logged_for (r : reading) (t : tactic) : hunts =
     logged_hunts r::reward (seed_run_of (troll_spot ()) t (held_out_first ()) (held_out_count ()))
@@ -62,7 +62,7 @@
     ?> acc
     |:
         := _, p = clear_run (troll_spot ()) t (held_out_first () + conv i) 6000
-        pd_sum t (i + 1) (acc + p::hunter::tally::pd_potions)
+        pd_sum t (i + 1) (acc + p::hunter::counts::pd_potions)
 
 := pd_mean (epsilon : i32) : i64 = pd_sum (scored epsilon) 0 0i64 / 65536i64 / conv (held_out_count ())
 
@@ -99,7 +99,7 @@
     ?> acc
     |:
         := _, p = clear_run (troll_spot ()) t (held_out_first () + conv i) 1800
-        capped_sum t (i + 1) (acc + conv (p::hunter::tally::potions * 1000))
+        capped_sum t (i + 1) (acc + conv (p::hunter::counts::potions * 1000))
 
 := horizon_rows (epsilon : i32) : array logprob::bucket_row =
     bucket_rows potions_milli (seed_run_of (troll_spot ()) (scored epsilon) (held_out_first ()) (held_out_count ())) 10

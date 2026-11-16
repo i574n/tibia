@@ -66,6 +66,10 @@ rows/
     arena_results_pc3_smoke
     arena_region_r45
     arena_spot_scan_r12
+    transformer_gpu_attn
+    transformer_gpu_full15m
+    transformer_gpu_full260k
+    transformer_gpu_layer
 arena_rows
 hit_grid
 walk_pace

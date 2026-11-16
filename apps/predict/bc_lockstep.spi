@@ -25,8 +25,8 @@
     := acted = units::value_of a::clock::next_action_at <> units::value_of b::clock::next_action_at
     bit (a::clock::next_decision_at <> b::clock::next_decision_at) 8 + bit acted 16
 
-:= tally_mask (a : hunter) (b : hunter) : i32 =
-    := t, u = a::tally, b::tally
+:= counts_mask (a : hunter) (b : hunter) : i32 =
+    := t, u = a::counts, b::counts
     bit (t::potions <> u::potions) 32 + bit (t::hits_taken <> u::hits_taken) 64 + bit (t::retreats <> u::retreats) 128
 
 := score_mask (a : pack) (b : pack) : i32 =
@@ -35,7 +35,7 @@
 := pack_mask (a : pack) (b : pack) : i32 =
     := h, k = a::hunter, b::hunter
     := aimed = bit (target_code h::target <> target_code k::target) 256
-    body_mask h k + clock_mask h k + tally_mask h k + aimed + score_mask a b
+    body_mask h k + clock_mask h k + counts_mask h k + aimed + score_mask a b
 
 :== lock = { camp : camp; s : tactic; seed : u32 }
 

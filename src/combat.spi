@@ -157,33 +157,33 @@
 
 := landed_after (hit : i32) (landed : i32) : i32 = ? hit > 0i32 ?> landed + 1i32 |: landed
 
-:== swing_tally = { landed : i32; total : i32 }
+:== swing_counts = { landed : i32; total : i32 }
 
-:= tallied_swing (hit : i32) (t : swing_tally) : swing_tally =
+:= counted_swing (hit : i32) (t : swing_counts) : swing_counts =
     { landed = landed_after hit t::landed; total = t::total + hit }
 
-:~ ^ swings_from (b : bout) (i : i32) (t : swing_tally) : swing_tally =
-    ? i >= b::swings ?> t |: swings_from b (i + 1i32) (tallied_swing (bout_hit b i) t)
+:~ ^ swings_from (b : bout) (i : i32) (t : swing_counts) : swing_counts =
+    ? i >= b::swings ?> t |: swings_from b (i + 1i32) (counted_swing (bout_hit b i) t)
 
 := swing_stats (s : swinger) (target : gear) (seed : u32) (swings : i32) : i32 * i32 =
     := t = swings_from (bout_of s target seed swings) 0i32 { landed = 0i32; total = 0i32 }
     t::landed, t::total
 
-:== capped_tally = { health : i32; landed : i32; total : i32 }
+:== capped_counts = { health : i32; landed : i32; total : i32 }
 
 := taken_from (hit : i32) (health : i32) : i32 = ? hit > health ?> health |: hit
 
 := health_after (max_health : i32) (left : i32) : i32 = ? left <= 0i32 ?> max_health |: left
 
-:= capped_swing (max_health : i32) (hit : i32) (t : capped_tally) : capped_tally =
+:= capped_swing (max_health : i32) (hit : i32) (t : capped_counts) : capped_counts =
     := taken = taken_from hit t::health
-    := health = health_after max_health (t::health - taken)
-    { health = health; landed = landed_after taken t::landed; total = t::total + taken }
+    := left = health_after max_health (t::health - taken)
+    { health = left; landed = landed_after taken t::landed; total = t::total + taken }
 
-:~ ^ capped_from (b : bout) (max_health : i32) (i : i32) (t : capped_tally) : capped_tally =
+:~ ^ capped_from (b : bout) (max_health : i32) (i : i32) (t : capped_counts) : capped_counts =
     ? i >= b::swings ?> t |: capped_from b max_health (i + 1i32) (capped_swing max_health (bout_hit b i) t)
 
-:= fresh_capped (max_health : i32) : capped_tally = { health = max_health; landed = 0i32; total = 0i32 }
+:= fresh_capped (max_health : i32) : capped_counts = { health = max_health; landed = 0i32; total = 0i32 }
 
 := capped_hit_stats (s : swinger) (target : gear) (max_health : i32) (seed : u32) (swings : i32) : i32 * i32 =
     := t = capped_from (bout_of s target seed swings) max_health 0i32 (fresh_capped max_health)

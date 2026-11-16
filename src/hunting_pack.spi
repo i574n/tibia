@@ -173,7 +173,7 @@
         next_decision_at : i32
     }
 
-:== hunter_tally =
+:== hunter_counts =
     {
         potions : i32
         hits_taken : i32
@@ -192,7 +192,7 @@
         next_step_at : i32
         target : option i32
         clock : hunter_clock
-        tally : hunter_tally
+        counts : hunter_counts
         waypoint : i32
         call_sign : party_slot
     }
@@ -216,7 +216,7 @@
 
 := with_timers (held : cooldowns::timers) (h : hunter) : hunter = h |> with_clock { (h::clock) ?| timers = held }
 
-:= with_tally (t : hunter_tally) (h : hunter) : hunter = { h ?| tally = t }
+:= with_counts (t : hunter_counts) (h : hunter) : hunter = { h ?| counts = t }
 
 := with_score (s : pack_score) (p : pack) : pack = { p ?| score = s }
 
@@ -224,7 +224,7 @@
 
 := turned (p : pack) : pack = { p ?| hunter = p::ally; ally = p::hunter }
 
-:= party_potions (p : pack) : i32 = p::hunter::tally::potions + p::ally::tally::potions
+:= party_potions (p : pack) : i32 = p::hunter::counts::potions + p::ally::counts::potions
 
 :| learned_core =
     | CoreNetwork : network::weights
@@ -738,7 +738,7 @@
         next_decision_at = 0
     }
 
-:= zero_tally () : hunter_tally =
+:= zero_counts () : hunter_counts =
     {
         potions = 0
         hits_taken = 0
@@ -757,7 +757,7 @@
         next_step_at = 0
         target = None
         clock = idle_clock ()
-        tally = zero_tally ()
+        counts = zero_counts ()
         waypoint = 0
         call_sign = s
     }
@@ -809,12 +809,12 @@
 
 := distance_to (f : foe) (p : pack) : i32 = geometry::chebyshev_distance p::hunter::at f::at
 
-:= tallied_hurt (hurt : i32) (t : hunter_tally) : hunter_tally =
+:= counted_hurt (hurt : i32) (t : hunter_counts) : hunter_counts =
     := hits = ? hurt > 0 ?> t::hits_taken + 1 |: t::hits_taken
     { t ?| hits_taken = hits; damage_taken = units::plus t::damage_taken (quantity::hp hurt) }
 
 := hurt_by (hurt : i32) (h : hunter) : hunter =
-    { h ?| health = units::minus h::health (quantity::hp hurt); tally = tallied_hurt hurt h::tally }
+    { h ?| health = units::minus h::health (quantity::hp hurt); counts = counted_hurt hurt h::counts }
 
 := melee_hurt (c : camp) (seed : u32) (tick : i32) (index : i32) (shield : bool) : i32 =
     := roll = key seed tick index PackCreatureHit
@@ -1435,7 +1435,7 @@
 := healed_health (camp : camp) (amount : i32) (h : hunter) : hit_points =
     units::capped (player_max_health camp) (units::plus h::health (quantity::hp amount))
 
-:= potion_tally (t : hunter_tally) : hunter_tally =
+:= counted_potion (t : hunter_counts) : hunter_counts =
     := w = logprob::pd_weight t::target_log t::log_path
     { t ?| potions = t::potions + 1; pd_potions = t::pd_potions + w * 1000i64 }
 
@@ -1443,7 +1443,7 @@
     { h ?|
         health = healed_health camp amount h
         clock = healed_clock slot h
-        tally = potion_tally h::tally
+        counts = counted_potion h::counts
     }
 
 :~ player_heals (camp : camp) (seed : u32) (tick : i32) (slot : action_proof) (p : pack) : pack =
@@ -1642,15 +1642,15 @@
         timers = ? stuck ?> h::clock::timers |: swing_after_step r::camp r::now h::clock::timers
     }
 
-:= retreat_tally (stuck : bool) (h : hunter) : hunter_tally =
-    { (h::tally) ?|
-        retreats = ? stuck ?> h::tally::retreats |: h::tally::retreats + 1
-        cornered = ? stuck ?> h::tally::cornered + 1 |: h::tally::cornered
+:= counted_retreat (stuck : bool) (h : hunter) : hunter_counts =
+    { (h::counts) ?|
+        retreats = ? stuck ?> h::counts::retreats |: h::counts::retreats + 1
+        cornered = ? stuck ?> h::counts::cornered + 1 |: h::counts::cornered
     }
 
 := retreated_hunter (r : retreat_beat) (stuck : bool) (to : geometry::position) (h : hunter) : hunter =
     := moved = { h ?| at = to; next_step_at = retreat_step_at r::camp r::now h to }
-    { moved ?| clock = retreat_clock r stuck h; tally = retreat_tally stuck h }
+    { moved ?| clock = retreat_clock r stuck h; counts = counted_retreat stuck h }
 
 := retreat_with (r : retreat_beat) (away : geometry::position) (p : pack) : pack =
     p |> with_hunter (retreated_hunter r (geometry::same_tile away p::hunter::at) away p::hunter)
@@ -1792,7 +1792,7 @@
     | Cfr c => cfr_heals b c attackers p
     | other => weights_heals b other attackers p
 
-:~ wants_heal (b : beat) (d : brain) (attackers : i32) (p : pack) : bool =
+:= wants_heal (b : beat) (d : brain) (attackers : i32) (p : pack) : bool =
     ?= d ?|
     | Rules a => rules_heals a attackers b::now p
     | Temperate r => temperate_heals b r p
@@ -1871,7 +1871,7 @@
     | Cfr c => cfr_plan b c attackers p
     | other => weights_plan b other attackers p
 
-:~ after_heal_plan (b : beat) (d : brain) (attackers : i32) (p : pack) : plan =
+:= after_heal_plan (b : beat) (d : brain) (attackers : i32) (p : pack) : plan =
     ?= d ?|
     | Rules a => rules_plan a attackers b::now p
     | Temperate r => temperate_plan b r p
@@ -1973,7 +1973,7 @@
     readiness::action_gate (quantity::ms now) h::clock::next_action_at
 
 := can_drink (b : beat) (p : pack) : bool =
-    p::hunter::tally::potions < b::camp::crew::potion_budget
+    p::hunter::counts::potions < b::camp::crew::potion_budget
     && cooldowns::can_cast b::now (vocations::as_cooldown (vocations::knight_heal ())) p::hunter::clock::timers
 
 := drinks (b : beat) (p : pack) : pack =
@@ -2033,7 +2033,7 @@
 := attackers_of (p : pack) : i32 = fixed_views::counted (\ (f : foe) => distance_to f p <= 1) p::foes
 
 :~ heals_now (b : beat) (t : tactic) (attackers : i32) (q : pack) : bool =
-    q::hunter::tally::potions < b::camp::crew::potion_budget && wants_heal b t::brain attackers q
+    q::hunter::counts::potions < b::camp::crew::potion_budget && wants_heal b t::brain attackers q
 
 :~ heal_gate (b : beat) (heals : bool) (q : pack) : pack =
     ?= readiness::action_gate (quantity::ms b::now) q::hunter::clock::next_action_at ?|
@@ -2071,24 +2071,24 @@
     ?= after_heal_plan b t::brain attackers q ?|
     | retreat, plan => retreat_or_engage b t retreat plan aim q
 
-:~ acts_on_target (b : beat) (t : tactic) (attackers : i32) (q : pack) : pack =
+:= acts_on_target (b : beat) (t : tactic) (attackers : i32) (q : pack) : pack =
     ?= q::hunter::target ?|
     | None => patrol_turn b t q
     | Some aim => target_turn b t attackers aim q
 
 := with_log_path (add : i32) (p : pack) : pack =
     := h = p::hunter
-    p |> with_hunter { h ?| tally = { (h::tally) ?| log_path = h::tally::log_path + add } }
+    p |> with_hunter { h ?| counts = { (h::counts) ?| log_path = h::counts::log_path + add } }
 
 := target_probs_of (b : beat) (t : soft_target) (attackers : i32) (taken : network::decision) (p : pack) : array i32 =
     soft_policy::target_probs (core_decision t::core (features b::camp attackers b::now p)) t::epsilon taken
 
 := with_target_path (next : logprob::target_path) (p : pack) : pack =
     := h = p::hunter
-    p |> with_hunter { h ?| tally = { (h::tally) ?| target_log = next } }
+    p |> with_hunter { h ?| counts = { (h::counts) ?| target_log = next } }
 
 := scored_step (b : beat) (t : soft_target) (attackers : i32) (taken : network::decision) (p : pack) : pack =
-    with_target_path (logprob::along p::hunter::tally::target_log (target_probs_of b t attackers taken p)) p
+    with_target_path (logprob::along p::hunter::counts::target_log (target_probs_of b t attackers taken p)) p
 
 := with_target_log (b : beat) (s : soft_brain) (attackers : i32) (taken : network::decision) (p : pack) : pack =
     ?= s::scored_as ?|
@@ -2108,7 +2108,7 @@
     | Cfr c => cfr_logged b c attackers p
     | _ => p
 
-:~ acts_after_aim (b : beat) (t : tactic) (aimed : pack) : pack =
+:= acts_after_aim (b : beat) (t : tactic) (aimed : pack) : pack =
     := attackers = attackers_of aimed
     acts_on_target b t attackers (heal_gate b (heals_now b t attackers aimed) (logged b t attackers aimed))
 
@@ -2137,7 +2137,7 @@
 := recharged (now : i32) (p : pack) : pack =
     ? now < p::hunter::clock::next_charge_at ?> p |: p |> with_hunter (charged_up now p::hunter)
 
-:~ decided_turn (b : beat) (t : tactic) (p : pack) : pack =
+:= decided_turn (b : beat) (t : tactic) (p : pack) : pack =
     := h = p::hunter
     := decided = h |> with_clock { (h::clock) ?| next_decision_at = b::now + client_decision_ms () }
     player_acts b::camp t b::seed b::tick b::now (p |> with_hunter decided)
@@ -2262,7 +2262,7 @@
 
 := logged_hunt_of (reward : reward_of) (camp : camp) (t : tactic) (seed : u32) : logprob::logged_hunt =
     := elapsed, p = clear_run camp t seed 6000
-    := k = p::hunter::tally
+    := k = p::hunter::counts
     { target = k::target_log; behavior_log = k::log_path; reward = reward elapsed p }
 
 :~ ^ fill_hunts (reward : reward_of) (run : seed_run) (out : array logprob::logged_hunt) (i : i32) : () =
@@ -2279,13 +2279,13 @@
 
 := snapshot (run : seed_run) (seed : u32) (ticks : i32) : i32 * pack = clear_run run::camp run::tactic seed ticks
 
-:= logged_of (t : hunter_tally) (reward : i32) : logprob::logged_hunt =
+:= logged_of (t : hunter_counts) (reward : i32) : logprob::logged_hunt =
     { target = t::target_log; behavior_log = t::log_path; reward = reward }
 
 := bucket_row_of (reward : reward_of) (run : seed_run) (seed : u32) (b : i32) (k : i32) =
     := e0, p0 = snapshot run seed (b * k)
     := e1, p1 = snapshot run seed ((b + 1) * k)
-    logprob::row b (logged_of p1::hunter::tally (reward e1 p1 - reward e0 p0))
+    logprob::row b (logged_of p1::hunter::counts (reward e1 p1 - reward e0 p0))
 
 := row_at (reward : reward_of) (run : seed_run) (buckets : i32) (i : i32) : logprob::bucket_row =
     bucket_row_of reward run (run::first + conv (i / buckets)) (i % buckets) (bucket_ticks buckets)
@@ -2330,12 +2330,12 @@
 := profit (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : gold_amount =
     profit_from (seed_run_of camp t first_seed count) 0 (quantity::gp 0)
 
-:= tallied (acc : i32 * i32 * i32) (p : pack) : i32 * i32 * i32 =
+:= counted_pack (acc : i32 * i32 * i32) (p : pack) : i32 * i32 * i32 =
     := kills, escapes, deaths = acc
     kills + p::score::kills, escapes + p::score::escapes, deaths + p::score::deaths
 
 :~ ^ totals_from (r : seed_run) (index : i32) (acc : i32 * i32 * i32) : i32 * i32 * i32 =
-    ? index >= r::count ?> acc |: totals_from r (index + 1) (tallied acc (hunt_at r index))
+    ? index >= r::count ?> acc |: totals_from r (index + 1) (counted_pack acc (hunt_at r index))
 
 := totals (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : i32 * i32 * i32 =
     totals_from (seed_run_of camp t first_seed count) 0 (0, 0, 0)
@@ -2775,17 +2775,17 @@
 
 := soft_test_run (epsilon : i32) : pack = soft_test_hunt (softened_tactic (CoreNetwork (soft_test_healer ())) epsilon)
 
-:= kills_and_potions (p : pack) : i32 * i32 = p::score::kills, p::hunter::tally::potions
+:= kills_and_potions (p : pack) : i32 * i32 = p::score::kills, p::hunter::counts::potions
 
 ///> c
 :# a_softened_brain_without_exploration_hunts_like_its_core =
     := greedy = soft_test_run 0
-    (kills_and_potions greedy, greedy::hunter::tally::log_path)
+    (kills_and_potions greedy, greedy::hunter::counts::log_path)
     |> _assert_eq (kills_and_potions (greedy_test_hunt ()), 0i32)
 
 ///> c
 :# exploration_logs_a_negative_path_weight =
-    ((soft_test_run 100)::hunter::tally::log_path < 0) |> _assert_eq !+
+    ((soft_test_run 100)::hunter::counts::log_path < 0) |> _assert_eq !+
 
 := scored_test_run (epsilon : i32) (target : i32) : pack =
     := core = CoreNetwork (soft_test_healer ())
@@ -2794,18 +2794,18 @@
 ///> c
 :# a_target_equal_to_the_behavior_logs_its_path =
     := same = scored_test_run 100 100
-    logprob::path_pair same::hunter::tally::target_log |> _assert_eq (!+, same::hunter::tally::log_path)
+    logprob::path_pair same::hunter::counts::target_log |> _assert_eq (!+, same::hunter::counts::log_path)
 
 ///> c
 :# a_greedy_target_leaves_the_path_of_an_exploring_hunt =
-    logprob::path_pair (scored_test_run 100 0)::hunter::tally::target_log |> _assert_eq (!-, 0i32)
+    logprob::path_pair (scored_test_run 100 0)::hunter::counts::target_log |> _assert_eq (!-, 0i32)
 
 ///> c
 :# a_target_equal_to_the_behavior_weighs_every_potion_one =
-    := t = (scored_test_run 100 100)::hunter::tally
+    := t = (scored_test_run 100 100)::hunter::counts
     t::pd_potions |> _assert_eq ((conv t::potions : i64) * 65536000i64)
 
-:= potion_milli (elapsed : i32) (finished : pack) : i32 = finished::hunter::tally::potions * 1000
+:= potion_milli (elapsed : i32) (finished : pack) : i32 = finished::hunter::counts::potions * 1000
 
 := bucket_test_run () : seed_run =
     := core = CoreNetwork (soft_test_healer ())
@@ -2815,4 +2815,4 @@
 :# bucket_rewards_add_up_to_the_cleared_hunt =
     := run = bucket_test_run ()
     := _, p = clear_run run::camp run::tactic 7u32 6000
-    logprob::wpdis (bucket_rows potion_milli run 4) 4 |> _assert_eq (conv (p::hunter::tally::potions * 1000) : i64)
+    logprob::wpdis (bucket_rows potion_milli run 4) 4 |> _assert_eq (conv (p::hunter::counts::potions * 1000) : i64)

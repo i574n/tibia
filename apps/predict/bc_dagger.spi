@@ -34,7 +34,7 @@
     := s = bc_eval::student_tactic w
     bc_direction::report
         "dagger_student_drives"
-        (bc_direction::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_direction::zero_tally ()))
+        (bc_direction::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_direction::zero_counts ()))
 
 := student_of (train : list bc_dataset::pair) : tactic =
     bc_eval::student_tactic (bc_train::quantized (bc_run::trained train))

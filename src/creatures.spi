@@ -154,7 +154,7 @@
     ?> (10013 * speed + 45006) / 4096
     |: step_speed_above_96 speed
 
-:= canary_step_speed (speed : i32) : i32 =
+:~ canary_step_speed (speed : i32) : i32 =
     ? speed < 8
     ?> 1
     |? speed <= 35

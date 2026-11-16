@@ -21,12 +21,12 @@
             each (i + 1)
     each 0
 
-:= clear_head (arm : i32) (i : i32) (h : hunter_tally) : string =
+:= clear_head (arm : i32) (i : i32) (h : hunter_counts) : string =
     "" ++#? table_clear () |> tabbed arm |> tabbed i |> tabbed h::retreats |> tabbed h::hits_taken
 
 := clear_row (arm : i32) (camp : camp) (t : tactic) (i : i32) (seed : u32) : string =
     := elapsed, p = clear_run camp t seed 6000
-    := h = p::hunter::tally
+    := h = p::hunter::counts
     clear_head arm i h |> tabbed (units::value_of h::damage_taken) |> tabbed h::potions |> tabbed elapsed
 
 := hunter_head (camp : camp) (i : i32) (p : pack) : string =
@@ -35,7 +35,7 @@
 
 := hunter_line (camp : camp) (i : i32) (run : i32 * pack) : string =
     := dt, p = run
-    := h = p::hunter::tally
+    := h = p::hunter::counts
     := head = hunter_head camp i p |> tabbed dt |> tabbed h::potions
     head |> tabbed h::hits_taken |> tabbed (units::value_of h::damage_taken)
 
@@ -43,7 +43,7 @@
     hunter_line camp i (clear_run camp t seed 2000i32)
 
 := hunt_line (i : i32) (p : pack) : string =
-    := h = p::hunter::tally
+    := h = p::hunter::counts
     := head = "" ++#? table_hunt () |> tabbed i |> tabbed p::score::kills |> tabbed h::hits_taken
     head |> tabbed (units::value_of h::damage_taken) |> tabbed h::potions
 

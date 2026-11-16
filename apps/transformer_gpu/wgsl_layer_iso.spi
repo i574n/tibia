@@ -1,0 +1,227 @@
+:# wgsl_layer_iso static =
+    :< testing
+
+:= declare () : () =
+    global "@group(0) @binding(3) var<storage, read> spiral_input: array<u32>;"
+
+:= declare_rows () : () =
+    global "var<workgroup> spiral_rows: array<f32, 1024>;"
+
+:= word (i : u32) : u32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare ()
+            $'spiral_input[!i]' : u32
+        | _ => \ () => failwith "wgsl_layer_iso.word / the input binding exists only on Wgsl"
+
+:= input_words () : u32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare ()
+            $'arrayLength(&spiral_input)' : u32
+        | _ => \ () => failwith "wgsl_layer_iso.input_words / the input binding exists only on Wgsl"
+
+:= lane () : u32 =
+    run_target \|
+        | Wgsl => \ () => $'spiral_lane' : u32
+        | _ => \ () => failwith "wgsl_layer_iso.lane / exists only on Wgsl"
+
+:= row_get (i : u32) : f32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_rows ()
+            $'spiral_rows[!i]' : f32
+        | _ => \ () => failwith "wgsl_layer_iso.row_get / workgroup rows exist only on Wgsl"
+
+:= row_set (i : u32) (v : f32) : () =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_rows ()
+            $'spiral_rows[!i] = !v' : ()
+        | _ => \ () => failwith "wgsl_layer_iso.row_set / workgroup rows exist only on Wgsl"
+
+:= barrier () : () =
+    run_target \|
+        | Wgsl => \ () => $'workgroupBarrier()' : ()
+        | _ => \ () => failwith "wgsl_layer_iso.barrier / exists only on Wgsl"
+
+:= float_word (i : u32) : f32 = convert::f32_of_bits (word i)
+
+:= fused (a : f32) (b : f32) (c : f32) : f32 = $'fma(!a, !b, !c)' : f32
+
+:= dim () : u32 = word 0u32
+
+:= hidden () : u32 = word 1u32
+
+:= layers () : u32 = word 2u32
+
+:= hs () : u32 = dim () / word 3u32
+
+:= kv_dim () : u32 = dim () * word 4u32 / word 3u32
+
+:= kv_mul () : u32 = word 3u32 / word 4u32
+
+:= rms_base () : u32 = 7u32 + word 5u32 * dim ()
+
+:= wq_base () : u32 = rms_base () + layers () * dim ()
+
+:= wk_base () : u32 = wq_base () + layers () * dim () * dim ()
+
+:= wv_base () : u32 = wk_base () + layers () * dim () * kv_dim ()
+
+:= wo_base () : u32 = wv_base () + layers () * dim () * kv_dim ()
+
+:= ffn_rms_base () : u32 = wo_base () + layers () * dim () * dim ()
+
+:= w1_base () : u32 = ffn_rms_base () + layers () * dim ()
+
+:= w2_base () : u32 = w1_base () + layers () * dim () * hidden ()
+
+:= w3_base () : u32 = w2_base () + layers () * dim () * hidden ()
+
+:= emb_of_pos (pos : u32) : u32 = 7u32 + (pos + 1u32) * dim ()
+
+:= ref_base () : u32 = input_words () - (3u32 * dim () + hidden ())
+
+:= ref_get (i : u32) : f32 = float_word (ref_base () + i)
+
+:= rope_base () : u32 = ref_base () - word 6u32 * dim ()
+
+:= x1_at () : u32 = dim ()
+
+:= hb_at () : u32 = 2u32 * dim ()
+
+:= x2_at () : u32 = 2u32 * dim () + hidden ()
+
+:~ sum_squares_w (x : u32) (j : u32) (s : f32) : f32 =
+    ? j = dim ()
+    ?> s
+    |:
+        := v = float_word (x + j)
+        sum_squares_w x (j + 1u32) (fused v v s)
+
+:~ sum_squares_r (x : u32) (j : u32) (s : f32) : f32 =
+    ? j = dim ()
+    ?> s
+    |:
+        := v = ref_get (x + j)
+        sum_squares_r x (j + 1u32) (fused v v s)
+
+:= inv_of (ss : f32) : f32 =
+    := shifted = ss / conv (dim ()) + 0.00001f32
+    1f32 / $'sqrt(!shifted)' : f32
+
+:~ qkv_dot (base : u32) (x : u32) (inv : f32) (row : u32) (j : u32) (s : f32) : f32 =
+    ? j = dim ()
+    ?> s
+    |:
+        := xb = float_word (rms_base () + j) * (inv * float_word (x + j))
+        qkv_dot base x inv row (j + 1u32) (fused (float_word (base + row * dim () + j)) xb s)
+
+:~ proj (base : u32) (pos : u32) (row : u32) : f32 =
+    := x = emb_of_pos pos
+    qkv_dot base x (inv_of (sum_squares_w x 0u32 0f32)) row 0u32 0f32
+
+:~ rope_at (base : u32) (pos : u32) (i : u32) : f32 =
+    := even = i - i % 2u32
+    := at = rope_base () + pos * dim () + even
+    := c = float_word at
+    := s = float_word (at + 1u32)
+    := v0 = proj base pos even
+    := v1 = proj base pos (even + 1u32)
+    ? i = even
+    ?> $'fma(!v0, !c, -(!v1 * !s))' : f32
+    |: $'fma(!v0, !s, !v1 * !c)' : f32
+
+:~ score_dot (head : u32) (t : u32) (i : u32) (s : f32) : f32 =
+    ? i = hs ()
+    ?> s
+    |:
+        score_dot head t
+            (i + 1u32)
+            (
+                fused
+                    (rope_at (wq_base ()) 1u32 (head * hs () + i))
+                    (rope_at (wk_base ()) t (head / kv_mul () * hs () + i))
+                    s
+            )
+
+:~ score (head : u32) (t : u32) : f32 =
+    := width = conv (hs ()) : f32
+    score_dot head t 0u32 0f32 / $'sqrt(!width)' : f32
+
+:~ att_of (head : u32) (t : u32) : f32 =
+    := s0 = score head 0u32
+    := s1 = score head 1u32
+    := mx = ? s0 > s1 ?> s0 |: s1
+    := e0 = $'exp(!s0 - !mx)' : f32
+    := e1 = $'exp(!s1 - !mx)' : f32
+    := total = (0f32 + e0) + e1
+    ? t = 0u32 ?> e0 / total |: e1 / total
+
+:~ attn_row (i : u32) : f32 =
+    := head = i / hs ()
+    := kv = head / kv_mul () * hs () + i % hs ()
+    := s0 = fused (att_of head 0u32) (proj (wv_base ()) 0u32 kv) 0f32
+    fused (att_of head 1u32) (proj (wv_base ()) 1u32 kv) s0
+
+:~ wo_dot (i : u32) (j : u32) (s : f32) : f32 =
+    ? j = dim ()
+    ?> s
+    |: wo_dot i (j + 1u32) (fused (float_word (wo_base () + i * dim () + j)) (ref_get j) s)
+
+:~ ffn_dot (base : u32) (inv : f32) (i : u32) (j : u32) (s : f32) : f32 =
+    ? j = dim ()
+    ?> s
+    |:
+        := xb = float_word (ffn_rms_base () + j) * (inv * ref_get (x1_at () + j))
+        ffn_dot base inv i (j + 1u32) (fused (float_word (base + i * dim () + j)) xb s)
+
+:~ hb_row (i : u32) : f32 =
+    := inv = inv_of (sum_squares_r (x1_at ()) 0u32 0f32)
+    := h1 = ffn_dot (w1_base ()) inv i 0u32 0f32
+    := h3 = ffn_dot (w3_base ()) inv i 0u32 0f32
+    := gate = 1f32 + $'exp(-!h1)' : f32
+    := silu = h1 * (1f32 / gate)
+    silu * h3
+
+:~ w2_dot (i : u32) (j : u32) (s : f32) : f32 =
+    ? j = hidden ()
+    ?> s
+    |: w2_dot i (j + 1u32) (fused (float_word (w2_base () + i * hidden () + j)) (ref_get (hb_at () + j)) s)
+
+:~ stage_value (stage : u32) (i : u32) : f32 =
+    ? stage = 0u32
+    ?> attn_row i
+    |:
+        ? stage = 1u32
+        ?> float_word (emb_of_pos 1u32 + i) + wo_dot i 0u32 0f32
+        |:
+            ? stage = 2u32
+            ?> hb_row i
+            |: ref_get (x1_at () + i) + w2_dot i 0u32 0f32
+
+:~ fill (stage : u32) (lo : u32) (size : u32) (local : u32) (k : u32) (rounds : u32) : () =
+    ? k = rounds
+    ?> ()
+    |:
+        := r = local + 64u32 * k
+        ? r < size ?> row_set (lo + r) (stage_value stage r) |: ()
+        fill stage lo size local (k + 1u32) rounds
+
+:= stage (index : u32) (lo : u32) (size : u32) (local : u32) : () =
+    fill index lo size local 0u32 ((size + 63u32) / 64u32)
+    barrier ()
+
+:= bits (v : f32) : i32 = conv (convert::bits_of_f32 v)
+
+:= main () : i32 =
+    := l = lane ()
+    := local = l % 64u32
+    stage 0u32 0u32 (dim ()) local
+    stage 1u32 (x1_at ()) (dim ()) local
+    stage 2u32 (hb_at ()) (hidden ()) local
+    stage 3u32 (x2_at ()) (dim ()) local
+    ? l < x2_at () + dim ()
+    ?> bits (row_get l)
+    |: 0i32

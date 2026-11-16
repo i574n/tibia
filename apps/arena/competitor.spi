@@ -265,11 +265,11 @@
 := decision_code (d : network::decision) : i32 =
     (? d::heal ?> 1 |: 0) + (? d::engage ?> 2 |: 0) + (? d::retreat ?> 4 |: 0)
 
-:== tally = scoreboard::tally
+:== counts = scoreboard::counts
 
-:== tallied = tally * clocks
+:== clocked = counts * clocks
 
-:== acted = bool * tally * clocks
+:== acted = bool * counts * clocks
 
 :== sensed = { here : client::spot; people : client::crowd; seen : option sighting; danger : threat }
 
@@ -307,7 +307,7 @@
     := what = ? drunk ?> "heal (potion) at health " |: "heal dropped by the action gate at health "
     gauge::note ((what ++#? m::health))
 
-:= drank (m : moment) (t : tally) (k : clocks) : tallied =
+:= drank (m : moment) (t : counts) (k : clocks) : clocked =
     := drunk = client::drink (health_potion ())
     heal_noted m drunk
     ? drunk ?> { t ?| heals = t::heals + 1 }, { k ?| last_heal_at = m::now } |: t, k
@@ -342,34 +342,34 @@
         ? client::same_creature (client::attacking ()) target = !- ?> attacked m chasing target
     | None => ()
 
-:= engaged (m : moment) (chasing : bool) (t : tally) : tally =
+:= engaged (m : moment) (chasing : bool) (t : counts) : counts =
     chase_noted m chasing
     client::chasing chasing
     aimed m chasing
     { t ?| strikes = t::strikes + 1 }
 
-:= held (m : moment) (t : tally) : tally =
+:= held (m : moment) (t : counts) : counts =
     ? client::attacking_anyone () && reach_of m = (:< policy ;; InReach) ?>
         client::cancel_attack ()
         gauge::note (("hold at health " ++#? m::health))
     { t ?| holds = t::holds + 1 }
 
-:= stepped_away (next_step_at : i32) (t : tally) (k : clocks) : acted =
+:= stepped_away (next_step_at : i32) (t : counts) (k : clocks) : acted =
     !+, { t ?| retreats = t::retreats + 1 }, { k ?| next_step_at = next_step_at }
 
-:= retreat_counted (outcome : retreat) (next_step_at : i32) (t : tally) (k : clocks) : acted =
+:= retreat_counted (outcome : retreat) (step_at : i32) (t : counts) (k : clocks) : acted =
     ?= outcome ?|
-    | Stepped => stepped_away next_step_at t k
+    | Stepped => stepped_away step_at t k
     | Gated => !-, { t ?| gated = t::gated + 1 }, k
     | Cornered => !-, { t ?| cornered = t::cornered + 1 }, k
 
 := danger_spot (s : sensed) (first : i32) : client::spot = client::creature_spot (client::member s::people first)
 
-:= retreat_from (m : moment) (t : tally) (k : clocks) (threat : client::spot) : acted =
+:= retreat_from (m : moment) (t : counts) (k : clocks) (threat : client::spot) : acted =
     := outcome, next_step_at = step_away m::a m::sense::here threat m::sense::people t::cornered
     retreat_counted outcome next_step_at t k
 
-:= retreated_now (m : moment) (t : tally) (k : clocks) : acted =
+:= retreated_now (m : moment) (t : counts) (k : clocks) : acted =
     ?= m::sense::danger::first ?|
     | Some first => retreat_from m t k (danger_spot m::sense first)
     | None => !-, t, k
@@ -398,16 +398,16 @@
     := max_health = client::player_max_health ()
     decision_code (network::decide (network_weights m::a::plan max_health) (network_inputs m max_health))
 
-:= kite_engaged (m : moment) (code : i32) (t : tally) (k : clocks) : tallied =
+:= kite_engaged (m : moment) (code : i32) (t : counts) (k : clocks) : clocked =
     := reach = reach_of m
     ? (code / 2) % 2 = 1 && reach <> (:< policy ;; NoTarget)
     ?> engaged m (reach = (:< policy ;; OutOfReach)) t, k
     |: held m t, k
 
-:= kite_drank (m : moment) (code : i32) (t : tally) (k : clocks) : tallied =
+:= kite_drank (m : moment) (code : i32) (t : counts) (k : clocks) : clocked =
     ? code % 2 = 1 && m::heal_ready ?> drank m t k |: t, k
 
-:= kited (m : moment) (t : tally) (k : clocks) : tallied =
+:= kited (m : moment) (t : counts) (k : clocks) : clocked =
     := code = kite_code m
     := t, k = kite_drank m code t k
     := retreated, t, k = ? (code / 4) % 2 = 1 && m::can_step ?> retreated_now m t k |: !-, t, k
@@ -425,11 +425,11 @@
 := may_retreat (m : moment) : bool =
     m::a::plan::retreat_at > 0 && policy::retreats (adaptive_of m) m::sense::danger::attackers && m::can_step
 
-:= policy_engaged (m : moment) (t : tally) (k : clocks) : tallied =
+:= policy_engaged (m : moment) (t : counts) (k : clocks) : clocked =
     := decision = policy::engagement_code (policy::engages (thresholds_of m) (observed m))
     ? decision = 1 || decision = 2 ?> engaged m (decision = 2) t, k |: held m t, k
 
-:= policy_chose (m : moment) (t : tally) (k : clocks) : tallied =
+:= policy_chose (m : moment) (t : counts) (k : clocks) : clocked =
     := t, k = ? policy::heals (thresholds_of m) (observed m) ?> drank m t k |: t, k
     := r, t, k = ? may_retreat m ?> retreated_now m t k |: !-, t, k
     ? r ?> t, k |: policy_engaged m t k
@@ -446,49 +446,49 @@
     := zone = client::player_zone ()
     " attacking " ++# attacking ++# " player at " ++# at ++# " pz " ++# zone
 
-:= summary_noted (a : arena) (t : tally) : () =
+:= summary_noted (a : arena) (t : counts) : () =
     := detail = player_detail ()
     gauge::note (scoreboard::summary a::pace t ++# detail)
 
-:= traced (a : arena) (t : tally) : () =
+:= traced (a : arena) (t : counts) : () =
     ? scoreboard::due_for_trace t ?> sighting_noted ()
     ? scoreboard::due_for_summary t ?> summary_noted a t
 
-:= kills_counted (a : arena) (t : tally) : tally = { t ?| kills = t::kills + client::forget_dead a::engaged }
+:= kills_counted (a : arena) (t : counts) : counts = { t ?| kills = t::kills + client::forget_dead a::engaged }
 
-:= lived (a : arena) (now : i32) (health : i32) (t : tally) (k : clocks) : tallied =
+:= lived (a : arena) (now : i32) (health : i32) (t : counts) (k : clocks) : clocked =
     := t = kills_counted a t
     := m = moment_at a k now health
     := t, k = ? a::plan::kite_at > 0 ?> kited m t k |: policy_chose m t k
     traced a t
     t, k
 
-:= died (a : arena) (t : tally) : option tallied =
+:= died (a : arena) (t : counts) : option clocked =
     gauge::note ("dead: " ++# scoreboard::summary a::pace t)
     finish "death"
     None
 
-:= present_outcome (a : arena) (t : tally) (k : clocks) : option tallied =
+:= present_outcome (a : arena) (t : counts) (k : clocks) : option clocked =
     := now = client::now_ms ()
     := health = client::player_health ()
     := t = scoreboard::counted health t
     ? health <= 0 ?> died a t |: Some (lived a now health t k)
 
-:= outcome_of_tick (a : arena) (t : tally) (k : clocks) : option tallied =
+:= outcome_of_tick (a : arena) (t : counts) (k : clocks) : option clocked =
     ? client::player_present () = !- ?>
         finish "offline"
         None
     |: present_outcome a t k
 
-:= continued (a : arena) (t : tally) (next : () -> ()) : () =
+:= continued (a : arena) (t : counts) (next : () -> ()) : () =
     scoreboard::finish_or_continue a::pace t (adjacency::on_cleared a::meter) next
 
-:~ ^ ticked (a : arena) (t : tally) (k : clocks) : () =
+:~ ^ ticked (a : arena) (t : counts) (k : clocks) : () =
     ?= outcome_of_tick a t k ?|
     | None => ()
     | Some (t, k) => continued a t \ () => client::after (tick_ms ()) (\ () => ticked a t k)
 
-:= tick (a : arena) (first : tally) (first_clocks : clocks) : () = ticked a first first_clocks
+:= tick (a : arena) (first : counts) (first_clocks : clocks) : () = ticked a first first_clocks
 
 :~ ^ usable_from (sx : i32) (sy : i32) (slot : i32) (n : i32) : i32 =
     ? slot >= slots () ?> n |: usable_from sx sy (slot + 1) (? usable (candidate_step sx sy slot) ?> n + 1 |: n)

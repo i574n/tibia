@@ -43,8 +43,8 @@
     count_row "intick_dagger_pairs" all
     trained_on all
 
-:= in_tick_table (s : tactic) : bc_decision_point::tally =
-    bc_decision_point::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_decision_point::zero_tally ())
+:= in_tick_table (s : tactic) : bc_decision_point::counts =
+    bc_decision_point::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_decision_point::zero_counts ())
 
 := main () =
     := w1 = intick_dagger ()

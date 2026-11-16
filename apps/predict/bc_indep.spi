@@ -27,8 +27,8 @@
 
 := zero_sums () : bc_eval::sums = { n = 0.0f32; t = bc_eval::empty (); s = bc_eval::empty (); d = bc_eval::empty () }
 
-:= driven (s : tactic) : bc_direction::tally =
-    bc_direction::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_direction::zero_tally ())
+:= driven (s : tactic) : bc_direction::counts =
+    bc_direction::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_direction::zero_counts ())
 
 := evaluated (name : string) (s : tactic) : () =
     console::write_line ("arm\t" ++# name)

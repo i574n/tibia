@@ -15,9 +15,9 @@
 
 := student_of (train : pairs) : network::weights = bc_train::quantized (trained_kept train)
 
-:= driven (w : network::weights) : bc_direction::tally =
+:= driven (w : network::weights) : bc_direction::counts =
     := s = bc_eval::student_tactic w
-    bc_direction::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_direction::zero_tally ())
+    bc_direction::seeds_from (bc_run::bc_camp ()) s s::brain 0 (bc_direction::zero_counts ())
 
 := evaluated (name : string) (w : network::weights) : () =
     console::write_line ("arm\t" ++# name)

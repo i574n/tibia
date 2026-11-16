@@ -383,7 +383,7 @@ by `scripts/predict.ps1` (entry `apps/predict/predict.spi`), and candidates are 
 
 | Item | Value |
 | --- | --- |
-| Question | PR-31 showed path IS collapsing beyond epsilon 90 (target 50: +165 percent on potions, ess 1.0). Does weighting each potion only by the probability ratio of the decisions made before it (per-decision IS: the tally adds 1000 x exp2 (target_log - log_path) at every drink, `potion_tally` in hunting_pack) estimate the target's potions per hunt better? |
+| Question | PR-31 showed path IS collapsing beyond epsilon 90 (target 50: +165 percent on potions, ess 1.0). Does weighting each potion only by the probability ratio of the decisions made before it (per-decision IS: the count adds 1000 x exp2 (target_log - log_path) at every drink, `counted_potion` in hunting_pack) estimate the target's potions per hunt better? |
 | Arms | `apps/predict/is_softened.spi`'s new pd rows: behavior soft_troll 100 scored for targets epsilon 90, 50 and 0, on PR-31's camp and core; fresh sims of each target as the control. The program prints PR-31's rows again beside them on the same tree |
 | Seeds | Held-out 1001-1100, as PR-31 |
 | Metric | Per target: the per-decision estimate of potions per hunt (x 1000) against the fresh mean; error per mille where the fresh mean is not 0 |

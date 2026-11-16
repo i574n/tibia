@@ -1,0 +1,701 @@
+:# wgsl_forward_grid static =
+    :< testing
+
+:= declare () : () =
+    global "@group(0) @binding(3) var<storage, read> spiral_input: array<vec4<u32>>;"
+    global "fn fwd_word(i: u32) -> u32 { let p = select(i + 1u, i, i < 7u); return spiral_input[p / 4u][p % 4u]; }"
+    global (
+        "fn fwd_dot4(q: u32, x0: f32, x1: f32, x2: f32, x3: f32, acc: f32) -> f32 { let w = "
+        ^^ "bitcast<vec4<f32>>(spiral_input[q]); return fma(w.w, x3, fma(w.z, x2, fma(w.y, x1, fma(w.x, x0, acc)))); "
+        ^^ "}"
+    )
+    global "override SHAPE_DIM: u32;"
+    global "override SHAPE_HIDDEN: u32;"
+    global "override SHAPE_LAYERS: u32;"
+    global "override SHAPE_HEADS: u32;"
+    global "override SHAPE_KV_HEADS: u32;"
+    global "override SHAPE_VOCAB: u32;"
+    global "override SHAPE_SEQ: u32;"
+
+:= declare_scratch () : () =
+    global "@group(0) @binding(1) var<storage, read_write> fwd_scratch: array<atomic<u32>>;"
+
+:= word (i : u32) : u32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare ()
+            $'fwd_word(!i)' : u32
+        | _ => \ () => failwith "wgsl_forward_grid.word / the input binding exists only on Wgsl"
+
+:= lane () : u32 =
+    run_target \|
+        | Wgsl => \ () => $'spiral_lane' : u32
+        | _ => \ () => failwith "wgsl_forward_grid.lane / exists only on Wgsl"
+
+:= sc (i : u32) : f32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_scratch ()
+            $'bitcast<f32>(atomicLoad(&fwd_scratch[!i]))' : f32
+        | _ => \ () => failwith "wgsl_forward_grid.sc / the scratch binding exists only on Wgsl"
+
+:= sc_set (i : u32) (v : f32) : () =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_scratch ()
+            $'atomicStore(&fwd_scratch[!i], bitcast<u32>(!v))' : ()
+        | _ => \ () => failwith "wgsl_forward_grid.sc_set / the scratch binding exists only on Wgsl"
+
+:= barrier () : () =
+    run_target \|
+        | Wgsl => \ () =>
+            $'storageBarrier()' : ()
+            $'workgroupBarrier()' : ()
+        | _ => \ () => failwith "wgsl_forward_grid.barrier / exists only on Wgsl"
+
+:= declare_sync () : () =
+    global "@group(0) @binding(4) var<storage, read_write> fwd_sync: array<atomic<u32>>;"
+    global "override GRID_GROUPS: u32 = 84u;"
+
+:= groups () : u32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_sync ()
+            $'GRID_GROUPS' : u32
+        | _ => \ () => failwith "wgsl_forward_grid.groups / exists only on Wgsl"
+
+:= lanes_total () : u32 = groups () * 64u32
+
+:= sync_load (i : u32) : u32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_sync ()
+            $'atomicLoad(&fwd_sync[!i])' : u32
+        | _ => \ () => failwith "wgsl_forward_grid.sync_load / exists only on Wgsl"
+
+:= sync_store (i : u32) (v : u32) : () =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_sync ()
+            $'atomicStore(&fwd_sync[!i], !v)' : ()
+        | _ => \ () => failwith "wgsl_forward_grid.sync_store / exists only on Wgsl"
+
+:= sync_arrive () : u32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_sync ()
+            $'atomicAdd(&fwd_sync[0], 1u)' : u32
+        | _ => \ () => failwith "wgsl_forward_grid.sync_arrive / exists only on Wgsl"
+
+:= spin_cap () : u32 = 20000000u32
+
+:~ ^ spin (generation : u32) (n : u32) : () =
+    ? sync_load 1u32 >= generation
+    ?> ()
+    |: ? n > spin_cap () ?> sync_store 2u32 1u32 |: spin generation (n + 1u32)
+
+:= arrive (generation : u32) : () =
+    ? sync_arrive () + 1u32 = groups () * generation ?> sync_store 1u32 generation |: spin generation 0u32
+
+:= grid_sync (local : u32) (generation : u32) : () =
+    barrier ()
+    ? local = 0u32 ?> arrive generation |: ()
+    barrier ()
+
+:= declare_x () : () =
+    global "var<workgroup> fwd_x: array<f32, 2048>;"
+
+:= x_get (i : u32) : f32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_x ()
+            $'fwd_x[!i]' : f32
+        | _ => \ () => failwith "wgsl_forward_grid.x_get / workgroup memory exists only on Wgsl"
+
+:= x_set (i : u32) (v : f32) : () =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_x ()
+            $'fwd_x[!i] = !v' : ()
+        | _ => \ () => failwith "wgsl_forward_grid.x_set / workgroup memory exists only on Wgsl"
+
+:~ ^ stage_x (g : u32) (src : u32) (n : u32) (j : u32) : () =
+    ? j < n ?>
+        x_set j (sc (g + src + j))
+        stage_x g src n (j + 64u32)
+
+:= declare_red () : () =
+    global "var<workgroup> fwd_red: array<f32, 64>;"
+
+:= declare_pass () : () =
+    global "var<workgroup> fwd_pass: u32;"
+
+:= red_get (i : u32) : f32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_red ()
+            $'fwd_red[!i]' : f32
+        | _ => \ () => failwith "wgsl_forward_grid.red_get / workgroup memory exists only on Wgsl"
+
+:= red_set (i : u32) (v : f32) : () =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_red ()
+            $'fwd_red[!i] = !v' : ()
+        | _ => \ () => failwith "wgsl_forward_grid.red_set / workgroup memory exists only on Wgsl"
+
+:= uniform_pass (p : u32) : u32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_pass ()
+            $'fwd_pass = !p' : ()
+            $'workgroupUniformLoad(&fwd_pass)' : u32
+        | _ => \ () => failwith "wgsl_forward_grid.uniform_pass / exists only on Wgsl"
+
+:= float_word (i : u32) : f32 = convert::f32_of_bits (word i)
+
+:= fused (a : f32) (b : f32) (c : f32) : f32 = $'fma(!a, !b, !c)' : f32
+
+:= steps () : u32 = 20u32
+
+:= dim () : u32 = ($'SHAPE_DIM' : u32)
+
+:= hidden () : u32 = ($'SHAPE_HIDDEN' : u32)
+
+:= layers () : u32 = ($'SHAPE_LAYERS' : u32)
+
+:= hs () : u32 = dim () / ($'SHAPE_HEADS' : u32)
+
+:= kv_dim () : u32 = dim () * ($'SHAPE_KV_HEADS' : u32) / ($'SHAPE_HEADS' : u32)
+
+:= kv_mul () : u32 = ($'SHAPE_HEADS' : u32) / ($'SHAPE_KV_HEADS' : u32)
+
+:= vocab () : u32 = ($'SHAPE_VOCAB' : u32)
+
+:= rms_base () : u32 = 7u32 + vocab () * dim ()
+
+:= wq_base () : u32 = rms_base () + layers () * dim ()
+
+:= wk_base () : u32 = wq_base () + layers () * dim () * dim ()
+
+:= wv_base () : u32 = wk_base () + layers () * dim () * kv_dim ()
+
+:= wo_base () : u32 = wv_base () + layers () * dim () * kv_dim ()
+
+:= ffn_rms_base () : u32 = wo_base () + layers () * dim () * dim ()
+
+:= w1_base () : u32 = ffn_rms_base () + layers () * dim ()
+
+:= w2_base () : u32 = w1_base () + layers () * dim () * hidden ()
+
+:= w3_base () : u32 = w2_base () + layers () * dim () * hidden ()
+
+:= final_rms_base () : u32 = w3_base () + layers () * dim () * hidden ()
+
+:= rope_base () : u32 = final_rms_base () + dim () + ($'SHAPE_SEQ' : u32) * hs ()
+
+:= xb_at () : u32 = dim ()
+
+:= q_at () : u32 = 2u32 * dim ()
+
+:= hb_at () : u32 = 3u32 * dim ()
+
+:= logits_at () : u32 = 3u32 * dim () + hidden ()
+
+:= saved_at () : u32 = logits_at () + vocab ()
+
+:= saved_count () : u32 = ? vocab () < 512u32 ?> vocab () |: 512u32
+
+:= toks_at () : u32 = saved_at () + saved_count ()
+
+:= kc_at () : u32 = toks_at () + steps ()
+
+:= vc_at () : u32 = kc_at () + layers () * steps () * kv_dim ()
+
+:= region () : u32 = vc_at () + layers () * steps () * kv_dim ()
+
+:= att_at () : u32 = region ()
+
+:= am_at () : u32 = att_at () + ($'SHAPE_HEADS' : u32) * steps ()
+
+:= chunk_rows () : u32 = 180u32
+
+:= chunk_count () : u32 = (vocab () + chunk_rows () - 1u32) / chunk_rows ()
+
+:= cache_row (layer : u32) (t : u32) : u32 = (layer * steps () + t) * kv_dim ()
+
+:~ sum_squares (g : u32) (j : u32) (acc : f32) : f32 =
+    ? j = dim ()
+    ?> acc
+    |:
+        := v = x_get j
+        sum_squares g (j + 1u32) (fused v v acc)
+
+:~ norm_row (g : u32) (gain : u32) (j : u32) : f32 =
+    := shifted = sum_squares g 0u32 0f32 / conv (dim ()) + 0.00001f32
+    := inv = 1f32 / $'sqrt(!shifted)' : f32
+    float_word (gain + j) * (inv * x_get j)
+
+:~ ^ scale_staged (gain : u32) (inv : f32) (j : u32) : () =
+    ? j < dim () ?>
+        x_set j (float_word (gain + j) * (inv * x_get j))
+        scale_staged gain inv (j + 64u32)
+
+:= normalize_staged (g : u32) (gain : u32) (local : u32) : () =
+    := shifted = sum_squares g 0u32 0f32 / conv (dim ()) + 0.00001f32
+    := inv = 1f32 / $'sqrt(!shifted)' : f32
+    barrier ()
+    scale_staged gain inv local
+    barrier ()
+
+:= dot4 (q : u32) (j : u32) (acc : f32) : f32 =
+    := x0, x1, x2, x3 = x_get j, x_get (j + 1u32), x_get (j + 2u32), x_get (j + 3u32)
+    run_target \|
+        | Wgsl => \ () =>
+            declare ()
+            $'fwd_dot4(!q, !x0, !x1, !x2, !x3, !acc)' : f32
+        | _ => \ () => failwith "wgsl_forward_grid.dot4 / the input binding exists only on Wgsl"
+
+:= quad_of (base : u32) (row : u32) (n : u32) : u32 = (base + row * n + 1u32) / 4u32
+
+:~ dot (g : u32) (base : u32) (row : u32) (n : u32) (src : u32) (j : u32) (acc : f32) : f32 =
+    ? j >= n
+    ?> acc
+    |: dot g base row n src (j + 4u32) (dot4 (quad_of base row n + j / 4u32) j acc)
+
+:~ strided (g : u32) (base : u32) (row : u32) (n : u32) (src : u32) (c : u32) (acc : f32) : f32 =
+    ? 4u32 * c >= n
+    ?> acc
+    |: strided g base row n src (c + 64u32) (dot4 (quad_of base row n + c) (4u32 * c) acc)
+
+:~ tree (local : u32) (half : u32) : () =
+    ? half = 0u32
+    ?> ()
+    |:
+        ? local < half ?> red_set local (red_get local + red_get (local + half)) |: ()
+        barrier ()
+        tree local (half / 2u32)
+
+:= tiled_dot (g : u32) (base : u32) (row : u32) (rows : u32) (n : u32) (src : u32) (local : u32) : f32 =
+    := part = ? row < rows ?> strided g base row n src local 0f32 |: 0f32
+    red_set local part
+    barrier ()
+    tree local 32u32
+    := total = red_get 0u32
+    barrier ()
+    total
+
+:= tiled_stage (g : u32) (stage : u32) (layer : u32) (row : u32) (local : u32) : () =
+    := d = dim ()
+    := h = hidden ()
+    ? stage = 3u32 ?>
+        := t = tiled_dot g (wo_base () + layer * d * d) row d d (xb_at ()) local
+        ? local = 0u32 && row < d ?> sc_set (g + row) (sc (g + row) + t) |: ()
+    |:
+        ? stage = 5u32 ?>
+            := h1 = tiled_dot g (w1_base () + layer * d * h) row h d (xb_at ()) local
+            := h3 = tiled_dot g (w3_base () + layer * d * h) row h d (xb_at ()) local
+            := gate = 1f32 + $'exp(-!h1)' : f32
+            ? local = 0u32 && row < h ?> sc_set (g + hb_at () + row) (h1 * (1f32 / gate) * h3) |: ()
+        |:
+            := t = tiled_dot g (w2_base () + layer * d * h) row d h (hb_at ()) local
+            ? local = 0u32 && row < d ?> sc_set (g + row) (sc (g + row) + t) |: ()
+
+:= tiled_classify (g : u32) (pos : u32) (row : u32) (local : u32) : () =
+    := t = tiled_dot g 7u32 row (vocab ()) (dim ()) (xb_at ()) local
+    ? local = 0u32 && row < vocab () ?> sc_set (g + logits_at () + row) t |: ()
+    ? local = 0u32 && pos = 0u32 && row < saved_count () ?> sc_set (g + saved_at () + row) t |: ()
+
+:= declare_red4 () : () =
+    global "var<workgroup> fwd_red4: array<f32, 256>;"
+
+:= red4_get (i : u32) : f32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_red4 ()
+            $'fwd_red4[!i]' : f32
+        | _ => \ () => failwith "wgsl_forward_grid.red4_get / workgroup memory exists only on Wgsl"
+
+:= red4_set (i : u32) (v : f32) : () =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_red4 ()
+            $'fwd_red4[!i] = !v' : ()
+        | _ => \ () => failwith "wgsl_forward_grid.red4_set / workgroup memory exists only on Wgsl"
+
+:= fold4_at (at : u32) (half : u32) : () = red4_set at (red4_get at + red4_get (at + half))
+
+:~ tree4 (local : u32) (half : u32) : () =
+    ? half = 0u32
+    ?> ()
+    |:
+        ? local < half ?>
+            fold4_at local half
+            fold4_at (local + 64u32) half
+            fold4_at (local + 128u32) half
+            fold4_at (local + 192u32) half
+        |: ()
+        barrier ()
+        tree4 local (half / 2u32)
+
+:= row_part (g : u32) (base : u32) (row : u32) (rows : u32) (n : u32) (local : u32) : f32 =
+    ? row < rows ?> strided g base row n 0u32 local 0f32 |: 0f32
+
+:= dot_rows4
+    (g : u32) (base : u32) (r0 : u32) (step : u32) (rows : u32) (n : u32) (local : u32)
+    : f32 * f32 * f32 * f32
+    =
+    red4_set local (row_part g base r0 rows n local)
+    red4_set (local + 64u32) (row_part g base (r0 + step) rows n local)
+    red4_set (local + 128u32) (row_part g base (r0 + 2u32 * step) rows n local)
+    red4_set (local + 192u32) (row_part g base (r0 + 3u32 * step) rows n local)
+    barrier ()
+    tree4 local 32u32
+    := t0, t1, t2, t3 = red4_get 0u32, red4_get 64u32, red4_get 128u32, red4_get 192u32
+    barrier ()
+    t0, t1, t2, t3
+
+:= add_row (g : u32) (local : u32) (row : u32) (rows : u32) (t : f32) : () =
+    ? local = 0u32 && row < rows ?> sc_set (g + row) (sc (g + row) + t) |: ()
+
+:= gate_row (g : u32) (local : u32) (row : u32) (h1 : f32) (h3 : f32) : () =
+    := gate = 1f32 + $'exp(-!h1)' : f32
+    ? local = 0u32 && row < hidden () ?> sc_set (g + hb_at () + row) (h1 * (1f32 / gate) * h3) |: ()
+
+:= tiled_stage4 (g : u32) (stage : u32) (layer : u32) (r0 : u32) (local : u32) : () =
+    := d = dim ()
+    := h = hidden ()
+    := step = groups ()
+    ? stage = 5u32 ?>
+        := a0, a1, a2, a3 = dot_rows4 g (w1_base () + layer * d * h) r0 (groups ()) h d local
+        := b0, b1, b2, b3 = dot_rows4 g (w3_base () + layer * d * h) r0 (groups ()) h d local
+        gate_row g local r0 a0 b0
+        gate_row g local (r0 + step) a1 b1
+        gate_row g local (r0 + 2u32 * step) a2 b2
+        gate_row g local (r0 + 3u32 * step) a3 b3
+    |:
+        := base, n = ? stage = 3u32 ?> wo_base () + layer * d * d, d |: w2_base () + layer * d * h, h
+        := t0, t1, t2, t3 = dot_rows4 g base r0 (groups ()) d n local
+        add_row g local r0 d t0
+        add_row g local (r0 + step) d t1
+        add_row g local (r0 + 2u32 * step) d t2
+        add_row g local (r0 + 3u32 * step) d t3
+
+:= rope_pair (pos : u32) (even : u32) (v0 : f32) (v1 : f32) : f32 * f32 =
+    := at = rope_base () + pos * dim () + even
+    := c = float_word at
+    := sn = float_word (at + 1u32)
+    ($'fma(!v0, !c, -(!v1 * !sn))' : f32), ($'fma(!v0, !sn, !v1 * !c)' : f32)
+
+:= set4 (at : u32) (a0 : f32) (a1 : f32) (a2 : f32) (a3 : f32) : () =
+    sc_set at a0
+    sc_set (at + 1u32) a1
+    sc_set (at + 2u32) a2
+    sc_set (at + 3u32) a3
+
+:= qkv_block (g : u32) (layer : u32) (pos : u32) (blk : u32) (local : u32) : () =
+    := d = dim ()
+    := kv = kv_dim ()
+    := r0 = 4u32 * blk
+    := in_q = r0 < d
+    := in_k = r0 >= d && r0 < d + kv
+    := base =
+        ? in_q
+        ?> wq_base () + layer * d * d
+        |:
+            ? in_k
+            ?> wk_base () + layer * d * kv
+            |: wv_base () + layer * d * kv
+    := rel = ? in_q ?> r0 |: ? in_k ?> r0 - d |: r0 - d - kv
+    := rows = ? in_q ?> d |: kv
+    := t0, t1, t2, t3 = dot_rows4 g base rel 1u32 rows d local
+    ? local = 0u32 && rel < rows ?>
+        ? in_q || in_k ?>
+            := a0, a1 = rope_pair pos rel t0 t1
+            := a2, a3 = rope_pair pos (rel + 2u32) t2 t3
+            set4 (? in_q ?> g + q_at () + rel |: g + kc_at () + cache_row layer pos + rel) a0 a1 a2 a3
+        |: set4 (g + vc_at () + cache_row layer pos + rel) t0 t1 t2 t3
+    |: ()
+
+:~ ^ qkv_blocks (g : u32) (layer : u32) (pos : u32) (wg : u32) (local : u32) (k : u32) (kmax : u32) : () =
+    ? k < kmax ?>
+        qkv_block g layer pos (wg + k * groups ()) local
+        qkv_blocks g layer pos wg local (k + 1u32) kmax
+
+:= class_part (g : u32) (row : u32) (local : u32) : f32 =
+    ? row < vocab () ?> strided g 7u32 row (dim ()) (xb_at ()) local 0f32 |: 0f32
+
+:= write_logit (g : u32) (pos : u32) (row : u32) (t : f32) : () =
+    ? row < vocab () ?> sc_set (g + logits_at () + row) t |: ()
+    ? pos = 0u32 && row < saved_count () ?> sc_set (g + saved_at () + row) t |: ()
+
+:= classify4 (g : u32) (pos : u32) (r0 : u32) (local : u32) : () =
+    := step = groups ()
+    red4_set local (class_part g r0 local)
+    red4_set (local + 64u32) (class_part g (r0 + step) local)
+    red4_set (local + 128u32) (class_part g (r0 + 2u32 * step) local)
+    red4_set (local + 192u32) (class_part g (r0 + 3u32 * step) local)
+    barrier ()
+    tree4 local 32u32
+    ? local = 0u32 ?>
+        write_logit g pos r0 (red4_get 0u32)
+        write_logit g pos (r0 + step) (red4_get 64u32)
+        write_logit g pos (r0 + 2u32 * step) (red4_get 128u32)
+        write_logit g pos (r0 + 3u32 * step) (red4_get 192u32)
+    |: ()
+    barrier ()
+
+:~ ^ classify4_rows (g : u32) (pos : u32) (wg : u32) (local : u32) (k : u32) (kmax : u32) : () =
+    ? k < kmax ?>
+        classify4 g pos (wg + 4u32 * k * groups ()) local
+        classify4_rows g pos wg local (k + 1u32) kmax
+
+:~ roped (g : u32) (base : u32) (pos : u32) (r : u32) : f32 =
+    := even = r - r % 2u32
+    := at = rope_base () + pos * dim () + even
+    := c = float_word at
+    := sn = float_word (at + 1u32)
+    := v0 = dot g base even (dim ()) (xb_at ()) 0u32 0f32
+    := v1 = dot g base (even + 1u32) (dim ()) (xb_at ()) 0u32 0f32
+    ? r = even
+    ?> $'fma(!v0, !c, -(!v1 * !sn))' : f32
+    |: $'fma(!v0, !sn, !v1 * !c)' : f32
+
+:~ score (g : u32) (layer : u32) (head : u32) (t : u32) (j : u32) (acc : f32) : f32 =
+    ? j = hs () ?>
+        := width = conv (hs ()) : f32
+        acc / $'sqrt(!width)' : f32
+    |:
+        score g layer head t
+            (j + 1u32)
+            (
+                fused
+                    (sc (g + q_at () + head * hs () + j))
+                    (sc (g + kc_at () + cache_row layer t + head / kv_mul () * hs () + j))
+                    acc
+            )
+
+:~ max_score (g : u32) (layer : u32) (head : u32) (pos : u32) (t : u32) (m : f32) : f32 =
+    ? t > pos
+    ?> m
+    |:
+        := v = sc (g + att_at () + head * steps () + t)
+        max_score g layer head pos (t + 1u32) (? v > m ?> v |: m)
+
+:~ exp_sum (g : u32) (layer : u32) (head : u32) (pos : u32) (mx : f32) (t : u32) (acc : f32) : f32 =
+    ? t > pos
+    ?> acc
+    |:
+        := v = sc (g + att_at () + head * steps () + t)
+        := e = $'exp(!v - !mx)' : f32
+        exp_sum g layer head pos mx (t + 1u32) (acc + e)
+
+:~ mix
+    (g : u32) (layer : u32) (head : u32) (pos : u32) (mx : f32) (total : f32) (col : u32) (t : u32) (acc : f32)
+    : f32
+    =
+    ? t > pos
+    ?> acc
+    |:
+        := v = sc (g + att_at () + head * steps () + t)
+        := e = $'exp(!v - !mx)' : f32
+        := a = e / total
+        mix g layer head pos mx total col (t + 1u32) (fused a (sc (g + vc_at () + cache_row layer t + col)) acc)
+
+:~ stage_row (g : u32) (stage : u32) (layer : u32) (pos : u32) (i : u32) : () =
+    := d = dim ()
+    := kv = kv_dim ()
+    ? stage = 0u32
+    ?> sc_set (g + xb_at () + i) (norm_row g (rms_base () + layer * d) i)
+    |:
+        ? stage = 1u32 ?>
+            ? i < d
+            ?> sc_set (g + q_at () + i) (roped g (wq_base () + layer * d * d) pos i)
+            |:
+                ? i < d + kv ?>
+                    sc_set
+                        (g + kc_at () + cache_row layer pos + (i - d))
+                        (roped g (wk_base () + layer * d * kv) pos (i - d))
+                |:
+                    sc_set
+                        (g + vc_at () + cache_row layer pos + (i - d - kv))
+                        (dot g (wv_base () + layer * d * kv) (i - d - kv) d (xb_at ()) 0u32 0f32)
+        |:
+            ? stage = 2u32 ?>
+                := head = i / hs ()
+                := col = head / kv_mul () * hs () + i % hs ()
+                := mx = max_score g layer head pos 1u32 (sc (g + att_at () + head * steps ()))
+                sc_set
+                    (g + xb_at () + i)
+                    (mix g layer head pos mx (exp_sum g layer head pos mx 0u32 0f32) col 0u32 0f32)
+            |:
+                ? stage = 3u32
+                ?> sc_set (g + i) (sc (g + i) + dot g (wo_base () + layer * d * d) i d (xb_at ()) 0u32 0f32)
+                |:
+                    ? stage = 4u32
+                    ?> sc_set (g + xb_at () + i) (norm_row g (ffn_rms_base () + layer * d) i)
+                    |:
+                        ? stage = 5u32 ?>
+                            := h1 = dot g (w1_base () + layer * d * hidden ()) i d (xb_at ()) 0u32 0f32
+                            := h3 = dot g (w3_base () + layer * d * hidden ()) i d (xb_at ()) 0u32 0f32
+                            := gate = 1f32 + $'exp(-!h1)' : f32
+                            sc_set (g + hb_at () + i) (h1 * (1f32 / gate) * h3)
+                        |:
+                            ? stage = 6u32 ?>
+                                sc_set
+                                    (g + i)
+                                    (
+                                        sc (g + i)
+                                        + dot g (w2_base () + layer * d * hidden ()) i (hidden ()) (hb_at ()) 0u32 0f32
+                                    )
+                            |:
+                                ? stage = 7u32
+                                ?> sc_set (g + xb_at () + i) (norm_row g (final_rms_base ()) i)
+                                |: sc_set (g + logits_at () + i) (dot g 7u32 i d (xb_at ()) 0u32 0f32)
+
+:~ argmax_range (g : u32) (i : u32) (hi : u32) (best : u32) : u32 =
+    ? i >= hi
+    ?> best
+    |: argmax_range g (i + 1u32) hi (? sc (g + logits_at () + i) > sc (g + logits_at () + best) ?> i |: best)
+
+:~ reduce_chunks (g : u32) (c : u32) (best : u32) : u32 =
+    ? c >= chunk_count ()
+    ?> best
+    |: reduce_chunks g (c + 1u32) (? sc (g + am_at () + 2u32 * c) > sc (g + am_at () + 2u32 * best) ?> c |: best)
+
+:= chunk_lane (g : u32) (c : u32) : () =
+    := lo = c * chunk_rows ()
+    := upto = lo + chunk_rows ()
+    := hi = ? upto < vocab () ?> upto |: vocab ()
+    := b = argmax_range g (lo + 1u32) hi lo
+    sc_set (g + am_at () + 2u32 * c) (sc (g + logits_at () + b))
+    sc_set (g + am_at () + 2u32 * c + 1u32) (conv b : f32)
+
+:= score_lane (g : u32) (layer : u32) (pos : u32) (l : u32) : () =
+    := head = l / (pos + 1u32)
+    := t = l % (pos + 1u32)
+    sc_set (g + att_at () + head * steps () + t) (score g layer head t 0u32 0f32)
+
+
+:= raw_word (i : u32) : u32 =
+    run_target \|
+        | Wgsl => \ () =>
+            declare_scratch ()
+            $'atomicLoad(&fwd_scratch[!i])' : u32
+        | _ => \ () => failwith "wgsl_forward_grid.raw_word / the scratch binding exists only on Wgsl"
+
+:= per_token () : u32 = layers () * 6u32 + 4u32
+
+:= base () : u32 = 16u32
+
+:= token_at (g : u32) (pos : u32) : u32 = ? pos = 0u32 ?> 1u32 |: (conv (sc (g + toks_at () + pos - 1u32)) : u32)
+
+:= stage_size (stage : u32) : u32 =
+    ? stage = 1u32
+    ?> dim () + 2u32 * kv_dim ()
+    |:
+        ? stage = 5u32
+        ?> hidden ()
+        |: dim ()
+
+:= classify_lane (g : u32) (pos : u32) (l : u32) : () =
+    stage_row g 8u32 0u32 pos l
+    ? pos = 0u32 && l < saved_count () ?> sc_set (g + saved_at () + l) (sc (g + logits_at () + l)) |: ()
+
+:~ ^ rows_strided (g : u32) (stage : u32) (layer : u32) (pos : u32) (i : u32) (n : u32) : () =
+    ? i < n ?>
+        stage_row g stage layer pos i
+        rows_strided g stage layer pos (i + lanes_total ()) n
+
+:= tiled_rows_of (stage : u32) : u32 = ? stage = 5u32 ?> hidden () |: dim ()
+
+:= rounds_of (rows : u32) : u32 = (rows + groups () - 1u32) / groups ()
+
+:~ ^ tiled_rows4 (g : u32) (stage : u32) (layer : u32) (wg : u32) (local : u32) (k : u32) (kmax : u32) : () =
+    ? k < kmax ?>
+        tiled_stage4 g stage layer (wg + 4u32 * k * groups ()) local
+        tiled_rows4 g stage layer wg local (k + 1u32) kmax
+
+:~ ^ tiled_rows (g : u32) (stage : u32) (layer : u32) (wg : u32) (local : u32) (k : u32) (kmax : u32) : () =
+    ? k < kmax ?>
+        tiled_stage g stage layer (wg + k * groups ()) local
+        tiled_rows g stage layer wg local (k + 1u32) kmax
+
+:= tiled_any (g : u32) (stage : u32) (layer : u32) (wg : u32) (local : u32) : () =
+    := rows = tiled_rows_of stage
+    ? rows > groups ()
+    ?> tiled_rows4 g stage layer wg local 0u32 ((rows + 4u32 * groups () - 1u32) / (4u32 * groups ()))
+    |: tiled_rows g stage layer wg local 0u32 (rounds_of rows)
+
+:~ ^ classify_rows (g : u32) (pos : u32) (wg : u32) (local : u32) (k : u32) (kmax : u32) : () =
+    ? k < kmax ?>
+        tiled_classify g pos (wg + k * groups ()) local
+        classify_rows g pos wg local (k + 1u32) kmax
+
+:= run_pass (p : u32) (l : u32) : () =
+    := g = base ()
+    := wg = l / 64u32
+    := local = l % 64u32
+    := pos = p / per_token ()
+    := step = p % per_token ()
+    := last = layers () * 6u32
+    ? step = 0u32 ?>
+        ? l < dim () ?> sc_set (g + l) (float_word (7u32 + token_at g pos * dim () + l)) |: ()
+    |:
+        ? step <= last ?>
+            := layer = (step - 1u32) / 6u32
+            := sub = (step - 1u32) % 6u32
+            ? sub = 1u32 ?>
+                ? l < ($'SHAPE_HEADS' : u32) * (pos + 1u32) ?> score_lane g layer pos l |: ()
+            |:
+                := stage = ? sub = 0u32 ?> 1u32 |: ? sub < 4u32 ?> sub |: sub + 1u32
+                ? stage = 3u32 || stage = 5u32 || stage = 6u32 ?>
+                    stage_x g
+                        (? stage = 6u32 ?> hb_at () |: ? stage = 5u32 ?> 0u32 |: xb_at ())
+                        (? stage = 6u32 ?> hidden () |: dim ())
+                        local
+                    barrier ()
+                    ? stage = 5u32 ?> normalize_staged g (ffn_rms_base () + layer * dim ()) local |: ()
+                    tiled_any g stage layer wg local
+                |:
+                    stage_x g 0u32 (dim ()) local
+                    barrier ()
+                    ? stage = 1u32 ?>
+                        normalize_staged g (rms_base () + layer * dim ()) local
+                        qkv_blocks g layer pos wg local 0u32 (
+                            ((dim () + 2u32 * kv_dim ()) / 4u32 + groups () - 1u32) / groups ()
+                        )
+                    |: rows_strided g stage layer pos l (stage_size stage)
+        |:
+            ? step = last + 1u32 ?>
+                stage_x g 0u32 (dim ()) local
+                barrier ()
+                normalize_staged g (final_rms_base ()) local
+                classify4_rows g pos wg local 0u32 ((vocab () + 4u32 * groups () - 1u32) / (4u32 * groups ()))
+            |:
+                ? step = last + 2u32 ?>
+                    ? l < chunk_count ()
+                    ?> chunk_lane g l |: ()
+                    |:
+                        ? l = 0u32
+                        ?> sc_set (g + toks_at () + pos) (sc (g + am_at () + 2u32 * reduce_chunks g 1u32 0u32 + 1u32))
+                        |: ()
+
+:~ ^ passes (l : u32) (p : u32) : () =
+    ? p < steps () * per_token () ?>
+        run_pass p l
+        grid_sync (l % 64u32) (p + 1u32)
+        passes l (p + 1u32)
+
+:= bits (v : f32) : i32 = conv (convert::bits_of_f32 v)
+
+:= main () : i32 =
+    := l = lane ()
+    passes l 0u32
+    := g = base ()
+    ? l < saved_count ()
+    ?> bits (sc (g + saved_at () + l))
+    |:
+        ? l < saved_count () + steps ()
+        ?> (conv (sc (g + toks_at () + (l - saved_count ()))) : i32)
+        |: ? l = saved_count () + steps () ?> (conv (sync_load 2u32) : i32) |: 0i32

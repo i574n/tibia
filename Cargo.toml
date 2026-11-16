@@ -1,5 +1,6 @@
 [workspace]
 resolver = "3"
+exclude = ["deps", "target"]
 members = [
     "apps/map",
     "apps/map_items",

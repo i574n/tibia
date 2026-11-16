@@ -65,14 +65,14 @@
 :# a_hunting_ground_hunt_with_routing_on_the_oracle =
     := ~seed = 1001u32
     := p = routed_hunt seed
-    (p::score::kills, p::score::experience, p::hunter::tally::potions, p::score::deaths)
+    (p::score::kills, p::score::experience, p::hunter::counts::potions, p::score::deaths)
     |> _assert_eq (23i32, 1370i32, 24i32, 0i32)
 
 := routed_hunt_matches (seed : u32) : bool =
     := p = routed_hunt seed
     p::score::kills = 23i32
     && p::score::experience = 1370i32
-    && p::hunter::tally::potions = 24i32
+    && p::hunter::counts::potions = 24i32
     && p::score::deaths = 0i32
 
 ///> wgsl

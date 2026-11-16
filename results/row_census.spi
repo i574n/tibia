@@ -2,19 +2,19 @@
 :# row_census static =
     :< testing
 
-:== tally = i32 * i32
+:== counts = i32 * i32
 
-:~ counted \* t. ((ok, bad) : tally) (d : arena_rows::decoded t) : tally =
+:~ counted \* t. ((ok, bad) : counts) (d : arena_rows::decoded t) : counts =
     :< arena_rows
     ?= d ?|
     | Decoded _ => ok + 1i32, bad
     | Rejected _ => ok, bad + 1i32
 
-:~ arena_line (t : tally) (line : string) : tally = counted t (arena_rows::row_of_line line)
+:~ arena_line (t : counts) (line : string) : counts = counted t (arena_rows::row_of_line line)
 
-:~ arm_line (t : tally) (line : string) : tally = counted t (arena_rows::arm_step_of_line line)
+:~ arm_line (t : counts) (line : string) : counts = counted t (arena_rows::arm_step_of_line line)
 
-:= tally_of (f : tally -> string -> tally) (tables : list table_rows::table_row) : tally =
+:= counts_of (f : counts -> string -> counts) (tables : list table_rows::table_row) : counts =
     := ~runtime = tables
     listm::fold (\ t table => table_rows::fold_data f t table) (0i32, 0i32) runtime
 
@@ -186,9 +186,9 @@
 ///> rust
 :# every_arena_row_decodes =
     := ~expected = 1075i32
-    tally_of arena_line (arena_tables ()) |> _assert_eq (expected, 0i32)
+    counts_of arena_line (arena_tables ()) |> _assert_eq (expected, 0i32)
 
 ///> rust
 :# every_arm_step_row_decodes =
     := ~expected = 284i32
-    tally_of arm_line (arm_tables ()) |> _assert_eq (expected, 0i32)
+    counts_of arm_line (arm_tables ()) |> _assert_eq (expected, 0i32)

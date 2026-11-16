@@ -188,19 +188,19 @@
 
 := initial (seed : i32) : floats = filled (weight_total ()) (seeded seed)
 
-:== tally = { agree : i32; total : i32 }
+:== counts = { agree : i32; total : i32 }
 
-:= counted (l : bc_dataset::label) (value : bool) (t : tally) : tally =
+:= counted (l : bc_dataset::label) (value : bool) (t : counts) : counts =
     ? bc_dataset::is_known l
     ?> { agree = t::agree + (? bc_dataset::agrees l value ?> 1 |: 0); total = t::total + 1 }
     |: t
 
-:= tally_pair (w : network::weights) (t : tally) (q : bc_dataset::pair) : tally =
+:= counted_pair (w : network::weights) (t : counts) (q : bc_dataset::pair) : counts =
     := d = network::decide w q::x
     t |> counted q::heal d::heal |> counted q::engage d::engage |> counted q::retreat d::retreat
 
-:= agreement (w : network::weights) (pairs : list bc_dataset::pair) : tally =
-    pairs |> listm::fold (tally_pair w) { agree = 0; total = 0 }
+:= agreement (w : network::weights) (pairs : list bc_dataset::pair) : counts =
+    pairs |> listm::fold (counted_pair w) { agree = 0; total = 0 }
 
 := central_diff (w : floats) (e : example) (i : i32) : f32 =
     := keep = index w i
@@ -264,7 +264,7 @@
     train (student_trainer ()) w (examples_of pairs) |> ignore
     w
 
-:= student_agreement () : tally =
+:= student_agreement () : counts =
     := pairs = bc_dataset::network_test_pairs ()
     agreement (quantized (trained_student pairs)) pairs
 

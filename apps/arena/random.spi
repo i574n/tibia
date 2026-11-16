@@ -52,9 +52,9 @@
 
 :== arena = { pace : scoreboard::pace; engaged : client::engaged }
 
-:== tally = scoreboard::tally
+:== counts = scoreboard::counts
 
-:== stepped = tally * i32
+:== stepped = counts * i32
 
 :== turn = { a : arena; now : i32; health : i32 }
 
@@ -63,7 +63,7 @@
     ?> gauge::note (("heal (potion) at health " ++#? r::health ++# " t=" ++#? at))
     |: gauge::note (("heal dropped by the action gate at health " ++#? r::health))
 
-:= drank (r : turn) (t : tally) (next_step_at : i32) : stepped =
+:= drank (r : turn) (t : counts) (next_step_at : i32) : stepped =
     := at = scoreboard::elapsed r::a::pace
     := drunk = client::drink (health_potion ())
     drink_noted r at drunk
@@ -83,7 +83,7 @@
         strike_noted r target here
 
 := engaged_seen
-    (r : turn) (t : tally) (next_step_at : i32) (here : client::spot) (target : client::creature)
+    (r : turn) (t : counts) (next_step_at : i32) (here : client::spot) (target : client::creature)
     : stepped
     =
     client::chasing !+
@@ -91,79 +91,79 @@
     { t ?| strikes = t::strikes + 1 }, next_step_at
 
 := engage_found
-    (r : turn) (t : tally) (step_at : i32) (here : client::spot) (people : client::crowd) (seen : gauge::spotted)
+    (r : turn) (t : counts) (step_at : i32) (here : client::spot) (people : client::crowd) (seen : gauge::spotted)
     : stepped
     =
     ?= seen ?|
     | Some n => engaged_seen r t step_at here (client::member people n::index)
     | None => t, step_at
 
-:= engaged_nearest (r : turn) (t : tally) (next_step_at : i32) : stepped =
+:= engaged_nearest (r : turn) (t : counts) (next_step_at : i32) : stepped =
     := here = client::player_spot ()
     := people = client::spectators here
     engage_found r t next_step_at here people (gauge::nearest_monster here people)
 
 := step_cost (h : heading) : i32 = step_ms () * (? h::diagonal ?> 3 |: 1)
 
-:= stepped_randomly (r : turn) (t : tally) (next_step_at : i32) : stepped =
+:= stepped_randomly (r : turn) (t : counts) (next_step_at : i32) : stepped =
     := h = heading_of (random' 1i32 9i32)
     ? client::step h::dx h::dy
     ?> { t ?| retreats = t::retreats + 1 }, r::now + step_cost h
     |: { t ?| gated = t::gated + 1 }, next_step_at
 
-:= step_somewhere (r : turn) (t : tally) (next_step_at : i32) : stepped =
+:= step_somewhere (r : turn) (t : counts) (next_step_at : i32) : stepped =
     ? r::now >= next_step_at && client::player_walking () = !-
     ?> stepped_randomly r t next_step_at
     |: t, next_step_at
 
-:= stood (t : tally) (step_at : i32) : stepped = { t ?| holds = t::holds + 1 }, step_at
+:= stood (t : counts) (step_at : i32) : stepped = { t ?| holds = t::holds + 1 }, step_at
 
-:= moved (r : turn) (t : tally) (step_at : i32) : stepped =
+:= moved (r : turn) (t : counts) (step_at : i32) : stepped =
     ?= move_of (random' 0i32 4i32) ?|
     | Drink => drank r t step_at
     | Engage => engaged_nearest r t step_at
     | StepSomewhere => step_somewhere r t step_at
     | Stand => stood t step_at
 
-:= summary_noted (a : arena) (t : tally) : () =
+:= summary_noted (a : arena) (t : counts) : () =
     ? scoreboard::due_for_summary t ?>
         := at = gauge::described (client::player_spot ())
         gauge::note (scoreboard::summary a::pace t ++# " player at " ++# at)
 
-:= kills_counted (a : arena) (t : tally) : tally = { t ?| kills = t::kills + client::forget_dead a::engaged }
+:= kills_counted (a : arena) (t : counts) : counts = { t ?| kills = t::kills + client::forget_dead a::engaged }
 
-:= lived (a : arena) (t : tally) (next_step_at : i32) (now : i32) (health : i32) : stepped =
+:= lived (a : arena) (t : counts) (next_step_at : i32) (now : i32) (health : i32) : stepped =
     := t = kills_counted a t
     := t, next_step_at = moved { a = a; now = now; health = health } t next_step_at
     summary_noted a t
     t, next_step_at
 
-:= died (a : arena) (t : tally) : option stepped =
+:= died (a : arena) (t : counts) : option stepped =
     gauge::note ("dead: " ++# scoreboard::summary a::pace t)
     gauge::finish_reporting_parity "death"
     None
 
-:= present_outcome (a : arena) (t : tally) (next_step_at : i32) : option stepped =
+:= present_outcome (a : arena) (t : counts) (next_step_at : i32) : option stepped =
     := now = client::now_ms ()
     := health = client::player_health ()
     := t = scoreboard::counted health t
     ? health <= 0 ?> died a t |: Some (lived a t next_step_at now health)
 
-:= tick_outcome (a : arena) (t : tally) (next_step_at : i32) : option stepped =
+:= tick_outcome (a : arena) (t : counts) (next_step_at : i32) : option stepped =
     ? client::player_present () = !- ?>
         gauge::finish_reporting_parity "offline"
         None
     |: present_outcome a t next_step_at
 
-:= continued (a : arena) (t : tally) (next : () -> ()) : () =
+:= continued (a : arena) (t : counts) (next : () -> ()) : () =
     scoreboard::finish_or_continue a::pace t (\ () => ()) next
 
-:~ ^ ticked (a : arena) (t : tally) (next_step_at : i32) : () =
+:~ ^ ticked (a : arena) (t : counts) (next_step_at : i32) : () =
     ?= tick_outcome a t next_step_at ?|
     | Some (t, next_step_at) => continued a t \ () => client::after (tick_ms ()) (\ () => ticked a t next_step_at)
     | None => ()
 
-:= tick (a : arena) (first : tally) : () = ticked a first 0
+:= tick (a : arena) (first : counts) : () = ticked a first 0
 
 :~ ^ heading_sums (k : i32) (i : i32) (dx : i32) (dy : i32) (diagonals : i32) : i32 * i32 * i32 =
     ? i > k
