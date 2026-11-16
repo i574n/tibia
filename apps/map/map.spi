@@ -1,0 +1,424 @@
+///- --package .
+:# map static =
+    :< testing
+
+:< kinds
+:< items
+:< walk
+
+:== bytes = array u8
+
+:= otbm_node_start () : u8 = 254u8
+:= otbm_node_end () : u8 = 255u8
+:= otbm_escape () : u8 = 253u8
+:= otbm_identifier_bytes () : i32 = 4
+
+:= area_node () : i32 = 4
+:= tile_node () : i32 = 5
+:= item_node () : i32 = 6
+:= house_tile_node () : i32 = 14
+
+:= tile_flags_attribute () : i32 = 3
+:= tile_flags_attribute_bytes () : i32 = 5
+:= protection_zone_flag () : i32 = 1
+:= item_attribute () : i32 = 9
+:= item_attribute_bytes () : i32 = 3
+
+:= tile_props_before_attributes () : i32 = 2
+:= house_tile_props_before_attributes () : i32 = 6
+:= item_id_limit () : i32 = 65536
+:= node_depth_limit () : i32 = 256
+
+:= climbable_height_items () : i32 = 3
+
+:= road_ground_speed () : i32 = 100
+:= spot_x () : i32 = 1933
+:= spot_y () : i32 = 1350
+:= spot_z () : i32 = 7
+:= spot_radius () : i32 = 45
+:= spot_side () : i32 = 2 * spot_radius () + 1
+
+:= row_word_bits () : i32 = 32
+:= row_word_count () : i32 = (spot_side () + row_word_bits () - 1) / row_word_bits ()
+
+:= (++) (a : string) (b : string) : string = sm'::(++#) a b
+
+:= byte (b : bytes) (i : i32) : i32 = conv (index b i)
+
+:= known_item (identity : i32) : bool = identity >= 0 && identity < item_id_limit ()
+
+:= filled \* t. (count : i32) (value : t) : array t =
+    := x : array t = create count
+    :~ ^ fill (i : i32) : () =
+        ? i < count ?>
+            set x i value
+            fill (i + 1)
+    fill 0
+    x
+
+
+:= bit_set (cells : array bool) (row : i32) (column : i32) : bool =
+    column < spot_side () && index cells (row * spot_side () + column)
+
+:= bit_of (on : bool) (bit : i32) : u32 = ? on ?> 1u32 <<< bit |: 0u32
+
+:~ ^ row_bits (cells : array bool) (row : i32) (first : i32) (bit : i32) (acc : u32) : u32 =
+    ? bit >= row_word_bits ()
+    ?> acc
+    |: row_bits cells row first (bit + 1) (acc ||| bit_of (bit_set cells row (first + bit)) bit)
+
+:= row_word (cells : array bool) (row : i32) (word : i32) : u32 = row_bits cells row (word * row_word_bits ()) 0 0u32
+
+:= word_mask (word : i32) : u32 =
+    := valid = spot_side () - word * row_word_bits ()
+    ? valid >= row_word_bits () ?> 4294967295u32 |: (1u32 <<< valid) - 1u32
+
+:= word_literal (words : array u32) (row : i32) (word : i32) : string =
+    sm'::obj_to_string (index words (row * row_word_count () + word)) ++ "u32"
+
+:= if_then (condition : string) (yes : string) (no : string) : string =
+    "if " ++ condition ++ " then " ++ yes ++ " else " ++ no
+
+:= word_test (word : i32) : string = "word = " ++ sm'::obj_to_string word
+
+:= outside_value (outside_blocked : bool) (word : i32) : string =
+    sm'::obj_to_string (? outside_blocked ?> word_mask word |: 0u32) ++ "u32"
+
+:~ ^ outside_choice (outside_blocked : bool) (word : i32) : string =
+    := value = outside_value outside_blocked word
+    ? word = row_word_count () - 1
+    ?> value
+    |: if_then (word_test word) value (outside_choice outside_blocked (word + 1))
+
+:~ ^ words_from (cells : array bool) (words : array u32) (cell : i32) : () =
+    := count = row_word_count ()
+    ? cell < length words ?>
+        set words cell (row_word cells (cell / count) (cell % count))
+        words_from cells words (cell + 1)
+
+:= row_words (cells : array bool) : array u32 =
+    := words : array u32 = filled (spot_side () * row_word_count ()) 0u32
+    words_from cells words 0
+    words
+
+:= table_fan () : i32 = 4
+
+:== table_item = i32 * string
+
+:= items_by (count : i32) (item : i32 -> table_item) : array table_item =
+    := items : array table_item = filled count (0, "")
+    :~ ^ fill (i : i32) : () =
+        ? i < count ?>
+            set items i (item i)
+            fill (i + 1)
+    fill 0
+    items
+
+:= item_first (items : array table_item) (i : i32) : i32 =
+    := first, _ = index items i
+    first
+
+:= item_text (items : array table_item) (i : i32) : string =
+    := _, text = index items i
+    text
+
+:= row_test (items : array table_item) (i : i32) : string = "row <= " ++ sm'::obj_to_string (item_first items i - 1)
+
+:~ ^ item_chain (items : array table_item) (lo : i32) (hi : i32) : string =
+    ? lo = hi
+    ?> item_text items lo
+    |:
+        := mid = (lo + hi) / 2
+        if_then (row_test items (mid + 1)) (item_chain items lo mid) (item_chain items (mid + 1) hi)
+
+:= whole_chain (items : array table_item) : string = item_chain items 0 (length items - 1)
+
+:= row_items (words : array u32) (word : i32) : array table_item =
+    items_by (spot_side ()) \ row => row, word_literal words row word
+
+:= group_items (items : array table_item) (g : i32) : array table_item =
+    := lo = g * table_fan ()
+    := count = ? length items - lo < table_fan () ?> length items - lo |: table_fan ()
+    items_by count \ i => index items (lo + i)
+
+:= row_function (name : string) (body : string) : () =
+    console::write_line ("let " ++ name ++ " (row : i32) : u32 =")
+    console::write_line ("    " ++ body)
+
+:= group_item (prefix : string) (items : array table_item) (g : i32) : table_item =
+    := group, name = group_items items g, prefix ++ "_" ++ sm'::obj_to_string g
+    row_function name (whole_chain group)
+    item_first group 0, name ++ " row"
+
+:= group_count (items : array table_item) : i32 = (length items + table_fan () - 1) / table_fan ()
+
+:= next_items (base : string) (level : i32) (items : array table_item) : array table_item =
+    items_by (group_count items) (group_item (base ++ "_" ++ sm'::obj_to_string level) items)
+
+:~ ^ emit_level (base : string) (level : i32) (items : array table_item) : () =
+    ? length items <= table_fan ()
+    ?> row_function base (whole_chain items)
+    |: emit_level base (level + 1) (next_items base level items)
+
+:= word_name (table : string) (word : i32) : string = table ++ "_" ++ sm'::obj_to_string word
+
+:~ ^ word_choice (table : string) (word : i32) : string =
+    := part = word_name table word ++ " row"
+    ? word = row_word_count () - 1 ?> part |: if_then (word_test word) part (word_choice table (word + 1))
+
+:= emit_words (name : string) (words : array u32) : () =
+    :~ ^ each_word (word : i32) : () =
+        ? word < row_word_count () ?>
+            emit_level (word_name name word) 0 (row_items words word)
+            each_word (word + 1)
+    each_word 0
+
+:= emit_outside (name : string) (outside_blocked : bool) : () =
+    console::write_line ("let " ++ name ++ "_outside (word : i32) : u32 =")
+    console::write_line ("    " ++ outside_choice outside_blocked 0)
+
+:= bits_root (name : string) : string =
+    := guard = "row < 0 || row > " ++ sm'::obj_to_string (spot_side () - 1)
+    "    " ++ if_then guard (name ++ "_outside word") (word_choice name 0)
+
+:= emit (name : string) (cells : array bool) (blocked : bool) : () =
+    emit_words name (row_words cells)
+    emit_outside name blocked
+    console::write_line ("let " ++ name ++ " (word : i32) (row : i32) : u32 =")
+    console::write_line (bits_root name)
+
+:= literal (n : i32) : string = ? n < 0 ?> "(0 - " ++ sm'::obj_to_string (0 - n) ++ ")" |: sm'::obj_to_string n
+
+:~ ^ last_of (cells : array bool) (row : i32) (column : i32) : i32 =
+    ? bit_set cells row (column + 1) ?> last_of cells row (column + 1) |: column
+
+:= span_text (first : i32) (last : i32) : string =
+    := radius = spot_radius ()
+    ? last = first
+    ?> "dx = " ++ literal (first - radius)
+    |: "(dx >= " ++ literal (first - radius) ++ " && dx <= " ++ literal (last - radius) ++ ")"
+
+:= joined (text : string) (part : string) (separator : string) : string =
+    ? text = "" ?> part |: text ++ separator ++ part
+
+:= span_step (cells : array bool) (row : i32) (column : i32) (text : string) : i32 * string =
+    ? bit_set cells row column = !-
+    ?> (column + 1, text)
+    |:
+        := last = last_of cells row column
+        last + 1, joined text (span_text column last) " || "
+
+:~ ^ spans_from (cells : array bool) (row : i32) (column : i32) (text : string) : string =
+    ? column >= spot_side ()
+    ?> text
+    |:
+        := column, text = span_step cells row column text
+        spans_from cells row column text
+
+:= row_spans (cells : array bool) (row : i32) : string = spans_from cells row 0 ""
+
+:= dy_test (row : i32) : string = "dy = " ++ literal (row - spot_radius ())
+
+:= zone_budget () : i32 = 150
+
+:~ ^ span_rows_from (cells : array bool) (row : i32) (count : i32) : i32 =
+    ? row >= spot_side ()
+    ?> count
+    |: span_rows_from cells (row + 1) (? row_spans cells row = "" ?> count |: count + 1)
+
+:~ ^ span_row_from (cells : array bool) (row : i32) (n : i32) : i32 =
+    ? row_spans cells row = ""
+    ?> span_row_from cells (row + 1) n
+    |? n = 0
+    ?> row
+    |: span_row_from cells (row + 1) (n - 1)
+
+:= zone_clause (cells : array bool) (n : i32) : table_item =
+    := row = span_row_from cells 0 n
+    row, row_spans cells row
+
+:= zone_clauses (cells : array bool) : array table_item = items_by (span_rows_from cells 0 0) (zone_clause cells)
+
+:= zone_group (rows : array table_item) (lo : i32) (hi : i32) (rest : string) : string =
+    :~ ^ build (i : i32) (text : string) : string =
+        ? i < lo ?> text |: build (i - 1) (if_then (dy_test (item_first rows i)) (item_text rows i) text)
+    build hi rest
+
+:= zone_part (name : string) (k : i32) : string = ? k = 0 ?> name |: name ++ "_" ++ sm'::obj_to_string k
+
+:= zone_function (label : string) (body : string) : () =
+    console::write_line ("let " ++ label ++ " (dx : i32) (dy : i32) : bool =")
+    console::write_line ("    " ++ body)
+
+:= span_function (label : string) (body : string) : () =
+    console::write_line ("let " ++ label ++ " (dx : i32) : bool =")
+    console::write_line ("    " ++ body)
+
+:= hoisted_span (name : string) (row : i32) (spans : string) : string =
+    := helper = name ++ "_dy" ++ sm'::obj_to_string row
+    span_function helper spans
+    helper ++ " dx"
+
+:= hoist (name : string) (clauses : array table_item) (i : i32) : table_item =
+    := row, spans = item_first clauses i, item_text clauses i
+    row, (? (sm'::length spans : i32) <= 100 ?> spans |: hoisted_span name row spans)
+
+:= clause_weight (clauses : array table_item) (i : i32) : i32 = (sm'::length (item_text clauses i) : i32) + 20
+
+:~ ^ zone_end (clauses : array table_item) (hi : i32) (used : i32) : i32 =
+    := next = hi + 1
+    ? next >= length clauses || used + clause_weight clauses next > zone_budget ()
+    ?> hi
+    |: zone_end clauses next (used + clause_weight clauses next)
+
+:= zone_hi (clauses : array table_item) (lo : i32) : i32 = zone_end clauses lo (clause_weight clauses lo)
+
+:= zone_rest (name : string) (clauses : array table_item) (hi : i32) (k : i32) : string =
+    ? hi + 1 >= length clauses ?> "false" |: zone_part name (k + 1) ++ " dx dy"
+
+:= emit_zone_group (name : string) (clauses : array table_item) (lo : i32) (hi : i32) (k : i32) : () =
+    zone_function (zone_part name k) (zone_group clauses lo hi (zone_rest name clauses hi k))
+
+:~ ^ emit_zone_from (name : string) (clauses : array table_item) (lo : i32) (k : i32) : () =
+    ? lo < length clauses ?>
+        := hi = zone_hi clauses lo
+        emit_zone_from name clauses (hi + 1) (k + 1)
+        emit_zone_group name clauses lo hi k
+
+:= emit_spans (name : string) (cells : array bool) : () =
+    := found = zone_clauses cells
+    := clauses = items_by (length found) (hoist name found)
+    ? length clauses = 0 ?> zone_function name "false" |: emit_zone_from name clauses 0 0
+
+:= signed_label (n : i32) : string =
+    := digits = ? n < 0 ?> "-" ++ sm'::obj_to_string (0 - n) |: "+" ++ sm'::obj_to_string n
+    :~ ^ pad (text : string) : string = ? (sm'::length text : i32) >= 4 ?> text |: pad (" " ++ text)
+    pad digits
+
+:= spot_xy () : string = sm'::obj_to_string (spot_x ()) ++ "," ++ sm'::obj_to_string (spot_y ())
+
+:= spot_text () : string = spot_xy () ++ "," ++ sm'::obj_to_string (spot_z ())
+
+:= radius_text () : string = " radius " ++ sm'::obj_to_string (spot_radius ())
+
+:~ ^ marks_from (cells : array bool) (row : i32) (column : i32) (text : string) : string =
+    ? column >= spot_side ()
+    ?> text
+    |: marks_from cells row (column + 1) (text ++ (? bit_set cells row column ?> "." |: "#"))
+
+:~ ^ dump_rows (cells : array bool) (row : i32) : () =
+    ? row < spot_side () ?>
+        console::write_line (signed_label (row - spot_radius ()) ++ " " ++ marks_from cells row 0 "")
+        dump_rows cells (row + 1)
+
+:= walk_dump (cells : array bool) : () =
+    console::write_line ("walkability around " ++ spot_text () ++ radius_text () ++ " (# blocked, . walkable)")
+    dump_rows cells 0
+
+:= listed_line (column : i32) (row : i32) (label : string) : string =
+    := x, y = spot_x () - spot_radius () + column, spot_y () - spot_radius () + row
+    sm'::obj_to_string x ++ "," ++ sm'::obj_to_string y ++ " " ++ label
+
+:~ ^ listed_rows (cells : array bool) (label : string) (column : i32) (row : i32) : () =
+    ? row < spot_side () ?>
+        ? bit_set cells row column ?> console::write_line (listed_line column row label)
+        listed_rows cells label column (row + 1)
+
+:~ ^ listed_columns (cells : array bool) (label : string) (column : i32) : () =
+    ? column < spot_side () ?>
+        listed_rows cells label column 0
+        listed_columns cells label (column + 1)
+
+:= listed (cells : array bool) (label : string) : () = listed_columns cells label 0
+
+:~ ^ exit_count (exits : array bool) (identity : i32) (total : i32) : i32 =
+    ? identity >= item_id_limit ()
+    ?> total
+    |: exit_count exits (identity + 1) (? index exits identity ?> total + 1 |: total)
+
+:= listing_place () : string =
+    := floor, radius = sm'::obj_to_string (spot_z ()), sm'::obj_to_string (spot_radius ())
+    "floor-change tiles on floor " ++ floor ++ " within radius " ++ radius ++ " of " ++ spot_xy ()
+
+:= listing_header (exits : array bool) : string =
+    listing_place () ++ " (from " ++ sm'::obj_to_string (exit_count exits 0 0) ++ " floorchange item ids)"
+
+:~ ^ any_from (cells : array bool) (i : i32) : bool =
+    ? i >= length cells ?> !- |? index cells i ?> !+ |: any_from cells (i + 1)
+
+:= any (cells : array bool) : bool = any_from cells 0
+
+:= passage_listing (g : mark_cells) : () =
+    listed g::floor_change "floorchange"
+    listed g::teleport "teleport"
+    ? any g::floor_change = !- || any g::climbable = !- ?> console::write_line ""
+
+:= zone_listing (g : mark_cells) : () =
+    listed g::climbable "height3"
+    ? any g::climbable || any g::protection || any g::house ?> console::write_line ""
+    listed g::protection "protection-zone"
+    listed g::house "house"
+
+:= floor_change_listing (g : mark_cells) (exits : array bool) : () =
+    console::write_line (listing_header exits)
+    passage_listing g
+    zone_listing g
+
+:= read_input (variable : string) : bytes =
+    am'::from_vec (file_system::read_all_bytes (env::get_environment_variable variable))
+
+:~ ^ merge_from (marks : bitset::bitset) (overrides : array bool) (identity : i32) : () =
+    ? identity < item_id_limit () ?>
+        ? index overrides identity ?> bitset::put marks identity
+        merge_from marks overrides (identity + 1)
+
+:= sight_merged (kinds : item_kinds) (items : bytes) : () =
+    merge_from kinds::sight_blocking (ids_of (items, "key=\"blockProjectile\" value=\"1\"")) 0
+
+:= item_marks (kinds : item_kinds) (items : bytes) : array bool * array bool =
+    := exits, teleports = ids_of (items, "key=\"floorchange\""), ids_of (items, "value=\"teleport\"")
+    sight_merged kinds items
+    exits, teleports
+
+:= emit_all (g : grid) : () =
+    emit "arena_spot_bits" g::walk::blocked !+
+    emit "arena_road_bits" g::walk::road !-
+    emit "arena_sight_bits" g::walk::sight_blocked !-
+    emit_spans "arena_protection_zone" g::marks::protection
+    walk_dump g::walk::walkable
+
+:= report (g : grid) (exits : array bool) : () =
+    emit_all g
+    floor_change_listing g::marks exits
+
+///> rust
+///> c
+:# literal_and_signed_label_render_negative_numbers =
+    (literal (0 - 5), literal 7, signed_label 5, signed_label (0 - 12), signed_label 0, signed_label 1234)
+    |> _assert_eq ("(0 - 5)", "7", "  +5", " -12", "  +0", "+1234")
+
+///> rust
+///> c
+:# word_mask_covers_only_tiles_inside_the_spot =
+    (row_word_count (), word_mask 0, word_mask 1, word_mask 2)
+    |> _assert_eq (3i32, 4294967295u32, 4294967295u32, 134217727u32)
+
+///> rust
+///> c
+:# row_spans_merge_runs_into_ranges =
+    := cells : array bool = filled (spot_side () * spot_side ()) !-
+    set cells 45 !+
+    set cells 47 !+
+    set cells 48 !+
+    row_spans cells 0 |> _assert_eq "dx = 0 || (dx >= 2 && dx <= 3)"
+
+///> rust
+///> c
+:# row_spans_of_an_empty_row_is_empty =
+    row_spans (filled (spot_side () * spot_side ()) !-) 1 |> _assert_eq ""
+
+:= main () =
+    := kinds_row, items = kinds_rows (read_input "TIBIA_MAP_APPEARANCES"), read_input "TIBIA_MAP_ITEMS"
+    := exits, teleports = item_marks (index kinds_row 0) items
+    := grid = index (walk_rows (read_input "TIBIA_MAP_OTBM", kinds_row, exits, teleports)) 0
+    report grid exits

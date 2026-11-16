@@ -1,0 +1,5 @@
+:< items
+
+:= main () : i32 =
+    export "map_items_ids_of" ids_of
+    0i32

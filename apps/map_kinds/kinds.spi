@@ -1,0 +1,159 @@
+///- --package .
+:# kinds static =
+    :< testing
+
+:== bytes = array u8
+
+:= item_id_limit () : i32 = 65536
+
+:= appearance_field () : i32 = 1
+:= appearance_id_field () : i32 = 1
+:= appearance_flags_field () : i32 = 3
+
+:= unpassable_flag () : i32 = 13
+:= sight_blocking_flag () : i32 = 15
+:= bank_flag () : i32 = 1
+:= bank_waypoints_field () : i32 = 1
+:= height_flag () : i32 = 27
+
+:= byte (b : bytes) (i : i32) : i32 = conv (index b i)
+
+:= known_item (identity : i32) : bool = identity >= 0 && identity < item_id_limit ()
+
+:= filled \* t. (count : i32) (value : t) : array t =
+    := x : array t = create count
+    :~ ^ fill (i : i32) : () =
+        ? i < count ?>
+            set x i value
+            fill (i + 1)
+    fill 0
+    x
+
+:~ ^ varint_from (b : bytes) (i : i32) (value : u64) (shift : i32) : u64 * i32 =
+    := c = index b i
+    := value = value ||| ((conv (c &&& 127u8) : u64) <<< shift)
+    ? c < 128u8 ?> value, i + 1 |: varint_from b (i + 1) value (shift + 7)
+
+:~ varint (b : bytes) (start : i32) : u64 * i32 = varint_from b start 0u64 0
+
+:== visitors state = { on_varint : state -> i32 -> u64 -> state; on_bytes : state -> i32 -> i32 -> i32 -> state }
+
+:== field_head = { number : i32; wire : u64; at : i32 }
+
+:= field_at (b : bytes) (i : i32) : field_head =
+    := key, at = varint b i
+    { number = conv (key >>> 3); wire = key &&& 7u64; at = at }
+
+:= skipped_wire (i : i32) (wire : u64) : i32 =
+    ? wire = 5u64
+    ?> i + 4
+    |? wire = 1u64
+    ?> i + 8
+    |: failwith "map: appearances.dat has an unknown protobuf wire type"
+
+:= varint_field \* state. (b : bytes) (f : field_head) (s : state) (v : visitors state) : i32 * state =
+    := value, i = varint b f::at
+    i, v::on_varint s f::number value
+
+:= bytes_field \* state. (b : bytes) (f : field_head) (s : state) (v : visitors state) : i32 * state =
+    := size, i = varint b f::at
+    i + conv size, v::on_bytes s f::number i (i + conv size)
+
+:= field_next \* state. (b : bytes) (i : i32) (s : state) (v : visitors state) : i32 * state =
+    := f = field_at b i
+    ? f::wire = 0u64
+    ?> varint_field b f s v
+    |? f::wire = 2u64
+    ?> bytes_field b f s v
+    |: skipped_wire f::at f::wire, s
+
+:= fold_fields \* st. (b : bytes) (start : i32) (stop : i32) (seed : st) (v : visitors st) : st =
+    :~ ^ next (i : i32) (s : st) : st =
+        ? i >= stop
+        ?> s
+        |:
+            := i, s = field_next b i s v
+            next i s
+    next start seed
+
+:== item_kinds =
+    {
+        unpassable : bitset::bitset
+        sight_blocking : bitset::bitset
+        ground : bitset::bitset
+        speed : array i32
+        height : bitset::bitset
+    }
+
+:= no_items () : bitset::bitset = bitset::empty (item_id_limit ())
+
+:= no_kinds () : item_kinds =
+    {
+        unpassable = no_items ()
+        sight_blocking = no_items ()
+        ground = no_items ()
+        speed = filled (item_id_limit ()) 0
+        height = no_items ()
+    }
+
+:= varint_ignored () (field : i32) (value : u64) : () = ()
+
+:= bytes_ignored () (field : i32) (from : i32) (stop : i32) : () = ()
+
+:= waypoint_speed (speeds : array i32) (identity : i32) () (field : i32) (value : u64) : () =
+    ? field = bank_waypoints_field () ?> set speeds identity (conv value)
+
+:= bank_speed (b : bytes) (speeds : array i32) (identity : i32) (from : i32) (stop : i32) : () =
+    fold_fields b from stop () { on_varint = waypoint_speed speeds identity; on_bytes = bytes_ignored }
+
+:= blocking_flag (kinds : item_kinds) (identity : i32) (flag : i32) : () =
+    ? flag = unpassable_flag () ?> bitset::put kinds::unpassable identity
+    ? flag = sight_blocking_flag () ?> bitset::put kinds::sight_blocking identity
+
+:= flag_seen (kinds : item_kinds) (identity : i32) () (flag : i32) (value : u64) : () =
+    ? flag = height_flag () ?> bitset::put kinds::height identity
+    ? value <> 0u64 ?> blocking_flag kinds identity flag
+
+:= bank_seen (b : bytes) (kinds : item_kinds) (identity : i32) (from : i32) (stop : i32) : () =
+    bitset::put kinds::ground identity
+    bank_speed b kinds::speed identity from stop
+
+:= flag_bytes (b : bytes) (kinds : item_kinds) (identity : i32) () (flag : i32) (from : i32) (stop : i32) : () =
+    ? flag = height_flag () ?> bitset::put kinds::height identity
+    ? flag = bank_flag () ?> bank_seen b kinds identity from stop
+
+:= flags_of (b : bytes) (kinds : item_kinds) (identity : i32) (from : i32) (stop : i32) : () =
+    fold_fields b from stop () { on_varint = flag_seen kinds identity; on_bytes = flag_bytes b kinds identity }
+
+:== flag_span = i32 * i32 * i32
+
+:= appearance_id (span : flag_span) (field : i32) (value : u64) : flag_span =
+    := _, flags_from, flags_stop = span
+    ? field = appearance_id_field () ?> (conv value, flags_from, flags_stop) |: span
+
+:= appearance_flags (span : flag_span) (field : i32) (from : i32) (stop : i32) : flag_span =
+    := identity, _, _ = span
+    ? field = appearance_flags_field () ?> (identity, from, stop) |: span
+
+:= appearance_visit () : visitors flag_span = { on_varint = appearance_id; on_bytes = appearance_flags }
+
+:= appearance_seen (b : bytes) (kinds : item_kinds) (span : flag_span) : () =
+    := identity, flags_from, flags_stop = span
+    ? known_item identity && flags_from >= 0 ?> flags_of b kinds identity flags_from flags_stop
+
+:= appearance (b : bytes) (kinds : item_kinds) () (field : i32) (from : i32) (stop : i32) : () =
+    ? field = appearance_field ()
+    ?> appearance_seen b kinds (fold_fields b from stop (-1, -1, -1) (appearance_visit ()))
+
+:= item_kinds_of (b : bytes) : item_kinds =
+    := kinds = no_kinds ()
+    fold_fields b 0 (length b) () { on_varint = varint_ignored; on_bytes = appearance b kinds }
+    kinds
+
+:= kinds_rows (b : bytes) : array item_kinds = ;[ item_kinds_of b ]
+
+///> rust
+///> c
+:# varint_reads_little_endian_base_128 =
+    (varint ;[150u8; 1u8] 0, varint ;[5u8; 172u8; 2u8] 1, varint ;[5u8] 0)
+    |> _assert_eq ((150u64, 2i32), (300u64, 3i32), (5u64, 1i32))

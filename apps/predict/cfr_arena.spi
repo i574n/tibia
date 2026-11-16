@@ -1,0 +1,59 @@
+///- --package .
+:# cfr_arena static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== arm = { name : string; tactic : tactic }
+
+:= spot () : camp =
+    uniform_camp (:< creatures ;; Cyclops) |> on_layout (:< terrain ;; ArenaSpot) |> mirroring_the_current_arena
+
+:= clear_limit_ms () : i32 = 94934
+
+:= held_out_worth (t : tactic) : i32 =
+    worth (CheapClearWithin (clear_limit_ms ())) (spot ()) t (held_out_first ()) (held_out_count ())
+
+:= cleared (t : tactic) (seed : u32) : i32 =
+    := _, p = clear_run (spot ()) t seed 6000
+    ? all_killed (spot ()) p ?> 1 |: 0
+
+:~ ^ clears_from (t : tactic) (i : i32) (acc : i32) : i32 =
+    ? i >= held_out_count () ?> acc |: clears_from t (i + 1) (acc + cleared t (held_out_first () + conv i))
+
+:= deaths_of (t : tactic) : i32 =
+    (ledger_on (spot ()) t (held_out_block ()))::hunt_deaths
+
+:= arm_line (a : arm) : string =
+    := worth_text = "\t" ++#? held_out_worth a::tactic
+    "arm\t" ++# a::name ++# worth_text ++# "\t" ++#? deaths_of a::tactic ++# "\t" ++#? clears_from a::tactic 0 0
+
+:= best_share (table : array i32) (s : i32) : i32 =
+    := potion, melee, retreat = index table (s * 3), index table (s * 3 + 1), index table (s * 3 + 2)
+    ? potion >= melee && potion >= retreat ?> 0 |? melee >= retreat ?> 1 |: 2
+
+:~ ^ harden_from (table : array i32) (out : array i32) (s : i32) : () =
+    ? s * 3 < length table ?>
+        set out (s * 3 + best_share table s) 1000
+        harden_from table out (s + 1)
+
+:= hardened (table : array i32) : array i32 =
+    := out = regret::zeros (length table)
+    harden_from table out 0
+    out
+
+:= argmax_tactic (depth : i32) : tactic =
+    := t = cfr_tactic depth
+    ?= t::brain ?|
+    | Cfr c => { t ?| brain = Cfr { c ?| table = hardened c::table } }
+    | _ => t
+
+:= print_arm (name : string) (t : tactic) : () = console::write_line (arm_line { name = name; tactic = t })
+
+:= main () : i32 =
+    console::write_line "kind\tarm\tworth\tdeaths\tclears"
+    print_arm "cfr" (cfr_tactic 3)
+    print_arm "cfr_argmax" (argmax_tactic 3)
+    print_arm "retreat2" (live_retreat_tactic 160 2)
+    0

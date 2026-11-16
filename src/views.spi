@@ -1,0 +1,41 @@
+///- --package .
+:# views static =
+    :< testing
+
+:< fixed_views
+
+
+:= decide_all \* (f : * -> *) {mapped}. (t : policy::thresholds) (observations : f policy::observation) : f i32 =
+    mapped (\ o => policy::engagement_code (policy::engages t o)) observations
+
+:= observed (health : i32) (target : policy::reach) : policy::observation =
+    { health = health; heal_ready = !+; strike_ready = !+; target = target }
+
+///> c
+:# one_decision_is_the_live_client_view =
+    :< policy
+    := ~health = 80i32
+    ?= decide_all (evolved_against_cyclops ()) (one (observed health InReach)) ?|
+    | one code => code |> _assert_eq 1i32
+
+:= four_reaches (health : i32) : lanes policy::observation =
+    :< policy
+    := wounded = observed (health - 70) InReach
+    lanes (observed health InReach, observed health OutOfReach, wounded, observed health NoTarget)
+
+///> c
+:# four_lanes_decide_like_four_single_calls =
+    := ~health = 80i32
+    ?= decide_all (policy::evolved_against_cyclops ()) (four_reaches health) ?|
+    | lanes (a, b, c, d) => (a, b, c, d) |> _assert_eq (1i32, 2i32, 0i32, 0i32)
+
+///> c
+:# a_view_without_mapped_is_rejected fails "mapped" =
+    :< policy
+    decide_all (evolved_against_cyclops ()) (unmapped (observed 80 InReach))
+
+///> wgsl
+:# lanes_on_gpu =
+    := ~health = 80i32
+    ?= decide_all (policy::evolved_against_cyclops ()) (four_reaches health) ?|
+    | lanes (a, b, c, d) => ? a = 1i32 && b = 2i32 && c = 0i32 && d = 0i32 ?> 0i32 |: 1i32

@@ -1,0 +1,352 @@
+///- --package .
+:# acceptance static =
+    :< testing
+
+:< sm'_operators
+
+:== row = { pod : string; model : string; threads : string; turn : string; arm : string; ms : f64 }
+
+:| verdict =
+    | Won
+    | Tie
+    | Lost
+    | Void
+
+:== signed_rank = { n : i32; z : f64; hl : f64; lo : f64; hi : f64 }
+
+:= row_of (pod : string) (line : string) : option row =
+    ?= sm'::split_list "\t" line ?|
+    | model :: threads :: turn :: arm :: ms :: _ =>
+        ?= convert::parse_f64 ms ?|
+        | Some v => Some { pod = pod; model = model; threads = threads; turn = turn; arm = arm; ms = v }
+        | None => None
+    | _ => None
+
+:= rows_of (pod : string) (text : string) : list row =
+    sm'::split_list "\n" text
+    |> listm::fold (\ (acc : list row) (line : string) => ?= row_of pod line ?| | Some r => r :: acc | None => acc) []
+    |> listm::rev
+
+:= same_turn (a : row) (b : row) : bool =
+    a::pod = b::pod && a::model = b::model && a::threads = b::threads && a::turn = b::turn
+
+:= in_cell (model : string) (threads : string) (r : row) : bool = r::model = model && r::threads = threads
+
+:= time_of (arm : string) (slot : row) (rows : list row) : option f64 =
+    rows
+    |> listm::fold
+        (\ (found : option f64) (r : row) =>
+            ?= found ?|
+            | Some _ => found
+            | None => ? r::arm = arm && same_turn slot r ?> Some r::ms |: None)
+        None
+
+:= log_ratios (model : string) (threads : string) (ours : string) (other : string) (rows : list row) : list f64 =
+    rows
+    |> listm::fold
+        (\ (acc : list f64) (r : row) =>
+            ? r::arm = ours && in_cell model threads r
+            ?> ?= time_of other r rows ?| | Some t => log (t / r::ms) :: acc | None => acc
+            |: acc)
+        []
+    |> listm::rev
+
+:~ ^ insert_sorted (value : f64) (xs : list f64) : list f64 =
+    ?= xs ?|
+    | [] => [ value ]
+    | head :: rest => ? value <= head ?> value :: xs |: head :: insert_sorted value rest
+
+:= sorted (xs : list f64) : list f64 = listm::fold (\ acc value => insert_sorted value acc) [] xs
+
+:~ ^ nth (index : i32) (xs : list f64) : f64 =
+    ?= xs ?|
+    | [] => 0f64
+    | head :: rest => ? index = 0i32 ?> head |: nth (index - 1i32) rest
+
+:= median_of (ordered : list f64) : f64 =
+    := m = listm::length ordered
+    ? m % 2i32 = 1i32 ?> nth (m / 2i32) ordered |: (nth (m / 2i32 - 1i32) ordered + nth (m / 2i32) ordered) / 2f64
+
+:~ ^ walsh_from (x : f64) (rest : list f64) (acc : list f64) : list f64 =
+    ?= rest ?|
+    | [] => acc
+    | y :: more => walsh_from x more ((x + y) / 2f64 :: acc)
+
+:~ ^ walsh_all (xs : list f64) (acc : list f64) : list f64 =
+    ?= xs ?|
+    | [] => acc
+    | x :: more => walsh_all more (walsh_from x xs acc)
+
+:= positive_weight (s : f64) (x : f64) : f64 = ? x > 0f64 ?> s + 1f64 |: ? x = 0f64 ?> s + 0.5f64 |: s
+
+:= signed_rank_of (d : list f64) : signed_rank =
+    := n = listm::length d
+    := w = sorted (walsh_all d [])
+    := m = listm::length w
+    := nf : f64 = conv n
+    := mu = nf * (nf + 1f64) / 4f64
+    := sigma = sqrt (nf * (nf + 1f64) * (2f64 * nf + 1f64) / 24f64)
+    := cut = mu - 2.576f64 * sigma
+    := k : i32 = ? cut > 0f64 ?> conv cut |: 0i32
+    := plus = listm::fold positive_weight 0f64 w
+    { n = n; z = (plus - mu) / sigma; hl = median_of w; lo = nth k w; hi = nth (m - 1i32 - k) w }
+
+:= least_pairs () : i32 = 36i32
+
+:= least_pods () : i32 = 3i32
+
+:= z_needed () : f64 = 2.326f64
+
+:= margin_of (aa : f64) : f64 = max (log 1.03f64) (2f64 * aa)
+
+:= judged (margin : f64) (t : signed_rank) : verdict =
+    ? t::n < least_pairs () ?> Void |: ? t::z >= z_needed () && t::lo >= margin ?> Won |: ? t::hi < 0f64 ?> Lost |: Tie
+
+:= verdict_name (v : verdict) : string =
+    ?= v ?|
+    | Won => "WON"
+    | Tie => "TIE"
+    | Lost => "LOST"
+    | Void => "VOID"
+
+:= combined (a : verdict) (b : verdict) : verdict =
+    ?= a, b ?|
+    | Lost, _ => Lost
+    | _, Lost => Lost
+    | Void, _ => Void
+    | _, Void => Void
+    | Tie, _ => Tie
+    | _, Tie => Tie
+    | _ => Won
+
+:= percent (x : f64) : string =
+    := tenths : i32 = conv (abs x * 1000f64 + 0.5f64)
+    (? x < 0f64 ?> "-" |: "+") ++#? tenths / 10i32 ++# "." ++#? tenths % 10i32 ++# "%"
+
+:= gain (x : f64) : string = percent (exp x - 1f64)
+
+:= twin_of (arm : string) : string = arm ++# ".aa"
+
+:= distinct_add (xs : list string) (x : string) : list string = ? listm::exists' (\ y => y = x) xs ?> xs |: x :: xs
+
+:= pods_in (model : string) (threads : string) (ours : string) (rows : list row) : i32 =
+    rows
+    |> listm::fold \ (acc : list string) (r : row) =>
+            ? r::arm = ours && in_cell model threads r
+            ?> distinct_add acc r::pod
+            |: acc
+        []
+    |> listm::length
+
+:= aa_spread (model : string) (threads : string) (ours : string) (rows : list row) : option f64 =
+    := d = log_ratios model threads ours (twin_of ours) rows |> listm::map abs
+    ? listm::length d = 0i32 ?> None |: Some (median_of (sorted d))
+
+:= present_refs
+    (model : string) (threads : string) (ours : string) (rows : list row) (references : list string)
+    : list string
+    =
+    references
+    |> listm::fold
+        (\ (acc : list string) (r : string) =>
+            ? listm::length (log_ratios model threads ours r rows) > 0i32 ?> r :: acc |: acc)
+        []
+    |> listm::rev
+
+:= against
+    (model : string) (threads : string) (ours : string) (margin : f64) (rows : list row) (reference : string)
+    : verdict * string
+    =
+    := t = signed_rank_of (log_ratios model threads ours reference rows)
+    := v = judged margin t
+    := z100 : i32 = conv (t::z * 100f64)
+    := head = "  vs " ++# reference ++# ": n=" ++#? t::n ++# " z*100=" ++#? z100 ++# " hl=" ++# gain t::hl
+    v, head ++# " ci99=[" ++# gain t::lo ++# ", " ++# gain t::hi ++# "] -> " ++# verdict_name v
+
+:== roof = { model : string; threads : string; bytes : f64; bandwidth_gbps : f64; fraction : f64; tokens : f64 }
+
+:= roof_of (line : string) : option roof =
+    ?= sm'::split_list "\t" line ?|
+    | tag :: model :: threads :: bytes :: bw :: fraction :: tokens :: _ =>
+        ?=
+            tag = "roofline",
+            convert::parse_f64 bytes,
+            convert::parse_f64 bw,
+            convert::parse_f64 fraction,
+            convert::parse_f64 tokens
+        ?|
+        | true, Some b, Some w, Some f, Some n =>
+            Some { model = model; threads = threads; bytes = b; bandwidth_gbps = w; fraction = f; tokens = n }
+        | _ => None
+    | _ => None
+
+:= roofs_of (text : string) : list roof =
+    sm'::split_list "\n" text
+    |> listm::fold (\ (acc : list roof) (line : string) => ?= roof_of line ?| | Some r => r :: acc | None => acc) []
+
+:= roof_for (model : string) (threads : string) (roofs : list roof) : option roof =
+    roofs
+    |> listm::fold \ (acc : option roof) (r : roof) =>
+            ? r::model = model && r::threads = threads
+            ?> Some r
+            |: acc
+        None
+
+:= ours_median_ms (model : string) (threads : string) (ours : string) (rows : list row) : f64 =
+    rows
+    |> listm::fold \ (acc : list f64) (x : row) =>
+            ? x::arm = ours && in_cell model threads x
+            ?> x::ms :: acc
+            |: acc
+        []
+    |> sorted
+    |> median_of
+
+:= roofline_check
+    (model : string) (threads : string) (ours : string) (rows : list row) (roofs : list roof)
+    : verdict * string
+    =
+    ?= roof_for model threads roofs ?|
+    | None => Void, "  VOID: no roofline row (rule part 6) for this cell"
+    | Some r =>
+        := tok_s = r::tokens * 1000f64 / ours_median_ms model threads ours rows
+        := target = r::fraction * r::bandwidth_gbps * 1000000000f64 / r::bytes
+        := got : i32 = conv tok_s
+        := need : i32 = conv target
+        := v = ? tok_s >= target ?> Won |: Tie
+        v,
+        "  roofline: "
+        ++#? got
+        ++# " tok/s vs "
+        ++#? need
+        ++# " needed ("
+        ++# percent r::fraction
+        ++# " of measured bandwidth) -> "
+        ++# verdict_name v
+
+:= cell_verdict
+    (model : string) (threads : string) (ours : string) (references : list string) (rows : list row) (roofs : list roof)
+    : verdict * list string
+    =
+    := pods = pods_in model threads ours rows
+    ?= aa_spread model threads ours rows ?|
+    | None => Void, [ "  VOID: no A/A twin rows for " ++# twin_of ours ]
+    | Some aa =>
+        := margin = margin_of aa
+        := head = "  pods=" ++#? pods ++# " aa=" ++# gain aa ++# " margin=" ++# gain margin
+        := present = present_refs model threads ours rows references
+        := judged_refs = present |> listm::map (against model threads ours margin rows)
+        := roof_v, roof_line = roofline_check model threads ours rows roofs
+        := base = ? pods < least_pods () || listm::length present = 0i32 ?> Void |: roof_v
+        := v = judged_refs |> listm::fold (\ acc (x, _) => combined acc x) base
+        v, head :: roof_line :: listm::map (\ (_, line) => line) judged_refs
+
+:= cell_add (acc : list (string * string)) (r : row) : list (string * string) =
+    ? listm::exists' (\ (m, t) => m = r::model && t = r::threads) acc ?> acc |: (r::model, r::threads) :: acc
+
+:= cells_of (ours : string) (rows : list row) : list (string * string) =
+    rows |> listm::fold (\ acc (r : row) => ? r::arm = ours ?> cell_add acc r |: acc) [] |> listm::rev
+
+:= report (ours : string) (references : list string) (rows : list row) (roofs : list roof) : verdict * list string =
+    cells_of ours rows
+    |> listm::fold \ (acc, lines) (model, threads) =>
+            := v, detail = cell_verdict model threads ours references rows roofs
+            combined acc v,
+            listm::append lines (("CELL " ++# model ++# " t=" ++# threads ++# ": " ++# verdict_name v) :: detail)
+        (Won, [])
+
+:= rows_of_files (paths : list string) : list row =
+    paths |> listm::fold (\ acc path => listm::append acc (rows_of path (file_system::read_text_lf path))) []
+
+:= roofs_of_files (paths : list string) : list roof =
+    paths |> listm::fold (\ acc path => listm::append acc (roofs_of (file_system::read_text_lf path))) []
+
+:= program_path (arg : string) : bool = sm'::contains "/" arg || sm'::contains "\\" arg || sm'::contains ".exe" arg
+
+:= after_program (args : list string) : list string =
+    ?= args ?|
+    | first :: rest => ? program_path first ?> rest |: args
+    | [] => []
+
+:= main () =
+    ?= after_program (env::command_line_arguments ()) ?|
+    | ours :: references :: paths =>
+        := overall, lines = report ours (sm'::split_list "," references) (rows_of_files paths) (roofs_of_files paths)
+        lines |> listm::iter console::write_line
+        console::write_line ("ACCEPTANCE " ++# (? verdict_name overall = "WON" ?> "WON" |: "NOT-WON"))
+        0i32
+    | _ =>
+        console::write_line "usage: acceptance <ours> <ref,ref,...> <rows.tsv per pod or roofline.tsv>..."
+        2i32
+
+:= jitter (turn : i32) (shift : i32) : f64 = conv ((turn + shift) % 3i32)
+
+:= tsv_line (turn : i32) (arm : string) (ms : f64) : string =
+    "s15\t1\t" ++#? turn ++# "\t" ++# arm ++# "\t" ++#? ms ++# "\n"
+
+:= turn_lines (turn : i32) (ref_ms : f64) : string =
+    := ours = tsv_line turn "OURS" (100f64 + jitter turn 0i32)
+    := twin = tsv_line turn "OURS.aa" (100f64 + jitter turn 1i32)
+    ours ++# twin ++# tsv_line turn "REF" (ref_ms + jitter turn 0i32)
+
+:~ ^ synthetic_from (turn : i32) (ref_ms : f64) (acc : string) : string =
+    ? turn = 12i32
+    ?> acc
+    |: synthetic_from
+        (turn + 1i32)
+        ref_ms
+        (acc ++# turn_lines turn ref_ms)
+
+:= three_pods (ref_ms : f64) : list row =
+    := text = "model\tthreads\tround\tarm\twall_ms\tmaxrss_kb\n" ++# synthetic_from 0i32 ref_ms ""
+    listm::append (rows_of "a" text) (listm::append (rows_of "b" text) (rows_of "c" text))
+
+:= roofline_text (bandwidth_gbps : string) : string =
+    "roofline\ts15\t1\t1000000\t" ++# bandwidth_gbps ++# "\t0.5\t256\n"
+
+:= verdict_for (ref_ms : f64) (roof_text : string) : string =
+    ?= report "OURS" [ "REF" ] (three_pods ref_ms) (roofs_of roof_text) ?| | v, _ => verdict_name v
+
+:= overall_for (ref_ms : f64) : string = verdict_for ref_ms (roofline_text "2")
+
+///> rust
+:# walsh_averages_give_the_hodges_lehmann_median_and_the_signed_rank_sum =
+    := t = signed_rank_of [ 1f64; 2f64; 3f64 ]
+    := z : i32 = conv (t::z * 1000f64)
+    (t::n, t::hl, z) |> _assert_eq (3i32, 2f64, 1603i32)
+
+///> rust
+:# a_clear_twenty_percent_lead_on_three_pods_is_won =
+    overall_for 120f64 |> _assert_eq "WON"
+
+///> rust
+:# a_one_percent_lead_inside_the_three_percent_margin_is_a_tie =
+    overall_for 101f64 |> _assert_eq "TIE"
+
+///> rust
+:# a_reference_twenty_percent_faster_is_lost =
+    overall_for 80f64 |> _assert_eq "LOST"
+
+///> rust
+:# one_pod_is_void_whatever_the_lead =
+    := text = "model\tthreads\tround\tarm\twall_ms\tmaxrss_kb\n" ++# synthetic_from 0i32 150f64 ""
+    ?= report "OURS" [ "REF" ] (rows_of "a" text) (roofs_of (roofline_text "2")) ?|
+    | v, _ => verdict_name v |> _assert_eq "VOID"
+
+///> rust
+:# a_lead_below_the_bandwidth_target_is_not_won =
+    verdict_for 120f64 (roofline_text "20") |> _assert_eq "TIE"
+
+///> rust
+:# a_cell_without_a_roofline_row_is_void =
+    verdict_for 120f64 "" |> _assert_eq "VOID"
+
+///> rust
+:# the_program_path_is_dropped_from_the_arguments =
+    (after_program [ "C:\\x\\acceptance.exe"; "OURS"; "REF" ], after_program [ "OURS"; "REF"; "/p/rows.tsv" ])
+    |> _assert_eq ([ "OURS"; "REF" ], [ "OURS"; "REF"; "/p/rows.tsv" ])
+
+///> rust
+:# a_reference_absent_from_a_cell_is_skipped_not_void =
+    ?= report "OURS" [ "REF"; "ABSENT" ] (three_pods 120f64) (roofs_of (roofline_text "2")) ?|
+    | v, _ => verdict_name v |> _assert_eq "WON"

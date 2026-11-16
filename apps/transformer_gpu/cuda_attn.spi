@@ -1,0 +1,144 @@
+///- --package .
+:# cuda_attn static =
+    :< sm'_operators
+
+:< sm'_operators
+
+:~ word (w : $'unsigned int *') (i : u32) : u32 = $'!w[!i]' : u32
+
+:~ weight (w : $'unsigned int *') (i : u32) : f32 = $'__uint_as_float(!w[!i])' : f32
+
+:~ dim_of (w : $'unsigned int *') : u32 = word w 0u32
+
+:~ hs_of (w : $'unsigned int *') : u32 = dim_of w / word w 3u32
+
+:~ kv_dim_of (w : $'unsigned int *') : u32 = dim_of w * word w 4u32 / word w 3u32
+
+:~ rms_base (w : $'unsigned int *') : u32 = 7u32 + word w 5u32 * dim_of w
+
+:~ wq_base (w : $'unsigned int *') : u32 = rms_base w + word w 2u32 * dim_of w
+
+:~ wk_base (w : $'unsigned int *') : u32 = wq_base w + word w 2u32 * dim_of w * dim_of w
+
+:~ wv_base (w : $'unsigned int *') : u32 = wk_base w + word w 2u32 * dim_of w * kv_dim_of w
+
+:~ emb_of_pos (w : $'unsigned int *') (pos : u32) : u32 = 7u32 + (pos + 1u32) * dim_of w
+
+:~ rope_base (w : $'unsigned int *') : u32 =
+    wq_base w
+    + word w 2u32 * dim_of w * (2u32 * dim_of w + 2u32 * kv_dim_of w + 3u32 * word w 1u32 + 1u32)
+    + dim_of w
+    + word w 6u32 * hs_of w
+
+:~ sum_squares (w : $'unsigned int *') (x : u32) (dim : u32) (j : u32) (s : f32) : f32 =
+    ? j = dim
+    ?> s
+    |:
+        := v = weight w (x + j)
+        sum_squares w x dim (j + 1u32) ($'fmaf(!v, !v, !s)' : f32)
+
+:~ inv_rms (w : $'unsigned int *') (x : u32) : f32 =
+    := dim = dim_of w
+    := ss = sum_squares w x dim 0u32 0f32
+    := mean = $'!ss / (float)!dim' : f32
+    := shifted = mean + 0.00001f32
+    $'1.0f / sqrtf(!shifted)' : f32
+
+:~ row_dot (w : $'unsigned int *') (base : u32) (x : u32) (inv : f32) (row : u32) (j : u32) (s : f32) : f32 =
+    := dim = dim_of w
+    ? j = dim
+    ?> s
+    |:
+        := a = weight w (base + row * dim + j)
+        := xb = weight w (rms_base w + j) * (inv * weight w (x + j))
+        row_dot w base x inv row (j + 1u32) ($'fmaf(!a, !xb, !s)' : f32)
+
+:~ proj (w : $'unsigned int *') (base : u32) (pos : u32) (row : u32) : f32 =
+    := x = emb_of_pos w pos
+    row_dot w base x (inv_rms w x) row 0u32 0f32
+
+:~ rope_at (w : $'unsigned int *') (base : u32) (pos : u32) (i : u32) : f32 =
+    := even = i - i % 2u32
+    := at = rope_base w + pos * dim_of w + even
+    := c = weight w at
+    := s = weight w (at + 1u32)
+    := v0 = proj w base pos even
+    := v1 = proj w base pos (even + 1u32)
+    ? i = even
+    ?> $'fmaf(!v0, !c, -__fmul_rn(!v1, !s))' : f32
+    |: $'fmaf(!v0, !s, __fmul_rn(!v1, !c))' : f32
+
+:~ score_dot (w : $'unsigned int *') (t : u32) (i : u32) (s : f32) : f32 =
+    ? i = hs_of w
+    ?> s
+    |:
+        := q = rope_at w (wq_base w) 1u32 i
+        := k = rope_at w (wk_base w) t i
+        score_dot w t (i + 1u32) ($'fmaf(!q, !k, !s)' : f32)
+
+:~ score (w : $'unsigned int *') (t : u32) : f32 =
+    := hs = hs_of w
+    := s = score_dot w t 0u32 0f32
+    $'!s / sqrtf((float)!hs)' : f32
+
+:~ att_of (w : $'unsigned int *') (t : u32) : f32 =
+    := s0 = score w 0u32
+    := s1 = score w 1u32
+    := mx = ? s0 > s1 ?> s0 |: s1
+    := e0 = $'expf(!s0 - !mx)' : f32
+    := e1 = $'expf(!s1 - !mx)' : f32
+    := total = (0f32 + e0) + e1
+    ? t = 0u32 ?> e0 / total |: e1 / total
+
+:~ out_of (w : $'unsigned int *') (i : u32) : f32 =
+    := a0 = att_of w 0u32
+    := a1 = att_of w 1u32
+    := v0 = proj w (wv_base w) 0u32 i
+    := v1 = proj w (wv_base w) 1u32 i
+    := s0 = $'fmaf(!a0, !v0, 0.0f)' : f32
+    $'fmaf(!a1, !v1, !s0)' : f32
+
+:~ lane_value (w : $'unsigned int *') (lane : u32) : f32 =
+    := dim = dim_of w
+    := kv = kv_dim_of w
+    ? lane < dim
+    ?> rope_at w (wq_base w) 1u32 lane
+    |:
+        ? lane < dim + kv
+        ?> rope_at w (wk_base w) 1u32 (lane - dim)
+        |:
+            ? lane < dim + kv + 2u32
+            ?> att_of w (lane - dim - kv)
+            |: out_of w (lane - dim - kv - 2u32)
+
+:~ lane_body (out : $'int *') (w : $'unsigned int *') (count : u32) : () =
+    := lane = $'threadIdx.x + blockIdx.x * blockDim.x' : u32
+    ? lane < count ?>
+        := r = lane_value w lane
+        $'!out[!lane] = __float_as_int(!r)' : ()
+
+:~ launch (out : $'int *') (w : $'unsigned int *') (count : u32) : () =
+    := dvars = ~~> CudaDevice lane_body out w count
+    := config = $'cudaLaunchConfig_t \v = {0}' : $'cudaLaunchConfig_t'
+    $'!config.gridDim = (!count + 63) / 64' : ()
+    $'!config.blockDim = 64' : ()
+    $'printf("cuda_attn launch %s", cudaGetErrorString(cudaLaunchKernelEx(&!config, kernel, #dvars)))' : ()
+    $'putchar(10)' : ()
+    $'printf("cuda_attn sync %s", cudaGetErrorString(cudaDeviceSynchronize()))' : ()
+    $'putchar(10)' : ()
+
+:~ run_attn (count : u32) : () =
+    := w = $'unsigned int * \v = nullptr' : $'unsigned int *'
+    $'{ FILE * f = fopen(getenv("MATVEC_BIN"), "rb"); if (f == NULL) exit(4); fseek(f, 0, SEEK_END); \
+        long n = ftell(f); fseek(f, 0, SEEK_SET); if (cudaMallocManaged(&!w, n)) exit(5); \
+        if (fread(!w, 1, n, f) < (size_t)n) exit(6); fclose(f); }' : ()
+    := out = $'int * \v = nullptr' : $'int *'
+    $'if (cudaMallocManaged(&!out, !count * sizeof(int))) exit(3)' : ()
+    launch out w count
+    $'for (unsigned int i = 0; i < !count; i++) { printf("lane %u: %d", i, !out[i]); putchar(10); }' : ()
+    $'cudaFree(!out); cudaFree(!w)' : ()
+
+:= main () : i32 =
+    := vars = ~~> CudaHost run_attn 106u32
+    $'kernel(#vars)' : ()
+    0i32

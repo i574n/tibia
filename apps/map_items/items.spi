@@ -1,0 +1,130 @@
+///- --package .
+:# items static =
+    :< testing
+
+:== bytes = array u8
+
+:= item_id_limit () : i32 = 65536
+
+:= known_item (identity : i32) : bool = identity >= 0 && identity < item_id_limit ()
+
+:= filled \* t. (count : i32) (value : t) : array t =
+    := x : array t = create count
+    :~ ^ fill (i : i32) : () =
+        ? i < count ?>
+            set x i value
+            fill (i + 1)
+    fill 0
+    x
+:= word_byte (c : u8) : bool =
+    (c >= 48u8 && c <= 57u8) || (c >= 65u8 && c <= 90u8) || (c >= 97u8 && c <= 122u8) || c = 95u8
+
+:== item_tags = { opening : bytes; closing : bytes; wanted : bytes }
+
+:= item_tags_for (needle : string) : item_tags =
+    := opening, closing = sm'::utf8_get_bytes "<item", sm'::utf8_get_bytes "</item>"
+    { opening = opening; closing = closing; wanted = sm'::utf8_get_bytes needle }
+
+:== id_names = { single : bytes; low : bytes; high : bytes }
+
+:= id_attribute_names () : id_names =
+    {
+        single = sm'::utf8_get_bytes "id=\""
+        low = sm'::utf8_get_bytes "fromid=\""
+        high = sm'::utf8_get_bytes "toid=\""
+    }
+
+:== item_scan = { text : bytes; exits : array bool; tags : item_tags; ids : id_names }
+
+:~ ^ matches_from (text : bytes) (pattern : bytes) (i : i32) (k : i32) : bool =
+    ? k >= length pattern
+    ?> !+
+    |? i + k >= length text
+    ?> !-
+    |? index text (i + k) <> index pattern k
+    ?> !-
+    |: matches_from text pattern i (k + 1)
+
+:~ ^ find_from (text : bytes) (i : i32) (stop : i32) (pattern : bytes) : i32 =
+    ? i >= stop ?> -1 |? matches_from text pattern i 0 ?> i |: find_from text (i + 1) stop pattern
+
+:~ ^ find_byte (text : bytes) (i : i32) (wanted : u8) : i32 =
+    ? i >= length text ?> -1 |? index text i = wanted ?> i |: find_byte text (i + 1) wanted
+
+:= word_start (text : bytes) (i : i32) : bool = i = 0 || word_byte (index text (i - 1)) = !-
+
+:= byte_or_zero (text : bytes) (k : i32) : u8 = ? k < length text ?> index text k |: 0u8
+
+:~ ^ digits_from (text : bytes) (from : i32) (k : i32) (value : i32) : i32 =
+    := c = byte_or_zero text k
+    ? c >= 48u8 && c <= 57u8
+    ?> digits_from text from (k + 1) (value * 10 + conv (c - 48u8))
+    |? k > from && c = 34u8
+    ?> value
+    |: -1
+
+:= value_at (text : bytes) (at : i32) (pattern : bytes) : i32 =
+    ? word_start text at ?> digits_from text (at + length pattern) (at + length pattern) 0 |: -1
+
+:~ ^ attribute_from (text : bytes) (i : i32) (stop : i32) (pattern : bytes) : i32 =
+    := at = find_from text i stop pattern
+    := value = ? at < 0 ?> -1 |: value_at text at pattern
+    ? at < 0 || value >= 0 ?> value |: attribute_from text (at + 1) stop pattern
+
+:~ ^ mark_ids (exits : array bool) (identity : i32) (high : i32) : () =
+    ? identity <= high ?>
+        ? known_item identity ?> set exits identity !+
+        mark_ids exits (identity + 1) high
+
+:= range_ids (s : item_scan) (after : i32) (head_end : i32) : () =
+    := low = attribute_from s::text after head_end s::ids::low
+    := high = attribute_from s::text after head_end s::ids::high
+    ? low >= 0 && high >= 0 ?> mark_ids s::exits low high
+
+:= item_ids (s : item_scan) (after : i32) (head_end : i32) : () =
+    := single = attribute_from s::text after head_end s::ids::single
+    ? single >= 0 ?> mark_ids s::exits single single |: range_ids s after head_end
+
+:= item_closed (s : item_scan) (after : i32) (head_end : i32) (close_at : i32) : i32 =
+    ? find_from s::text (head_end + 1) close_at s::tags::wanted >= 0 ?> item_ids s after head_end
+    close_at + length s::tags::closing
+
+:= item_body (s : item_scan) (open_at : i32) (after : i32) (head_end : i32) : i32 =
+    := close_at = find_from s::text (head_end + 1) (length s::text) s::tags::closing
+    ? close_at < 0 ?> open_at + 1 |: item_closed s after head_end close_at
+
+:= item_head (s : item_scan) (open_at : i32) (after : i32) : i32 =
+    := head_end = find_byte s::text after 62u8
+    ? head_end < 0
+    ?> -1
+    |? index s::text (head_end - 1) = 47u8
+    ?> open_at + 1
+    |: item_body s open_at after head_end
+
+:= item_at (s : item_scan) (open_at : i32) : i32 =
+    := after = open_at + length s::tags::opening
+    ? after < length s::text && word_byte (index s::text after) = !- ?> item_head s open_at after |: open_at + 1
+
+:~ ^ items_from (s : item_scan) (from : i32) : () =
+    := open_at = find_from s::text from (length s::text) s::tags::opening
+    ? open_at >= 0 ?>
+        := next = item_at s open_at
+        ? next >= 0 ?> items_from s next
+
+:= ids_with (text : bytes) (needle : string) : array bool =
+    := exits = filled (item_id_limit ()) !-
+    items_from { text = text; exits = exits; tags = item_tags_for needle; ids = id_attribute_names () } 0
+    exits
+
+:= ids_of ((text, needle) : bytes * string) : array bool = ids_with text needle
+
+:= sample_items () : bytes =
+    := single = "<item id=\"7\" name=\"a\"><attribute key=\"floorchange\" value=\"down\"/></item>"
+    := ranged = "<item fromid=\"10\" toid=\"12\"><attribute key=\"floorchange\"/></item><item id=\"8\"/>"
+    sm'::utf8_get_bytes (sm'::(++#) single ranged)
+
+///> rust
+///> c
+:# items_with_the_needle_are_marked_by_id_and_by_range =
+    := marks = ids_of (sample_items (), "key=\"floorchange\"")
+    (index marks 7, index marks 8, index marks 9, index marks 10, index marks 12) |> _assert_eq (!+, !-, !-, !+, !+)

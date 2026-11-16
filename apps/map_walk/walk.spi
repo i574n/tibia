@@ -1,0 +1,361 @@
+///- --package .
+:# walk static =
+    :< testing
+
+:< kinds
+
+
+:== bytes = array u8
+
+:= otbm_node_start () : u8 = 254u8
+:= otbm_node_end () : u8 = 255u8
+:= otbm_escape () : u8 = 253u8
+:= otbm_identifier_bytes () : i32 = 4
+
+:= area_node () : i32 = 4
+:= tile_node () : i32 = 5
+:= item_node () : i32 = 6
+:= house_tile_node () : i32 = 14
+
+:= tile_flags_attribute () : i32 = 3
+:= tile_flags_attribute_bytes () : i32 = 5
+:= protection_zone_flag () : i32 = 1
+:= item_attribute () : i32 = 9
+:= item_attribute_bytes () : i32 = 3
+
+:= tile_props_before_attributes () : i32 = 2
+:= house_tile_props_before_attributes () : i32 = 6
+:= item_id_limit () : i32 = 65536
+:= node_depth_limit () : i32 = 256
+
+:= climbable_height_items () : i32 = 3
+
+:= road_ground_speed () : i32 = 100
+:= spot_x () : i32 = 1933
+:= spot_y () : i32 = 1350
+:= spot_z () : i32 = 7
+:= spot_radius () : i32 = 45
+:= spot_side () : i32 = 2 * spot_radius () + 1
+
+:= row_word_bits () : i32 = 32
+:= row_word_count () : i32 = (spot_side () + row_word_bits () - 1) / row_word_bits ()
+
+:= (++) (a : string) (b : string) : string = sm'::(++#) a b
+
+:= byte (b : bytes) (i : i32) : i32 = conv (index b i)
+
+:= known_item (identity : i32) : bool = identity >= 0 && identity < item_id_limit ()
+
+:= filled \* t. (count : i32) (value : t) : array t =
+    := x : array t = create count
+    :~ ^ fill (i : i32) : () =
+        ? i < count ?>
+            set x i value
+            fill (i + 1)
+    fill 0
+    x
+
+:== map_inputs = { b : bytes; kinds : item_kinds; exits : array bool; teleports : array bool }
+
+:== node_stack = { kind : array i32; area_x : array i32; area_y : array i32; area_z : array i32; item_id : array i32 }
+
+:== tile_mark_stack =
+    {
+        ground : array bool
+        unpassable : array bool
+        sight_blocking : array bool
+        exit : array bool
+        teleport : array bool
+        protection : array bool
+    }
+
+:== tile_count_stack =
+    {
+        cell : array i32
+        attribute_speed : array i32
+        child_speed : array i32
+        height_items : array i32
+    }
+
+:== walk_cells = { blocked : array bool; sight_blocked : array bool; road : array bool; walkable : array bool }
+
+:== mark_cells =
+    {
+        floor_change : array bool
+        teleport : array bool
+        climbable : array bool
+        protection : array bool
+        house : array bool
+    }
+
+:== grid = { walk : walk_cells; marks : mark_cells }
+
+:== stacks = { nodes : node_stack; marks : tile_mark_stack; counts : tile_count_stack; grid : grid }
+
+:== node_at = { depth : i32; from : i32; stop : i32 }
+
+:= fresh_nodes (n : i32) : node_stack =
+    { kind = filled n 0; area_x = filled n 0; area_y = filled n 0; area_z = filled n 0; item_id = filled n (-1) }
+
+:= fresh_tile_marks (n : i32) : tile_mark_stack =
+    {
+        ground = filled n !-
+        unpassable = filled n !-
+        sight_blocking = filled n !-
+        exit = filled n !-
+        teleport = filled n !-
+        protection = filled n !-
+    }
+
+:= fresh_tile_counts (n : i32) : tile_count_stack =
+    { cell = filled n (-1); attribute_speed = filled n 0; child_speed = filled n 0; height_items = filled n 0 }
+
+:= fresh_walk_cells (n : i32) : walk_cells =
+    { blocked = filled n !+; sight_blocked = filled n !-; road = filled n !-; walkable = filled n !- }
+
+:= fresh_mark_cells (n : i32) : mark_cells =
+    {
+        floor_change = filled n !-
+        teleport = filled n !-
+        climbable = filled n !-
+        protection = filled n !-
+        house = filled n !-
+    }
+
+:= fresh_grid () : grid =
+    := n = spot_side () * spot_side ()
+    { walk = fresh_walk_cells n; marks = fresh_mark_cells n }
+
+:= fresh_stacks () : stacks =
+    := depths = node_depth_limit ()
+    {
+        nodes = fresh_nodes depths
+        marks = fresh_tile_marks depths
+        counts = fresh_tile_counts depths
+        grid = fresh_grid ()
+    }
+
+:~ ^ props_end (b : bytes) (i : i32) : i32 =
+    := c = index b i
+    ? c = otbm_escape ()
+    ?> props_end b (i + 2)
+    |? c = otbm_node_start () || c = otbm_node_end ()
+    ?> i
+    |: props_end b (i + 1)
+
+:~ ^ prop_count_from (b : bytes) (i : i32) (stop : i32) (total : i32) : i32 =
+    ? i >= stop
+    ?> total
+    |? index b i = otbm_escape ()
+    ?> prop_count_from b (i + 2) stop (total + 1)
+    |: prop_count_from b (i + 1) stop (total + 1)
+
+:= prop_count (b : bytes) (from : i32) (stop : i32) : i32 = prop_count_from b from stop 0
+
+:~ ^ prop (b : bytes) (i : i32) (k : i32) : i32 =
+    := at = ? index b i = otbm_escape () ?> i + 1 |: i
+    ? k = 0 ?> byte b at |: prop b (at + 1) (k - 1)
+
+:= prop_u16 (b : bytes) (from : i32) (k : i32) : i32 = prop b from k + 256 * prop b from (k + 1)
+
+:= tile_kind (kind : i32) : bool = kind = tile_node () || kind = house_tile_node ()
+
+:= copy_mark (from : array bool) (identity : i32) (into : array bool) (tile : i32) : () =
+    ? index from identity ?> set into tile !+
+
+:= copy_bit (from : bitset::bitset) (identity : i32) (into : array bool) (tile : i32) : () =
+    ? bitset::has from identity ?> set into tile !+
+
+:= note_blocking (k : item_kinds) (s : tile_mark_stack) (tile : i32) (identity : i32) : () =
+    copy_bit k::ground identity s::ground tile
+    copy_bit k::unpassable identity s::unpassable tile
+    copy_bit k::sight_blocking identity s::sight_blocking tile
+
+:= note_passage (m : map_inputs) (s : tile_mark_stack) (tile : i32) (identity : i32) : () =
+    copy_mark m::exits identity s::exit tile
+    copy_mark m::teleports identity s::teleport tile
+
+:= count_height (heights : array i32) (tile : i32) : () = set heights tile (index heights tile + 1)
+
+:= note_kind (m : map_inputs) (t : stacks) (tile : i32) (identity : i32) : () =
+    note_blocking m::kinds t::marks tile identity
+    note_passage m t::marks tile identity
+    ? bitset::has m::kinds::height identity ?> count_height t::counts::height_items tile
+
+:= note_attribute_item (m : map_inputs) (t : stacks) (tile : i32) (identity : i32) : () =
+    ? known_item identity ?>
+        note_kind m t tile identity
+        := speed = index m::kinds::speed identity
+        ? speed > 0 ?> set t::counts::attribute_speed tile speed
+
+:= first_speed (speeds : array i32) (tile : i32) (speed : i32) : () =
+    ? index speeds tile = 0 && speed > 0 ?> set speeds tile speed
+
+:= note_child_item (m : map_inputs) (t : stacks) (tile : i32) (identity : i32) : () =
+    ? known_item identity ?>
+        note_kind m t tile identity
+        first_speed t::counts::child_speed tile (index m::kinds::speed identity)
+
+:~ ^ nearest_tile_below (kinds : array i32) (d : i32) : i32 =
+    ? d < 0 ?> -1 |? tile_kind (index kinds d) ?> d |: nearest_tile_below kinds (d - 1)
+
+:= in_spot (dx : i32) (dy : i32) : bool =
+    := radius = spot_radius ()
+    dx >= 0 - radius && dx <= radius && dy >= 0 - radius && dy <= radius
+
+:= spot_cell (dx : i32) (dy : i32) : i32 = (dy + spot_radius ()) * spot_side () + dx + spot_radius ()
+
+:= reset_marks (s : tile_mark_stack) (depth : i32) : () =
+    set s::ground depth !-
+    set s::unpassable depth !-
+    set s::sight_blocking depth !-
+    set s::exit depth !-
+    set s::teleport depth !-
+    set s::protection depth !-
+
+:= reset_counts (c : tile_count_stack) (depth : i32) (cell : i32) : () =
+    set c::cell depth cell
+    set c::attribute_speed depth 0
+    set c::child_speed depth 0
+    set c::height_items depth 0
+
+:= flags_attribute (m : map_inputs) (t : stacks) (n : node_at) (offset : i32) : i32 =
+    ? prop m::b n::from (offset + 1) % 2 = protection_zone_flag () ?> set t::marks::protection n::depth !+
+    offset + tile_flags_attribute_bytes ()
+
+:= item_attribute_at (m : map_inputs) (t : stacks) (n : node_at) (offset : i32) : i32 =
+    note_attribute_item m t n::depth (prop_u16 m::b n::from (offset + 1))
+    offset + item_attribute_bytes ()
+
+:= attribute_by (m : map_inputs) (t : stacks) (n : node_at) (offset : i32) (kind : i32) : i32 =
+    ? kind = tile_flags_attribute ()
+    ?> flags_attribute m t n offset
+    |? kind = item_attribute ()
+    ?> item_attribute_at m t n offset
+    |: -1
+
+:= attribute_step (m : map_inputs) (t : stacks) (n : node_at) (offset : i32) : i32 =
+    attribute_by m t n offset (prop m::b n::from offset)
+
+:~ ^ tile_attributes (m : map_inputs) (t : stacks) (n : node_at) (count : i32) (offset : i32) : () =
+    ? offset >= 0 && offset < count ?> tile_attributes m t n count (attribute_step m t n offset)
+
+:= first_attribute (kind : i32) : i32 =
+    ? kind = house_tile_node () ?> house_tile_props_before_attributes () |: tile_props_before_attributes ()
+
+:= tile_opened (m : map_inputs) (t : stacks) (n : node_at) (cell : i32) : () =
+    reset_marks t::marks n::depth
+    reset_counts t::counts n::depth cell
+    tile_attributes m t n (prop_count m::b n::from n::stop) (first_attribute (index t::nodes::kind n::depth))
+
+:= area_dx (b : bytes) (nodes : node_stack) (n : node_at) (parent : i32) : i32 =
+    index nodes::area_x parent + prop b n::from 0 - spot_x ()
+
+:= area_dy (b : bytes) (nodes : node_stack) (n : node_at) (parent : i32) : i32 =
+    index nodes::area_y parent + prop b n::from 1 - spot_y ()
+
+:= area_cell (b : bytes) (nodes : node_stack) (n : node_at) (parent : i32) : i32 =
+    := dx, dy = area_dx b nodes n parent, area_dy b nodes n parent
+    ? index nodes::area_z parent = spot_z () && in_spot dx dy ?> spot_cell dx dy |: -1
+
+:= parent_area (nodes : node_stack) (depth : i32) : bool = depth >= 1 && index nodes::kind (depth - 1) = area_node ()
+
+:= open_tile (m : map_inputs) (t : stacks) (n : node_at) : () =
+    set t::counts::cell n::depth (-1)
+    ? parent_area t::nodes n::depth ?>
+        := cell = area_cell m::b t::nodes n (n::depth - 1)
+        ? cell >= 0 ?> tile_opened m t n cell
+
+:= close_item (m : map_inputs) (t : stacks) (depth : i32) : () =
+    := tile = nearest_tile_below t::nodes::kind (depth - 1)
+    ? tile >= 0 && index t::counts::cell tile >= 0 ?> note_child_item m t tile (index t::nodes::item_id depth)
+
+:= tile_walkable (s : tile_mark_stack) (depth : i32) : bool = index s::ground depth && index s::unpassable depth = !-
+
+:= tile_speed (c : tile_count_stack) (depth : i32) : i32 =
+    := attribute_speed = index c::attribute_speed depth
+    ? attribute_speed > 0 ?> attribute_speed |: index c::child_speed depth
+
+:= climbable_tile (c : tile_count_stack) (depth : i32) : bool = index c::height_items depth >= climbable_height_items ()
+
+:= blocking_closed (s : tile_mark_stack) (g : walk_cells) (depth : i32) (cell : i32) (walkable : bool) : () =
+    set g::blocked cell (walkable = !- || index s::exit depth || index s::teleport depth)
+    set g::sight_blocked cell (index s::sight_blocking depth)
+
+:= walk_closed (t : stacks) (g : walk_cells) (depth : i32) (cell : i32) : () =
+    := walkable = tile_walkable t::marks depth
+    set g::walkable cell walkable
+    blocking_closed t::marks g depth cell walkable
+
+:= passage_closed (s : tile_mark_stack) (g : mark_cells) (depth : i32) (cell : i32) : () =
+    set g::floor_change cell (index s::exit depth)
+    set g::teleport cell (index s::teleport depth)
+
+:= zone_closed (t : stacks) (g : mark_cells) (depth : i32) (kind : i32) (cell : i32) : () =
+    set g::climbable cell (climbable_tile t::counts depth)
+    set g::protection cell (index t::marks::protection depth)
+    set g::house cell (kind = house_tile_node ())
+
+:= road_closed (c : tile_count_stack) (g : walk_cells) (depth : i32) (cell : i32) : () =
+    set g::road cell (tile_speed c depth = road_ground_speed ())
+
+:= tile_closed (t : stacks) (depth : i32) (kind : i32) (cell : i32) : () =
+    walk_closed t t::grid::walk depth cell
+    passage_closed t::marks t::grid::marks depth cell
+    zone_closed t t::grid::marks depth kind cell
+    road_closed t::counts t::grid::walk depth cell
+
+:= close_tile (t : stacks) (depth : i32) (kind : i32) : () =
+    ? tile_kind kind && index t::counts::cell depth >= 0 ?> tile_closed t depth kind (index t::counts::cell depth)
+
+:= close_node (m : map_inputs) (t : stacks) (depth : i32) : () =
+    := kind = index t::nodes::kind depth
+    ? kind = item_node ()
+    ?> close_item m t depth
+    |: close_tile t depth kind
+
+:= area_opened (b : bytes) (nodes : node_stack) (n : node_at) : () =
+    set nodes::area_x n::depth (prop_u16 b n::from 0)
+    set nodes::area_y n::depth (prop_u16 b n::from 2)
+    set nodes::area_z n::depth (prop b n::from 4)
+
+:= item_identity (b : bytes) (n : node_at) : i32 = ? prop_count b n::from n::stop >= 2 ?> prop_u16 b n::from 0 |: -1
+
+:= node_opened (m : map_inputs) (t : stacks) (n : node_at) (kind : i32) : () =
+    ? kind = area_node ()
+    ?> area_opened m::b t::nodes n
+    |? tile_kind kind
+    ?> open_tile m t n
+    |? kind = item_node () ?> set t::nodes::item_id n::depth (item_identity m::b n)
+
+:= node_start (m : map_inputs) (t : stacks) (i : i32) (depth : i32) : i32 =
+    := kind, from = byte m::b (i + 1), i + 2
+    := n = { depth = depth + 1; from = from; stop = props_end m::b from }
+    set t::nodes::kind n::depth kind
+    node_opened m t n kind
+    n::stop
+
+:= node_closed (m : map_inputs) (t : stacks) (i : i32) (depth : i32) : i32 * i32 =
+    ? depth >= 0 ?> close_node m t depth
+    i + 1, depth - 1
+
+:= walk_step (m : map_inputs) (t : stacks) (i : i32) (depth : i32) : i32 * i32 =
+    := c = index m::b i
+    ? c = otbm_node_start ()
+    ?> (node_start m t i depth, depth + 1)
+    |? c = otbm_node_end ()
+    ?> node_closed m t i depth
+    |: (i + 1, depth)
+
+:~ ^ walk_from (m : map_inputs) (t : stacks) (i : i32) (depth : i32) : () =
+    ? i < length m::b ?>
+        := i, depth = walk_step m t i depth
+        walk_from m t i depth
+
+:= walk_tiles (b : bytes) (kinds : item_kinds) (exits : array bool) (teleports : array bool) : grid =
+    := m, t = { b = b; kinds = kinds; exits = exits; teleports = teleports }, fresh_stacks ()
+    walk_from m t (otbm_identifier_bytes ()) (-1)
+    t::grid
+
+:= walk_rows ((b, kinds, exits, teleports) : bytes * array item_kinds * array bool * array bool) : array grid =
+    ;[ walk_tiles b (index kinds 0) exits teleports ]

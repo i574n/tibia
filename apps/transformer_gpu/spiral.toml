@@ -1,0 +1,16 @@
+packageDir = '../../deps/spiral/lib'
+packages = ['|core-', 'spiral-', '../../src-']
+modules = '''
+cuda_attn
+wgsl_attn_probe
+cuda_layer_iso
+wgsl_layer_iso
+cuda_forward
+wgsl_forward
+cuda_forward_wp
+cuda_forward_shaped
+wgsl_forward_mp2
+wgsl_forward_mp3
+wgsl_forward_shaped
+wgsl_forward_grid
+'''

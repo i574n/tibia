@@ -1,0 +1,67 @@
+///- --package .
+:# soft_policy static =
+    :< testing
+
+:== soft = { act : bool; per_mille : i32 }
+
+:== decision = network::decision
+
+:= soft_choice (greedy : bool) (epsilon : i32) (roll : i32) : soft =
+    := keep = 1000 - epsilon / 2
+    ? roll < keep ?> { act = greedy; per_mille = keep } |: { act = greedy = !-; per_mille = epsilon / 2 }
+
+:== soft_decision = { decision : network::decision; probs : array i32 }
+
+:= probs_of (a : soft) (b : soft) (c : soft) : array i32 = ;[ a::per_mille; b::per_mille; c::per_mille ]
+
+:= acts_of (a : soft) (b : soft) (c : soft) : network::decision = { heal = a::act; engage = b::act; retreat = c::act }
+
+:= sampled (d : network::decision) (eps : i32) ((r0, r1, r2) : i32 * i32 * i32) : soft_decision =
+    := h, e = soft_choice d::heal eps r0, soft_choice d::engage eps r1
+    := t = soft_choice d::retreat eps r2
+    { decision = acts_of h e t; probs = probs_of h e t }
+
+:= heal_only () : network::decision = { heal = !+; engage = !-; retreat = !- }
+
+:= per_mille_under (greedy : bool) (epsilon : i32) (act : bool) : i32 =
+    ? act = greedy ?> 1000 - epsilon / 2 |: epsilon / 2
+
+:= target_probs (greedy : decision) (eps : i32) (taken : decision) : array i32 =
+    := h, e = per_mille_under greedy::heal eps taken::heal, per_mille_under greedy::engage eps taken::engage
+    ;[ h; e; per_mille_under greedy::retreat eps taken::retreat ]
+
+///> c
+///> rust
+:# a_low_roll_keeps_the_greedy_act_with_its_probability =
+    := kept, flipped = soft_choice !+ 100 0, soft_choice !+ 100 960
+    (kept::act, kept::per_mille, flipped::act, flipped::per_mille) |> _assert_eq (!+, 950i32, !-, 50i32)
+
+///> c
+///> rust
+:# no_exploration_always_keeps_the_greedy_act =
+    := sure = soft_choice !- 0 999
+    (sure::act, sure::per_mille) |> _assert_eq (!-, 1000i32)
+
+///> c
+///> rust
+:# a_sampled_decision_logs_each_bit_probability =
+    := s = sampled (heal_only ()) 100 (10, 990, 20)
+    (s::decision::heal, s::decision::engage, s::decision::retreat) |> _assert_eq (!+, !+, !-)
+
+///> c
+///> rust
+:# the_logged_probabilities_feed_the_path_weight =
+    := s = sampled (heal_only ()) 100 (10, 990, 20)
+    logprob::path_log2 s::probs |> _assert_eq (logprob::path_log2 ;[ 950; 50; 950 ])
+
+///> c
+///> rust
+:# a_target_with_the_behavior_epsilon_scores_the_same_path =
+    := s = sampled (heal_only ()) 100 (10, 990, 20)
+    logprob::path_log2 (target_probs (heal_only ()) 100 s::decision) |> _assert_eq (logprob::path_log2 s::probs)
+
+///> c
+///> rust
+:# a_greedy_target_gives_a_flipped_act_no_chance =
+    := greedy = target_probs (heal_only ()) 0 (sampled (heal_only ()) 100 (10, 990, 20))::decision
+    (index greedy 0, index greedy 1) |> _assert_eq (1000i32, 0i32)

@@ -1,0 +1,59 @@
+///- --package .
+:# bc_handover static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== handover = { camp : camp; student : tactic; k : i32; seed : u32 }
+
+:= driver_at (h : handover) (tick : i32) : tactic =
+    ? tick < h::k
+    ?> h::student
+    |: bc_run::teacher ()
+
+:~ ^ handed (h : handover) (tick : i32) (p : pack) : pack =
+    ? tick >= scenario_ticks ()
+    ?> p
+    |: handed h (tick + 1) (advance h::camp (driver_at h tick) h::seed tick p)
+
+:== totals = { kills : i32; deaths : i32 }
+
+:= added (p : pack) (t : totals) : totals =
+    { kills = t::kills + p::score::kills; deaths = t::deaths + p::score::deaths }
+
+:= handover_at (camp : camp) (s : tactic) (k : i32) (i : i32) : handover =
+    { camp = camp; student = s; k = k; seed = held_out_first () + conv i }
+
+:~ ^ seeds_from (camp : camp) (s : tactic) (k : i32) (i : i32) (t : totals) : totals =
+    ? i >= bc_run::seed_count ()
+    ?> t
+    |: seeds_from camp s k (i + 1) (added (handed (handover_at camp s k i) 0 (start camp)) t)
+
+:= mean_score (t : totals) : f32 = conv (t::kills - death_penalty () * t::deaths) / conv (bc_run::seed_count ())
+
+:= k_row (k : i32) (t : totals) : () =
+    console::write_line (
+        "handover\t"
+        ++#? k
+        ++# "\tmean_score\t"
+        ++#? mean_score t
+        ++# "\tkills\t"
+        ++#? t::kills
+        ++# "\tdeaths\t"
+        ++#? t::deaths
+    )
+
+:= measured (camp : camp) (s : tactic) (k : i32) : () = k_row k (seeds_from camp s k 0 { kills = 0; deaths = 0 })
+
+:= sweep (camp : camp) (s : tactic) : () =
+    measured camp s 0
+    measured camp s 150
+    measured camp s 600
+    measured camp s 1500
+    measured camp s 3000
+
+:= main () =
+    := w = bc_train::quantized (bc_run::trained (bc_dagger::aggregated (bc_run::pairs_from (training_first ()))))
+    sweep (bc_run::bc_camp ()) (bc_eval::student_tactic w)
+    0i32

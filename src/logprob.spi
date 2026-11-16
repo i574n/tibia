@@ -1,0 +1,276 @@
+///- --package .
+:# logprob static =
+    :< testing
+
+:~ ^ bit_length (v : u64) (n : i32) : i32 = ? v <= 1u64 ?> n |: bit_length (v >>> 1) (n + 1)
+
+:~ ^ fraction_bits (y : u64) (i : i32) (acc : i32) : i32 =
+    ? i > 16
+    ?> acc
+    |:
+        := s = (y * y) >>> 16
+        ? s >= 131072u64
+        ?> fraction_bits (s >>> 1) (i + 1) (acc ||| (1 <<< (16 - i)))
+        |: fraction_bits s (i + 1) acc
+
+:= log2_q16 (x : u32) : i32 =
+    := v : u64 = conv x
+    := n = bit_length v 0
+    (n <<< 16) ||| fraction_bits ((v <<< 16) >>> n) 1 0
+
+:= per_mille_log2 (p : i32) : i32 = log2_q16 (conv p) - log2_q16 1000u32
+
+:~ ^ path_from (probs : array i32) (i : i32) (acc : i32) : i32 =
+    ? i >= length probs ?> acc |: path_from probs (i + 1) (acc + per_mille_log2 (index probs i))
+
+:= path_log2 (probs : array i32) : i32 = path_from probs 0 0
+
+:= root_high (i : i32) : u64 =
+    ?= i ?|
+    | 1 => 1518500250u64
+    | 2 => 1276901417u64
+    | 3 => 1170923762u64
+    | 4 => 1121280436u64
+    | 5 => 1097253708u64
+    | 6 => 1085434106u64
+    | 7 => 1079572136u64
+    | _ => 1076653033u64
+
+:= root_low (i : i32) : u64 =
+    ?= i ?|
+    | 9 => 1075196443u64
+    | 10 => 1074468888u64
+    | 11 => 1074105294u64
+    | 12 => 1073923544u64
+    | 13 => 1073832680u64
+    | 14 => 1073787251u64
+    | 15 => 1073764537u64
+    | _ => 1073753181u64
+
+:= root (i : i32) : u64 = ? i <= 8 ?> root_high i |: root_low i
+
+:~ ^ scale_from (f : i64) (i : i32) (r : u64) : u64 =
+    ? i > 16
+    ?> r
+    |: scale_from f (i + 1) (? (f &&& (1i64 <<< (16 - i))) <> 0i64 ?> (r * root i) >>> 30 |: r)
+
+:= exp2_q16 (x : i64) : i64 =
+    := k = ? x >= 0i64 ?> x / 65536i64 |: (x - 65535i64) / 65536i64
+    := r = scale_from (x - k * 65536i64) 1 (1u64 <<< 30)
+    := s : i32 = conv (16i64 + k - 30i64)
+    ? s >= 0 ?> (conv (r <<< s) : i64) |: (conv (r >>> (0 - s)) : i64)
+
+:= is_weight_q16 (target : array i32) (behavior : array i32) : i64 =
+    exp2_q16 (conv (path_log2 target - path_log2 behavior))
+
+:| target_path =
+    | OnPath : i32
+    | OffPath
+
+:= step_target (path : target_path) (per_mille : i32) : target_path =
+    ?= path ?|
+    | OnPath l => ? per_mille <= 0 ?> OffPath |: OnPath (l + per_mille_log2 per_mille)
+    | OffPath => OffPath
+
+:~ ^ target_from (probs : array i32) (i : i32) (path : target_path) : target_path =
+    ? i >= length probs ?> path |: target_from probs (i + 1) (step_target path (index probs i))
+
+:= along (path : target_path) (probs : array i32) : target_path = target_from probs 0 path
+
+:= pd_weight (target : target_path) (behavior_log : i32) : i64 =
+    ?= target ?|
+    | OnPath l => exp2_q16 (conv (l - behavior_log))
+    | OffPath => 0i64
+
+:== logged_hunt = { target : target_path; behavior_log : i32; reward : i32 }
+
+:== estimate = { mean : i64; ess_q16 : i64 }
+
+:== weight_sums = { w : i64; w2 : i64; wr : i64 }
+
+:= log_ratio (h : logged_hunt) : option i32 =
+    ?= h::target ?|
+    | OnPath l => Some (l - h::behavior_log)
+    | OffPath => None
+
+:= higher (top : option i32) (h : logged_hunt) : option i32 =
+    ?= top, log_ratio h ?|
+    | Some t, Some r => Some (max t r)
+    | None, r => r
+    | t, None => t
+
+:~ ^ top_ratio_from (hunts : array logged_hunt) (i : i32) (top : option i32) : option i32 =
+    ? i >= length hunts ?> top |: top_ratio_from hunts (i + 1) (higher top (index hunts i))
+
+:= relative_weight (top : i32) (h : logged_hunt) : i64 =
+    ?= log_ratio h ?|
+    | Some r => exp2_q16 (conv (r - top))
+    | None => 0i64
+
+:= add_hunt (top : i32) (acc : weight_sums) (h : logged_hunt) : weight_sums =
+    := w = relative_weight top h
+    { w = acc::w + w; w2 = acc::w2 + w * w; wr = acc::wr + w * conv h::reward }
+
+:~ ^ sums_from (hunts : array logged_hunt) (top : i32) (i : i32) (acc : weight_sums) : weight_sums =
+    ? i >= length hunts ?> acc |: sums_from hunts top (i + 1) (add_hunt top acc (index hunts i))
+
+:= ess_q16 (s : weight_sums) : i64 =
+    := square = s::w * s::w
+    square / s::w2 * 65536i64 + square % s::w2 * 65536i64 / s::w2
+
+:= estimate_of (hunts : array logged_hunt) (top : i32) : estimate =
+    := s = sums_from hunts top 0 { w = 0i64; w2 = 0i64; wr = 0i64 }
+    { mean = s::wr / s::w; ess_q16 = ess_q16 s }
+
+:= is_estimate (hunts : array logged_hunt) : option estimate =
+    ?= top_ratio_from hunts 0 None ?|
+    | Some top => Some (estimate_of hunts top)
+    | None => None
+
+:= hunt (target : i32) (behavior : i32) (reward : i32) : logged_hunt =
+    { target = OnPath target; behavior_log = behavior; reward = reward }
+
+:= off_path_hunt (behavior : i32) (reward : i32) : logged_hunt =
+    { target = OffPath; behavior_log = behavior; reward = reward }
+
+:= has_estimate (e : option estimate) : bool =
+    ?= e ?|
+    | Some _ => !+
+    | None => !-
+
+:= path_pair (path : target_path) : bool * i32 =
+    ?= path ?|
+    | OnPath l => !+, l
+    | OffPath => !-, 0
+
+:= mean_and_ess (e : option estimate) : i64 * i64 =
+    ?= e ?|
+    | Some x => x::mean, x::ess_q16
+    | None => 0i64, 0i64
+
+:== bucket_row = { bucket : i32; hunt : logged_hunt }
+
+:= row (bucket : i32) (h : logged_hunt) : bucket_row = { bucket = bucket; hunt = h }
+
+:~ ^ count_in (rows : array bucket_row) (b : i32) (i : i32) (n : i32) : i32 =
+    ? i >= length rows ?> n |: count_in rows b (i + 1) (n + (? (index rows i)::bucket = b ?> 1 |: 0))
+
+:= put_if (r : bucket_row) (b : i32) (out : array logged_hunt) (k : i32) : i32 =
+    ? r::bucket = b ?>
+        set out k r::hunt
+        k + 1
+    |: k
+
+:~ ^ fill_bucket (rows : array bucket_row) (b : i32) (out : array logged_hunt) (i : i32) (k : i32) : () =
+    ? i < length rows ?> fill_bucket rows b out (i + 1) (put_if (index rows i) b out k)
+
+:= bucket_hunts (rows : array bucket_row) (b : i32) : array logged_hunt =
+    := out : array logged_hunt = create (count_in rows b 0 0)
+    fill_bucket rows b out 0 0
+    out
+
+:~ ^ wpdis_from (rows : array bucket_row) (buckets : i32) (b : i32) (acc : i64) : i64 =
+    ? b >= buckets
+    ?> acc
+    |:
+        := mean, _ = mean_and_ess (is_estimate (bucket_hunts rows b))
+        wpdis_from rows buckets (b + 1) (acc + mean)
+
+:= wpdis (rows : array bucket_row) (buckets : i32) : i64 = wpdis_from rows buckets 0 0i64
+
+:= wpdis_upto (rows : array bucket_row) (horizon : i32) : i64 = wpdis_from rows horizon 0 0i64
+
+:= bucket_ess (rows : array bucket_row) (b : i32) : i64 =
+    := _, ess = mean_and_ess (is_estimate (bucket_hunts rows b))
+    ess
+
+///> c
+///> rust
+:# log2_matches_the_golden_fixed_point_values =
+    (log2_q16 1u32, log2_q16 2u32, log2_q16 3u32, log2_q16 1000u32, log2_q16 1024u32)
+    |> _assert_eq (0i32, 65536i32, 103872i32, 653117i32, 655360i32)
+
+///> c
+///> rust
+:# a_half_is_exactly_minus_one_and_paths_add =
+    (per_mille_log2 500, per_mille_log2 1000, path_log2 ;[ 500; 500; 1000 ])
+    |> _assert_eq (0i32 - 65536, 0i32, 0i32 - 131072)
+
+///> c
+///> rust
+:# exp2_inverts_log2_to_within_one_unit =
+    (exp2_q16 0i64, exp2_q16 65536i64, exp2_q16 (0i64 - 65536i64), exp2_q16 32768i64, exp2_q16 (conv (log2_q16 3u32)))
+    |> _assert_eq (65536i64, 131072i64, 32768i64, 92681i64, 196607i64)
+
+///> c
+///> rust
+:# a_target_twice_as_likely_per_step_weighs_four_times_over_two_steps =
+    (is_weight_q16 ;[ 1000; 1000 ] ;[ 500; 500 ], is_weight_q16 ;[ 500 ] ;[ 500 ]) |> _assert_eq (262144i64, 65536i64)
+
+///> c
+///> rust
+:# equal_paths_reduce_the_estimate_to_the_plain_mean =
+    := hunts = ;[ hunt (0 - 65536) (0 - 65536) 10; hunt (0 - 131072) (0 - 131072) 20; hunt 0 0 60 ]
+    mean_and_ess (is_estimate hunts) |> _assert_eq (30i64, 196608i64)
+
+///> c
+///> rust
+:# a_target_that_follows_one_hunt_returns_its_reward_with_one_effective_hunt =
+    := hunts = ;[ hunt 0 (0 - 65536) 70; hunt (0 - 2621440) 0 5000 ]
+    mean_and_ess (is_estimate hunts) |> _assert_eq (70i64, 65536i64)
+
+///> c
+///> rust
+:# a_zero_probability_step_leaves_the_target_path_for_good =
+    := kept, left = along (OnPath 0) ;[ 500; 1000 ], along (OnPath 0) ;[ 500; 0; 1000 ]
+    (path_pair kept, path_pair left) |> _assert_eq ((!+, 0i32 - 65536), (!-, 0i32))
+
+///> c
+///> rust
+:# off_path_hunts_weigh_nothing =
+    mean_and_ess (is_estimate ;[ hunt 0 0 10; off_path_hunt 0 99999; hunt 0 0 30 ]) |> _assert_eq (20i64, 131072i64)
+
+///> c
+///> rust
+:# a_log_with_no_hunt_on_the_target_path_has_no_estimate =
+    has_estimate (is_estimate ;[ off_path_hunt 0 5 ]) |> _assert_eq !-
+
+///> c
+///> rust
+:# hunts_weighted_four_to_one_give_the_four_to_one_mix =
+    := hunts = ;[ hunt 0 0 100; hunt (0 - 131072) 0 600 ]
+    mean_and_ess (is_estimate hunts) |> _assert_eq (200i64, 96376i64)
+
+///> c
+///> rust
+:# a_per_decision_weight_is_the_ratio_so_far_and_nothing_off_path =
+    (pd_weight (OnPath 0) 0, pd_weight (OnPath 65536) 0, pd_weight (OnPath 0) 65536, pd_weight OffPath 0)
+    |> _assert_eq (65536i64, 131072i64, 32768i64, 0i64)
+
+///> c
+///> rust
+:# per_step_sums_equal_the_plain_mean_of_totals_under_equal_policies =
+    := rows = ;[ row 0 (hunt 0 0 10); row 1 (hunt 0 0 30); row 0 (hunt 0 0 20); row 1 (hunt 0 0 0) ]
+    wpdis rows 2 |> _assert_eq 30i64
+
+///> c
+///> rust
+:# one_bucket_is_the_self_normalized_path_estimate =
+    wpdis ;[ row 0 (hunt 0 0 100); row 0 (hunt (0 - 131072) 0 600) ] 1 |> _assert_eq 200i64
+
+///> c
+///> rust
+:# a_hunt_that_leaves_the_path_keeps_its_earlier_rewards =
+    := rows = ;[ row 0 (hunt 0 0 10); row 1 (off_path_hunt 0 99); row 0 (hunt 0 0 30); row 1 (hunt 0 0 50) ]
+    wpdis rows 2 |> _assert_eq 70i64
+
+///> c
+///> rust
+:# a_short_horizon_scores_only_its_first_buckets =
+    := rows = ;[ row 0 (hunt 0 0 10); row 1 (hunt 0 0 30); row 0 (hunt 0 0 20); row 1 (hunt 0 0 0) ]
+    (wpdis_upto rows 1, wpdis_upto rows 2 = wpdis rows 2) |> _assert_eq (15i64, !+)
+
+///> c
+///> rust
+:# a_bucket_of_two_equal_hunts_has_an_ess_of_two =
+    bucket_ess ;[ row 0 (hunt 0 0 10); row 0 (hunt 0 0 20) ] 0 |> _assert_eq 131072i64

@@ -1,0 +1,64 @@
+///- --package .
+:# bc_calib static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:== scored = { r : i32; t : bool }
+
+:== pairs = list bc_dataset::pair
+
+:= scored_into (w : network::weights) (acc : list scored) (q : bc_dataset::pair) : list scored =
+    ? bc_dataset::is_known q::retreat
+    ?> { r = network::retreat_logit w q::x; t = bc_dataset::agrees q::retreat !+ } :: acc
+    |: acc
+
+:= scored_rows (w : network::weights) (ps : pairs) : list scored = ps |> listm::fold (scored_into w) []
+
+:= counted (theta : i32) (acc : i32 * i32) (row : scored) : i32 * i32 =
+    := extra, missed = acc
+    ? row::r > theta && row::t = !- ?> extra + 1, missed |? row::r <= theta && row::t ?> extra, missed + 1 |: acc
+
+:= errors_at (theta : i32) (rows : list scored) : i32 * i32 = rows |> listm::fold (counted theta) (0, 0)
+
+:= balanced (theta : i32) (rows : list scored) : bool =
+    := extra, missed = errors_at theta rows
+    extra <= missed
+
+:~ ^ smallest_from (rows : list scored) (lo : i32) (hi : i32) : i32 =
+    ? lo >= hi
+    ?> lo
+    |:
+        := mid = (lo + hi) / 2
+        ? balanced mid rows ?> smallest_from rows lo mid |: smallest_from rows (mid + 1) hi
+
+:= higher (m : i32) (row : scored) : i32 = ? row::r > m ?> row::r |: m
+
+:= calibrated (rows : list scored) : i32 = smallest_from rows 0 (rows |> listm::fold higher 0)
+
+:= calibrated_tactic (w : network::weights) (theta : i32) : tactic =
+    { (bc_run::teacher ()) ?| brain = Calibrated (w, { heal = 0; retreat = theta }) }
+
+:= error_row (name : string) (theta : i32) (rows : list scored) : () =
+    := extra, missed = errors_at theta rows
+    console::write_line (name ++# "\ttheta\t" ++#? theta ++# "\textra\t" ++#? extra ++# "\tmissed\t" ++#? missed)
+
+:= trained () : network::weights * pairs =
+    := base = bc_run::pairs_from (training_first ())
+    := all = bc_indep::dagger_of (bc_indep::student_of base) base
+    bc_train::quantized (bc_indep::trained_independent all), all
+
+:= reported (w : network::weights) (theta : i32) : () =
+    bc_indep::evaluated "I1" (bc_indep::student_tactic w)
+    bc_indep::evaluated "T0" (calibrated_tactic w 0)
+    bc_indep::evaluated "T1" (calibrated_tactic w theta)
+
+:= main () =
+    := w, all = trained ()
+    := rows = scored_rows w all
+    := theta = calibrated rows
+    error_row "train_at_zero" 0 rows
+    error_row "train_calibrated" theta rows
+    reported w theta
+    0i32

@@ -1,0 +1,131 @@
+///- --package .
+:# regret static =
+    :< testing
+
+:| toy =
+    | Dominated
+    | RockPaperScissors
+
+:== learner = { regrets : array i32; sums : array i32 }
+
+:= action_count (g : toy) : i32 =
+    ?= g ?|
+    | Dominated => 2
+    | RockPaperScissors => 3
+
+:= payoff (g : toy) (mine : i32) (theirs : i32) : i32 =
+    ?= g ?|
+    | Dominated => ? mine = 0 ?> 1000 |: 0
+    | RockPaperScissors =>
+        := d = (mine - theirs + 3) % 3
+        ? d = 0 ?> 0 |? d = 1 ?> 1000 |: 0 - 1000
+
+:= zeros (n : i32) : array i32 =
+    := x : array i32 = create n
+    :~ ^ fill (i : i32) : () =
+        ? i < n ?>
+            set x i 0
+            fill (i + 1)
+    fill 0
+    x
+
+:= fresh (n : i32) : learner = { regrets = zeros n; sums = zeros n }
+
+:~ ^ positive_total (r : array i32) (i : i32) (total : i32) : i32 =
+    ? i >= length r ?> total |: positive_total r (i + 1) (total + max 0 (index r i))
+
+:= share (r : array i32) (total : i32) (i : i32) : i32 =
+    ? total > 0 ?> max 0 (index r i) * 1000 / total |: 1000 / length r
+
+:= strategy (r : array i32) : array i32 =
+    := total = positive_total r 0 0
+    := s = zeros (length r)
+    :~ ^ fill (i : i32) : () =
+        ? i < length r ?>
+            set s i (share r total i)
+            fill (i + 1)
+    fill 0
+    s
+
+:~ ^ value_from (g : toy) (a : i32) (theirs : array i32) (b : i32) (acc : i32) : i32 =
+    ? b >= length theirs
+    ?> acc / 1000
+    |: value_from g a theirs (b + 1) (acc + index theirs b * payoff g a b)
+
+:= value (g : toy) (a : i32) (theirs : array i32) : i32 = value_from g a theirs 0 0
+
+:~ ^ expected_from (g : toy) (mine : array i32) (theirs : array i32) (a : i32) (acc : i32) : i32 =
+    ? a >= length mine
+    ?> acc / 1000
+    |: expected_from g mine theirs (a + 1) (acc + index mine a * value g a theirs)
+
+:== regret_round = { mine : array i32; theirs : array i32; ev : i32; t : i32 }
+
+:= learn (g : toy) (me : learner) (r : regret_round) (a : i32) : () =
+    set me::regrets a (max 0 (index me::regrets a + value g a r::theirs - r::ev))
+    set me::sums a (index me::sums a + r::t * index r::mine a)
+
+:= round_of (g : toy) (mine : array i32) (theirs : array i32) (t : i32) : regret_round =
+    { mine = mine; theirs = theirs; ev = expected_from g mine theirs 0 0; t = t }
+
+:= update (g : toy) (me : learner) (r : regret_round) : () =
+    :~ ^ go (a : i32) : () =
+        ? a < length r::mine ?>
+            learn g me r a
+            go (a + 1)
+    go 0
+
+:= play_round (g : toy) (a : learner) (b : learner) (t : i32) : () =
+    := sa = strategy a::regrets
+    := sb = strategy b::regrets
+    update g a (round_of g sa sb t)
+    update g b (round_of g sb sa t)
+
+:~ ^ self_play (g : toy) (a : learner) (b : learner) (t : i32) (stop : i32) : () =
+    ? t <= stop ?>
+        play_round g a b t
+        self_play g a b (t + 1) stop
+
+:~ ^ sum_from (x : array i32) (i : i32) (acc : i32) : i32 =
+    ? i >= length x ?> acc |: sum_from x (i + 1) (acc + index x i)
+
+:= average (me : learner) (a : i32) : i32 = index me::sums a / max 1 (sum_from me::sums 0 0 / 1000)
+
+:= seeded (g : toy) (start : array i32) : learner =
+    := a = fresh (action_count g)
+    :~ ^ seed (i : i32) : () =
+        ? i < length start ?>
+            set a::regrets i (index start i)
+            seed (i + 1)
+    seed 0
+    a
+
+:= trained (g : toy) (start : array i32) (rounds : i32) : learner =
+    := a = seeded g start
+    self_play g a (fresh (action_count g)) 1 rounds
+    a
+
+:= rock_heavy () : array i32 =
+    := start = zeros 3
+    set start 0 3000
+    start
+
+:= near_third (x : i32) : bool = x >= 280 && x <= 390
+
+///> c
+///> rust
+:# a_dominant_action_takes_the_average =
+    := a = trained Dominated (zeros 2) 200
+    (average a 0 >= 990, average a 1 <= 10) |> _assert_eq (!+, !+)
+
+///> c
+///> rust
+:# rock_paper_scissors_averages_to_a_third_from_a_biased_start =
+    := a = trained RockPaperScissors (rock_heavy ()) 500
+    (near_third (average a 0), near_third (average a 1), near_third (average a 2)) |> _assert_eq (!+, !+, !+)
+
+///> c
+///> rust
+:# a_uniform_start_stays_uniform =
+    := a = trained RockPaperScissors (zeros 3) 50
+    (average a 0, average a 1, average a 2) |> _assert_eq (333i32, 333i32, 333i32)

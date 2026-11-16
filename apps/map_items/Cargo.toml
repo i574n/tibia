@@ -1,0 +1,12 @@
+[package]
+name = "map_items"
+version = "0.0.1"
+edition = "2024"
+
+[package.metadata.spiral]
+entry = "map_items.spi"
+output = "items.rs"
+
+[lib]
+name = "map_items"
+path = "items.rs"

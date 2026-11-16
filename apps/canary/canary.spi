@@ -1,0 +1,62 @@
+:! position = $'any'
+
+:! creature = $'any'
+
+:! creature_event = $'any'
+
+:! global_event = $'any'
+
+:! tile = $'any'
+
+:= position (x : i32) (y : i32) (z : i32) : position = $'Position(!x, !y, !z)' : position
+
+:= position_x (p : position) : i32 = $'(!p).x' : i32
+
+:= position_y (p : position) : i32 = $'(!p).y' : i32
+
+:= spectators (centre : position) (reach : i32) : array creature =
+    $'Game.getSpectators(!centre, false, false, !reach, !reach, !reach, !reach)' : array creature
+
+:= creature_id (c : creature) : u32 = $'(!c):getId()' : u32
+
+:= creature_name (c : creature) : string = $'(!c):getName()' : string
+
+:= creature_position (c : creature) : position = $'(!c):getPosition()' : position
+
+:= creature_is_player (c : creature) : bool = $'(!c):isPlayer()' : bool
+
+:= creature_is_monster (c : creature) : bool = $'(!c):isMonster()' : bool
+
+:= creature_register_event (c : creature) (name : string) : () = $'(!c):registerEvent(!name)' : ()
+
+:= creature_present (c : creature) : bool = $'(!c) ~= nil' : bool
+
+:= creature_by_id (id : u32) : creature = $'Creature(!id)' : creature
+
+:= creature_target (c : creature) : creature = $'(!c):getTarget()' : creature
+
+:= tile_at (p : position) : tile = $'Tile(!p)' : tile
+
+:= tile_present (t : tile) : bool = $'(!t) ~= nil' : bool
+
+:= tile_top_creature (t : tile) : creature = $'(!t):getTopCreature()' : creature
+
+:= system_time () : f64 = $'systemTime()' : f64
+
+:= add_event (f : () -> ()) (ms : i32) : () = $'addEvent(!f, !ms)' : ()
+
+:= creature_event (name : string) : creature_event = $'CreatureEvent(!name)' : creature_event
+
+:= on_death (event : creature_event) (f : creature -> bool) : () = $'(!event).onDeath = !f' : ()
+
+:= on_creature_think (event : creature_event) (f : creature -> bool) : () = $'(!event).onThink = !f' : ()
+
+:= register_creature_event (event : creature_event) : () = $'(!event):register()' : ()
+
+:= global_event (name : string) : global_event = $'GlobalEvent(!name)' : global_event
+
+:= on_think (event : global_event) (f : i32 -> bool) : () = $'(!event).onThink = !f' : ()
+
+:= think_interval (event : global_event) (ms : i32) : () = $'(!event):interval(!ms)' : ()
+
+:= register_global_event (event : global_event) : () = $'(!event):register()' : ()

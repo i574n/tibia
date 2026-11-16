@@ -1,0 +1,225 @@
+///- --package .
+:# cuda_layer_iso static =
+    :< sm'_operators
+
+:< sm'_operators
+
+:~ word (w : $'unsigned int *') (i : u32) : u32 = $'!w[!i]' : u32
+
+:~ weight (w : $'unsigned int *') (i : u32) : f32 = $'__uint_as_float(!w[!i])' : f32
+
+:~ cell (buf : $'float *') (i : u32) : f32 = $'!buf[!i]' : f32
+
+:~ dim_of (w : $'unsigned int *') : u32 = word w 0u32
+
+:~ hidden_of (w : $'unsigned int *') : u32 = word w 1u32
+
+:~ layers_of (w : $'unsigned int *') : u32 = word w 2u32
+
+:~ hs_of (w : $'unsigned int *') : u32 = dim_of w / word w 3u32
+
+:~ kv_dim_of (w : $'unsigned int *') : u32 = dim_of w * word w 4u32 / word w 3u32
+
+:~ kv_mul_of (w : $'unsigned int *') : u32 = word w 3u32 / word w 4u32
+
+:~ rms_base (w : $'unsigned int *') : u32 = 7u32 + word w 5u32 * dim_of w
+
+:~ wq_base (w : $'unsigned int *') : u32 = rms_base w + layers_of w * dim_of w
+
+:~ wk_base (w : $'unsigned int *') : u32 = wq_base w + layers_of w * dim_of w * dim_of w
+
+:~ wv_base (w : $'unsigned int *') : u32 = wk_base w + layers_of w * dim_of w * kv_dim_of w
+
+:~ wo_base (w : $'unsigned int *') : u32 = wv_base w + layers_of w * dim_of w * kv_dim_of w
+
+:~ ffn_rms_base (w : $'unsigned int *') : u32 = wo_base w + layers_of w * dim_of w * dim_of w
+
+:~ w1_base (w : $'unsigned int *') : u32 = ffn_rms_base w + layers_of w * dim_of w
+
+:~ w2_base (w : $'unsigned int *') : u32 = w1_base w + layers_of w * dim_of w * hidden_of w
+
+:~ w3_base (w : $'unsigned int *') : u32 = w2_base w + layers_of w * dim_of w * hidden_of w
+
+:~ emb_of_pos (w : $'unsigned int *') (pos : u32) : u32 = 7u32 + (pos + 1u32) * dim_of w
+
+:~ rope_base (w : $'unsigned int *') : u32 =
+    w3_base w + layers_of w * dim_of w * hidden_of w + dim_of w + word w 6u32 * hs_of w
+
+:~ ref_base (w : $'unsigned int *') : u32 = rope_base w + word w 6u32 * dim_of w
+
+:~ ref_cell (w : $'unsigned int *') (i : u32) : f32 = weight w (ref_base w + i)
+
+:~ x1_at (w : $'unsigned int *') : u32 = dim_of w
+
+:~ hb_at (w : $'unsigned int *') : u32 = 2u32 * dim_of w
+
+:~ x2_at (w : $'unsigned int *') : u32 = 2u32 * dim_of w + hidden_of w
+
+:~ sum_squares_w (w : $'unsigned int *') (x : u32) (j : u32) (s : f32) : f32 =
+    ? j = dim_of w
+    ?> s
+    |:
+        := v = weight w (x + j)
+        sum_squares_w w x (j + 1u32) ($'fmaf(!v, !v, !s)' : f32)
+
+:~ sum_squares_b (w : $'unsigned int *') (buf : $'float *') (x : u32) (j : u32) (s : f32) : f32 =
+    ? j = dim_of w
+    ?> s
+    |:
+        := v = ref_cell w (x + j)
+        sum_squares_b w buf x (j + 1u32) ($'fmaf(!v, !v, !s)' : f32)
+
+:~ inv_of (w : $'unsigned int *') (ss : f32) : f32 =
+    := dim = dim_of w
+    := mean = $'!ss / (float)!dim' : f32
+    := shifted = mean + 0.00001f32
+    $'1.0f / sqrtf(!shifted)' : f32
+
+:~ qkv_dot (w : $'unsigned int *') (base : u32) (x : u32) (inv : f32) (row : u32) (j : u32) (s : f32) : f32 =
+    := dim = dim_of w
+    ? j = dim
+    ?> s
+    |:
+        := a = weight w (base + row * dim + j)
+        := xb = weight w (rms_base w + j) * (inv * weight w (x + j))
+        qkv_dot w base x inv row (j + 1u32) ($'fmaf(!a, !xb, !s)' : f32)
+
+:~ proj (w : $'unsigned int *') (base : u32) (pos : u32) (row : u32) : f32 =
+    := x = emb_of_pos w pos
+    qkv_dot w base x (inv_of w (sum_squares_w w x 0u32 0f32)) row 0u32 0f32
+
+:~ rope_at (w : $'unsigned int *') (base : u32) (pos : u32) (i : u32) : f32 =
+    := even = i - i % 2u32
+    := at = rope_base w + pos * dim_of w + even
+    := c = weight w at
+    := s = weight w (at + 1u32)
+    := v0 = proj w base pos even
+    := v1 = proj w base pos (even + 1u32)
+    ? i = even
+    ?> $'fmaf(!v0, !c, -__fmul_rn(!v1, !s))' : f32
+    |: $'fmaf(!v0, !s, __fmul_rn(!v1, !c))' : f32
+
+:~ score_dot (w : $'unsigned int *') (head : u32) (t : u32) (i : u32) (s : f32) : f32 =
+    := hs = hs_of w
+    ? i = hs
+    ?> s
+    |:
+        := q = rope_at w (wq_base w) 1u32 (head * hs + i)
+        := k = rope_at w (wk_base w) t (head / kv_mul_of w * hs + i)
+        score_dot w head t (i + 1u32) ($'fmaf(!q, !k, !s)' : f32)
+
+:~ score (w : $'unsigned int *') (head : u32) (t : u32) : f32 =
+    := hs = hs_of w
+    := s = score_dot w head t 0u32 0f32
+    $'!s / sqrtf((float)!hs)' : f32
+
+:~ att_of (w : $'unsigned int *') (head : u32) (t : u32) : f32 =
+    := s0 = score w head 0u32
+    := s1 = score w head 1u32
+    := mx = ? s0 > s1 ?> s0 |: s1
+    := e0 = $'expf(!s0 - !mx)' : f32
+    := e1 = $'expf(!s1 - !mx)' : f32
+    := total = (0f32 + e0) + e1
+    ? t = 0u32 ?> e0 / total |: e1 / total
+
+:~ attn_row (w : $'unsigned int *') (i : u32) : f32 =
+    := hs = hs_of w
+    := head = i / hs
+    := kv = head / kv_mul_of w * hs + i % hs
+    := a0 = att_of w head 0u32
+    := a1 = att_of w head 1u32
+    := v0 = proj w (wv_base w) 0u32 kv
+    := v1 = proj w (wv_base w) 1u32 kv
+    := s0 = $'fmaf(!a0, !v0, 0.0f)' : f32
+    $'fmaf(!a1, !v1, !s0)' : f32
+
+:~ wo_dot (w : $'unsigned int *') (buf : $'float *') (i : u32) (j : u32) (s : f32) : f32 =
+    := dim = dim_of w
+    ? j = dim
+    ?> s
+    |:
+        := a = weight w (wo_base w + i * dim + j)
+        := b = ref_cell w j
+        wo_dot w buf i (j + 1u32) ($'fmaf(!a, !b, !s)' : f32)
+
+:~ x1_row (w : $'unsigned int *') (buf : $'float *') (i : u32) : f32 =
+    weight w (emb_of_pos w 1u32 + i) + wo_dot w buf i 0u32 0f32
+
+:~ ffn_dot (w : $'unsigned int *') (buf : $'float *') (base : u32) (inv : f32) (i : u32) (j : u32) (s : f32) : f32 =
+    := dim = dim_of w
+    ? j = dim
+    ?> s
+    |:
+        := a = weight w (base + i * dim + j)
+        := xb = weight w (ffn_rms_base w + j) * (inv * ref_cell w (x1_at w + j))
+        ffn_dot w buf base inv i (j + 1u32) ($'fmaf(!a, !xb, !s)' : f32)
+
+:~ hb_row (w : $'unsigned int *') (buf : $'float *') (i : u32) : f32 =
+    := inv = inv_of w (sum_squares_b w buf (x1_at w) 0u32 0f32)
+    := h1 = ffn_dot w buf (w1_base w) inv i 0u32 0f32
+    := h3 = ffn_dot w buf (w3_base w) inv i 0u32 0f32
+    := gate = $'__fadd_rn(1.0f, expf(-!h1))' : f32
+    := silu = h1 * (1f32 / gate)
+    silu * h3
+
+:~ w2_dot (w : $'unsigned int *') (buf : $'float *') (i : u32) (j : u32) (s : f32) : f32 =
+    := hidden = hidden_of w
+    ? j = hidden
+    ?> s
+    |:
+        := a = weight w (w2_base w + i * hidden + j)
+        := b = ref_cell w (hb_at w + j)
+        w2_dot w buf i (j + 1u32) ($'fmaf(!a, !b, !s)' : f32)
+
+:~ x2_row (w : $'unsigned int *') (buf : $'float *') (i : u32) : f32 =
+    ref_cell w (x1_at w + i) + w2_dot w buf i 0u32 0f32
+
+:~ stage_value (w : $'unsigned int *') (buf : $'float *') (stage : u32) (i : u32) : f32 =
+    ? stage = 0u32
+    ?> attn_row w i
+    |:
+        ? stage = 1u32
+        ?> x1_row w buf i
+        |:
+            ? stage = 2u32
+            ?> hb_row w buf i
+            |: x2_row w buf i
+
+:~ lane_body (buf : $'float *') (w : $'unsigned int *') (stage : u32) (lo : u32) (hi : u32) : () =
+    := lane = $'threadIdx.x + blockIdx.x * blockDim.x' : u32
+    ? lane < hi - lo ?>
+        := r = stage_value w buf stage lane
+        $'!buf[!lo + !lane] = !r' : ()
+
+:~ launch (buf : $'float *') (w : $'unsigned int *') (stage : u32) (lo : u32) (hi : u32) : () =
+    := dvars = ~~> CudaDevice lane_body buf w stage lo hi
+    := config = $'cudaLaunchConfig_t \v = {0}' : $'cudaLaunchConfig_t'
+    $'!config.gridDim = (!hi - !lo + 63) / 64' : ()
+    $'!config.blockDim = 64' : ()
+    $'printf("cuda_layer stage %u launch %s", !stage, cudaGetErrorString(cudaLaunchKernelEx(&!config, kernel, \
+        #dvars)))' : ()
+    $'putchar(10)' : ()
+    $'printf("cuda_layer stage %u sync %s", !stage, cudaGetErrorString(cudaDeviceSynchronize()))' : ()
+    $'putchar(10)' : ()
+
+:~ run_layer (count : u32) : () =
+    := w = $'unsigned int * \v = nullptr' : $'unsigned int *'
+    $'{ FILE * f = fopen(getenv("MATVEC_BIN"), "rb"); if (f == NULL) exit(4); fseek(f, 0, SEEK_END); \
+        long n = ftell(f); fseek(f, 0, SEEK_SET); if (cudaMallocManaged(&!w, n)) exit(5); \
+        if (fread(!w, 1, n, f) < (size_t)n) exit(6); fclose(f); }' : ()
+    := buf = $'float * \v = nullptr' : $'float *'
+    $'if (cudaMallocManaged(&!buf, !count * sizeof(float))) exit(3)' : ()
+    := dim = $'!w[0]' : u32
+    := hidden = $'!w[1]' : u32
+    launch buf w 0u32 0u32 dim
+    launch buf w 1u32 dim (2u32 * dim)
+    launch buf w 2u32 (2u32 * dim) (2u32 * dim + hidden)
+    launch buf w 3u32 (2u32 * dim + hidden) (3u32 * dim + hidden)
+    $'for (unsigned int i = 0; i < !count; i++) { int b; memcpy(&b, &!buf[i], 4); printf("lane %u: %d", i, b); \
+        putchar(10); }' : ()
+    $'cudaFree(!buf); cudaFree(!w)' : ()
+
+:= main () : i32 =
+    := vars = ~~> CudaHost run_layer 364u32
+    $'kernel(#vars)' : ()
+    0i32

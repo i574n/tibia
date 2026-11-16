@@ -1,0 +1,57 @@
+///- --package .
+:# run_report static =
+    :< testing
+
+:< sm'_operators
+
+:= escaped (text : string) : string =
+    text |> sm'::replace "&" "&amp;" |> sm'::replace "<" "&lt;" |> sm'::replace ">" "&gt;"
+
+:= base_name (path : string) : string =
+    := cut = sm'::last_index_of "/" path + 1
+    sm'::substring cut ((sm'::length path : i32) - cut) path
+
+:= path_free (cell : string) : string =
+    := forward = cell |> sm'::replace "\\" "/"
+    ? sm'::starts_with "/" forward || sm'::contains ":/" forward ?> base_name forward |: cell
+
+:= cell_html (tag : string) (cell : string) : string =
+    "<" ++# tag ++# ">" ++# escaped (path_free cell) ++# "</" ++# tag ++# ">"
+
+:= row_html (tag : string) (line : string) : string =
+    := cells = line |> sm'::split "\t" |> array |> am'::map' (cell_html tag)
+    "<tr>" ++# sm'::join' "" cells ++# "</tr>"
+
+:= kept (line : string) : option string = ? line = "" ?> None |: Some line
+
+:= rows_html (lines : array string) : string =
+    := body = lines |> am'::skip 1 |> am'::map' (row_html "td") |> sm'::join' "\n"
+    row_html "th" (am'::head lines) ++# "\n" ++# body
+
+:= table_html (name : string) (text : string) : string =
+    := lines = text |> sm'::split "\n" |> array |> am'::choose kept
+    "<table><caption>" ++# escaped (base_name name) ++# "</caption>\n" ++# rows_html lines ++# "\n</table>"
+
+:= page_head () : string = "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><title>run report</title></head><body>"
+
+:= main () =
+    console::write_line (page_head ())
+    env::command_line_arguments ()
+    |> listm::iter \path => console::write_line (table_html path (file_system::read_text_lf path))
+    console::write_line "</body></html>"
+    0i32
+
+///> rust
+:# absolute_paths_keep_only_their_file_name =
+    (path_free "C:\\home\\git\\tibia\\target\\spiral-wgsl.exe", path_free "/root/x/y.tsv", path_free "dxc")
+    |> _assert_eq ("spiral-wgsl.exe", "y.tsv", "dxc")
+
+///> rust
+:# a_tsv_renders_one_header_row_and_one_body_row_per_line =
+    table_html "/ci/f.tsv" "a\tb\nc\td\n"
+    |> _assert_eq
+        "<table><caption>f.tsv</caption>\n<tr><th>a</th><th>b</th></tr>\n<tr><td>c</td><td>d</td></tr>\n</table>"
+
+///> rust
+:# markup_in_a_cell_is_escaped =
+    cell_html "td" "a<b & c>d" |> _assert_eq "<td>a&lt;b &amp; c&gt;d</td>"

@@ -1,0 +1,9 @@
+packageDir = '../../deps/spiral/lib'
+packages = ['|core-', 'spiral-']
+modules = '''
+run_report
+acceptance
+tfs_cpu_1114
+tfs_cpu_1114b
+tfs_gpu_1114
+'''

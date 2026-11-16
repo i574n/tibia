@@ -1,0 +1,23 @@
+///- --package .
+:# bc_confirm static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:= confirm_first () : u32 = 2001
+
+:~ ^ paired_on (s : tactic) (i : i32) (u : bc_eval::sums) : bc_eval::sums =
+    ? i >= bc_run::seed_count ()
+    ?> u
+    |: paired_on s (i + 1) (bc_indep::paired_at s (confirm_first () + conv i) u)
+
+:= retrained () : network::weights =
+    := twice = bc_indep2::next_round (bc_indep2::next_round (bc_run::pairs_from (training_first ())))
+    bc_healweight::weighted "WR" (bc_healweight::ratio_of twice) twice
+
+:= main () =
+    := wr = retrained ()
+    console::write_line "arm\tWR_on_2001"
+    bc_eval::report (paired_on (bc_indep::student_tactic wr) 0 (bc_indep::zero_sums ()))
+    0i32

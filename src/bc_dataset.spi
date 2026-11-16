@@ -1,0 +1,124 @@
+///- --package .
+
+:# bc_dataset static =
+    :< testing
+
+:| label =
+    | Masked
+    | Known : bool
+
+:== pair = { x : network::inputs; heal : label; engage : label; retreat : label }
+
+:== beat = hunting_pack::beat
+
+:== tactic = hunting_pack::tactic
+
+:== pack = hunting_pack::pack
+
+:== camp = hunting_pack::camp
+
+:= known_if (identifiable : bool) (value : bool) : label = ? identifiable ?> Known value |: Masked
+
+:= engages (s : hunting_pack::stance) : bool =
+    :< policy
+    ?= s ?|
+    | Hold => !-
+    | _ => !+
+
+:= targeted (p : pack) : bool =
+    ?= p::hunter::target ?|
+    | Some _ => !+
+    | None => !-
+
+:= decides (now : i32) (p : pack) : bool =
+    := h = p::hunter
+    ? units::at_least (quantity::hp 0) h::health ?> !- |: now >= h::clock::next_decision_at
+
+:= engage_identifiable (o : policy::observation) (p : pack) : bool =
+    targeted p && engages (hunting_pack::network_engagement o !+)
+
+:== moment = { b : beat; t : tactic; attackers : i32; p : pack; o : policy::observation }
+
+:= moment_of (b : beat) (t : tactic) (attackers : i32) (p : pack) : moment =
+    { b = b; t = t; attackers = attackers; p = p; o = hunting_pack::observe b::now p }
+
+:= plan_labels (m : moment) : label * label =
+    := retreat, stance = hunting_pack::after_heal_plan m::b m::t::brain m::attackers m::p
+    known_if (engage_identifiable m::o m::p) (engages stance), known_if (targeted m::p) retreat
+
+:= heal_label (m : moment) : label =
+    known_if m::o::heal_ready (hunting_pack::wants_heal m::b m::t::brain m::attackers m::p)
+
+:= labelled (m : moment) : pair =
+    := engage, retreat = plan_labels m
+    := x = hunting_pack::features m::b::camp m::attackers m::b::now m::p
+    { x = x; heal = heal_label m; engage = engage; retreat = retreat }
+
+:= pair_at (b : beat) (t : tactic) (p : pack) : pair =
+    := aimed = hunting_pack::aimed_by b::camp t::order p
+    labelled (moment_of b t (hunting_pack::attackers_of aimed) aimed)
+:== hunt = { camp : camp; tactic : tactic; seed : u32; ticks : i32 }
+
+:= beat_of (h : hunt) (tick : i32) : beat =
+    { camp = h::camp; seed = h::seed; tick = tick; now = tick * hunting_pack::tick_ms () }
+
+:= logged_at (h : hunt) (tick : i32) (p : pack) (acc : list pair) : list pair =
+    := b = beat_of h tick
+    ? decides b::now p ?> pair_at b h::tactic p :: acc |: acc
+
+:~ ^ pairs_from (h : hunt) (tick : i32) (p : pack) (acc : list pair) : list pair =
+    ? tick >= h::ticks
+    ?> acc
+    |: pairs_from h (tick + 1) (hunting_pack::advance h::camp h::tactic h::seed tick p) (logged_at h tick p acc)
+
+:= pairs_of (h : hunt) : list pair = pairs_from h 0 (hunting_pack::start h::camp) []
+
+:~ ^ seeds_from (h : hunt) (left : i32) (acc : list pair) : list pair =
+    ? left <= 0 ?> acc |: seeds_from { h ?| seed = h::seed + 1u32 } (left - 1) (listm::append (pairs_of h) acc)
+
+:= dataset_of
+    (camp : camp) (t : tactic) (first : u32) (count : i32) (ticks : i32)
+    : list pair
+    =
+    seeds_from { camp = camp; tactic = t; seed = first; ticks = ticks } count []
+
+:= agrees (l : label) (value : bool) : bool =
+    ?= l ?|
+    | Masked => !+
+    | Known k => k = value
+
+:= replays (w : network::weights) (q : pair) : bool =
+    := d = network::decide w q::x
+    agrees q::heal d::heal && agrees q::engage d::engage && agrees q::retreat d::retreat
+
+:= is_known (l : label) : bool =
+    ?= l ?|
+    | Masked => !-
+    | Known _ => !+
+
+:= all_replay (w : network::weights) (pairs : list pair) : bool =
+    pairs |> listm::fold (\ (ok : bool) (q : pair) => ok && replays w q) !+
+
+:= any_known (get : pair -> label) (pairs : list pair) : bool =
+    pairs |> listm::fold (\ (seen : bool) (q : pair) => seen || is_known (get q)) !-
+
+:= network_test_pairs () : list pair =
+    := w = hunting_pack::soft_test_healer ()
+    dataset_of (hunting_pack::soft_test_camp ()) (hunting_pack::network_tactic w) 7u32 1 400
+
+:= network_test_checks () : bool * bool * bool =
+    := pairs = network_test_pairs ()
+    := w = hunting_pack::soft_test_healer ()
+    all_replay w pairs, any_known (\ q => q::heal) pairs, any_known (\ q => q::retreat) pairs
+
+///> c
+:# a_network_teacher_labels_equal_its_own_decision_on_the_logged_inputs =
+    network_test_checks () |> _assert_eq (!+, !+, !+)
+
+:= rules_test_count () : i32 =
+    listm::length (dataset_of (hunting_pack::soft_test_camp ()) (hunting_pack::live_retreat_tactic 160 2) 1u32 2 400)
+
+///> c
+:# a_rules_dataset_is_deterministic_and_nonempty =
+    := once = rules_test_count ()
+    (once > 0, once) |> _assert_eq (!+, rules_test_count ())

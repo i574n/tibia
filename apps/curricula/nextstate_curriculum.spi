@@ -1,0 +1,286 @@
+///- --package .
+:# nextstate_curriculum static =
+    :< testing
+
+:< sm'_operators
+:< keyed_rng
+
+:| family =
+    | Movement
+    | Combat
+    | ItemUse
+    | Sequence
+
+:| split =
+    | Train
+    | HeldoutSteps
+
+:| action =
+    | Approach
+    | Strike
+    | Heal
+    | Wait
+
+:| curriculum_draw =
+    | PrefixTicks : u32
+    | ActionPick : u32
+    | StepCount : u32
+    | Damage : u32
+
+:+ purpose_code curriculum_draw =
+    \ p =>
+        ?= p ?|
+        | PrefixTicks i => 6000000u32 + i
+        | ActionPick i => 7000000u32 + i
+        | StepCount i => 8000000u32 + i
+        | Damage i => 9000000u32 + i
+
+:== curriculum_row =
+    {
+        id : u32
+        split : split
+        family : family
+        seed : u32
+        tick : i32
+        actions : list action
+        state : hunt_sim::hunt
+        expected : hunt_sim::hunt
+        agreed : bool
+    }
+
+:= is_heldout (sp : split) : bool =
+    ?= sp ?|
+    | HeldoutSteps => !+
+    | Train => !-
+
+:= is_sequence (f : family) : bool =
+    ?= f ?|
+    | Sequence => !+
+    | _ => !-
+
+:= pick (salt : u32) (id : u32) (low : u32) (high : u32) (purpose : curriculum_draw) : u32 =
+    keyed_rng::roll_between low high (
+        keyed_rng::roll_key (keyed_rng::seed salt) (keyed_rng::tick id) (keyed_rng::entity 9u32) purpose
+    )
+
+:= act (foe : hunt_sim::foe_kind) (a : action) (m : hunt_sim::moment) (s : hunt_sim::hunt) : hunt_sim::hunt =
+    ?= a ?|
+    | Approach => hunt_sim::player_approaches foe m::now s
+    | Strike => hunt_sim::player_strikes foe m s
+    | Heal => hunt_sim::player_heals_below 100000 m s
+    | Wait => s
+
+:= step (foe : hunt_sim::foe_kind) (a : action) (seed : u32) (tick : i32) (s : hunt_sim::hunt) : hunt_sim::hunt =
+    := m = { seed = seed; tick = tick; now = tick * hunt_sim::tick_ms () }
+    ? s::player::health <= 0
+    ?> s
+    |:
+        := turned = s |> hunt_sim::creature_moves foe m::now |> hunt_sim::creature_strikes foe m
+        ? turned::player::health <= 0 ?> turned |: act foe a m turned
+
+:~ ^ steps
+    (foe : hunt_sim::foe_kind) (seed : u32) (tick : i32) (actions : list action) (s : hunt_sim::hunt)
+    : hunt_sim::hunt
+    =
+    ?= actions ?|
+    | a :: rest => steps foe seed (tick + 1) rest (step foe a seed tick s)
+    | [] => s
+
+:~ ^ advance_until
+    (want : hunt_sim::hunt -> bool) (choice : hunt_sim::policy) (foe : hunt_sim::foe_kind) (seed : u32) (from : i32) (tick : i32)
+    (limit : i32) (s : hunt_sim::hunt)
+    : i32 * hunt_sim::hunt
+    =
+    ? tick >= limit || (tick >= from && want s)
+    ?> tick, s
+    |:
+        advance_until want choice foe seed from
+            (tick + 1)
+            limit
+            (hunt_sim::advance_against foe choice seed tick s)
+
+:= wants (f : family) (s : hunt_sim::hunt) : bool =
+    ?= f ?|
+    | Movement => hunt_sim::adjacent s = !-
+    | Combat => hunt_sim::adjacent s
+    | ItemUse => s::player::health < 150
+    | Sequence => !+
+
+:= action_of (salt : u32) (id : u32) (k : u32) : action =
+    := n = pick salt id 0u32 3u32 (ActionPick k)
+    ? n = 0u32 ?> Approach |? n = 1u32 ?> Strike |? n = 2u32 ?> Heal |: Wait
+
+:~ ^ sequence_from (salt : u32) (id : u32) (k : u32) (n : u32) (acc : list action) : list action =
+    ? k >= n ?> listm::rev acc |: sequence_from salt id (k + 1u32) n (action_of salt id k :: acc)
+
+:= actions_of (f : family) (s : split) (salt : u32) (id : u32) : list action =
+    ?= f ?|
+    | Movement => [ Approach ]
+    | Combat => [ Strike ]
+    | ItemUse => [ Heal ]
+    | Sequence =>
+        := n = ? is_heldout s ?> pick salt id 4u32 6u32 (StepCount 0u32) |: pick salt id 2u32 3u32 (StepCount 0u32)
+        sequence_from salt id 0u32 n []
+
+:= state_text (s : hunt_sim::hunt) : string =
+    := p, c = s::player, s::creature
+    "p "
+    ++#? p::at::x
+    ++# ","
+    ++#? p::at::y
+    ++# ","
+    ++#? p::at::z
+    ++# " hp "
+    ++#? p::health
+    ++# " ns "
+    ++#? p::next_step_at
+    ++# " | c "
+    ++#? c::at::x
+    ++# ","
+    ++#? c::at::y
+    ++# ","
+    ++#? c::at::z
+    ++# " life "
+    ++#? vitality::health c::life
+    ++# " sa "
+    ++#? c::strikes_at
+    ++# " ns "
+    ++#? c::next_step_at
+    ++# " met "
+    ++# (? c::met_player ?> "1" |: "0")
+    ++# " | k "
+    ++#? s::kills
+    ++# " g "
+    ++#? s::gold
+    ++# " e "
+    ++#? s::escapes
+
+:= reach_wants (f : family) (s : hunt_sim::hunt) : bool =
+    ?= f ?|
+    | ItemUse => !+
+    | _ => wants f s
+
+:= damaged (salt : u32) (id : u32) (s : hunt_sim::hunt) : hunt_sim::hunt =
+    := h = conv (pick salt id 60u32 149u32 (Damage 0u32)) : i32
+    { s ?| player = { (s::player) ?| health = h } }
+
+:= attempts () : u32 = 8u32
+
+:~ ^ reached (f : family) (salt : u32) (id : u32) (attempt : u32) : u32 * i32 * hunt_sim::hunt =
+    := foe = hunt_sim::default_foe ()
+    := seed = salt + id + 1000u32 * attempt
+    := floor = conv (pick salt id 0u32 40u32 (PrefixTicks attempt)) : i32
+    := tick, state = advance_until (reach_wants f) (hunt_sim::cavebot_baseline ()) foe seed floor 0 (hunt_sim::scenario_ticks ()) (hunt_sim::start foe)
+    ? reach_wants f state || attempt + 1u32 >= attempts () ?> (seed, tick, state) |: reached f salt id (attempt + 1u32)
+
+:= start_of (f : family) (salt : u32) (id : u32) (s : hunt_sim::hunt) : hunt_sim::hunt =
+    ?= f ?|
+    | ItemUse => damaged salt id s
+    | _ => s
+
+:= row_of (f : family) (sp : split) (salt : u32) (id : u32) : curriculum_row =
+    := foe = hunt_sim::default_foe ()
+    := seed, tick, reached_state = reached f salt id 0u32
+    := state = start_of f salt id reached_state
+    := actions = actions_of f sp salt id
+    := expected = steps foe seed tick actions state
+    := replay = steps foe seed tick actions state
+    {
+        id = id
+        split = sp
+        family = f
+        seed = seed
+        tick = tick
+        actions = actions
+        state = state
+        expected = expected
+        agreed = state_text expected = state_text replay && wants f state
+    }
+
+:~ ^ rows_from
+    (f : family) (sp : split) (salt : u32) (id : u32) (n : u32) (acc : list curriculum_row)
+    : list curriculum_row
+    =
+    ? id >= n ?> listm::rev acc |: rows_from f sp salt (id + 1u32) n (row_of f sp salt id :: acc)
+
+:= rows_of (f : family) (sp : split) (salt : u32) (n : u32) : list curriculum_row = rows_from f sp salt 0u32 n []
+
+:= families () : list family = [ Movement; Combat; ItemUse; Sequence ]
+
+:= split_rows (sp : split) (salt : u32) (n : u32) : list curriculum_row =
+    ? is_heldout sp
+    ?> rows_of Sequence sp salt n
+    |: families () |> listm::map (\ (f : family) => rows_of f sp salt n) |> listm::concat
+
+:= action_text (a : action) : string =
+    ?= a ?|
+    | Approach => "approach"
+    | Strike => "strike"
+    | Heal => "heal"
+    | Wait => "wait"
+
+:= row_text (x : curriculum_row) : string =
+    := acts =
+        x::actions
+        |> listm::map action_text
+        |> listm::fold (\ (t : string) (a : string) => ? t = "" ?> a |: t ++# "+" ++# a) ""
+    ""
+    ++#? x::id
+    ++# "\t"
+    ++# (? is_heldout x::split ?> "heldout_steps" |: "train")
+    ++# "\t"
+    ++#? x::seed
+    ++# "\t"
+    ++#? x::tick
+    ++# "\t"
+    ++# acts
+    ++# "\t"
+    ++# state_text x::state
+    ++# "\t"
+    ++# state_text x::expected
+
+///> rust
+:# rows_are_decided_by_the_simulator_and_replay_identically =
+    := ~salt = 11u32
+    := rows = listm::concat [ split_rows Train salt 4u32; split_rows HeldoutSteps salt 4u32 ]
+    := all_agree = rows |> listm::fold (\ (ok : bool) (x : curriculum_row) => ok && x::agreed) !+
+    ((listm::length rows : i32), all_agree) |> _assert_eq (20i32, !+)
+
+///> rust
+:# a_sequence_equals_its_single_steps_folded =
+    := ~seed = 5u32
+    := foe = hunt_sim::default_foe ()
+    := s = hunt_sim::start foe
+    := folded = steps foe seed 0 [ Approach; Approach; Wait ] s
+    := stepped = s |> step foe Approach seed 0 |> step foe Approach seed 1 |> step foe Wait seed 2
+    state_text folded |> _assert_eq (state_text stepped)
+
+///> rust
+:# held_out_sequences_are_strictly_longer_than_train =
+    := ~salt = 11u32
+    := lengths =
+        \ (rows : list curriculum_row) => rows |> listm::map \ (x : curriculum_row) => listm::length x::actions : i32
+    := train = rows_of Sequence Train salt 4u32 |> lengths
+    := held = split_rows HeldoutSteps salt 4u32 |> lengths
+    (
+        listm::fold (\ (m : i32) (n : i32) => ? n > m ?> n |: m) 0i32 train
+        < listm::fold (\ (m : i32) (n : i32) => ? n < m ?> n |: m) 100i32 held
+    )
+    |> _assert_eq !+
+
+///> rust
+:# movement_rows_start_apart_and_combat_rows_start_adjacent =
+    := ~salt = 11u32
+    := move_rows, fight_rows = rows_of Movement Train salt 3u32, rows_of Combat Train salt 3u32
+    := apart =
+        move_rows |> listm::fold (\ (ok : bool) (x : curriculum_row) => ok && hunt_sim::adjacent x::state = !-) !+
+    := close = fight_rows |> listm::fold (\ (ok : bool) (x : curriculum_row) => ok && hunt_sim::adjacent x::state) !+
+    (apart, close) |> _assert_eq (!+, !+)
+
+
+///> rust
+:# item_use_rows_start_damaged =
+    := ~salt = 11u32
+    rows_of ItemUse Train salt 4u32
+    |> listm::fold (\ (ok : bool) (x : curriculum_row) => ok && x::state::player::health < 150) !+
+    |> _assert_eq !+

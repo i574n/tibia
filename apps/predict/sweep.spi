@@ -1,0 +1,46 @@
+///- --package .
+:# sweep static =
+    :< testing
+
+:< sm'_operators
+:< hunting_pack
+
+:= duo_ground () : camp = arena_hunt () |> mirroring_the_current_arena |> respawning_like_canary 60000 |> duo_default
+
+:= validated_arm () : tactic = cavebot_with_heal 160
+
+:= kills_floor (camp : camp) : i32 = (ledger_on camp (validated_arm ()) (training_block ()))::hunt_kills
+
+:= sweep_plan () : search_plan = { seed = 91u32; generations = 6; offspring = 6 }
+
+:= evolved_rules (camp : camp) : search::genome =
+    := start = { first = 160; second = 0; third = 4 }
+    tactic_evolved_on (ProfitKeepingKills (kills_floor camp)) start camp (training_block ()) (sweep_plan ())
+
+:= sweep_hunts (plan : search_plan) : i32 =
+    := trials = 1 + plan::generations * plan::offspring
+    training_count () * (1 + trials) + 2 * held_out_count ()
+
+:= ledger_row (arm : i32) (l : ledger) : () =
+    := profit = units::value_of l::hunt_profit
+    console::write_line ("" ++#? arm ++# "\t" ++#? l::hunt_kills ++# "\t" ++#? l::hunt_deaths ++# "\t" ++#? profit)
+
+:= genes_row (g : search::genome) : () =
+    console::write_line ("" ++#? g::first ++# "\t" ++#? g::second ++# "\t" ++#? g::third)
+
+:= held_out_rows (camp : camp) (genes : search::genome) : () =
+    ledger_row 0 (ledger_on camp (validated_arm ()) (held_out_block ()))
+    ledger_row 1 (ledger_on camp (tactic_of genes) (held_out_block ()))
+
+///> c
+:# a_sweep_counts_every_hunt_it_runs =
+    := ~generations = 6
+    sweep_hunts { seed = 91u32; generations = generations; offspring = 6 } |> _assert_eq 4000i32
+
+:= main () =
+    := camp = duo_ground ()
+    := genes = evolved_rules camp
+    genes_row genes
+    held_out_rows camp genes
+    console::write_line ("hunts\t" ++#? sweep_hunts (sweep_plan ()))
+    0i32

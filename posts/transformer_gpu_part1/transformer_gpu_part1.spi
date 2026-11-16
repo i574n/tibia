@@ -1,0 +1,80 @@
+///- --package .
+:< sm'_operators
+:< engine
+
+:# transformer_gpu_part1 static =
+    :< testing
+
+:= entry () : page.entry =
+    {
+        slug = "transformer-gpu-part-1"
+        title = "One Spiral Source, Two GPU Backends, Token-Exact With llama2.c"
+        date = "2026-11-12"
+        kind = page.Article
+        authors = [ { name = "i574n"; handle = "i574n" } ]
+        blurb = "A llama2 transformer written once in Spiral runs on CUDA and WGSL, matches run.c token for token, and got 3.7x faster in a day. Part 1: where it stands and why exactness made the speed possible."
+        blocks =
+            [
+                post.Paragraph (
+                    "We wrote the llama2 transformer forward pass once in Spiral and compiled it to CUDA and to WGSL "
+                    ^^ "(Vulkan through wgpu). Every result is gated against Karpathy's llama2.c run.c: the same greedy "
+                    ^^ "tokens, and bit-identical logits for every change that does not reorder a sum."
+                )
+                post.Heading "Correct on every size, on both backends"
+                post.Paragraph (
+                    "stories260K, 15M, 42M and 110M produce the same 20 greedy tokens as run.c from the same start, "
+                    ^^ "on CUDA and on WGSL. The oracles are C twins that are themselves token-identical to run.c."
+                )
+                post.Table (
+                    [ "Model"; "CUDA tok/s (A40)"; "WGSL tok/s (A40)" ],
+                    [
+                        [ "stories15M"; "1187"; "143" ]
+                        [ "stories42M"; "576"; "-" ]
+                        [ "stories110M"; "290"; "27" ]
+                    ]
+                )
+                post.Note "Decode, batch 1, 20 tokens, weights resident, median of 3 runs, all on one rented A40 per column. Identical A40 hosts differ by up to 1.4x in absolute speed, so compare within a column, not across posts or pods. CPU references run on CPUs, so these are not a comparison with them; see the last section."
+                post.Heading "Exactness is what made it fast"
+                post.Paragraph (
+                    "Every lever had to keep the 20 tokens identical, and every lever that keeps the arithmetic order "
+                    ^^ "had to keep all 32000 logits bit-identical. That turned each optimization into a yes-or-no "
+                    ^^ "experiment. A transposed weight layout came back bit-identical but 7x slower, which exposed "
+                    ^^ "managed-memory pages ping-ponging between host and GPU. A device-resident decode loop came back "
+                    ^^ "bit-identical but 37 percent slower, which exposed a one-lane argmax. Neither bug was a wrong "
+                    ^^ "answer; both only showed on the clock."
+                )
+                post.Table (
+                    [ "Lever (CUDA, stories15M)"; "tok/s"; "Output" ],
+                    [
+                        [ "straight port, one sync per launch"; "323"; "bit-identical" ]
+                        [ "one sync per token"; "378"; "bit-identical" ]
+                        [ "transposed weights (page fix)"; "417"; "bit-identical" ]
+                        [ "device-resident loop, two-level argmax, scores once per head"; "568"; "bit-identical" ]
+                        [ "one warp per output row, shuffle reduction"; "1187"; "tokens identical" ]
+                    ]
+                )
+                post.Paragraph (
+                    "On WGSL the same discipline gave 4.1x from running the whole forward as passes in one submit, "
+                    ^^ "22 percent from the bit-exact attention and argmax changes, and 17 percent from a "
+                    ^^ "workgroup-tiled matvec once each pass is dispatched at its own size."
+                )
+                post.Heading "Where it stands, honestly"
+                post.Paragraph (
+                    "On a CPU, against llama2.c and llama2.mojo, our typed build ties: one thread, stories15M, 256 "
+                    ^^ "tokens, 1108 ms against run.c's 1020 ms and Mojo's 1048 ms, inside the noise. Neither reference "
+                    ^^ "has a GPU path, so the fair GPU comparison is llama.cpp's CUDA backend on the same card, which "
+                    ^^ "is next."
+                )
+                post.Note "These kernels still read every dimension from the model file at run time. Part 2 rewrites the model as a typed op graph with the shapes as types, the way ML libraries compile static graphs, and generates fused kernels for every backend from it."
+                post.Rule
+                post.Heading "Next"
+                post.Paragraph (
+                    "Part 2: the typed graph and its fused kernels, against llama2.mojo on the CPU and llama.cpp on "
+                    ^^ "the GPU. Part 3: a ranking of every backend on speed, memory and energy."
+                )
+            ]
+    }
+
+:= test_the_post_has_text_tables_and_notes () : () =
+    := blocks = (entry ())::blocks
+    testing.expect (listm::length blocks > 10i32) "the post carries its full body"
